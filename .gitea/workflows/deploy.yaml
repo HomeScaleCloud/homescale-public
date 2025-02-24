@@ -3,8 +3,7 @@ permissions:
   contents: read
 on:
   workflow_run:
-    workflows: ["Build"]
-    types: [completed]
+    workflows: [build.yaml]
 jobs:
   tofu:
     name: "OpenTofu"
