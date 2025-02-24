@@ -4,6 +4,8 @@ permissions:
   packages: write
 on:
   workflow_call:
+    inputs:
+    secrets:
 jobs:
   homepage:
     name: "homepage"
