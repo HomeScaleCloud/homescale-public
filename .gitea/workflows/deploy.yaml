@@ -2,12 +2,10 @@ name: "Deploy"
 permissions:
   contents: read
 on:
-  workflow_call:
-    secrets:
-      VAULT_ROLE_ID:
-        required: true
-      VAULT_SECRET_ID:
-        required: true
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
 jobs:
   tofu:
     name: "OpenTofu"
