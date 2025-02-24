@@ -1,6 +1,6 @@
 # .github/workflows/ci.yml
 name: CI Pipeline
-
+run-name: ${{ gitea.actor }} pushed a deployment
 on:
   push:
     branches:
