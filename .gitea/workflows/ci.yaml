@@ -1,0 +1,19 @@
+# .github/workflows/ci.yml
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yaml
+
+  deploy:
+    needs: build
+    uses: ./.github/workflows/deploy.yaml

@@ -3,13 +3,7 @@ permissions:
   contents: read
   packages: write
 on:
-  push:
-    branches:
-      - main
-      - dev
-  pull_request:
-    branches:
-      - dev
+  workflow_call:
 jobs:
   homepage:
     name: "homepage"
@@ -29,7 +23,7 @@ jobs:
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
+          secrets: | #pragma: allowlist secret
             secrets/data/gitea ci-docker-token | DOCKER_TOKEN ;
       - name: Login to Registry
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
