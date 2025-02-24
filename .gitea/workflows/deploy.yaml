@@ -2,13 +2,9 @@ name: "Deploy"
 permissions:
   contents: read
 on:
-  push:
-    branches:
-      - main
-      - dev
-  pull_request:
-    branches:
-      - dev
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
 jobs:
   tofu:
     name: "OpenTofu"
@@ -36,7 +32,7 @@ jobs:
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
+          secrets: | #pragma: allowlist secret
             secrets/data/cloudflare token | TF_VAR_cloudflare_token ;
             secrets/data/cloudflare account-id | TF_VAR_cloudflare_account_id ;
             secrets/data/do token | TF_VAR_do_token ;
@@ -84,7 +80,7 @@ jobs:
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
+          secrets: | #pragma: allowlist secret
             secrets/data/omni token | OMNI_SERVICE_ACCOUNT_KEY ;
       - name: Sync machineclasses
         if: github.ref == 'refs/heads/main'
