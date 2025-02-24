@@ -12,8 +12,8 @@ on:
 
 jobs:
   build:
-    uses: ./.github/workflows/build.yaml
+    uses: .github/workflows/build.yaml
 
   deploy:
     needs: build
-    uses: ./.github/workflows/deploy.yaml
+    uses: .github/workflows/deploy.yaml
