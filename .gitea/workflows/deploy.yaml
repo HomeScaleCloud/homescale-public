@@ -4,7 +4,6 @@ permissions:
 on:
   workflow_run:
     workflows: ["Build"]
-    types: [completed]
 jobs:
   tofu:
     name: "OpenTofu"
