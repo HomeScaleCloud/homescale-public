@@ -12,8 +12,8 @@ on:
 
 jobs:
   build:
-    uses: .github/workflows/build.yaml
+    uses: ./.gitea/workflows/build.yaml
 
   deploy:
     needs: build
-    uses: .github/workflows/deploy.yaml
+    uses: ./.gitea/workflows/deploy.yaml
