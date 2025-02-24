@@ -1,4 +1,3 @@
-# .github/workflows/ci.yml
 name: CI Pipeline
 run-name: ${{ gitea.actor }} pushed a deployment
 on:
@@ -13,7 +12,13 @@ on:
 jobs:
   build:
     uses: ./.gitea/workflows/build.yaml
+    secrets:
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
 
   deploy:
     needs: build
     uses: ./.gitea/workflows/deploy.yaml
+    secrets:
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}

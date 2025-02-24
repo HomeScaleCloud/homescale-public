@@ -4,8 +4,11 @@ permissions:
   packages: write
 on:
   workflow_call:
-    inputs:
     secrets:
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
 jobs:
   homepage:
     name: "homepage"
