@@ -7,5 +7,5 @@ data:
   url: https://argocd.mgmt.uk-lon-1.morrislan.net
   oidc.config: |
     issuer: https://auth.morrislan.net/application/o/argocd-uk-lon-1-mgmt/
-    clientID: <path:secrets/data/argocd-uk-lon-1-mgmt#oidc-client-id>
-    clientSecret: <path:secrets/data/argocd-uk-lon-1-mgmt#oidc-client-secret>
+    clientID: <path:secrets/data/argocd/uk-lon-1-mgmt#oidc-client-id>
+    clientSecret: <path:secrets/data/argocd/uk-lon-1-mgmt#oidc-client-secret>
