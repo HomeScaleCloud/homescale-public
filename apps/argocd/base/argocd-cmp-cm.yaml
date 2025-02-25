@@ -24,6 +24,31 @@ data:
           - avp-config
           - "."
       lockRepo: false
+  avp-kustomize.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: argocd-vault-plugin-kustomize
+    spec:
+      allowConcurrency: true
+      discover:
+        find:
+          command:
+            - sh
+            - "-c"
+            - "find . -name '*.yaml' | xargs -I {} grep \"avp-kustomize\\.kubernetes\\.io\" {} | grep ."
+      generate:
+        command:
+          - kustomize
+          - build
+          - .
+          - |
+          - argocd-vault-plugin
+          - generate
+          - -s
+          - avp-config
+          - "."
+      lockRepo: false
   avp-helm.yaml: |
     apiVersion: argoproj.io/v1alpha1
     kind: ConfigManagementPlugin
