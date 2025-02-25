@@ -4,5 +4,6 @@ kind: Kustomization
 namespace: argocd-uk-lon-1-mgmt
 resources:
   - ../base
+  - argocd-uk-lon-1-mgmt-argocd.yaml
 patches:
   - path: kustomization/argocd-uk-lon-1-mgmt-configmap.yaml
