@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  url: https://argocd.mgmt.uk-lon-1.morrislan.net
+  oidc.config: |
+    issuer: https://auth.morrislan.net/application/o/argocd-uk-lon-1-mgmt/
+    clientID: <path:secrets/data/argocd-uk-lon-1-mgmt#oidc-client-id>
+    clientSecret: <path:secrets/data/argocd-uk-lon-1-mgmt#oidc-client-secret>
