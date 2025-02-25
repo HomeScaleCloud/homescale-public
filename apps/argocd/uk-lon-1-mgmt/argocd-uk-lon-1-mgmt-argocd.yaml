@@ -24,3 +24,8 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+  ignoreDifferences:
+    - group: ""
+      kind: Application
+      jsonPointers:
+        - /metadata/labels/app.kubernetes.io~1instance
