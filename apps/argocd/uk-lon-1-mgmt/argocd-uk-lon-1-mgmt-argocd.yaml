@@ -4,7 +4,7 @@ metadata:
   name: argocd-uk-lon-1-mgmt
   namespace: argocd
   annotations:
-    avp.kubernetes.io/path: "secrets/data/argocd-uk-lon-1-mgmt"
+    avp.kubernetes.io/path: "secrets/data/argocd/uk-lon-1-mgmt"
 spec:
   project: default
   sources:
