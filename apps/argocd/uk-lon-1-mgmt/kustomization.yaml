@@ -7,5 +7,6 @@ resources:
   - argocd-uk-lon-1-mgmt-argocd.yaml
   - argocd-uk-lon-1-mgmt-ingress.yaml
   - avp-uk-lon-1-mgmt-secret.yaml
+  - instances
 patches:
   - path: kustomization/argocd-uk-lon-1-mgmt-configmap.yaml
