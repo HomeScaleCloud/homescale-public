@@ -15,13 +15,9 @@ data:
       - CiliumIdentity
       clusters:
       - "*"
-  url: https://argocd.morrislan.net
   timeout.reconciliation: 45s
   oidc.config: |
     name: authentik
-    issuer: https://auth.morrislan.net/application/o/argocd/
-    clientID: <path:secrets/data/argocd#oidc-client-id>
-    clientSecret: <path:secrets/data/argocd#oidc-client-secret>
     requestedScopes: ["openid", "profile", "email", "groups"]
 ---
 apiVersion: v1
@@ -42,7 +38,7 @@ data:
       - on-update-succeeded
       - on-update-failed
   service.slack: |
-    token: <path:secrets/data/argocd#slack-token>
+    token: <path:secrets/data/argocd-uk-lon-1-mgmt#slack-token>
   # Notification template when an application update starts
   template.app-update-started: |
     slack:
@@ -129,3 +125,48 @@ data:
       send:
         - app-update-failed
       when: app.status.operationState.phase in ['Failed', 'Error', 'Unknown']
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cmp-plugin
+  namespace: argocd
+data:
+  avp.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: argocd-vault-plugin
+    spec:
+      allowConcurrency: true
+      discover:
+        find:
+          command:
+            - sh
+            - "-c"
+            - "find . -name '*.yaml' | xargs -I {} grep \"avp\\.kubernetes\\.io\" {} | grep ."
+      generate:
+        command:
+          - argocd-vault-plugin
+          - generate
+          - -s
+          - avp-config
+          - "."
+      lockRepo: false
+  avp-helm.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: argocd-vault-plugin-helm
+    spec:
+      allowConcurrency: true
+      discover:
+        find:
+          command:
+            - sh
+            - "-c"
+            - "find . -name 'Chart.yaml' && find . -name 'values.yaml'"
+      generate:
+        command: ["bash", "-c"]
+        args: ['helm template "$ARGOCD_APP_NAME" -n "$ARGOCD_APP_NAMESPACE" -f <(echo "$ARGOCD_ENV_HELM_VALUES") . | argocd-vault-plugin generate -s avp-config -']
+      lockRepo: false
