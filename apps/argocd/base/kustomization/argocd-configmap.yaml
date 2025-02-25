@@ -15,9 +15,6 @@ data:
       clusters:
       - "*"
   timeout.reconciliation: 45s
-  oidc.config: |
-    name: authentik
-    requestedScopes: ["openid", "profile", "email", "groups"]
 ---
 apiVersion: v1
 kind: ConfigMap
