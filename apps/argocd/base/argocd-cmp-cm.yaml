@@ -39,15 +39,9 @@ data:
             - "find . -name '*.yaml' | xargs -I {} grep \"avp-kustomize\\.kubernetes\\.io\" {} | grep ."
       generate:
         command:
-          - kustomize
-          - build
-          - .
-          - |
-          - argocd-vault-plugin
-          - generate
-          - -s
-          - avp-config
-          - "."
+          - sh
+          - "-c"
+          - "kustomize build . | argocd-vault-plugin generate -s avp-config -"
       lockRepo: false
   avp-helm.yaml: |
     apiVersion: argoproj.io/v1alpha1
