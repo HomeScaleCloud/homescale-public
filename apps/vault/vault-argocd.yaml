@@ -33,9 +33,9 @@ spec:
             enabled: true
             address: "http://vault.vault.svc:8200"
             skipTLSVerify: false
-            # - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
-            #   targetRevision: main
-            #   path: 'apps/vault'
+    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
+      targetRevision: main
+      path: 'apps/vault'
   destination:
     server: https://kubernetes.default.svc
     namespace: vault
