@@ -14,6 +14,10 @@ data:
       - CiliumIdentity
       clusters:
       - "*"
+  resource.customizations.ignoreDifferences: |
+    argoproj.io/Application:
+      jsonPointers:
+        - /metadata/labels/app.kubernetes.io~1instance
   timeout.reconciliation: 45s
 ---
 apiVersion: v1

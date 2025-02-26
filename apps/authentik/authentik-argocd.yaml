@@ -55,7 +55,6 @@ spec:
                     cert-manager.io/cluster-issuer: letsencrypt
                   hosts:
                     - auth.morrislan.net
-
                   tls:
                     - secretName: authentik-tls
                       hosts:
