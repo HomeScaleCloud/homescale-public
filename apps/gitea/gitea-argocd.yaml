@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: gitea
   namespace: argocd
+  labels:
+    app.kubernetes.io/instance: gitea
 spec:
   project: default
   sources:
@@ -14,7 +16,7 @@ spec:
           signing:
             enabled: true
             gpgHome: /data/git/.gnupg
-            existingSecret: vault-gitea
+            existingSecret: vault-gitea #pragma: allowlist secret
           actions:
             statefulset:
               actRunner:
@@ -27,12 +29,12 @@ spec:
                     labels:
                       - "ubuntu-latest:docker://docker.io/library/node:22-bullseye"
             enabled: true
-            existingSecret: vault-gitea
-            existingSecretKey: runner-mgmt-token
+            existingSecret: vault-gitea #pragma: allowlist secret
+            existingSecretKey: runner-mgmt-token #pragma: allowlist secret
           gitea:
             config:
               repository.signing:
-                SIGNING_KEY: 9618C0C6E9D833D1
+                SIGNING_KEY: 9618C0C6E9D833D1 #pragma: allowlist secret
                 SIGNING_NAME: MorrisLAN Gitea
                 SIGNING_EMAIL: git@morrislan.net
                 INITIAL_COMMIT: always
@@ -52,7 +54,7 @@ spec:
               oauth2_client:
                 ENABLE_AUTO_REGISTRATION: true
             admin:
-              existingSecret: vault-gitea
+              existingSecret: vault-gitea #pragma: allowlist secret
               email: git@morrislan.net
           redis-cluster:
             enabled: false
