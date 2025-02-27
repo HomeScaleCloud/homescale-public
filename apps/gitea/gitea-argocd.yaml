@@ -18,10 +18,6 @@ spec:
           actions:
             statefulset:
               actRunner:
-                statefulset:
-                  resources:
-                    requests:
-                      storage: 1Gi
                 config: |
                   log:
                     level: debug
