@@ -29,8 +29,8 @@ spec:
             enabled: true
             provisioning:
               enabled: true
-            existingSecret: vault-gitea #pragma: allowlist secret
-            existingSecretKey: runner-mgmt-token #pragma: allowlist secret
+            # existingSecret: vault-gitea #pragma: allowlist secret
+            # existingSecretKey: runner-mgmt-token #pragma: allowlist secret
           gitea:
             config:
               repository.signing:
