@@ -13,10 +13,6 @@ spec:
     - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/argocd/uk-lon-1-mgmt'
-
-    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
-      targetRevision: main
-      path: 'apps/argocd/uk-lon-1-mgmt/instances'
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd
