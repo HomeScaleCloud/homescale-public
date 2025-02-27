@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: authentik
   namespace: argocd
-  labels:
-    app.kubernetes.io/instance: authentik
 spec:
   project: default
   sources:
