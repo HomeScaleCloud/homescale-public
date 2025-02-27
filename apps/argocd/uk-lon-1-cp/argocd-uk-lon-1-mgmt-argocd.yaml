@@ -1,18 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: argocd-uk-lon-1-mgmt
+  name: argocd-uk-lon-1-cp
   namespace: argocd
   labels:
-    app.kubernetes.io/instance: argocd-uk-lon-1-mgmt
+    app.kubernetes.io/instance: argocd-uk-lon-1-cp
   annotations:
-    avp-kustomize.kubernetes.io/path: "secrets/data/argocd/uk-lon-1-mgmt"
+    avp-kustomize.kubernetes.io/path: "secrets/data/argocd/uk-lon-1-cp"
 spec:
   project: default
   sources:
     - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
       targetRevision: main
-      path: 'apps/argocd/uk-lon-1-mgmt'
+      path: 'apps/argocd/uk-lon-1-cp'
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd
