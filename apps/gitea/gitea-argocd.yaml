@@ -15,20 +15,20 @@ spec:
             enabled: true
             gpgHome: /data/git/.gnupg
             existingSecret: vault-gitea #pragma: allowlist secret
-          # actions:
-          #   statefulset:
-          #     actRunner:
-          #       config: |
-          #         log:
-          #           level: debug
-          #         cache:
-          #           enabled: false
-          #         runner:
-          #           labels:
-          #             - "ubuntu-latest:docker://docker.io/library/node:22-bullseye"
-          #   enabled: true
-          #   existingSecret: vault-gitea #pragma: allowlist secret
-          #   existingSecretKey: runner-mgmt-token #pragma: allowlist secret
+          actions:
+            statefulset:
+              actRunner:
+                config: |
+                  log:
+                    level: debug
+                  cache:
+                    enabled: false
+                  runner:
+                    labels:
+                      - "ubuntu-latest:docker://docker.io/library/node:22-bullseye"
+            enabled: true
+            existingSecret: vault-gitea #pragma: allowlist secret
+            existingSecretKey: runner-mgmt-token #pragma: allowlist secret
           gitea:
             config:
               repository.signing:
