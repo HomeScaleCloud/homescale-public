@@ -19,7 +19,6 @@ spec:
         - name: act-runner
           image: "gitea/act_runner:0.2.11"
           imagePullPolicy: Always
-          workingDir: /data
           env:
             - name: DOCKER_HOST
               value: tcp://127.0.0.1:2376
@@ -42,8 +41,6 @@ spec:
               subPath: config.yaml
             - mountPath: /certs/server
               name: docker-certs
-            - mountPath: /data
-              name: data-act-runner
         - name: dind
           image: "docker:25.0.2-dind"
           imagePullPolicy: IfNotPresent
