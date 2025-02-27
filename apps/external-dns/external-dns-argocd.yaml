@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: external-dns
   namespace: argocd
-  labels:
-    app.kubernetes.io/instance: external-dns
 spec:
   project: default
   sources:

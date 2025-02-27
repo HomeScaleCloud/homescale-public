@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: gitea
   namespace: argocd
-  labels:
-    app.kubernetes.io/instance: gitea
 spec:
   project: default
   sources:
