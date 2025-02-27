@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: ingress-nginx
   namespace: argocd
-  labels:
-    app.kubernetes.io/instance: ingress-nginx
 spec:
   project: default
   sources:
@@ -17,9 +15,9 @@ spec:
             replicaCount: 2
             ingressClassResource:
               default: true
-    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
-      targetRevision: main
-      path: 'apps/ingress-nginx'
+    # - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
+    #   targetRevision: main
+    #   path: 'apps/ingress-nginx'
   destination:
     server: https://kubernetes.default.svc
     namespace: ingress-nginx

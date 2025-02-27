@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: metrics-server
   namespace: argocd
-  labels:
-    app.kubernetes.io/instance: metrics-server
 spec:
   project: default
   sources:
