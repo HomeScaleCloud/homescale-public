@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitea-act-runner-config
+  labels:
+    app.kubernetes.io/name: gitea-act-runner
+data:
+  config.yaml: |
+    log:
+      level: debug
+    cache:
+      enabled: false
+    runner:
+      labels:
+        - "ubuntu-latest:docker://docker.io/library/node:22-bullseye"
