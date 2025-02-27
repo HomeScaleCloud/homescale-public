@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+resources:
+  - ../base
+  - argocd-uk-lon-1-mgmt-argocd.yaml
+  - argocd-uk-lon-1-mgmt-ingress.yaml
+  - avp-uk-lon-1-mgmt-secret.yaml
+patches:
+  - path: kustomization/argocd-uk-lon-1-mgmt-configmap.yaml
