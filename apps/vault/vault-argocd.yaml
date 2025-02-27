@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: vault
   namespace: argocd
-  labels:
-    app.kubernetes.io/instance: vault
 spec:
   project: default
   sources:

@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: cert-manager
   namespace: argocd
-  labels:
-    app.kubernetes.io/instance: cert-manager
 spec:
   project: default
   sources:
