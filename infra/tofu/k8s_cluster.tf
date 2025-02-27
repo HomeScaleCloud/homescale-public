@@ -1,15 +1,3 @@
-resource "digitalocean_kubernetes_cluster" "core" {
-  name    = "core"
-  region  = "lon1"
-  version = "1.31.1-do.5"
-
-  node_pool {
-    name       = "core-node"
-    size       = "s-2vcpu-4gb"
-    node_count = 2
-  }
-}
-
 resource "vultr_kubernetes" "uk_lon_1_cp" {
   region          = "lhr"
   label           = "uk-lon-1"
