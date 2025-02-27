@@ -91,13 +91,3 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=true
-  ignoreDifferences:
-    - kind: "*"
-      group: "*"
-      jsonPointers:
-        - /spec/volumeClaimTemplates
-    - group: apps
-      kind: StatefulSet
-      name: gitea-act-runner
-      jsonPointers:
-        - /spec/volumeClaimTemplates

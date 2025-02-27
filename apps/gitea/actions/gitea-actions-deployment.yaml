@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: gitea-act-runner
+  name: gitea-act-runner
+  namespace: gitea
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gitea-act-runner
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gitea-act-runner
+    spec:
+      containers:
+        - name: act-runner
+          image: "gitea/act_runner:0.2.11"
+          imagePullPolicy: Always
+          workingDir: /data
+          env:
+            - name: DOCKER_HOST
+              value: tcp://127.0.0.1:2376
+            - name: DOCKER_TLS_VERIFY
+              value: "1"
+            - name: DOCKER_CERT_PATH
+              value: /certs/server
+            - name: GITEA_RUNNER_REGISTRATION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: "vault-gitea"
+                  key: "runner-token"
+            - name: GITEA_INSTANCE_URL
+              value: https://git.morrislan.net
+            - name: CONFIG_FILE
+              value: /actrunner/config.yaml
+          volumeMounts:
+            - mountPath: /actrunner/config.yaml
+              name: act-runner-config
+              subPath: config.yaml
+            - mountPath: /certs/server
+              name: docker-certs
+            - mountPath: /data
+              name: data-act-runner
+        - name: dind
+          image: "docker:25.0.2-dind"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DOCKER_HOST
+              value: tcp://127.0.0.1:2376
+            - name: DOCKER_TLS_VERIFY
+              value: "1"
+            - name: DOCKER_CERT_PATH
+              value: /certs/server
+          securityContext:
+            privileged: true
+          resources:
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+            requests:
+              memory: "1Gi"
+              cpu: "1"
+          volumeMounts:
+            - mountPath: /certs/server
+              name: docker-certs
+      volumes:
+        - name: act-runner-config
+          configMap:
+            name: gitea-act-runner-config
+        - name: docker-certs
+          emptyDir: {}
