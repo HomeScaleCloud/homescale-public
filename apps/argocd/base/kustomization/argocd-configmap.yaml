@@ -25,7 +25,7 @@ data:
     - recipients:
       - slack:argocd
       triggers:
-      - on-update-started
+      # - on-update-started
       - on-update-succeeded
       - on-update-failed
   service.slack: |
