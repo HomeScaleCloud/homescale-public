@@ -1,11 +1,12 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   labels:
     app.kubernetes.io/name: gitea-actions
   name: gitea-actions
   namespace: gitea
 spec:
+  serviceName: gitea-actions
   replicas: 1
   selector:
     matchLabels:
@@ -19,6 +20,7 @@ spec:
         - name: gitea-actions
           image: "gitea/act_runner:0.2.11"
           imagePullPolicy: Always
+          workingDir: /data
           env:
             - name: DOCKER_HOST
               value: tcp://127.0.0.1:2376
@@ -35,12 +37,18 @@ spec:
               value: http://gitea-http:3000
             - name: CONFIG_FILE
               value: /actrunner/config.yaml
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
           volumeMounts:
             - mountPath: /actrunner/config.yaml
               name: gitea-actions-config
               subPath: config.yaml
             - mountPath: /certs/server
               name: docker-certs
+            - mountPath: /data
+              name: gitea-actions-storage
         - name: dind
           image: "docker:25.0.2-dind"
           imagePullPolicy: IfNotPresent
@@ -53,6 +61,10 @@ spec:
               value: /certs/server
           securityContext:
             privileged: true
+          resources:
+            limits:
+              cpu: "1"
+              memory: "1Gi"
           volumeMounts:
             - mountPath: /certs/server
               name: docker-certs
@@ -62,3 +74,11 @@ spec:
             name: gitea-actions-config
         - name: docker-certs
           emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: gitea-actions-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
