@@ -37,10 +37,6 @@ spec:
               value: http://gitea-http:3000
             - name: CONFIG_FILE
               value: /actrunner/config.yaml
-          resources:
-            limits:
-              cpu: "1"
-              memory: "1Gi"
           volumeMounts:
             - mountPath: /actrunner/config.yaml
               name: gitea-actions-config
@@ -61,10 +57,6 @@ spec:
               value: /certs/server
           securityContext:
             privileged: true
-          resources:
-            limits:
-              cpu: "1"
-              memory: "1Gi"
           volumeMounts:
             - mountPath: /certs/server
               name: docker-certs
