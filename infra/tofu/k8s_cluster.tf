@@ -1,7 +1,7 @@
 resource "vultr_kubernetes" "uk_lon_1_mgmt" {
   region          = "lhr"
   label           = "uk-lon-1-mgmt"
-  version         = "v1.32.1+1"
+  version         = "v1.31.5+1"
   enable_firewall = true
 
 
