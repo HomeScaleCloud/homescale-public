@@ -25,3 +25,4 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=true
+      - Validate=false
