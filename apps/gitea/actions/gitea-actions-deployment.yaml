@@ -32,7 +32,7 @@ spec:
                   name: "vault-gitea"
                   key: "runner-token"
             - name: GITEA_INSTANCE_URL
-              value: https://git.morrislan.net
+              value: http://gitea-http:3000
             - name: CONFIG_FILE
               value: /actrunner/config.yaml
           volumeMounts:
