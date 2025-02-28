@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: gitea-act-runner-config
+  name: gitea-actions-config
   labels:
-    app.kubernetes.io/name: gitea-act-runner
+    app.kubernetes.io/name: gitea-actions
 data:
   config.yaml: |
     log:
