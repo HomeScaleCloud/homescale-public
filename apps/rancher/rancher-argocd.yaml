@@ -18,6 +18,9 @@ spec:
               source: letsEncrypt
             extraAnnotations:
               external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+          letsEncrypt:
+            ingress:
+              class: nginx
     - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/rancher'
