@@ -14,6 +14,8 @@ spec:
           hostname: rancher.morrislan.net
           replicas: 1
           ingress:
+            tls:
+              source: letsEncrypt
             extraAnnotations:
               external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
     - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
