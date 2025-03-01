@@ -13,6 +13,9 @@ spec:
         valuesObject:
           hostname: rancher.morrislan.net
           replicas: 1
+          ingress:
+            extraAnnotations:
+              external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
     - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/rancher'
