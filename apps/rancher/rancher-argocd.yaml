@@ -12,6 +12,7 @@ spec:
       helm:
         valuesObject:
           hostname: rancher.morrislan.net
+          replicas: 1
     - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/rancher'
