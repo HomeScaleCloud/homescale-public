@@ -44,51 +44,51 @@ jobs:
         run: |
           podman tag git.morrislan.net/morrislan/homepage:${{ github.sha }} git.morrislan.net/morrislan/homepage:latest
           podman push git.morrislan.net/morrislan/homepage:latest
-  deploy-tofu:
-    name: "Deploy - OpenTofu"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./infra/tofu
-    env:
-      TF_IN_AUTOMATION: "true"
-      TF_INPUT: "false"
-      TF_VAR_cloudflare_zone_id: "${{ secrets.CLOUDFLARE_ZONE_ID }}"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v1
-      - name: Format Check
-        id: fmt-check
-        run: tofu fmt -check
-      - name: Import Secrets
-        uses: hashicorp/vault-action@v3
-        with:
-          url: https://vault.morrislan.net
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: | #pragma: allowlist secret
-            secrets/data/cloudflare token | TF_VAR_cloudflare_token ;
-            secrets/data/cloudflare account-id | TF_VAR_cloudflare_account_id ;
-            secrets/data/do token | TF_VAR_do_token ;
-            secrets/data/vultr token | TF_VAR_vultr_token ;
-            secrets/data/do spaces-access-key-id | AWS_ACCESS_KEY_ID ;
-            secrets/data/do spaces-secret-access-key | AWS_SECRET_ACCESS_KEY ;
-      - name: Initialize
-        id: init
-        run: tofu init
-      - name: Validate
-        id: validate
-        run: tofu validate
-      - name: Plan
-        id: plan
-        run: tofu plan -out=tfplan
-      - name: Apply
-        run: tofu apply -auto-approve tfplan
-        if: github.ref == 'refs/heads/main'
+  # deploy-tofu:
+  #   name: "Deploy - OpenTofu"
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #       working-directory: ./infra/tofu
+  #   env:
+  #     TF_IN_AUTOMATION: "true"
+  #     TF_INPUT: "false"
+  #     TF_VAR_cloudflare_zone_id: "${{ secrets.CLOUDFLARE_ZONE_ID }}"
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Setup OpenTofu
+  #       uses: opentofu/setup-opentofu@v1
+  #     - name: Format Check
+  #       id: fmt-check
+  #       run: tofu fmt -check
+  #     - name: Import Secrets
+  #       uses: hashicorp/vault-action@v3
+  #       with:
+  #         url: https://vault.morrislan.net
+  #         method: approle
+  #         roleId: ${{ secrets.VAULT_ROLE_ID }}
+  #         secretId: ${{ secrets.VAULT_SECRET_ID }}
+  #         secrets: | #pragma: allowlist secret
+  #           secrets/data/cloudflare token | TF_VAR_cloudflare_token ;
+  #           secrets/data/cloudflare account-id | TF_VAR_cloudflare_account_id ;
+  #           secrets/data/do token | TF_VAR_do_token ;
+  #           secrets/data/vultr token | TF_VAR_vultr_token ;
+  #           secrets/data/do spaces-access-key-id | AWS_ACCESS_KEY_ID ;
+  #           secrets/data/do spaces-secret-access-key | AWS_SECRET_ACCESS_KEY ;
+  #     - name: Initialize
+  #       id: init
+  #       run: tofu init
+  #     - name: Validate
+  #       id: validate
+  #       run: tofu validate
+  #     - name: Plan
+  #       id: plan
+  #       run: tofu plan -out=tfplan
+  #     - name: Apply
+  #       run: tofu apply -auto-approve tfplan
+  #       if: github.ref == 'refs/heads/main'
   deply-omni:
     name: "Deploy - Omni"
     runs-on: ubuntu-latest
