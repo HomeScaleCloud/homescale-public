@@ -15,6 +15,7 @@ spec:
             replicaCount: 2
             electionID: ingress-controller-leader
             ingressClass: nginx-internal
+            name: internal
             ingressClassResource:
               name: nginx-internal
               enabled: true
@@ -30,6 +31,7 @@ spec:
           controller:
             electionID: ingress-controller-leader
             ingressClass: nginx-external
+            name: external
             ingressClassResource:
               name: nginx-external
               enabled: true
