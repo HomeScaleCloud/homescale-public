@@ -57,9 +57,6 @@ spec:
               value: /certs/server
           securityContext:
             privileged: true
-            capabilities:
-              add:
-                - NET_ADMIN
           volumeMounts:
             - mountPath: /certs/server
               name: docker-certs
