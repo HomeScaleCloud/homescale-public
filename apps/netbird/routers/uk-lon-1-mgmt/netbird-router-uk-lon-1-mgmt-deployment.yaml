@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: netbird-router-uk-brs-1-prod
+  name: netbird-router-uk-lon-1-mgmt
   namespace: netbird
 spec:
   selector:
     matchLabels:
-      app: netbird-router-uk-brs-1-prod
+      app: netbird-router-uk-lon-1-mgmt
   template:
     metadata:
       labels:
-        app: netbird-router-uk-brs-1-prod
+        app: netbird-router-uk-lon-1-mgmt
     spec:
       containers:
         - name: netbird
@@ -24,9 +24,9 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: vault-netbird
-                  key: router-uk-brs-1-prod-key
+                  key: router-uk-lon-1-mgmt-key
             - name: NB_HOSTNAME
-              value: "router-uk-brs-1-prod"
+              value: "router-uk-lon-1-mgmt"
             - name: NB_LOG_LEVEL
               value: "info"
           securityContext:
