@@ -13,8 +13,27 @@ spec:
         valuesObject:
           controller:
             replicaCount: 2
+            ingressClass: nginx-internal
             ingressClassResource:
+              name: nginx-internal
+              enabled: true
               default: true
+            service:
+              type: ClusterIP
+    - repoURL: https://kubernetes.github.io/ingress-nginx
+      chart: ingress-nginx
+      targetRevision: 4.12.0
+      helm:
+        valuesObject:
+          controller:
+            replicaCount: 1
+            ingressClass: nginx-external
+            ingressClassResource:
+              name: nginx-external
+              enabled: true
+              default: false
+            service:
+              type: LoadBalancer
     - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/ingress-nginx'
