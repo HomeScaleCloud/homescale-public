@@ -116,3 +116,11 @@ data:
       send:
         - app-update-failed
       when: app.status.operationState.phase in ['Failed', 'Error', 'Unknown']
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+data:
+  policy.csv: |
+      g, Admins, role:admin
