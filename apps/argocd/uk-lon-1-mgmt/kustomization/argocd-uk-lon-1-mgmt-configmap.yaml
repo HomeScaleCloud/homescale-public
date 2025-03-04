@@ -14,4 +14,4 @@ data:
           clientID: <path:vaults/ci-cd/items/argocd#oidc-client-id>
           clientSecret: <path:vaults/ci-cd/items/argocd#oidc-client-secret>
           orgs:
-          - name: MorrisLAN
+          - name: MorrisLANb
