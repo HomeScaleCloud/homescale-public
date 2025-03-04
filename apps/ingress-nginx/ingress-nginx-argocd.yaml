@@ -12,6 +12,12 @@ spec:
       helm:
         valuesObject:
           controller:
+            config:
+              ssl-redirect: "true"
+              force-ssl-redirect: "true"
+            service:
+              type: LoadBalancer
+              loadBalancerClass: tailscale
             replicaCount: 2
             ingressClassResource:
               default: true
