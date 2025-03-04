@@ -15,6 +15,7 @@ spec:
           kubeClusterName: uk-lon-1-mgmt
           labels:
             region: uk-lon-1
+            platform: doks
           proxyListenerMode: multiplex
           acme: true
           acmeEmail: tls@morrislan.net
