@@ -6,6 +6,16 @@ metadata:
     app.kubernetes.io/name: argocd-cm
     app.kubernetes.io/part-of: argocd
 data:
+  dex.config: |
+    connectors:
+      - type: github
+        id: github
+        name: GitHub
+        config:
+          clientID: <path:vaults/ci-cd/items/argocd#oidc-client-id>
+          clientSecret: <path:vaults/ci-cd/items/argocd#oidc-client-secret>
+          orgs:
+          - name: MorrisLAN
   statusbadge.enabled: "true"
   resource.exclusions: |
     - apiGroups:

@@ -5,13 +5,3 @@ metadata:
   namespace: argocd
 data:
   url: https://argocd.mgmt.uk-lon-1.morrislan.net
-  dex.config: |
-    connectors:
-      - type: github
-        id: github
-        name: GitHub
-        config:
-          clientID: <path:vaults/ci-cd/items/argocd#oidc-client-id>
-          clientSecret: <path:vaults/ci-cd/items/argocd#oidc-client-secret>
-          orgs:
-          - name: MorrisLANb
