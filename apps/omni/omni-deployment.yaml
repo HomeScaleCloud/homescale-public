@@ -36,7 +36,6 @@ spec:
             - --advertised-api-url=https://omni.morrislan.net/
             - --auth-auth0-enabled=true
             - --auth-auth0-domain=morrislan.uk.auth0.com
-            - --initial-users=git@maxmorris.io
             - --auth-auth0-client-id=<path:vaults/ci-cd/items/omni#auth0-client-id>
           securityContext:
             allowPrivilegeEscalation: false
