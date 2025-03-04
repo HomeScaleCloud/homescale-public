@@ -8,6 +8,7 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+    tailscale.com/tags: "tag:uk-lon-1-mgmt"
 spec:
   ingressClassName: tailscale
   rules:
