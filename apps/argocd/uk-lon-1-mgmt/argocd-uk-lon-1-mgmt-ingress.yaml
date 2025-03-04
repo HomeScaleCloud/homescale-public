@@ -4,8 +4,7 @@ metadata:
   name: argocd-uk-lon-1-mgmt
   namespace: argocd
   annotations:
-    # nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    cert-manager.io/cluster-issuer: letsencrypt
     tailscale.com/tags: "tag:uk-lon-1-mgmt,tag:admin-app"
 spec:
   ingressClassName: tailscale
@@ -23,4 +22,5 @@ spec:
   tls:
     - hosts:
         - argocd-uk-lon-1-mgmt
+        - argocd.mgmt.uk-lon-1.morrislan.net
       secretName: argocd-server-tls # as expected by argocd-server
