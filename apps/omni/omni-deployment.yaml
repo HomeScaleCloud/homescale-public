@@ -34,8 +34,10 @@ spec:
             - --advertised-kubernetes-proxy-url=https://omni.morrislan.net:8100/
             - --siderolink-wireguard-advertised-addr=omni.morrislan.net:50180
             - --advertised-api-url=https://omni.morrislan.net/
-            - --auth-saml-enabled=true
-            - --auth-saml-url=https://auth.morrislan.net/api/v3/providers/saml/47/metadata/?download
+            - --auth-webauthn-enabled=true
+            # - --auth-auth0-enabled=true
+            # - --auth-auth0-domain=morrislan.uk.auth0.com
+            # - --auth-auth0-client-id=thing
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
