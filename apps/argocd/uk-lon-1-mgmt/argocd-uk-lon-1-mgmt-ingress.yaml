@@ -4,15 +4,13 @@ metadata:
   name: argocd-uk-lon-1-mgmt
   namespace: argocd
   annotations:
-    # cert-manager.io/cluster-issuer: letsencrypt
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
     tailscale.com/tags: "tag:uk-lon-1-mgmt"
 spec:
   ingressClassName: tailscale
   rules:
-    - host: argocd.mgmt.uk-lon-1
+    - host: argocd-uk-lon-1-mgmt
       http:
         paths:
           - path: /
@@ -24,5 +22,5 @@ spec:
                   name: https
   tls:
     - hosts:
-        - argocd.mgmt.uk-lon-1
+        - argocd-uk-lon-1-mgmt
       secretName: argocd-server-tls # as expected by argocd-server
