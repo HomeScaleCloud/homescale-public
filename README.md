@@ -9,8 +9,8 @@
 - [Kubernetes (k8s)](https://kubernetes.io/) - workload/container orchestrator
 - [netbird](https://netbird.io/) - open-source P2P VPN
 - [Talos Linux](https://www.talos.dev/) - API-managed OS that is purpose built for running k8s
-- [Omni](https://omni.siderolabs.com/) - centralised machine & cluster management for Talos [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v3/monitor/1r45u.svg)](https://status.morrislan.net)
-- [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) - GitOps for k8s [![Better Stack Badge](https://uptime.betterstack.com/status-badges/v3/monitor/1r45o.svg)](https://status.morrislan.net)
+- [Omni](https://omni.siderolabs.com/) - centralised machine & cluster management for Talos
+- [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) - GitOps for k8s
 - [Home Assistant](https://www.home-assistant.io/) - Smart home controller
 - [LibreSpeed](https://github.com/librespeed/speedtest) - Self hosted speedtest
 - [rook-ceph](https://rook.io/) - distributed storage for k8s
