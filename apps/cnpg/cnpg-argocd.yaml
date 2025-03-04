@@ -10,7 +10,7 @@ spec:
       chart: cloudnative-pg
       targetRevision: 0.23.0
       helm: {}
-    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/cnpg'
   destination:

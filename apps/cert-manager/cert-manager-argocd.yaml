@@ -14,7 +14,7 @@ spec:
           crds:
             enabled: true
             keep: true
-    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/cert-manager'
   destination:

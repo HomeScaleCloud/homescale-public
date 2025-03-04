@@ -15,7 +15,7 @@ spec:
             replicaCount: 2
             ingressClassResource:
               default: true
-    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/ingress-nginx'
   destination:
