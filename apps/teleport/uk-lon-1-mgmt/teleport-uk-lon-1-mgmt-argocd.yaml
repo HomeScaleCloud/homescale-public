@@ -9,14 +9,12 @@ spec:
     - repoURL: https://charts.releases.teleport.dev
       chart: teleport-cluster
       targetRevision: 17.3.1
-      plugin:
-        env:
-          - name: HELM_VALUES
-            value: |
-              clusterName: teleport.morrislan.net
-              proxyListenerMode: multiplex
-              acme: true
-              acmeEmail: tls@morrislan.net
+      helm:
+        valuesObject:
+          clusterName: teleport.morrislan.net
+          proxyListenerMode: multiplex
+          acme: true
+          acmeEmail: tls@morrislan.net
 
     - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
       targetRevision: main
