@@ -38,7 +38,7 @@ spec:
                 upstream: "http://uptime-kuma.uptime-kuma.svc"
                 session-store-type: cookie
                 cookie-refresh: 15m
-    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/uptime-kuma'
   destination:

@@ -21,7 +21,7 @@ spec:
                   key: token
           extraArgs:
             - --cloudflare-proxied
-    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/external-dns'
   destination:

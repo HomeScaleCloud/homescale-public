@@ -25,7 +25,7 @@ spec:
               hosts:
                 - host: "metrics.morrislan.net"
                   secretName: oneuptime-tls
-    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/oneuptime'
   destination:

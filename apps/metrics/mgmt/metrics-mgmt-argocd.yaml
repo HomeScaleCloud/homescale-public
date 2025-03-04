@@ -24,7 +24,7 @@ spec:
                       auth:
                         strategy: "bearer"
                         token: "<path:secrets/data/betterstack#mgmt-source-token>"
-    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/metrics/mgmt'
   destination:

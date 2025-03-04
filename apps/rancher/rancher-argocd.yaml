@@ -22,7 +22,7 @@ spec:
             ingress:
               class: nginx
             email: tls@morrislan.net
-    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/rancher'
   destination:

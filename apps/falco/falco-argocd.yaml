@@ -60,7 +60,7 @@ spec:
                 enabled: true
               serviceMonitor:
                 create: true
-    - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/falco'
   destination:
