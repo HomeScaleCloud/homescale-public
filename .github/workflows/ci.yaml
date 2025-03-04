@@ -90,6 +90,7 @@ jobs:
   deply-omni:
     name: "Deploy - Omni"
     runs-on: ubuntu-latest
+    needs: deploy-tofu
     defaults:
       run:
         shell: bash
