@@ -9,9 +9,9 @@ metadata:
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 spec:
-  ingressClassName: nginx
+  ingressClassName: tailscale
   rules:
-    - host: argocd.mgmt.uk-lon-1.morrislan.net
+    - host: argocd.mgmt.uk-lon-1
       http:
         paths:
           - path: /
@@ -23,5 +23,5 @@ spec:
                   name: https
   tls:
     - hosts:
-        - argocd.mgmt.uk-lon-1.morrislan.net
+        - argocd.mgmt.uk-lon-1
       secretName: argocd-server-tls # as expected by argocd-server
