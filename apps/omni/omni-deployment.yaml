@@ -76,7 +76,7 @@ spec:
             claimName: omni-etcd
         - name: omni-asc
           secret:
-            secretName: vault-omni
+            secretName: op-omni
         - name: omni-tls
           secret:
             secretName: omni-tls
