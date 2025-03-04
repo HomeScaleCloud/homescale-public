@@ -12,6 +12,9 @@ spec:
       helm:
         valuesObject:
           clusterName: teleport.morrislan.net
+          kubeClusterName: uk-lon-1-mgmt
+          labels:
+            region: uk-lon-1
           proxyListenerMode: multiplex
           acme: true
           acmeEmail: tls@morrislan.net
