@@ -6,7 +6,7 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    tailscale.com/tags: "tag:uk-lon-1-mgmt"
+    tailscale.com/tags: "tag:uk-lon-1-mgmt,tag:admin-app"
 spec:
   ingressClassName: tailscale
   rules:
