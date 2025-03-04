@@ -23,6 +23,6 @@ spec:
     - name: k8s-proxy
       port: 8100
       protocol: TCP
-    # - name: wireguard
-    #   port: 50180
-    #   protocol: UDP
+    - name: wireguard
+      port: 50180
+      protocol: UDP

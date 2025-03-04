@@ -31,7 +31,6 @@ spec:
             - --k8s-proxy-bind-addr=0.0.0.0:8100
             - --private-key-source=file:///omni.asc
             - --siderolink-api-advertised-url=https://omni.morrislan.net:8095/
-            - --siderolink-use-grpc-tunnel
             - --advertised-kubernetes-proxy-url=https://omni.morrislan.net:8100/
             - --siderolink-wireguard-advertised-addr=omni.morrislan.net:50180
             - --advertised-api-url=https://omni.morrislan.net/
