@@ -21,7 +21,7 @@ variable "vultr_token" {
   sensitive   = true
 }
 
-variable "do_token" {
+variable "digitalocean_token" {
   description = "DigitalOcean API Token"
   type        = string
   sensitive   = true
