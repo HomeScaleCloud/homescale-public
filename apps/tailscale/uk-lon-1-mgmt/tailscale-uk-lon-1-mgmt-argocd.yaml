@@ -13,6 +13,10 @@ spec:
         env:
           - name: HELM_VALUES
             value: |
+              operatorConfig:
+                hostname: uk-lon-1-mgmt
+                defaultTags:
+                  - "tag:uk-lon-1-mgmt"
               oauth:
                 clientId: <path:vaults/ci-cd/items/tailscale#uk-lon-1-mgmt-id>
                 clientSecret: <path:vaults/ci-cd/items/tailscale#uk-lon-1-mgmt-secret>
