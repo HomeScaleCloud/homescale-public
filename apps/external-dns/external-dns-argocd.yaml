@@ -17,8 +17,8 @@ spec:
             - name: CF_API_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: cloudflare
-                  key: token
+                  name: op-cloudflare
+                  key: credential
           extraArgs:
             - --cloudflare-proxied
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
