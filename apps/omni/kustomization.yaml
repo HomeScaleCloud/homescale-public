@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: omni
+resources:
+  - omni-argocd.yaml
+  - omni-namespace.yaml
+  - omni-deployment.yaml
+  - omni-service.yaml
+  - omni-pvc.yaml
+  - omni-certificate.yaml
+  - omni-secret.yaml
