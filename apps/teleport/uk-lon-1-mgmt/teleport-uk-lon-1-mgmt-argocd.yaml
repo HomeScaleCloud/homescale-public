@@ -15,6 +15,9 @@ spec:
           proxyListenerMode: multiplex
           acme: true
           acmeEmail: tls@morrislan.net
+          annotations:
+            service:
+              external-dns.alpha.kubernetes.io/hostname: teleport.morrislan.net.
 
     - repoURL: 'https://git.morrislan.net/MorrisLAN/morrislan'
       targetRevision: main
