@@ -11,7 +11,7 @@ data:
         id: github
         name: GitHub
         config:
-          clientID: <path:vaults/ci-cd/items/argocd#oidc-client-id>
-          clientSecret: <path:vaults/ci-cd/items/argocd#oidc-client-secret>
+          clientID: <path:vaults/ci-cd/items/yqldfxps3ulillixrwxkkz7ziy#oidc-client-id>
+          clientSecret: <path:vaults/ci-cd/items/yqldfxps3ulillixrwxkkz7ziy#oidc-client-secret>
           orgs:
           - name: MorrisLAN
