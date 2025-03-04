@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tailscale-uk-lon-1-mgmt
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://pkgs.tailscale.com/helmcharts
+      chart: tailscale-operator
+      targetRevision: 1.80.3
+      plugin:
+        env:
+          - name: HELM_VALUES
+            value: |
+              oauth:
+                clientId: <path:vaults/ci-cd/items/tailscale#uk-lon-1-mgmt-id>
+                clientSecret: <path:vaults/ci-cd/items/tailscale#uk-lon-1-mgmt-secret>
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+      targetRevision: main
+      path: 'apps/tailscale/uk-lon-1-mgmt'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tailscale
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
