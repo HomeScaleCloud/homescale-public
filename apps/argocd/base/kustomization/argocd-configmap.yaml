@@ -29,7 +29,7 @@ data:
       - on-update-succeeded
       - on-update-failed
   service.slack: |
-    token: <path:secrets/data/argocd#slack-token>
+    token: <path:vaults/ci-cd/items/argocd#slack-token>
   # Notification template when an application update starts
   template.app-update-started: |
     slack:
