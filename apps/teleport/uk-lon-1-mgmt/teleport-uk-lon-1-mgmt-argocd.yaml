@@ -13,6 +13,9 @@ spec:
         valuesObject:
           clusterName: teleport.morrislan.net
           kubeClusterName: uk-lon-1-mgmt
+          service:
+            type: LoadBalancer
+            loadBalancerClass: tailscale
           labels:
             region: uk-lon-1
             platform: doks
@@ -21,6 +24,8 @@ spec:
           acmeEmail: tls@morrislan.net
           annotations:
             service:
+              tailscale.com/hostname: "teleport"
+              tailscale.com/tags: "tag:uk-lon-1-mgmt,tag:admin-app"
               external-dns.alpha.kubernetes.io/hostname: teleport.morrislan.net.
 
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
