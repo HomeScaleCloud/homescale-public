@@ -21,8 +21,9 @@ spec:
             region: uk-lon-1
             platform: doks
           proxyListenerMode: multiplex
-          acme: true
-          acmeEmail: tls@morrislan.net
+          acme: false
+          tls:
+            existingSecretName: teleport-tls #pragma: allowlist secret
           annotations:
             service:
               tailscale.com/hostname: "teleport"
