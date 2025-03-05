@@ -43,6 +43,8 @@ spec:
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'infra/teleport'
+      plugin:
+        env: []
   destination:
     server: https://kubernetes.default.svc
     namespace: teleport
