@@ -18,19 +18,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build Docker image
-        run: |
-          docker build /workspace/MorrisLAN/morrislan/apps/homepage -t ghcr.io/morrislan/homepage:${{ github.sha }}
-      - name: Push dev
+      - name: Login to ghcr
+        uses: docker/login-action
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build dev
+        id: build-dev
+        uses: docker/build-push-action
         if: github.ref == 'refs/heads/dev'
-        run: |
-          docker tag ghcr.io/morrislan/homepage:${{ github.sha }} ghcr.io/morrislan/homepage:dev
-          docker push ghcr.io/morrislan/homepage:dev
-      - name: Push latest
+        with:
+          context: ./apps/homepage
+          push: true
+          tags: ghcr.io/morrislan/homepage:dev
+      - name: Build latest
+        id: build-latest
+        uses: docker/build-push-action
         if: github.ref == 'refs/heads/main'
-        run: |
-          docker tag ghcr.io/morrislan/homepage:${{ github.sha }} ghcr.io/morrislan/homepage:latest
-          docker push ghcr.io/morrislan/homepage:latest
+        with:
+          context: ./apps/homepage
+          push: true
+          tags: ghcr.io/morrislan/homepage:latest
   deploy-ts:
     name: "Deploy - Tailscale"
     runs-on: ubuntu-latest
