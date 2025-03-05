@@ -13,6 +13,8 @@ spec:
         valuesObject:
           clusterName: teleport.morrislan.net
           kubeClusterName: uk-lon-1-mgmt
+          operator:
+            enabled: true
           service:
             type: LoadBalancer
             spec:

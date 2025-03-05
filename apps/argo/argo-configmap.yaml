@@ -4,7 +4,7 @@ metadata:
   name: workflow-controller-configmap
   namespace: argo
 data:
-  sso: |
+  sso: | #pragma: allowlist secret
     issuer: https://auth.morrislan.net/application/o/argo/
     sessionExpiry: 72h
     clientId:
