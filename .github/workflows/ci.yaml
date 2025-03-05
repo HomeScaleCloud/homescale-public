@@ -50,23 +50,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      # - name: Import Secrets
-      #   if: github.ref == 'refs/heads/main'
-      #   uses: 1password/load-secrets-action@v2
-      #   with:
-      #     export-env: true
-      #   env:
-      #     OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-      #     TS_TAILNET: op://ci-cd/tailscale/tailnet #pragma: allowlist secret
-      #     TS_ID: op://ci-cd/tailscale/github-actions-id
-      #     TS_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
+      - name: Import Secrets
+        if: github.ref == 'refs/heads/main'
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          TS_TAILNET: op://ci-cd/tailscale/tailnet #pragma: allowlist secret
+          TS_ID: op://ci-cd/tailscale/github-actions-id
+          TS_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
       - name: Test
         id: test
         uses: tailscale/gitops-acl-action@v1
         with:
-          oauth-client-id: ${{ secrets.TS_ID }}
-          oauth-secret: ${{ secrets.TS_SECRET }}
-          tailnet: ${{ secrets.TS_TAILNET }}
+          oauth-client-id: "$TS_ID"
+          oauth-secret: "$TS_SECRET"
+          tailnet: "$TS_TAILNET"
           policy-file: ./infra/ts/policy.hujson
           action: test
       - name: Apply
@@ -74,9 +74,9 @@ jobs:
         id: apply
         uses: tailscale/gitops-acl-action@v1
         with:
-          oauth-client-id: $TS_ID
-          oauth-secret: $TS_SECRET
-          tailnet: $TS_TAILNET
+          oauth-client-id: "$TS_ID"
+          oauth-secret: "$TS_SECRET"
+          tailnet: "$TS_TAILNET"
           policy-file: ./infra/ts/policy.hujson
           action: apply
   deploy-tofu:
