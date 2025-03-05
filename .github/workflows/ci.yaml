@@ -69,9 +69,9 @@ jobs:
       - name: Test
         shell: bash
         env:
-          TS_OAUTH_ID: ${TS_ID}
-          TS_OAUTH_SECRET: ${TS_SECRET}
-          TS_TAILNET: ${TS_TAILNET}
+          TS_OAUTH_ID: ${{ env.TS_ID }}
+          TS_OAUTH_SECRET: ${{ env.TS_SECRET }}
+          TS_TAILNET: ${{ env.TS_TAILNET }}
         run: go run tailscale.com/cmd/gitops-pusher@latest "--policy-file=./infra/ts/policy.hujson" "test"
       # - name: Test
       #   id: test
