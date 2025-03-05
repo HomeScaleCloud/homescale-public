@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ingress-nginx-uk-lon-1-mgmt
+  name: ingress-nginx
   namespace: argocd
 spec:
   project: default
@@ -12,21 +12,12 @@ spec:
       helm:
         valuesObject:
           controller:
-            config:
-              ssl-redirect: "true"
-              force-ssl-redirect: "true"
-            service:
-              type: LoadBalancer
-              loadBalancerClass: tailscale
-              annotations:
-                tailscale.com/hostname: "ingress-nginx-uk-lon-1-mgmt"
-                tailscale.com/tags: "tag:uk-lon-1-mgmt,tag:app"
             replicaCount: 2
             ingressClassResource:
               default: true
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
-      path: 'apps/ingress-nginx/uk-lon-1-mgmt'
+      path: 'apps/ingress-nginx'
   destination:
     server: https://kubernetes.default.svc
     namespace: ingress-nginx
