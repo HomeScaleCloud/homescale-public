@@ -5,8 +5,7 @@ namespace: argocd
 resources:
   - ../base
   - argocd-uk-lon-1-mgmt-argocd.yaml
-  - argocd-uk-lon-1-mgmt-ingress.yaml
+  - argocd-uk-lon-1-mgmt-service.yaml
   - avp-uk-lon-1-mgmt-secret.yaml
 patches:
   - path: argocd-uk-lon-1-mgmt-configmap.yaml
-  - path: argocd-uk-lon-1-mgmt-service.yaml
