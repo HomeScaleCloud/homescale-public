@@ -117,6 +117,14 @@ jobs:
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           OMNI_SERVICE_ACCOUNT_KEY: op://ci-cd/omni/credential #pragma: allowlist secret
+          TAILSCALE_ID: op://ci-cd/tailscale/github-actions-id
+          TAILSCALE_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: $TAILSCALE_ID
+          oauth-secret: $TAILSCALE_SECRET
+          tags: tag:github-actions
       - name: Sync machineclasses
         if: github.ref == 'refs/heads/main'
         run: |
