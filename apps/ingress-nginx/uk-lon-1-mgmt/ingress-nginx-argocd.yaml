@@ -20,7 +20,7 @@ spec:
               loadBalancerClass: tailscale
               annotations:
                 tailscale.com/hostname: "ingress-nginx-uk-lon-1-mgmt"
-                tailscale.com/tags: "tag:uk-lon-1-mgmt"
+                tailscale.com/tags: "tag:uk-lon-1-mgmt,tag:app"
             replicaCount: 2
             ingressClassResource:
               default: true
