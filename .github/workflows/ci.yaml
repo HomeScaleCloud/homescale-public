@@ -50,13 +50,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Fetch version-cache.json
-        uses: actions/cache@v4
-        with:
-          path: ./version-cache.json
-          key: version-cache.json-${{ github.run_id }}
-          restore-keys: |
-            version-cache.json-
       - name: Import Secrets
         if: github.ref == 'refs/heads/main'
         uses: 1password/load-secrets-action@v2
@@ -64,7 +57,7 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          TS_TAILNET: op://ci-cd/tailscale/tailnet #pragma: allowlist secret
+          # TS_TAILNET: op://ci-cd/tailscale/tailnet #pragma: allowlist secret
           TS_ID: op://ci-cd/tailscale/github-actions-id
           TS_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
       - name: Test
@@ -73,7 +66,7 @@ jobs:
         with:
           oauth-client-id: $TS_ID
           oauth-secret: $TS_SECRET
-          tailnet: $TS_TAILNET
+          tailnet: ${{ secrets.TS_TAILNET }}
           policy-file: ./infra/ts/policy.hujson
           action: test
       - name: Apply
