@@ -1,0 +1,30 @@
+{
+	"acls": [
+		{
+			"action": "accept",
+			"src":    ["autogroup:admin"],
+			"dst":    ["*:*"],
+		},
+		{
+			"action": "accept",
+			"src":    ["autogroup:member"],
+			"dst":    ["tag:app:*"],
+		},
+	],
+	"tagOwners": {
+		"tag:k8s-operator":   [],
+		"tag:app":            ["tag:k8s-operator"],
+		"tag:admin-app":      ["tag:k8s-operator"],
+		"tag:uk-lon-1-mgmt":  ["tag:k8s-operator"],
+		"tag:github-actions": [],
+	},
+	"nodeAttrs": [
+		{
+			// Funnel policy, which lets tailnet members control Funnel
+			// for their own devices.
+			// Learn more at https://tailscale.com/kb/1223/tailscale-funnel/
+			"target": ["autogroup:member"],
+			"attr":   ["funnel"],
+		},
+	],
+}
