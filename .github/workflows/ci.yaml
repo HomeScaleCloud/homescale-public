@@ -72,7 +72,6 @@ jobs:
           oauth-client-id: ${{ env.TS_ID }}
           oauth-secret: ${{ env.TS_SECRET }}
           tailnet: ${{ env.TS_TAILNET }}
-          tags: tag:github-actions
           policy-file: ./infra/ts/policy.hujson
           action: test
       - name: Apply
