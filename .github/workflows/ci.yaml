@@ -44,6 +44,41 @@ jobs:
   #       run: |
   #         podman tag git.morrislan.net/morrislan/homepage:${{ github.sha }} git.morrislan.net/morrislan/homepage:latest
   #         podman push git.morrislan.net/morrislan/homepage:latest
+  deploy-tsacl:
+    name: "Deploy - Tailscale ACL"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Import Secrets
+        if: github.ref == 'refs/heads/main'
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          TAILSCALE_TAILNET: op://ci-cd/tailscale/tailnet #pragma: allowlist secret
+          TAILSCALE_ID: op://ci-cd/tailscale/github-actions-id
+          TAILSCALE_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
+      - name: Test
+        id: test
+        uses: tailscale/gitops-acl-action@v1
+        with:
+          oauth-client-id: $TAILSCALE_ID
+          oauth-secret: $TAILSCALE_SECRET
+          tailnet: $TAILSCALE_TAILNET
+          policy-file: ./infra/ts/policy.hujson
+          action: test
+      - name: Apply
+        if: github.ref == 'refs/heads/main'
+        id: apply
+        uses: tailscale/gitops-acl-action@v1
+        with:
+          oauth-client-id: $TAILSCALE_ID
+          oauth-secret: $TAILSCALE_SECRET
+          tailnet: $TAILSCALE_TAILNET
+          policy-file: ./infra/ts/policy.hujson
+          action: apply
   deploy-tofu:
     name: "Deploy - OpenTofu"
     runs-on: ubuntu-latest
