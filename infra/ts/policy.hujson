@@ -10,6 +10,11 @@
 			"src":    ["autogroup:member"],
 			"dst":    ["tag:app:*"],
 		},
+		{
+			"action": "accept",
+			"src":    ["tag:github-actions"],
+			"dst":    ["tag:admin-app"],
+		},
 	],
 	"tagOwners": {
 		"tag:k8s-operator":   [],
