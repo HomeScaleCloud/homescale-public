@@ -44,8 +44,8 @@ jobs:
   #       run: |
   #         podman tag git.morrislan.net/morrislan/homepage:${{ github.sha }} git.morrislan.net/morrislan/homepage:latest
   #         podman push git.morrislan.net/morrislan/homepage:latest
-  deploy-tsacl:
-    name: "Deploy - Tailscale ACL"
+  deploy-ts:
+    name: "Deploy - Tailscale"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -57,16 +57,16 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          TAILSCALE_TAILNET: op://ci-cd/tailscale/tailnet #pragma: allowlist secret
-          TAILSCALE_ID: op://ci-cd/tailscale/github-actions-id
-          TAILSCALE_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
+          TS_TAILNET: op://ci-cd/tailscale/tailnet #pragma: allowlist secret
+          TS_ID: op://ci-cd/tailscale/github-actions-id
+          TS_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
       - name: Test
         id: test
         uses: tailscale/gitops-acl-action@v1
         with:
-          oauth-client-id: $TAILSCALE_ID
-          oauth-secret: $TAILSCALE_SECRET
-          tailnet: $TAILSCALE_TAILNET
+          oauth-client-id: $TS_ID
+          oauth-secret: $TS_SECRET
+          tailnet: $TS_TAILNET
           policy-file: ./infra/ts/policy.hujson
           action: test
       - name: Apply
@@ -74,9 +74,9 @@ jobs:
         id: apply
         uses: tailscale/gitops-acl-action@v1
         with:
-          oauth-client-id: $TAILSCALE_ID
-          oauth-secret: $TAILSCALE_SECRET
-          tailnet: $TAILSCALE_TAILNET
+          oauth-client-id: $TS_ID
+          oauth-secret: $TS_SECRET
+          tailnet: $TS_TAILNET
           policy-file: ./infra/ts/policy.hujson
           action: apply
   deploy-tofu:
@@ -152,13 +152,13 @@ jobs:
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           OMNI_SERVICE_ACCOUNT_KEY: op://ci-cd/omni/credential #pragma: allowlist secret
-          TAILSCALE_ID: op://ci-cd/tailscale/github-actions-id
-          TAILSCALE_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
+          TS_ID: op://ci-cd/tailscale/github-actions-id
+          TS_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
       - name: Connect to Tailscale
         uses: tailscale/github-action@v3
         with:
-          oauth-client-id: $TAILSCALE_ID
-          oauth-secret: $TAILSCALE_SECRET
+          oauth-client-id: $TS_ID
+          oauth-secret: $TS_SECRET
           tags: tag:github-actions
       - name: Sync machineclasses
         if: github.ref == 'refs/heads/main'
