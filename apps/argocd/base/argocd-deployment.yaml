@@ -9,7 +9,7 @@ spec:
       containers:
         - name: avp
           command: [/var/run/argocd/argocd-cmp-server]
-          image: quay.io/argoproj/argocd:v2.14.2
+          image: quay.io/argoproj/argocd:v2.14.4
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
@@ -28,7 +28,7 @@ spec:
               mountPath: /usr/local/bin/argocd-vault-plugin
         - name: avp-kustomize
           command: [/var/run/argocd/argocd-cmp-server]
-          image: quay.io/argoproj/argocd:v2.14.2
+          image: quay.io/argoproj/argocd:v2.14.4
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
@@ -47,7 +47,7 @@ spec:
               mountPath: /usr/local/bin/argocd-vault-plugin
         - name: avp-helm
           command: [/var/run/argocd/argocd-cmp-server]
-          image: quay.io/argoproj/argocd:v2.14.2
+          image: quay.io/argoproj/argocd:v2.14.4
           securityContext:
             runAsNonRoot: true
             runAsUser: 999
@@ -66,7 +66,7 @@ spec:
               mountPath: /usr/local/bin/argocd-vault-plugin
       initContainers:
         - name: download-tools
-          image: registry.access.redhat.com/ubi8:8.10-1184.1739286368
+          image: registry.access.redhat.com/ubi8:8.10-1184.1739756802
           env:
             - name: AVP_VERSION
               value: 1.18.0
@@ -82,7 +82,7 @@ spec:
             - -n
             - /usr/local/bin/argocd
             - /var/run/argocd/argocd-cmp-server
-          image: quay.io/argoproj/argocd:v2.14.2
+          image: quay.io/argoproj/argocd:v2.14.4
           name: copyutil
           securityContext:
             allowPrivilegeEscalation: false
