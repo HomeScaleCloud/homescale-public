@@ -26,7 +26,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build dev
         id: build-dev
-        uses: docker/build-push-action
+        uses: docker/build-push-action@v6
         if: github.ref == 'refs/heads/dev'
         with:
           context: ./apps/homepage
@@ -34,7 +34,7 @@ jobs:
           tags: ghcr.io/morrislan/homepage:dev
       - name: Build latest
         id: build-latest
-        uses: docker/build-push-action
+        uses: docker/build-push-action@v6
         if: github.ref == 'refs/heads/main'
         with:
           context: ./apps/homepage
