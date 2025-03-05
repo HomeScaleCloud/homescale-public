@@ -32,6 +32,3 @@ repos:
   #   hooks:
   #     - id: checkov
   #       args: [-d .]
-ci:
-  skip:
-    [terraform_fmt]

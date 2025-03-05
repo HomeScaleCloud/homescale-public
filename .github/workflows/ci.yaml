@@ -214,11 +214,3 @@ jobs:
           find . -type f -name '*-cluster.yaml' | while read -r cluster; do
             ./omnictl cluster template sync -f "$cluster"
           done
-  pre-commit-ci:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v1
-      - uses: pre-commit-ci/lite-action@v1.1.0
