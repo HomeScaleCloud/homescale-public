@@ -50,6 +50,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Fetch version-cache.json
+        uses: actions/cache@v4
+        with:
+          path: ./version-cache.json
+          key: version-cache.json-${{ github.run_id }}
+          restore-keys: |
+            version-cache.json-
       - name: Import Secrets
         if: github.ref == 'refs/heads/main'
         uses: 1password/load-secrets-action@v2
