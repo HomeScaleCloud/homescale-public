@@ -85,46 +85,6 @@ jobs:
           tailnet: ${{ env.TS_TAILNET }}
           policy-file: ./infra/ts/policy.hujson
           action: apply
-  deploy-tp:
-    name: "Deploy - Teleport"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./infra/tp
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Teleport
-        uses: teleport-actions/setup@v1
-        with:
-          version: 17.3.1
-      - name: Import Secrets
-        uses: 1password/load-secrets-action@v2
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          TS_ID: op://ci-cd/tailscale/github-actions-id
-          TS_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: $TS_ID
-          oauth-secret: $TS_SECRET
-          tags: tag:github-actions
-      - name: Get Teleport credentials
-        id: tp-auth
-        uses: teleport-actions/auth@v2
-        with:
-          proxy: teleport.morrislan.net:443
-          token: github-actions
-      - name: Apply
-        if: github.ref == 'refs/heads/main'
-        run: |
-          find . -type f -name '*.yaml' | while read -r config; do
-            tctl create -f "$config"
-          done
   deploy-tofu:
     name: "Deploy - OpenTofu"
     runs-on: ubuntu-latest
@@ -168,6 +128,47 @@ jobs:
       - name: Apply
         run: tofu apply -auto-approve tfplan
         if: github.ref == 'refs/heads/main'
+  deploy-tp:
+    name: "Deploy - Teleport"
+    runs-on: ubuntu-latest
+    needs: deploy-tofu
+    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./infra/tp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Teleport
+        uses: teleport-actions/setup@v1
+        with:
+          version: 17.3.1
+      - name: Import Secrets
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          TS_ID: op://ci-cd/tailscale/github-actions-id
+          TS_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: $TS_ID
+          oauth-secret: $TS_SECRET
+          tags: tag:github-actions
+      - name: Get Teleport credentials
+        id: tp-auth
+        uses: teleport-actions/auth@v2
+        with:
+          proxy: teleport.morrislan.net:443
+          token: github-actions
+      - name: Apply
+        run: |
+          find . -type f -name '*.yaml' | while read -r config; do
+            tctl create -f "$config"
+          done
   deply-omni:
     name: "Deploy - Omni"
     runs-on: ubuntu-latest
