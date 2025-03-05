@@ -1,6 +1,0 @@
-kind: cluster_auth_preference
-metadata:
-  name: cluster-auth-preference
-spec:
-  type: github
-version: v2
