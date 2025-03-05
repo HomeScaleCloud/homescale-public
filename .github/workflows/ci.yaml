@@ -12,6 +12,12 @@ on:
     branches:
       - dev
 jobs:
+  pre-commit-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: pre-commit-ci/lite-action@v1.1.0
   build-homepage:
     name: "Build - homepage"
     runs-on: ubuntu-latest
