@@ -13,7 +13,7 @@
 		{
 			"action": "accept",
 			"src":    ["tag:github-actions"],
-			"dst":    ["tag:admin-app"],
+			"dst":    ["tag:admin-app:443"],
 		},
 	],
 	"tagOwners": {
