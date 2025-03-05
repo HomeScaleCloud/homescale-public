@@ -13,6 +13,9 @@ spec:
         valuesObject:
           clusterName: teleport.morrislan.net
           kubeClusterName: uk-lon-1-mgmt
+          authentication:
+            type: github
+            localAuth: false
           operator:
             enabled: true
           service:
@@ -35,6 +38,9 @@ spec:
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/teleport/uk-lon-1-mgmt'
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+      targetRevision: main
+      path: 'infra/tp'
   destination:
     server: https://kubernetes.default.svc
     namespace: teleport
