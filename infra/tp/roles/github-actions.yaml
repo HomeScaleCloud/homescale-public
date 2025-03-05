@@ -1,0 +1,39 @@
+kind: role
+metadata:
+  name: github-actions
+spec:
+  allow:
+    logins:
+      - ci-cd
+    node_labels:
+      '*': '*'
+    app_labels:
+      '*': '*'
+    db_labels:
+      '*': '*'
+    db_names:
+      - '*'
+    db_users:
+      - '*'
+    kubernetes_groups:
+      - system:masters
+    kubernetes_labels:
+      '*': '*'
+    kubernetes_resources:
+      - kind: '*'
+        name: '*'
+        namespace: '*'
+        verbs:
+          - '*'
+    rules:
+      - resources:
+          - '*'
+        verbs:
+          - '*'
+  options:
+    max_session_ttl: 00h5m0s
+    record_session:
+      default: best_effort
+      desktop: true
+    ssh_file_copy: true
+version: v7
