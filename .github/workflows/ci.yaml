@@ -64,9 +64,10 @@ jobs:
         id: test
         uses: tailscale/gitops-acl-action@v1
         with:
-          oauth-client-id: "$TS_ID"
-          oauth-secret: "$TS_SECRET"
-          tailnet: "$TS_TAILNET"
+          oauth-client-id: $TS_ID
+          oauth-secret: $TS_SECRET
+          tailnet: $TS_TAILNET
+          tags: tag:github-actions
           policy-file: ./infra/ts/policy.hujson
           action: test
       - name: Apply
@@ -74,9 +75,9 @@ jobs:
         id: apply
         uses: tailscale/gitops-acl-action@v1
         with:
-          oauth-client-id: "$TS_ID"
-          oauth-secret: "$TS_SECRET"
-          tailnet: "$TS_TAILNET"
+          oauth-client-id: $TS_ID
+          oauth-secret: $TS_SECRET
+          tailnet: $TS_TAILNET
           policy-file: ./infra/ts/policy.hujson
           action: apply
   deploy-tofu:
