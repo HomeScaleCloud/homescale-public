@@ -88,6 +88,10 @@ jobs:
   deploy-tp:
     name: "Deploy - Teleport"
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./infra/tp
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -115,10 +119,12 @@ jobs:
         with:
           proxy: teleport.morrislan.net:443
           token: github-actions
-      - name: Test
-        # Enters a command from the cluster, in this case "tsh ls" using Machine
-        # ID credentials to list remote SSH nodes.
-        run: tsh kube ls
+      - name: Apply
+        if: github.ref == 'refs/heads/main'
+        run: |
+          find . -type f -name '*.yaml' | while read -r config; do
+            tctl create -f "$config"
+          done
   deploy-tofu:
     name: "Deploy - OpenTofu"
     runs-on: ubuntu-latest
