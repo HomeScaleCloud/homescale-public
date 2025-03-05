@@ -103,6 +103,12 @@ jobs:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           TS_ID: op://ci-cd/tailscale/github-actions-id
           TS_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: $TS_ID
+          oauth-secret: $TS_SECRET
+          tags: tag:github-actions
       - name: Get Teleport credentials
         id: tp-auth
         uses: teleport-actions/auth@v2
