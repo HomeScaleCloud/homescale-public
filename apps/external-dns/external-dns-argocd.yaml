@@ -21,6 +21,7 @@ spec:
                   key: credential
           domainFilters:
             - morrislan.net
+            - maxmorris.io
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/external-dns'
