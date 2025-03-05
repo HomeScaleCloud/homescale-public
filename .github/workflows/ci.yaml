@@ -65,32 +65,24 @@ jobs:
         with:
           go-version: 1.22.4
           cache: false
-
       - name: Test
-        shell: bash
-        env:
-          TS_OAUTH_ID: ${{ env.TS_ID }}
-          TS_OAUTH_SECRET: ${{ env.TS_SECRET }}
-          TS_TAILNET: ${{ env.TS_TAILNET }}
-        run: go run tailscale.com/cmd/gitops-pusher@latest "--policy-file=./infra/ts/policy.hujson" "test"
-      # - name: Test
-      #   id: test
-      #   uses: tailscale/gitops-acl-action@v1
-      #   with:
-      #     oauth-client-id: $TS_ID
-      #     oauth-secret: $TS_SECRET
-      #     tailnet: $TS_TAILNET
-      #     tags: tag:github-actions
-      #     policy-file: ./infra/ts/policy.hujson
-      #     action: test
+        id: test
+        uses: tailscale/gitops-acl-action@v1
+        with:
+          oauth-client-id: ${{ env.TS_ID }}
+          oauth-secret: ${{ env.TS_SECRET }}
+          tailnet: ${{ env.TS_TAILNET }}
+          tags: tag:github-actions
+          policy-file: ./infra/ts/policy.hujson
+          action: test
       - name: Apply
         if: github.ref == 'refs/heads/main'
         id: apply
         uses: tailscale/gitops-acl-action@v1
         with:
-          oauth-client-id: $TS_ID
-          oauth-secret: $TS_SECRET
-          tailnet: $TS_TAILNET
+          oauth-client-id: ${{ env.TS_ID }}
+          oauth-secret: ${{ env.TS_SECRET }}
+          tailnet: ${{ env.TS_TAILNET }}
           policy-file: ./infra/ts/policy.hujson
           action: apply
   deploy-tofu:
