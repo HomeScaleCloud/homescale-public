@@ -1,6 +1,8 @@
-kind: role
+apiVersion: resources.teleport.dev/v1
+kind: TeleportRoleV7
 metadata:
   name: admin
+  namespace: teleport
 spec:
   allow:
     app_labels:
@@ -54,4 +56,3 @@ spec:
       default: best_effort
       desktop: true
     ssh_file_copy: true
-version: v7
