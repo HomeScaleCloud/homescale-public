@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: teleport-uk-lon-1-mgmt
   namespace: argocd
-  annotations:
-    avp-kustomize.kubernetes.io/path: "vaults/ci-cd/items/teleport"
 spec:
   project: default
   sources:
@@ -40,11 +38,6 @@ spec:
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
       path: 'apps/teleport/uk-lon-1-mgmt'
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
-      targetRevision: main
-      path: 'infra/tp'
-      plugin:
-        env: []
   destination:
     server: https://kubernetes.default.svc
     namespace: teleport
