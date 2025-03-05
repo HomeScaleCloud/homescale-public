@@ -22,7 +22,6 @@ spec:
           annotations:
             service:
               external-dns.alpha.kubernetes.io/hostname: teleport.morrislan.net.
-              external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
