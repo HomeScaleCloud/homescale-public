@@ -15,7 +15,8 @@ spec:
           kubeClusterName: uk-lon-1-mgmt
           service:
             type: LoadBalancer
-            loadBalancerClass: tailscale
+            spec:
+              loadBalancerClass: tailscale
           labels:
             region: uk-lon-1
             platform: doks
