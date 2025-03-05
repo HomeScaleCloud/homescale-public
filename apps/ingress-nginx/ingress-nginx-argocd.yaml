@@ -18,6 +18,8 @@ spec:
             service:
               type: LoadBalancer
               loadBalancerClass: tailscale
+              annotations:
+                tailscale.com/tags: "tag:uk-lon-1-mgmt,tag:admin-app"
             replicaCount: 2
             ingressClassResource:
               default: true

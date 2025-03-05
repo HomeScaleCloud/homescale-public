@@ -19,8 +19,6 @@ spec:
                 secretKeyRef:
                   name: op-cloudflare
                   key: credential
-          extraArgs:
-            - --cloudflare-proxied
           domainFilters:
             - morrislan.net
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
