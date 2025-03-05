@@ -37,7 +37,7 @@ data:
       - slack:argocd
       triggers:
       # - on-update-started
-      - on-update-succeeded
+      # - on-update-succeeded
       - on-update-failed
   service.slack: |
     token: <path:vaults/ci-cd/items/argocd#slack-token>
