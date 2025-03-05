@@ -72,7 +72,7 @@ jobs:
           TS_OAUTH_ID: "$TS_ID"
           TS_OAUTH_SECRET: "$TS_SECRET"
           TS_TAILNET: "$TS_TAILNET"
-        run: go run tailscale.com/cmd/gitops-pusher "--policy-file=./infra/ts/policy.hujson" "test"
+        run: go run tailscale.com/cmd/gitops-pusher@latest "--policy-file=./infra/ts/policy.hujson" "test"
       # - name: Test
       #   id: test
       #   uses: tailscale/gitops-acl-action@v1
