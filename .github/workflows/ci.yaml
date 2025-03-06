@@ -40,7 +40,7 @@ jobs:
           context: ./apps/homepage
           push: true
           tags: ghcr.io/morrislan/homepage:latest
-  deploy-ts:
+  deploy-tailscale:
     name: "Deploy - Tailscale"
     runs-on: ubuntu-latest
     steps:
@@ -67,7 +67,7 @@ jobs:
           oauth-client-id: ${{ env.TS_ID }}
           oauth-secret: ${{ env.TS_SECRET }}
           tailnet: ${{ env.TS_TAILNET }}
-          policy-file: ./infra/ts/policy.hujson
+          policy-file: ./infra/tailscale/policy.hujson
           action: test
       - name: Apply
         if: github.ref == 'refs/heads/main'
@@ -77,7 +77,7 @@ jobs:
           oauth-client-id: ${{ env.TS_ID }}
           oauth-secret: ${{ env.TS_SECRET }}
           tailnet: ${{ env.TS_TAILNET }}
-          policy-file: ./infra/ts/policy.hujson
+          policy-file: ./infra/tailscale/policy.hujson
           action: apply
   deploy-tofu:
     name: "Deploy - OpenTofu"
