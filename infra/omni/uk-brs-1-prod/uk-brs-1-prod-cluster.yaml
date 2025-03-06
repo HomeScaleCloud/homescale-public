@@ -12,7 +12,7 @@ features:
   backupConfiguration:
     interval: 1h
 patches:
-  - file: ../global-patches.yaml
+  - file: ./global-patches.yaml
   - name: allow-schedule-control-plane
     inline:
       cluster:
