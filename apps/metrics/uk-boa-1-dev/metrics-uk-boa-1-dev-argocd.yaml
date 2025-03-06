@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metrics-uk-boa-1-dev
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 69.7.4
+      helm:
+        valuesObject:
+          grafana:
+            service:
+              type: LoadBalancer
+              loadBalancerClass: tailscale
+              annotations:
+                tailscale.com/hostname: "metrics-uk-boa-1-dev"
+                tailscale.com/tags: "tag:uk-boa-1-dev,tag:admin-app"
+                external-dns.alpha.kubernetes.io/hostname: metrics.dev.uk-boa-1.morrislan.net.
+            grafana.ini:
+              server:
+                root_url: https://metrics.dev.uk-boa-1.morrislan.net/
+            persistence:
+              enabled: true
+              type: pvc
+              accessModes:
+                - ReadWriteOnce
+              size: 5Gi
+          prometheus:
+            annotations:
+              argocd.argoproj.io/skip-health-check: 'true'
+            prometheusSpec:
+              podMonitorSelectorNilUsesHelmValues: false
+              serviceMonitorSelectorNilUsesHelmValues: false
+              serviceMonitorSelector: {}
+              serviceMonitorNamespaceSelector: {}
+              storageSpec:
+                volumeClaimTemplate:
+                  spec:
+                    accessModes: ["ReadWriteOnce"]
+                    resources:
+                      requests:
+                        storage: 50Gi
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+      targetRevision: main
+      path: 'apps/metrics/uk-boa-1-dev'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: metrics
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=true
