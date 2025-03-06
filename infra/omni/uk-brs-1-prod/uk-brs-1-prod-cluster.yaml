@@ -17,7 +17,6 @@ patches:
     inline:
       cluster:
         allowSchedulingOnControlPlanes: true
-# ---
-# kind: ControlPlane
-# machines:
-#   -
+---
+kind: ControlPlane
+machines: []
