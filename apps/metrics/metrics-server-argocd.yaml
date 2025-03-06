@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: metrics-server
+  name: metrics
   namespace: argocd
 spec:
   project: default
@@ -12,7 +12,7 @@ spec:
       helm: {}
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
-      path: 'apps/metrics-server'
+      path: 'apps/metrics'
   destination:
     server: https://kubernetes.default.svc
     namespace: metrics

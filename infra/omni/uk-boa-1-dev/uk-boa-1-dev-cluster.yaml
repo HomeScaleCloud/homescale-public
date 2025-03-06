@@ -1,11 +1,11 @@
 kind: Cluster
-name: uk-brs-1-prod
+name: uk-boa-1-dev
 labels:
-  region: uk-brs-1
+  region: uk-boa-1
 talos:
-  version: v1.9.3
+  version: v1.9.4
 kubernetes:
-  version: v1.32.1
+  version: v1.32.2
 features:
   enableWorkloadProxy: true
   useEmbeddedDiscoveryService: true
