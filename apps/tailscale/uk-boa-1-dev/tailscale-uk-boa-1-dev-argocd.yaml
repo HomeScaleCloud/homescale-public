@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tailscale-uk-boa-1-dev
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://pkgs.tailscale.com/helmcharts
+      chart: tailscale-operator
+      targetRevision: 1.80.3
+      plugin:
+        env:
+          - name: HELM_VALUES
+            value: |
+              proxyConfig:
+                defaultTags: "tag:uk-boa-1-dev"
+              operatorConfig:
+                hostname: uk-boa-1-dev
+                defaultTags:
+                  - "tag:uk-boa-1-dev"
+              oauth:
+                clientId: <path:vaults/ci-cd/items/tailscale#uk-boa-1-dev-id>
+                clientSecret: <path:vaults/ci-cd/items/tailscale#uk-boa-1-dev-secret>
+    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+      targetRevision: main
+      path: 'apps/tailscale/uk-boa-1-dev'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tailscale
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
