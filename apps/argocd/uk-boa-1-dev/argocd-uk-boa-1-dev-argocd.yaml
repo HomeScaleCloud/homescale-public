@@ -1,17 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: netbird-router-uk-lon-1-mgmt
+  name: argocd-uk-boa-1-dev
   namespace: argocd
+  annotations:
+    avp-kustomize.kubernetes.io/path: "vaults/ci-cd/items/argocd"
 spec:
   project: default
   sources:
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
-      path: 'apps/netbird/routers/uk-lon-1-mgmt'
+      path: 'apps/argocd/uk-boa-1-dev'
   destination:
-    server: https://kubernetes.default.svc
-    namespace: netbird
+    server: 'https://kubernetes.default.svc'
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true

@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: argocd-uk-lon-1-mgmt
+  name: argocd-uk-boa-1-dev
   namespace: argocd
   annotations:
-    tailscale.com/hostname: "argocd-uk-lon-1-mgmt"
-    tailscale.com/tags: "tag:uk-lon-1-mgmt,tag:admin-app"
-    external-dns.alpha.kubernetes.io/hostname: argocd.mgmt.uk-lon-1.morrislan.net.
+    tailscale.com/hostname: "argocd-uk-boa-1-dev"
+    tailscale.com/tags: "tag:uk-boa-1-dev,tag:admin-app"
+    external-dns.alpha.kubernetes.io/hostname: argocd.dev.uk-boa-1.morrislan.net.
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale
