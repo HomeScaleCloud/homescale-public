@@ -1,0 +1,23 @@
+kind: Cluster
+name: uk-boa-1-dev
+labels:
+  region: uk-boa-1
+talos:
+  version: v1.9.4
+kubernetes:
+  version: v1.32.2
+features:
+  enableWorkloadProxy: true
+  useEmbeddedDiscoveryService: true
+  backupConfiguration:
+    interval: 1h
+patches:
+  - file: ../global-patches.yaml
+  - name: allow-schedule-control-plane
+    inline:
+      cluster:
+        allowSchedulingOnControlPlanes: true
+# ---
+# kind: ControlPlane
+# machines:
+#   -
