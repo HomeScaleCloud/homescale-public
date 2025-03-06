@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: metrics
+  name: metrics-uk-brs-1-prod
   namespace: argocd
 spec:
   project: default
@@ -12,19 +12,16 @@ spec:
       helm:
         valuesObject:
           grafana:
-            ingress:
-              enabled: true
+            service:
+              type: LoadBalancer
+              loadBalancerClass: tailscale
               annotations:
-                cert-manager.io/cluster-issuer: letsencrypt
-              hosts:
-                - metrics.morrislan.net
-              tls:
-                - secretName: metrics-tls
-                  hosts:
-                    - metrics.morrislan.net
+                tailscale.com/hostname: "metrics-uk-brs-1-prod"
+                tailscale.com/tags: "tag:uk-brs-1-prod,tag:admin-app"
+                external-dns.alpha.kubernetes.io/hostname: metrics.prod.uk-brs-1.morrislan.net.
             grafana.ini:
               server:
-                root_url: https://metrics.morrislan.net/
+                root_url: https://metrics.prod.uk-brs-1.morrislan.net/
             persistence:
               enabled: true
               type: pvc
@@ -48,7 +45,7 @@ spec:
                         storage: 50Gi
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
-      path: 'apps/metrics'
+      path: 'apps/metrics/uk-brs-1-prod'
   destination:
     server: https://kubernetes.default.svc
     namespace: metrics
