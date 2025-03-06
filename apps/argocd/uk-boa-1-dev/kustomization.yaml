@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+resources:
+  - ../base
+  - argocd-uk-boa-1-dev-argocd.yaml
+  - argocd-uk-boa-1-dev-service.yaml
+  - avp-uk-boa-1-dev-secret.yaml
+patches:
+  - path: argocd-uk-boa-1-dev-configmap.yaml
