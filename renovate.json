@@ -30,4 +30,5 @@
   "dockerfile": {
     "fileMatch": ["apps/.+/Dockerfile"]
   }
+  "platformAutomerge": true
 }
