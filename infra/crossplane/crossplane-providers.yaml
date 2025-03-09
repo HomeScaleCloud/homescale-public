@@ -16,4 +16,5 @@ spec:
     source: Secret
     secretRef:
       name: op-digitalocean
+      namespace: crossplane-system
       key: credential
