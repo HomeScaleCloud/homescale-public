@@ -1,0 +1,18 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-upjet-digitalocean
+  namespace: crossplane-system
+spec:
+  package: crossplane-contrib/provider-upjet-digitalocean:v0.2.1
+---
+apiVersion: digitalocean.crossplane.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: provider-config-upjet-digitalocean
+  namespace: crossplane-system
+spec:
+  credentials:
+    secretRef:
+      name: op-digitalocean
+      key: credential
