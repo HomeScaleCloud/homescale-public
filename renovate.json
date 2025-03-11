@@ -5,13 +5,13 @@
   "baseBranches": ["dev"],
   "packageRules": [
     {
-      "matchUpdateTypes": [
-        "major",
-        "minor",
-        "patch",
-        "pin",
-        "digest"
-      ],
+      "matchUpdateTypes": ["patch"],
+      "baseBranch": "main",
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["major", "minor", "pin", "digest"],
+      "baseBranch": "dev",
       "automerge": true
     }
   ],
@@ -22,7 +22,11 @@
     "fileMatch": ["infra/tofu/.*\\.tf$"]
   },
   "kubernetes": {
-    "fileMatch": ["apps/.+/.+\\.yaml$"]
+    "fileMatch": [
+      "apps/.+/.+\\.yaml$",
+      "infra/crossplane/.+\\.yaml$",
+      "infra/teleport/.+\\.yaml$"
+    ]
   },
   "github-actions": {
     "fileMatch": [".gitea/workflows/.*\\.yaml$"]
