@@ -34,5 +34,12 @@
   "dockerfile": {
     "fileMatch": ["apps/.+/Dockerfile"]
   },
+  "regexManagers": [
+    {
+      "fileMatch": ["infra/crossplane/.+\\.yaml$"],
+      "matchStrings": ["package:\\s*\"(?<depName>[^:]+):(?<currentValue>[^\\s\"]+)\""],
+      "datasourceTemplate": "docker"
+    }
+  ],
   "platformAutomerge": true
 }
