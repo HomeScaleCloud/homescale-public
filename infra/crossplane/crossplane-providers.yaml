@@ -4,7 +4,7 @@ metadata:
   name: provider-upjet-digitalocean
   namespace: crossplane-system
 spec:
-  package: xpkg.upbound.io/crossplane-contrib/provider-upjet-digitalocean:v0.2.1
+  package: xpkg.upbound.io/crossplane-contrib/provider-upjet-digitalocean:v0.3.0
 ---
 apiVersion: digitalocean.crossplane.io/v1beta1
 kind: ProviderConfig
