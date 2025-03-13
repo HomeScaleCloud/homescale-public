@@ -6,6 +6,7 @@ resources:
   - ../base
   - argocd-uk-lon-1-prod-argocd.yaml
   - argocd-uk-lon-1-prod-service.yaml
+  - argocd-uk-lon-1-prod-certificate.yaml
   - avp-uk-lon-1-prod-secret.yaml
 patches:
   - path: argocd-uk-lon-1-prod-configmap.yaml

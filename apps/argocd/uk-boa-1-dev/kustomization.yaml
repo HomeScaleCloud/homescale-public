@@ -6,6 +6,7 @@ resources:
   - ../base
   - argocd-uk-boa-1-dev-argocd.yaml
   - argocd-uk-boa-1-dev-service.yaml
+  - argocd-uk-boa-1-dev-certificate.yaml
   - avp-uk-boa-1-dev-secret.yaml
 patches:
   - path: argocd-uk-boa-1-dev-configmap.yaml
