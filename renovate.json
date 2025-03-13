@@ -5,12 +5,7 @@
   "baseBranches": ["dev"],
   "packageRules": [
     {
-      "matchUpdateTypes": ["patch"],
-      "baseBranch": "main",
-      "automerge": true
-    },
-    {
-      "matchUpdateTypes": ["major", "minor", "pin", "digest"],
+      "matchUpdateTypes": ["major", "minor", "pin", "digest", "patch"],
       "baseBranch": "dev",
       "automerge": true
     }
