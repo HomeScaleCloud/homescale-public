@@ -1,3 +1,4 @@
+// This tailnet's ACLs are maintained in https://github.com/MorrisLAN/morrislan
 {
 	"acls": [
 		{
