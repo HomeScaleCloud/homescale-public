@@ -18,11 +18,10 @@
 		},
 	],
 	"tagOwners": {
-		"tag:k8s-operator":   [],
-		"tag:app":            ["tag:k8s-operator"],
-		"tag:admin-app":      ["tag:k8s-operator"],
-		"tag:uk-lon-1-prod":  ["tag:k8s-operator"],
-		"tag:uk-boa-1-dev":  ["tag:k8s-operator"],
+		"tag:app":            [],
+		"tag:admin-app":      ["autogroup:admin"],
+		"tag:uk-lon-1-prod":  [],
+		"tag:uk-boa-1-dev":   [],
 		"tag:github-actions": [],
 	},
 }
