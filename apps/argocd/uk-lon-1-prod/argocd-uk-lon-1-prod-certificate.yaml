@@ -1,7 +1,7 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: argocd-uk-lon-1-mgmt-tls
+  name: argocd-uk-lon-1-prod-tls
   namespace: argocd
 spec:
   secretName: argocd-server-tls
@@ -9,5 +9,5 @@ spec:
     name: letsencrypt
     kind: ClusterIssuer
   dnsNames:
-    - "argocd.mgmt.uk-lon-1.morrislan.net"
-  commonName: "argocd.mgmt.uk-lon-1.morrislan.net"
+    - "argocd.prod.uk-lon-1.morrislan.net"
+  commonName: "argocd.prod.uk-lon-1.morrislan.net"
