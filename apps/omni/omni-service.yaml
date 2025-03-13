@@ -7,7 +7,7 @@ metadata:
     app: omni
   annotations:
     tailscale.com/hostname: "omni"
-    tailscale.com/tags: "tag:uk-lon-1-mgmt,tag:admin-app"
+    tailscale.com/tags: "tag:uk-lon-1-prod,tag:admin-app"
     external-dns.alpha.kubernetes.io/hostname: omni.morrislan.net.
 
 spec:
