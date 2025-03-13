@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: teleport-uk-lon-1-mgmt
+  name: teleport-uk-lon-1-prod
   namespace: argocd
 spec:
   project: default
@@ -12,7 +12,7 @@ spec:
       helm:
         valuesObject:
           clusterName: teleport.morrislan.net
-          kubeClusterName: uk-lon-1-mgmt
+          kubeClusterName: uk-lon-1-prod
           authentication:
             type: github
             localAuth: false
@@ -32,12 +32,12 @@ spec:
           annotations:
             service:
               tailscale.com/hostname: "teleport"
-              tailscale.com/tags: "tag:uk-lon-1-mgmt,tag:admin-app"
+              tailscale.com/tags: "tag:uk-lon-1-prod,tag:admin-app"
               external-dns.alpha.kubernetes.io/hostname: teleport.morrislan.net.
 
     - repoURL: 'https://github.com/MorrisLAN/morrislan'
       targetRevision: main
-      path: 'apps/teleport/uk-lon-1-mgmt'
+      path: 'apps/teleport/uk-lon-1-prod'
   destination:
     server: https://kubernetes.default.svc
     namespace: teleport
