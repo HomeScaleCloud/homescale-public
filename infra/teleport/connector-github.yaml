@@ -10,6 +10,6 @@ spec:
   redirect_url: "https://teleport.morrislan.net/v1/webapi/github/callback"
   teams_to_roles:
     - organization: MorrisLAN
+      team: admins
       roles:
         - admin
-      team: admins
