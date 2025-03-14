@@ -10,7 +10,7 @@ spec:
   sources:
     - repoURL: https://falcosecurity.github.io/charts
       chart: falco
-      targetRevision: 4.21.0
+      targetRevision: 4.21.1
       plugin:
         env:
           - name: HELM_VALUES
