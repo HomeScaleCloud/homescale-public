@@ -7,10 +7,9 @@ on:
   push:
     branches:
       - main
-      - dev
   pull_request:
     branches:
-      - dev
+      - main
 jobs:
   build-homepage:
     name: "Build - homepage"
@@ -18,29 +17,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build
-        id: build
-        uses: docker/build-push-action@v6
-        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev'
-        with:
-          context: ./apps/homepage
-          push: false
-          tags: ghcr.io/morrislan/homepage:${{ github.sha }}
       - name: Login to ghcr
         uses: docker/login-action@v3
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+        if: github.ref == 'refs/heads/main'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build dev
-        id: build-dev
+      - name: Build
+        id: build
         uses: docker/build-push-action@v6
-        if: github.ref == 'refs/heads/dev'
         with:
           context: ./apps/homepage
           push: true
-          tags: ghcr.io/morrislan/homepage:dev
+          tags: ghcr.io/morrislan/homepage:${{ github.sha }}
       - name: Build latest
         id: build-latest
         uses: docker/build-push-action@v6
