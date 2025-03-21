@@ -8,16 +8,18 @@
   "packageRules": [
     {
       "matchUpdateTypes": [
-        "major",
         "minor",
         "pin",
         "digest",
         "patch"
       ],
-      "baseBranches": [
-        "main"
-      ],
       "automerge": true
+    },
+    {
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false
     }
   ],
   "argocd": {
