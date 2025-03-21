@@ -3,21 +3,23 @@
     "config:recommended"
   ],
   "baseBranches": [
-    "dev"
+    "main"
   ],
   "packageRules": [
     {
       "matchUpdateTypes": [
-        "major",
         "minor",
         "pin",
         "digest",
         "patch"
       ],
-      "baseBranches": [
-        "dev"
-      ],
       "automerge": true
+    },
+    {
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false
     }
   ],
   "argocd": {
