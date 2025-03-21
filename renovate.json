@@ -3,7 +3,7 @@
     "config:recommended"
   ],
   "baseBranches": [
-    "dev"
+    "main"
   ],
   "packageRules": [
     {
@@ -15,7 +15,7 @@
         "patch"
       ],
       "baseBranches": [
-        "dev"
+        "main"
       ],
       "automerge": true
     }
