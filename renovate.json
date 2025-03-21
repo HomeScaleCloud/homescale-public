@@ -2,19 +2,33 @@
   "extends": [
     "config:recommended"
   ],
-  "baseBranches": ["dev"],
+  "baseBranches": [
+    "dev"
+  ],
   "packageRules": [
     {
-      "matchUpdateTypes": ["major", "minor", "pin", "digest", "patch"],
-      "baseBranch": "dev",
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "pin",
+        "digest",
+        "patch"
+      ],
+      "baseBranches": [
+        "dev"
+      ],
       "automerge": true
     }
   ],
   "argocd": {
-    "fileMatch": ["apps/.+/[^/]+-argocd\\.yaml$"]
+    "fileMatch": [
+      "apps/.+/[^/]+-argocd\\.yaml$"
+    ]
   },
   "terraform": {
-    "fileMatch": ["infra/tofu/.*\\.tf$"]
+    "fileMatch": [
+      "infra/tofu/.*\\.tf$"
+    ]
   },
   "kubernetes": {
     "fileMatch": [
@@ -24,15 +38,24 @@
     ]
   },
   "github-actions": {
-    "fileMatch": [".gitea/workflows/.*\\.yaml$"]
+    "fileMatch": [
+      ".gitea/workflows/.*\\.yaml$"
+    ]
   },
   "dockerfile": {
-    "fileMatch": ["apps/.+/Dockerfile"]
+    "fileMatch": [
+      "apps/.+/Dockerfile"
+    ]
   },
-  "regexManagers": [
+  "customManagers": [
     {
-      "fileMatch": ["infra/crossplane/.+\\.yaml$"],
-      "matchStrings": ["package:\\s*\"(?<depName>[^:]+):(?<currentValue>[^\\s\"]+)\""],
+      "customType": "regex",
+      "fileMatch": [
+        "infra/crossplane/.+\\.yaml$"
+      ],
+      "matchStrings": [
+        "package:\\s*\"(?<depName>[^:]+):(?<currentValue>[^\\s\"]+)\""
+      ],
       "datasourceTemplate": "docker"
     }
   ],
