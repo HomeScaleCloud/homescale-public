@@ -59,9 +59,9 @@
 	],
 	"tests": [
 		{
-			"src": "100.76.48.127",
+			"src": "100.124.169.104",
 			"srcPostureAttrs": {
-				"node:os": "linux"
+				"node:os": "windows"
 			},
 			"accept": ["tag:admin-app:443"]
 		},
