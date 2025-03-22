@@ -74,5 +74,13 @@
 			"accept": ["tag:app:443"],
 			"deny": ["tag:admin-app:443"]
 		}
+	],
+	"nodeAttrs": [
+		{
+			"target": ["autogroup:member"],
+			"attr": [
+				"mullvad"
+			],
+		},
 	]
 }
