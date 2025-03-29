@@ -9,7 +9,7 @@ export TF_VAR_cloudflare_zone_id="op://ci-cd/cloudflare/zone-id"
 export TF_VAR_digitalocean_token="op://ci-cd/digitalocean/credential"
 export TF_VAR_vultr_token="op://ci-cd/vultr/credential"
 
-cd "$HOME/Repos/morrislan/infra/tofu"
+cd "$HOME/Repos/homescale/infra/tofu"
 
 TOFU_BIN=""
 for path in "/usr/bin/tofu" "/home/linuxbrew/.linuxbrew/bin/tofu"; do

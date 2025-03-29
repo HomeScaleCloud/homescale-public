@@ -22,7 +22,7 @@ spec:
               oauth:
                 clientId: <path:vaults/ci-cd/items/tailscale#uk-boa-1-dev-id>
                 clientSecret: <path:vaults/ci-cd/items/tailscale#uk-boa-1-dev-secret>
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/tailscale/uk-boa-1-dev'
   destination:

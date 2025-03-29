@@ -18,7 +18,7 @@ spec:
               maxReplicas: 3
             ingressClassResource:
               default: true
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/ingress-nginx'
   destination:
