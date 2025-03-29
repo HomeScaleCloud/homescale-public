@@ -13,7 +13,7 @@ spec:
         valuesObject:
           monitoring:
             enabled: true
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/rook-ceph'
   destination:

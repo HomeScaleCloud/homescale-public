@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: homepage
-          image: ghcr.io/morrislan/homepage:latest
+          image: ghcr.io/homescalecloud/homepage:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
