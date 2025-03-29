@@ -10,7 +10,7 @@ spec:
       chart: cloudnative-pg
       targetRevision: 0.23.2
       helm: {}
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/cnpg'
   destination:

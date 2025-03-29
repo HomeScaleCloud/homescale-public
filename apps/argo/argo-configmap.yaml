@@ -5,7 +5,7 @@ metadata:
   namespace: argo
 data:
   sso: | #pragma: allowlist secret
-    issuer: https://auth.morrislan.net/application/o/argo/
+    issuer: https://auth.homescale.cloud/application/o/argo/
     sessionExpiry: 72h
     clientId:
       name: vault-argo
@@ -13,7 +13,7 @@ data:
     clientSecret:
       name: vault-argo
       key: oidc-client-secret
-    # redirectUrl: https://argo.morrislan.net/oauth2/callback
+    # redirectUrl: https://argo.homescale.cloud/oauth2/callback
     scopes:
      - openid
      - profile

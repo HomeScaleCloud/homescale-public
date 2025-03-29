@@ -29,7 +29,7 @@ jobs:
         with:
           context: ./apps/homepage
           push: true
-          tags: ghcr.io/morrislan/homepage:${{ github.sha }}
+          tags: ghcr.io/homescalecloud/homepage:${{ github.sha }}
       - name: Build latest
         id: build-latest
         uses: docker/build-push-action@v6
@@ -37,7 +37,7 @@ jobs:
         with:
           context: ./apps/homepage
           push: true
-          tags: ghcr.io/morrislan/homepage:latest
+          tags: ghcr.io/homescalecloud/homepage:latest
   deploy-tailscale:
     name: "Deploy - Tailscale"
     runs-on: ubuntu-latest
@@ -129,7 +129,7 @@ jobs:
         shell: bash
         working-directory: ./infra/omni
     env:
-      OMNI_ENDPOINT: "https://omni.morrislan.net"
+      OMNI_ENDPOINT: "https://omni.homescale.cloud"
     steps:
       - name: Checkout
         uses: actions/checkout@v4

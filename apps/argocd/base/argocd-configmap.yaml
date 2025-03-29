@@ -16,7 +16,7 @@ data:
           clientID: <path:vaults/ci-cd/items/argocd#oidc-client-id>
           clientSecret: <path:vaults/ci-cd/items/argocd#oidc-client-secret>
           orgs:
-          - name: MorrisLAN
+          - name: HomeScale
   statusbadge.enabled: "true"
   resource.exclusions: |
     - apiGroups:
@@ -134,4 +134,4 @@ metadata:
   name: argocd-rbac-cm
 data:
   policy.csv: |
-      g, MorrisLAN:Admins, role:admin
+      g, HomeScaleCloud:Admins, role:admin

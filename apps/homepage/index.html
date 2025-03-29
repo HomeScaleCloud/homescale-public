@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MorrisLAN</title>
+    <title>HomeScale</title>
     <style>
         body {
             background-color: #000;
@@ -25,29 +25,25 @@
         .fade-in {
             opacity: 0;
             animation: fadeIn 2s forwards;
-            font-size: 3em;  /* Adjusted size */
+            font-size: 3em;
             font-weight: bold;
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .delayed-fade-in {
             opacity: 0;
             animation: fadeIn 2s forwards 3s;
-            font-size: 1.2em;  /* Slightly larger size */
+            font-size: 1.2em;
         }
 
         .footer-fade-in {
             opacity: 0;
-            animation: fadeIn 2s forwards 6s; /* Delay the footer fade-in further */
-            font-size: 1em; /* Slightly bigger copyright text */
+            animation: fadeIn 2s forwards 6s;
+            font-size: 1em;
             color: #888;
         }
 
@@ -68,17 +64,17 @@
 <body>
     <div class="container">
         <div class="fade-in">
-            <h3>Hi, welcome to MorrisLAN👋</h3>
+            <h3>HomeScale</h3>
         </div>
         <div class="delayed-fade-in">
-            <p>This domain (morrislan.net) is home to my personal network and digital infrastructure.</p>
-            <p>Explore all the Infrastructure as Code (IaC) magic 🪄 that powers this network at</p>
-            <p><a href="https://github.com/MorrisLAN/morrislan" target="_blank">https://github.com/MorrisLAN/morrislan</a></p>
+            <p>Enterprise-grade infrastructure, built for homelab.</p>
+            <p>This domain (homescale.cloud) is home to a collection of private clouds for myself, friends, and family.</p>
+            <p>Explore all the Infrastructure as Code (IaC) powering this network:</p>
+            <p><a href="https://github.com/HomeScaleCloud/homescale" target="_blank">https://github.com/HomeScaleCloud/homescale</a></p>
         </div>
         <footer class="footer-fade-in">
-            <iframe src="https://status.morrislan.net/badge?theme=dark" width="250" height="30" frameborder="0" scrolling="no" style="color-scheme: normal"></iframe>
             <p></p>
-            &copy; 2025 MorrisLAN. Built with ❤️ by <a href="https://maxmorris.io" target="_blank">Maxwell Morris</a>.
+            &copy; 2025 HomeScale</a>.
         </footer>
     </div>
 </body>

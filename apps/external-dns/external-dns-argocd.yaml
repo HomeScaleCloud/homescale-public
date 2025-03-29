@@ -20,9 +20,9 @@ spec:
                   name: op-cloudflare
                   key: credential
           domainFilters:
-            - morrislan.net
+            - homescale.cloud
             - maxmorris.io
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/external-dns'
   destination:

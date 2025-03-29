@@ -9,5 +9,5 @@ spec:
     name: letsencrypt
     kind: ClusterIssuer
   dnsNames:
-    - "omni.morrislan.net"
-  commonName: "omni.morrislan.net"
+    - "omni.homescale.cloud"
+  commonName: "omni.homescale.cloud"

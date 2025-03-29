@@ -20,11 +20,11 @@ spec:
                 annotations:
                   cert-manager.io/cluster-issuer: letsencrypt
                 hosts:
-                  - uptime-kuma.morrislan.net
+                  - uptime-kuma.homescale.cloud
                 tls:
                   - secretName: uptime-kuma-admin-tls
                     hosts:
-                      - uptime-kuma.morrislan.net
+                      - uptime-kuma.homescale.cloud
               config:
                 clientID: "<path:secrets/data/uptime-kuma#oidc-client-id>"
                 clientSecret: "<path:secrets/data/uptime-kuma#oidc-client-secret>"
@@ -32,13 +32,13 @@ spec:
               extraArgs:
                 provider: oidc
                 provider-display-name: "authentik"
-                oidc-issuer-url: "https://auth.morrislan.net/application/o/uptime-kuma/"
+                oidc-issuer-url: "https://auth.homescale.cloud/application/o/uptime-kuma/"
                 skip-provider-button: "true"
                 pass-authorization-header: "true"
                 upstream: "http://uptime-kuma.uptime-kuma.svc"
                 session-store-type: cookie
                 cookie-refresh: 15m
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/uptime-kuma'
   destination:

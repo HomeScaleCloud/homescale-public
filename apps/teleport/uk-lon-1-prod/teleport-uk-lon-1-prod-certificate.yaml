@@ -9,5 +9,5 @@ spec:
     name: letsencrypt
     kind: ClusterIssuer
   dnsNames:
-    - "teleport.morrislan.net"
-  commonName: "teleport.morrislan.net"
+    - "teleport.homescale.cloud"
+  commonName: "teleport.homescale.cloud"

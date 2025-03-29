@@ -6,7 +6,7 @@ metadata:
   annotations:
     tailscale.com/hostname: "argocd-uk-lon-1-prod"
     tailscale.com/tags: "tag:uk-lon-1-prod,tag:admin-app"
-    external-dns.alpha.kubernetes.io/hostname: argocd.prod.uk-lon-1.morrislan.net.
+    external-dns.alpha.kubernetes.io/hostname: argocd.prod.uk-lon-1.homescale.cloud.
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale

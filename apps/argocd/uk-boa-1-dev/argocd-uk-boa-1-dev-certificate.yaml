@@ -9,5 +9,5 @@ spec:
     name: letsencrypt
     kind: ClusterIssuer
   dnsNames:
-    - "argocd.dev.uk-boa-1.morrislan.net"
-  commonName: "argocd.dev.uk-boa-1.morrislan.net"
+    - "argocd.dev.uk-boa-1.homescale.cloud"
+  commonName: "argocd.dev.uk-boa-1.homescale.cloud"

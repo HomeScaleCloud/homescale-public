@@ -11,7 +11,7 @@ spec:
       targetRevision: 17.3.4
       helm:
         valuesObject:
-          clusterName: teleport.morrislan.net
+          clusterName: teleport.homescale.cloud
           kubeClusterName: uk-lon-1-prod
           authentication:
             type: github
@@ -33,9 +33,9 @@ spec:
             service:
               tailscale.com/hostname: "teleport"
               tailscale.com/tags: "tag:uk-lon-1-prod,tag:admin-app"
-              external-dns.alpha.kubernetes.io/hostname: teleport.morrislan.net.
+              external-dns.alpha.kubernetes.io/hostname: teleport.homescale.cloud.
 
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/teleport/uk-lon-1-prod'
   destination:

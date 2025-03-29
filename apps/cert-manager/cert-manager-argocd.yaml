@@ -14,7 +14,7 @@ spec:
           crds:
             enabled: true
             keep: true
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/cert-manager'
   destination:

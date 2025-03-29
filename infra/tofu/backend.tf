@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
-    bucket                      = "morrislan-tfstate"
-    key                         = "morrislan/terraform.tfstate"
+    bucket                      = "homescale-tfstate"
+    key                         = "homescale/terraform.tfstate"
     region                      = "us-east-1"
     endpoints                   = { s3 = "https://lon1.digitaloceanspaces.com" }
     skip_credentials_validation = true
