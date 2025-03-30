@@ -50,9 +50,9 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          TS_TAILNET: op://ci-cd/tailscale/tailnet #pragma: allowlist secret
-          TS_ID: op://ci-cd/tailscale/github-actions-id
-          TS_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
+          TS_TAILNET: op://common/tailscale/tailnet #pragma: allowlist secret
+          TS_ID: op://github-actions/tailscale/oauth-client-id
+          TS_SECRET: op://github-actions/tailscale/oauth-client-secret #pragma: allowlist secret
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -101,15 +101,15 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          AWS_ACCESS_KEY_ID: op://ci-cd/digitalocean/spaces-access-key-id
-          AWS_SECRET_ACCESS_KEY: op://ci-cd/digitalocean/spaces-secret-access-key #pragma: allowlist secret
-          TF_VAR_cloudflare_token: op://ci-cd/cloudflare/credential
-          TF_VAR_cloudflare_account_id: op://ci-cd/cloudflare/account-id
-          TF_VAR_cloudflare_zone_id: op://ci-cd/cloudflare/zone-id
-          TF_VAR_digitalocean_token: op://ci-cd/digitalocean/credential
-          TF_VAR_digitalocean_spaces_id: op://ci-cd/digitalocean/spaces-access-key-id
-          TF_VAR_digitalocean_spaces_key: op://ci-cd/digitalocean/spaces-secret-access-key
-          TF_VAR_vultr_token: op://ci-cd/vultr/credential
+          AWS_ACCESS_KEY_ID: op://common/digitalocean/spaces-access-key-id
+          AWS_SECRET_ACCESS_KEY: op://common/digitalocean/spaces-secret-access-key #pragma: allowlist secret
+          TF_VAR_cloudflare_token: op://common/cloudflare/credential
+          TF_VAR_cloudflare_account_id: op://common/cloudflare/account-id
+          TF_VAR_cloudflare_zone_id: op://common/cloudflare/zone-id
+          TF_VAR_digitalocean_token: op://common/digitalocean/credential
+          TF_VAR_digitalocean_spaces_id: op://common/digitalocean/spaces-access-key-id
+          TF_VAR_digitalocean_spaces_key: op://common/digitalocean/spaces-secret-access-key
+          TF_VAR_vultr_token: op://common/vultr/credential
       - name: Initialize
         id: init
         run: tofu init
@@ -151,9 +151,9 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          OMNI_SERVICE_ACCOUNT_KEY: op://ci-cd/omni/credential #pragma: allowlist secret
-          TS_ID: op://ci-cd/tailscale/github-actions-id
-          TS_SECRET: op://ci-cd/tailscale/github-actions-secret #pragma: allowlist secret
+          OMNI_SERVICE_ACCOUNT_KEY: op://common/omni/credential #pragma: allowlist secret
+          TS_ID: op://github-actions/tailscale/oauth-client-id
+          TS_SECRET: op://github-actions/tailscale/oauth-client-secret #pragma: allowlist secret
       - name: Connect to Tailscale
         uses: tailscale/github-action@v3
         if: github.ref == 'refs/heads/main'
