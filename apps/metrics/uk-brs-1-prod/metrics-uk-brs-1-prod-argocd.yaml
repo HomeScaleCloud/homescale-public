@@ -18,10 +18,10 @@ spec:
               annotations:
                 tailscale.com/hostname: "metrics-uk-brs-1-prod"
                 tailscale.com/tags: "tag:uk-brs-1-prod,tag:admin-app"
-                external-dns.alpha.kubernetes.io/hostname: metrics.prod.uk-brs-1.morrislan.net.
+                external-dns.alpha.kubernetes.io/hostname: metrics.prod.uk-brs-1.homescale.cloud.
             grafana.ini:
               server:
-                root_url: https://metrics.prod.uk-brs-1.morrislan.net/
+                root_url: https://metrics.prod.uk-brs-1.homescale.cloud/
             persistence:
               enabled: true
               type: pvc
@@ -43,7 +43,7 @@ spec:
                     resources:
                       requests:
                         storage: 50Gi
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/metrics/uk-brs-1-prod'
   destination:

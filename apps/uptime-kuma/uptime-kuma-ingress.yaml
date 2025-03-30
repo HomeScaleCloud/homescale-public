@@ -5,11 +5,11 @@ metadata:
   namespace: uptime-kuma
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
-    nginx.ingress.kubernetes.io/rewrite-target: /status/morrislan$1
+    nginx.ingress.kubernetes.io/rewrite-target: /status/homescale$1
 spec:
   ingressClassName: nginx
   rules:
-    - host: status.morrislan.net
+    - host: status.homescale.cloud
       http:
         paths:
           - path: /(.*)
@@ -21,5 +21,5 @@ spec:
                   number: 80
   tls:
     - hosts:
-        - status.morrislan.net
+        - status.homescale.cloud
       secretName: uptime-kuma-tls

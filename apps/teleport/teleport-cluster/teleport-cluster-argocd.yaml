@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: teleport-cluster
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - chart: teleport-cluster
+      repoURL: https://charts.releases.teleport.dev
+      targetRevision: 17.4.1
+      helm:
+        valuesObject:
+          clusterName: teleport.homescale.cloud
+          kubeClusterName: teleport-cluster
+          authentication:
+            type: github
+            localAuth: false
+          operator:
+            enabled: true
+          service:
+            type: LoadBalancer
+            spec:
+              loadBalancerClass: tailscale
+          proxyListenerMode: multiplex
+          acme: false
+          tls:
+            existingSecretName: teleport-tls #pragma: allowlist secret
+          annotations:
+            service:
+              tailscale.com/hostname: "teleport"
+              external-dns.alpha.kubernetes.io/hostname: teleport.homescale.cloud.
+
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
+      targetRevision: main
+      path: 'apps/teleport/teleport-cluster'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: teleport
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

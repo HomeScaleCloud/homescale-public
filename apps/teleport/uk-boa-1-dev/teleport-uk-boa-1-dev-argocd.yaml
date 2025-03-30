@@ -16,13 +16,13 @@ spec:
           - name: HELM_VALUES
             value: |
               authToken: <path:vaults/ci-cd/items/teleport#uk-boa-1-dev-token>
-              proxyAddr: teleport.morrislan.net:443
+              proxyAddr: teleport.homescale.cloud:443
               kubeClusterName: uk-boa-1-dev
               labels:
                 region: uk-boa-1
                 platform: metal
 
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/teleport/uk-boa-1-dev'
   destination:

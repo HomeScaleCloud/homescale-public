@@ -4,7 +4,7 @@ metadata:
   name: letsencrypt
 spec:
   acme:
-    email: ssl@morrislan.net
+    email: ssl@homescale.cloud
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       name: letsencrypt-tls

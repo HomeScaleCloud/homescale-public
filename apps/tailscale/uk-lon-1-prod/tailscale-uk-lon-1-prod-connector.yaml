@@ -1,7 +1,0 @@
-apiVersion: tailscale.com/v1alpha1
-kind: Connector
-metadata:
-  name: uk-lon-egress
-spec:
-  hostname: uk-lon-egress
-  exitNode: true

@@ -1,0 +1,15 @@
+apiVersion: resources.teleport.dev/v3
+kind: TeleportGithubConnector
+metadata:
+  name: github
+  namespace: teleport
+spec:
+  client_id: "<path:vaults/ci-cd/items/teleport#oidc-client-id>"
+  client_secret: "<path:vaults/ci-cd/items/teleport#oidc-client-secret>"
+  display: GitHub
+  redirect_url: "https://teleport.homescale.cloud/v1/webapi/github/callback"
+  teams_to_roles:
+    - organization: HomeScaleCloud
+      team: admins
+      roles:
+        - admin

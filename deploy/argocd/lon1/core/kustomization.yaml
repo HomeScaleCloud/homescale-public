@@ -1,0 +1,65 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../../apps/argocd
+  - ../../../../apps/cert-manager
+  - ../../../../apps/crossplane
+  - ../../../../apps/external-dns
+  - ../../../../apps/generic-device-plugin
+  - ../../../../apps/ingress-nginx
+  - ../../../../apps/metrics
+  - ../../../../apps/omni
+  - ../../../../apps/onepassword
+  - ../../../../apps/tailscale
+  - ../../../../apps/teleport/teleport-cluster
+  - argocd-lon1-core-argocd.yaml
+  - argocd-lon1-core-service.yaml
+  - argocd-lon1-core-certificate.yaml
+  - avp-lon1-core-secret.yaml
+patches:
+  - target:
+      kind: ConfigMap
+      name: argocd-cm
+    patch: |-
+      - op: add
+        path: /data/url
+        value: https://argocd.core.lon1.homescale.cloud
+  - target:
+      kind: Application
+      name: onepassword
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/connect/credentialsKey
+        value: "lon1-core-credentials"
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/operator/token/key
+        value: "lon1-core-token"
+  - target:
+      kind: Application
+      name: tailscale
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valuesObject
+        value:
+          proxyConfig:
+            defaultTags: "tag:lon1-core"
+          operatorConfig:
+            hostname: lon1-core
+            defaultTags:
+              - "tag:lon1-core"
+          oauth:
+            clientId: <path:vaults/ci-cd/items/tailscale#lon1-core-id>
+            clientSecret: <path:vaults/ci-cd/items/tailscale#lon1-core-secret>
+  - target:
+      kind: Application
+      name: teleport-cluster
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/labels
+        value:
+          region: lon1
+          platform: doks
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/annotations/service/tailscale.com~1tags
+        value: "tag:lon1-core,tag:admin-app"

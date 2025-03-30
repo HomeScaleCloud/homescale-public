@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: morrislan.net
+    - host: homescale.cloud
       http:
         paths:
           - path: /
@@ -18,7 +18,7 @@ spec:
                 name: homepage
                 port:
                   name: http
-    - host: www.morrislan.net
+    - host: www.homescale.cloud
       http:
         paths:
           - path: /
@@ -30,6 +30,6 @@ spec:
                   name: http
   tls:
     - hosts:
-        - morrislan.net
-        - www.morrislan.net
-      secretName: morrislan-net-tls
+        - homescale.cloud
+        - www.homescale.cloud
+      secretName: homepage-tls
