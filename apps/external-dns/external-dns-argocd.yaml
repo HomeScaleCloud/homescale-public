@@ -22,9 +22,6 @@ spec:
           domainFilters:
             - homescale.cloud
             - maxmorris.io
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'apps/external-dns'
   destination:
     server: https://kubernetes.default.svc
     namespace: external-dns
