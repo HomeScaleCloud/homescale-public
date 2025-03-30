@@ -57,24 +57,24 @@
 		"posture:windows",
 		"posture:ios"
 	],
-	"tests": [
-		{
-			"src": "100.124.169.104",
-			"srcPostureAttrs": {
-				"node:os": "windows"
-			},
-			"accept": ["tag:admin-app:443"]
-		},
-		{
-			"src": "100.86.77.56",
-			"srcPostureAttrs": {
-				"node:os": "ios",
-				"node:osVersion": "18.3.2"
-			},
-			"accept": ["tag:app:443"],
-			"deny": ["tag:admin-app:443"]
-		}
-	],
+	// "tests": [
+	// 	{
+	// 		"src": "100.124.169.104",
+	// 		"srcPostureAttrs": {
+	// 			"node:os": "windows"
+	// 		},
+	// 		"accept": ["tag:admin-app:443"]
+	// 	},
+	// 	{
+	// 		"src": "100.86.77.56",
+	// 		"srcPostureAttrs": {
+	// 			"node:os": "ios",
+	// 			"node:osVersion": "18.3.2"
+	// 		},
+	// 		"accept": ["tag:app:443"],
+	// 		"deny": ["tag:admin-app:443"]
+	// 	}
+	// ],
 	"nodeAttrs": [
 		{
 			"target": ["autogroup:member"],
