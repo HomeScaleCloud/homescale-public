@@ -18,9 +18,6 @@ spec:
               maxReplicas: 3
             ingressClassResource:
               default: true
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'apps/ingress-nginx'
   destination:
     server: https://kubernetes.default.svc
     namespace: ingress-nginx

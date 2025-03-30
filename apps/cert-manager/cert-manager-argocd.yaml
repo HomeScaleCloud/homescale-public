@@ -14,9 +14,6 @@ spec:
           crds:
             enabled: true
             keep: true
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'apps/cert-manager'
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
