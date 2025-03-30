@@ -13,9 +13,6 @@ spec:
       targetRevision: 1.80.3
       helm:
         valuesObject: {}
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'apps/tailscale/lon1-core'
   destination:
     server: https://kubernetes.default.svc
     namespace: tailscale
