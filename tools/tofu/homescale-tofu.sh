@@ -7,6 +7,8 @@ export TF_VAR_cloudflare_token="op://ci-cd/cloudflare/credential"
 export TF_VAR_cloudflare_account_id="op://ci-cd/cloudflare/account-id"
 export TF_VAR_cloudflare_zone_id="op://ci-cd/cloudflare/zone-id"
 export TF_VAR_digitalocean_token="op://ci-cd/digitalocean/credential"
+export TF_VAR_digitalocean_spaces_id="op://ci-cd/digitalocean/spaces-access-key-id"
+export TF_VAR_digitalocean_spaces_key="op://ci-cd/digitalocean/spaces-secret-access-key"
 export TF_VAR_vultr_token="op://ci-cd/vultr/credential"
 
 cd "$HOME/Repos/homescale/infra/tofu"
@@ -24,4 +26,4 @@ if [ -z "$TOFU_BIN" ]; then
     exit 1
 fi
 
-op run -- "$TOFU_BIN" "$@"
+/usr/bin/op run -- "$TOFU_BIN" "$@"

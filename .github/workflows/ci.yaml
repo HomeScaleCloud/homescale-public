@@ -65,7 +65,7 @@ jobs:
           oauth-client-id: ${{ env.TS_ID }}
           oauth-secret: ${{ env.TS_SECRET }}
           tailnet: ${{ env.TS_TAILNET }}
-          policy-file: ./infra/tailscale/policy.hujson
+          policy-file: ./deploy/tailscale/policy.hujson
           action: test
       - name: Apply
         if: github.ref == 'refs/heads/main'
@@ -75,7 +75,7 @@ jobs:
           oauth-client-id: ${{ env.TS_ID }}
           oauth-secret: ${{ env.TS_SECRET }}
           tailnet: ${{ env.TS_TAILNET }}
-          policy-file: ./infra/tailscale/policy.hujson
+          policy-file: ./deploy/tailscale/policy.hujson
           action: apply
   deploy-tofu:
     name: "Deploy - OpenTofu"
@@ -83,7 +83,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ./infra/tofu
+        working-directory: ./deploy/tofu
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
@@ -107,6 +107,8 @@ jobs:
           TF_VAR_cloudflare_account_id: op://ci-cd/cloudflare/account-id
           TF_VAR_cloudflare_zone_id: op://ci-cd/cloudflare/zone-id
           TF_VAR_digitalocean_token: op://ci-cd/digitalocean/credential
+          TF_VAR_digitalocean_spaces_id: op://ci-cd/digitalocean/spaces-access-key-id
+          TF_VAR_digitalocean_spaces_key: op://ci-cd/digitalocean/spaces-secret-access-key
           TF_VAR_vultr_token: op://ci-cd/vultr/credential
       - name: Initialize
         id: init
@@ -127,7 +129,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ./infra/omni
+        working-directory: ./deploy/omni
     env:
       OMNI_ENDPOINT: "https://omni.homescale.cloud"
     steps:
