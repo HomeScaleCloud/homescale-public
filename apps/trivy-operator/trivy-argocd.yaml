@@ -17,7 +17,7 @@ spec:
             headless: false
           serviceMonitor:
             enabled: true
-    - repoURL: 'https://github.com/MorrisLAN/morrislan'
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/trivy-operator'
   destination:
