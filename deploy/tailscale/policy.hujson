@@ -39,15 +39,15 @@
 		],
 		"posture:macos": [
 			"node:os == 'macos'",
-			"node:osVersion == '15.3.2'"
+			"node:osVersion >= '15.3.2'"
 		],
 		"posture:windows": [
 			"node:os == 'windows'",
-			"node:osVersion == '10.0.26100.3476'"
+			"node:osVersion >= '10.0.26100.3476'"
 		],
 		"posture:ios": [
 			"node:os == 'ios'",
-			"node:osVersion == '18.3.2'"
+			"node:osVersion >= '18.3.2'"
 		]
 	},
 	"defaultSrcPosture": [
