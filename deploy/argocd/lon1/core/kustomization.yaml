@@ -61,7 +61,7 @@ patches:
     patch: |-
       - op: add
         path: /spec/sources/0/helm/valuesObject
-        value:
+        value: |
           proxyConfig:
             defaultTags: "tag:lon1-core"
           operatorConfig:
