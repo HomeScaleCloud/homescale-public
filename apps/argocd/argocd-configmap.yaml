@@ -123,3 +123,13 @@ metadata:
 data:
   policy.csv: |
       g, HomeScaleCloud:Admins, role:admin
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: op-argocd
+  namespace: argocd
+stringData:
+  AVP_TYPE: 1passwordconnect
+  OP_CONNECT_HOST: http://onepassword-connect.onepassword.svc:8080
+type: Opaque
