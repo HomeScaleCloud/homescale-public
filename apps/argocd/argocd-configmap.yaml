@@ -13,8 +13,8 @@ data:
         id: github
         name: GitHub
         config:
-          clientID: <path:vaults/ci-cd/items/argocd#oidc-client-id>
-          clientSecret: <path:vaults/ci-cd/items/argocd#oidc-client-secret>
+          clientID: <path:vaults/common/items/argocd#oidc-client-id>
+          clientSecret: <path:vaults/common/items/argocd#oidc-client-secret>
           orgs:
           - name: HomeScale
   statusbadge.enabled: "true"
