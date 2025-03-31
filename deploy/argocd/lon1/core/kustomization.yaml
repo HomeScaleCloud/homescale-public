@@ -35,7 +35,7 @@ patches:
                 clientID: <path:vaults/lon1-core/items/argocd#oidc-client-id>
                 clientSecret: <path:vaults/lon1-core/items/argocd#oidc-client-secret>
                 orgs:
-                - name: HomeScale
+                - name: HomeScaleCloud
   - target:
       kind: ConfigMap
       name: argocd-notifications-cm
