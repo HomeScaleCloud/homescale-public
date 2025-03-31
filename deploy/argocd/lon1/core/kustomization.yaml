@@ -15,7 +15,7 @@ resources:
   - argocd-lon1-core-argocd.yaml
   - argocd-lon1-core-service.yaml
   - argocd-lon1-core-certificate.yaml
-  - avp-lon1-core-secret.yaml
+  - argocd-lon1-core-secret.yaml
 patches:
   - target:
       kind: ConfigMap
