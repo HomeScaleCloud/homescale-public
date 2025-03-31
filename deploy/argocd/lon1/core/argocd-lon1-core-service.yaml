@@ -6,7 +6,7 @@ metadata:
   annotations:
     tailscale.com/hostname: "argocd-lon1-core"
     tailscale.com/tags: "tag:lon1-core,tag:admin-app"
-    external-dns.alpha.kubernetes.io/hostname: argocd.prod.lon1.homescale.cloud.
+    external-dns.alpha.kubernetes.io/hostname: argocd.core.lon1.homescale.cloud.
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale

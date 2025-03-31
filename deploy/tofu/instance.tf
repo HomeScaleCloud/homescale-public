@@ -11,7 +11,7 @@
 
 # resource "vultr_instance" "kmn_lon1_core" {
 #   count    = 3
-#   hostname = "kmn-${count.index + 1}.prod.lon1.homescale.cloud"
+#   hostname = "kmn-${count.index + 1}.core.lon1.homescale.cloud"
 #   plan     = "vc2-2c-4gb"
 #   region   = "lhr"
 #   os_id    = 2284
