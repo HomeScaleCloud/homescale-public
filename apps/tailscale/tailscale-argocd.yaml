@@ -4,7 +4,7 @@ metadata:
   name: tailscale
   namespace: argocd
   annotations:
-    avp-kustomize.kubernetes.io/path: "vaults/ci-cd/items/tailscale"
+    avp-kustomize.kubernetes.io/path: "vaults/common/items/tailscale"
 spec:
   project: default
   sources:

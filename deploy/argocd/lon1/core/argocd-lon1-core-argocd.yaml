@@ -4,7 +4,7 @@ metadata:
   name: argocd-lon1-core
   namespace: argocd
   annotations:
-    avp-kustomize.kubernetes.io/path: "vaults/ci-cd/items/argocd"
+    avp-kustomize.kubernetes.io/path: "vaults/lon1-core/items/argocd"
 spec:
   project: default
   sources:

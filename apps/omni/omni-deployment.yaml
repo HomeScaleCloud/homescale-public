@@ -37,8 +37,8 @@ spec:
             - --enable-break-glass-configs
             - --auth-auth0-enabled=true
             - --auth-auth0-domain=homescale.uk.auth0.com
-            - --auth-auth0-client-id=<path:vaults/ci-cd/items/omni#auth0-client-id>
-            - --initial-users=<path:vaults/ci-cd/items/omni#initial-admin-email>
+            - --auth-auth0-client-id=<path:vaults/lon1-core/items/omni#auth0-client-id>
+            - --initial-users=<path:vaults/lon1-core/items/omni#initial-admin-email>
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
