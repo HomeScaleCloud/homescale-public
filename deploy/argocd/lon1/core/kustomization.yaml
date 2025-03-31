@@ -46,15 +46,12 @@ patches:
           service.slack: |
             token: <path:vaults/lon1-core/items/argocd#slack-token>
   - target:
-      kind: Application
-      name: onepassword
+      kind: OnePasswordItem
+      name: op-onepassword
     patch: |-
       - op: add
-        path: /spec/sources/0/helm/valuesObject/connect/credentialsKey
-        value: "lon1-core-credentials"
-      - op: add
-        path: /spec/sources/0/helm/valuesObject/operator/token/key
-        value: "lon1-core-token"
+        path: /spec/itemPath
+        value: "vaults/lon1-core/items/onepassword"
   - target:
       kind: Application
       name: tailscale
