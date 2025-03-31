@@ -7,16 +7,6 @@ metadata:
     app.kubernetes.io/part-of: argocd
 data:
   admin.enabled: "false"
-  dex.config: |
-    connectors:
-      - type: github
-        id: github
-        name: GitHub
-        config:
-          clientID: <path:vaults/common/items/argocd#oidc-client-id>
-          clientSecret: <path:vaults/common/items/argocd#oidc-client-secret>
-          orgs:
-          - name: HomeScale
   statusbadge.enabled: "true"
   resource.exclusions: |
     - apiGroups:
@@ -39,8 +29,6 @@ data:
       # - on-update-started
       # - on-update-succeeded
       - on-update-failed
-  service.slack: |
-    token: <path:vaults/ci-cd/items/argocd#slack-token>
   # Notification template when an application update starts
   template.app-update-started: |
     slack:

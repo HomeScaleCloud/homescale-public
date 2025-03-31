@@ -24,6 +24,27 @@ patches:
       - op: add
         path: /data/url
         value: https://argocd.core.lon1.homescale.cloud
+      - op: add
+        path: /data/dex.config
+        value: |
+          connectors:
+            - type: github
+              id: github
+              name: GitHub
+              config:
+                clientID: <path:vaults/lon1-core/items/argocd#oidc-client-id>
+                clientSecret: <path:vaults/lon1-core/items/argocd#oidc-client-secret>
+                orgs:
+                - name: HomeScale
+  - target:
+      kind: ConfigMap
+      name: argocd-notifications-cm
+    patch: |-
+      - op: add
+        path: /data/service.slack
+        value: |
+          service.slack: |
+            token: <path:vaults/lon1-core/items/argocd#slack-token>
   - target:
       kind: Application
       name: onepassword
