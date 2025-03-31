@@ -10,7 +10,7 @@ spec:
   sources:
     - repoURL: https://pkgs.tailscale.com/helmcharts
       chart: tailscale-operator
-      targetRevision: 1.80.3
+      targetRevision: 1.82.0
       helm:
         valuesObject: {}
   destination:
