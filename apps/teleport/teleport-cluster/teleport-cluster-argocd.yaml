@@ -30,6 +30,9 @@ spec:
             service:
               tailscale.com/hostname: "teleport"
               external-dns.alpha.kubernetes.io/hostname: teleport.homescale.cloud.
+    - repoURL: 'https://git.morrislan.net/HomeScaleCloud/homescale'
+      targetRevision: main
+      path: 'apps/teleport/teleport-cluster/manifests'
   destination:
     server: https://kubernetes.default.svc
     namespace: teleport

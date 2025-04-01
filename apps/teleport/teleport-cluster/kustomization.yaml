@@ -3,6 +3,3 @@ kind: Kustomization
 
 resources:
   - teleport-cluster-argocd.yaml
-  - teleport-cluster-certificate.yaml
-  - teleport-cluster-teleportrole.yaml
-  - teleport-cluster-teleportconnector.yaml

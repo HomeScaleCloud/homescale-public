@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: home-assistant
+  name: omni
   namespace: argocd
 spec:
   project: default
   sources:
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
+    - repoURL: 'https://git.morrislan.net/HomeScaleCloud/homescale'
       targetRevision: main
-      path: 'apps/home-assistant/manifests'
+      path: 'apps/omni/manifests'
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: home-assistant
+    namespace: omni
   syncPolicy:
     automated:
       prune: true

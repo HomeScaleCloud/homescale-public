@@ -3,3 +3,5 @@ kind: Kustomization
 
 resources:
   - crossplane-argocd.yaml
+  - crossplane-providers.yaml
+  - crossplane-secret.yaml

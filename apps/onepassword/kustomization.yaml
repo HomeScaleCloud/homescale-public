@@ -3,4 +3,3 @@ kind: Kustomization
 
 resources:
   - onepassword-argocd.yaml
-  - onepassword-secret.yaml
