@@ -3,4 +3,4 @@ kind: Kustomization
 
 resources:
   - generic-device-plugin-daemonset.yaml
-  - generic-device-plugin-argocd.yaml
+  # - generic-device-plugin-argocd.yaml
