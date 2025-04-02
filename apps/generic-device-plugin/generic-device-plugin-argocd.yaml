@@ -8,7 +8,7 @@ spec:
   sources:
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
-      path: 'apps/generic-device-plugin/manifests'
+      path: 'apps/generic-device-plugin'
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: kube-system
