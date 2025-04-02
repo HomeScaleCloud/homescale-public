@@ -8,7 +8,7 @@ spec:
   sources:
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
-      path: 'apps/omni/manifests'
+      path: 'apps/omni'
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: omni
