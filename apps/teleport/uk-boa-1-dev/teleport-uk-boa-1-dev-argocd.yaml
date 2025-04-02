@@ -10,7 +10,7 @@ spec:
   sources:
     - repoURL: https://charts.releases.teleport.dev
       chart: teleport-kube-agent
-      targetRevision: 17.4.1
+      targetRevision: 17.4.2
       plugin:
         env:
           - name: HELM_VALUES
