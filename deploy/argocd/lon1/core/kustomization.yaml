@@ -8,7 +8,7 @@ resources:
   - ../../../../apps/external-dns
   - ../../../../apps/generic-device-plugin
   - ../../../../apps/ingress-nginx
-  - ../../../../apps/metrics
+  - ../../../../apps/metrics-server
   - ../../../../apps/omni
   - ../../../../apps/onepassword
   - ../../../../apps/tailscale
