@@ -10,3 +10,4 @@ kubectl create secret generic "op-onepassword" \
   --from-literal=operator-token="$OPERATOR_TOKEN" \
   --from-literal=connect-credentials="$CONNECT_CREDENTIALS" \
   -n onepassword
+kubectl delete pods --all -n onepassword
