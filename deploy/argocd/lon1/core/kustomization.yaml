@@ -70,6 +70,40 @@ patches:
           tailscale.com/tags: "tag:lon1-core,tag:admin-app"
           external-dns.alpha.kubernetes.io/hostname: argocd.core.lon1.homescale.cloud.
   - target:
+      kind: Service
+      name: omni
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          tailscale.com/hostname: "omni"
+          tailscale.com/tags: "tag:lon1-core,tag:admin-app"
+          external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
+  - target:
+      version: v1
+      kind: Deployment
+      name: omni
+      namespace: omni
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --siderolink-api-advertised-url=https://omni.homescale.cloud:8095/
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --advertised-kubernetes-proxy-url=https://omni.homescale.cloud:8100/
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --siderolink-wireguard-advertised-addr=omni.homescale.cloud:50180
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --advertised-api-url=https://omni.homescale.cloud/
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --auth-auth0-client-id=<path:vaults/lon1-core/items/omni#auth0-client-id>
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --initial-users=<path:vaults/lon1-core/items/omni#initial-admin-email>
+  - target:
       kind: OnePasswordItem
       name: op-onepassword
     patch: |-
