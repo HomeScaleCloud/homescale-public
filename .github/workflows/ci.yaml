@@ -38,45 +38,6 @@ jobs:
           context: ./apps/homepage
           push: true
           tags: ghcr.io/homescalecloud/homepage:latest
-  deploy-tailscale:
-    name: "Deploy - Tailscale"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Import Secrets
-        uses: 1password/load-secrets-action@v2
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          TS_TAILNET: op://common/tailscale/tailnet #pragma: allowlist secret
-          TS_ID: op://github-actions/tailscale/oauth-client-id
-          TS_SECRET: op://github-actions/tailscale/oauth-client-secret #pragma: allowlist secret
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.24.2
-          cache: false
-      - name: Test
-        id: test
-        uses: tailscale/gitops-acl-action@v1
-        with:
-          oauth-client-id: ${{ env.TS_ID }}
-          oauth-secret: ${{ env.TS_SECRET }}
-          tailnet: ${{ env.TS_TAILNET }}
-          policy-file: ./deploy/tailscale/policy.hujson
-          action: test
-      - name: Apply
-        if: github.ref == 'refs/heads/main'
-        id: apply
-        uses: tailscale/gitops-acl-action@v1
-        with:
-          oauth-client-id: ${{ env.TS_ID }}
-          oauth-secret: ${{ env.TS_SECRET }}
-          tailnet: ${{ env.TS_TAILNET }}
-          policy-file: ./deploy/tailscale/policy.hujson
-          action: apply
   deploy-tofu:
     name: "Deploy - OpenTofu"
     runs-on: ubuntu-latest
