@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: homepage
+  name: generic-device-plugin
   namespace: argocd
 spec:
   project: default
   sources:
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
-      path: 'apps/homepage'
+      path: 'apps/generic-device-plugin/base/manifests'
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: homepage
+    namespace: kube-system
   syncPolicy:
     automated:
       prune: true

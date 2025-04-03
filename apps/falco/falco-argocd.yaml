@@ -60,9 +60,6 @@ spec:
                 enabled: true
               serviceMonitor:
                 create: true
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'apps/falco'
   destination:
     server: https://kubernetes.default.svc
     namespace: falco

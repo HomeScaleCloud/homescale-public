@@ -17,9 +17,6 @@ spec:
             headless: false
           serviceMonitor:
             enabled: true
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'apps/trivy-operator'
   destination:
     server: https://kubernetes.default.svc
     namespace: trivy-system
