@@ -1,0 +1,88 @@
+resource "tailscale_acl" "acl" {
+  acl = <<EOF
+    // This tailnet's ACLs are maintained in https://github.com/HomeScaleCloud/homescale
+    {
+      "acls": [
+        {
+          "action": "accept",
+          "src": ["autogroup:admin"],
+          "dst": ["*:*"],
+          "srcPosture": [
+            "posture:linux",
+            "posture:macos",
+            "posture:windows"
+          ]
+        },
+        {
+          "action": "accept",
+          "src": ["autogroup:member"],
+          "dst": ["tag:app:*"]
+        },
+        {
+          "action": "accept",
+          "src": ["tag:github-actions"],
+          "dst": ["tag:admin-app:443"]
+        }
+      ],
+      "tagOwners": {
+        "tag:k8s-operator": [],
+        "tag:app": ["tag:k8s-operator"],
+        "tag:admin-app": ["tag:k8s-operator"],
+        "tag:lon1-core": ["tag:k8s-operator"],
+        "tag:uk-boa-1-dev": ["tag:k8s-operator"],
+        "tag:github-actions": []
+      },
+      "postures": {
+        "posture:tsVersion": [
+          "node:tsVersion >= '1.80.2'"
+        ],
+        "posture:linux": [
+          "node:os == 'linux'"
+        ],
+        "posture:macos": [
+          "node:os == 'macos'",
+          "node:osVersion >= '15.3.2'"
+        ],
+        "posture:windows": [
+          "node:os == 'windows'",
+          "node:osVersion >= '10.0.26100.3476'"
+        ],
+        "posture:ios": [
+          "node:os == 'ios'",
+          "node:osVersion >= '18.3.2'"
+        ]
+      },
+      "defaultSrcPosture": [
+        "posture:tsVersion",
+        "posture:linux",
+        "posture:macos",
+        "posture:windows",
+        "posture:ios"
+      ],
+      // "tests": [
+      //   {
+      //     "src": "100.124.169.104",
+      //     "srcPostureAttrs": {
+      //       "node:os": "windows"
+      //     },
+      //     "accept": ["tag:admin-app:443"]
+      //   },
+      //   {
+      //     "src": "100.86.77.56",
+      //     "srcPostureAttrs": {
+      //       "node:os": "ios",
+      //       "node:osVersion": "18.3.2"
+      //     },
+      //     "accept": ["tag:app:443"],
+      //     "deny": ["tag:admin-app:443"]
+      //   }
+      // ],
+      "nodeAttrs": [
+        {
+          "target": ["autogroup:member"],
+          "attr": ["mullvad"]
+        }
+      ]
+    }
+  EOF
+}
