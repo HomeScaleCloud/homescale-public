@@ -11,7 +11,7 @@ export TF_VAR_digitalocean_spaces_id="op://github-actions/digitalocean/spaces-ac
 export TF_VAR_digitalocean_spaces_key="op://github-actions/digitalocean/spaces-secret-access-key"
 export TF_VAR_vultr_token="op://github-actions/vultr/credential"
 
-cd "$HOME/Repos/homescale/infra/tofu"
+cd "$HOME/Repos/homescale/deploy/tofu"
 
 TOFU_BIN=""
 for path in "/usr/bin/tofu" "/home/linuxbrew/.linuxbrew/bin/tofu"; do
