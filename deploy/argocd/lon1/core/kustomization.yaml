@@ -134,7 +134,7 @@ patches:
         path: /spec/sources/0/helm/valuesObject/clusterName
         value: teleport.homescale.cloud
       - op: add
-        path: /spec/sources/0/helm/valuesObject/KubeClusterName
+        path: /spec/sources/0/helm/valuesObject/kubeClusterName
         value: lon1-core
       - op: add
         path: /spec/sources/0/helm/valuesObject/labels
