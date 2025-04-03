@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: metrics-uk-boa-1-dev
+  name: metrics
   namespace: argocd
 spec:
   project: default
@@ -15,13 +15,13 @@ spec:
             service:
               type: LoadBalancer
               loadBalancerClass: tailscale
-              annotations:
-                tailscale.com/hostname: "metrics-uk-boa-1-dev"
-                tailscale.com/tags: "tag:uk-boa-1-dev,tag:admin-app"
-                external-dns.alpha.kubernetes.io/hostname: metrics.dev.uk-boa-1.homescale.cloud.
+              # annotations:
+              #   tailscale.com/hostname: "metrics-uk-boa-1-dev"
+              #   tailscale.com/tags: "tag:uk-boa-1-dev,tag:admin-app"
+              #   external-dns.alpha.kubernetes.io/hostname: metrics.dev.uk-boa-1.homescale.cloud.
             grafana.ini:
               server:
-                root_url: https://metrics.dev.uk-boa-1.homescale.cloud/
+                # root_url: https://metrics.dev.uk-boa-1.homescale.cloud/
             persistence:
               enabled: true
               type: pvc
@@ -43,9 +43,6 @@ spec:
                     resources:
                       requests:
                         storage: 50Gi
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'apps/metrics/uk-boa-1-dev'
   destination:
     server: https://kubernetes.default.svc
     namespace: metrics

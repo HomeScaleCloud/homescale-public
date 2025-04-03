@@ -9,5 +9,5 @@ spec:
     name: letsencrypt
     kind: ClusterIssuer
   dnsNames:
-    - "omni.homescale.cloud"
-  commonName: "omni.homescale.cloud"
+    # - "omni.homescale.cloud"
+  # commonName: "omni.homescale.cloud"

@@ -1,7 +1,7 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: argocd-lon1-core-tls
+  name: argocd-tls
   namespace: argocd
 spec:
   secretName: argocd-server-tls
@@ -9,5 +9,5 @@ spec:
     name: letsencrypt
     kind: ClusterIssuer
   dnsNames:
-    - "argocd.core.lon1.homescale.cloud"
-  commonName: "argocd.core.lon1.homescale.cloud"
+    # - "argocd.core.lon1.homescale.cloud"
+  # commonName: "argocd.core.lon1.homescale.cloud"

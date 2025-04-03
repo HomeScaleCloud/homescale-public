@@ -5,10 +5,10 @@ metadata:
   namespace: omni
   labels:
     app: omni
-  annotations:
-    tailscale.com/hostname: "omni"
-    tailscale.com/tags: "tag:lon1-core,tag:admin-app"
-    external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
+  # annotations:
+  #   tailscale.com/hostname: "omni"
+  #   tailscale.com/tags: "tag:lon1-core,tag:admin-app"
+  #   external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
 
 spec:
   selector:

@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: teleport-kube-agent
+  namespace: argocd
+  annotations:
+    avp.kubernetes.io/path: "vaults/common/items/teleport"
+spec:
+  project: default
+  sources:
+    - repoURL: https://charts.releases.teleport.dev
+      chart: teleport-kube-agent
+      targetRevision: 17.4.2
+      helm:
+        valuesObject:
+          # authToken: <path:vaults/ci-cd/items/teleport#uk-boa-1-dev-token>
+          proxyAddr: teleport.homescale.cloud:443
+          # kubeClusterName: uk-boa-1-dev
+          # labels:
+            # region: uk-boa-1
+            # platform: metal
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: teleport
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

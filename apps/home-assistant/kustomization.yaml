@@ -6,4 +6,3 @@ resources:
   - home-assistant-namespace.yaml
   - home-assistant-pvc.yaml
   - home-assistant-service.yaml
-  # - home-assistant-argocd.yaml

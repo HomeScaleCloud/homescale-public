@@ -11,11 +11,7 @@ resources:
   - ../../../../apps/omni
   - ../../../../apps/onepassword
   - ../../../../apps/tailscale
-  - ../../../../apps/teleport/teleport-cluster
-  - argocd-lon1-core-argocd.yaml
-  - argocd-lon1-core-service.yaml
-  - argocd-lon1-core-certificate.yaml
-  - argocd-lon1-core-secret.yaml
+  - ../../../../apps/teleport-cluster
 patches:
   - target:
       kind: ConfigMap
@@ -43,8 +39,35 @@ patches:
       - op: add
         path: /data/service.slack
         value: |
-          service.slack: |
-            token: <path:vaults/lon1-core/items/argocd#slack-token>
+          token: <path:vaults/lon1-core/items/argocd#slack-token>
+  - target:
+      kind: Certificate
+      name: argocd-tls
+    patch: |-
+      - op: add
+        path: /spec/dnsNames
+        value:
+          - "argocd.core.lon1.homescale.cloud"
+      - op: add
+        path: /spec/commonName
+        value: "argocd.core.lon1.homescale.cloud"
+  - target:
+      kind: OnePasswordItem
+      name: op-argocd
+    patch: |-
+      - op: add
+        path: /spec/itemPath
+        value: "vaults/lon1-core/items/argocd"
+  - target:
+      kind: Service
+      name: argocd
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          tailscale.com/hostname: "argocd-lon1-core"
+          tailscale.com/tags: "tag:lon1-core,tag:admin-app"
+          external-dns.alpha.kubernetes.io/hostname: argocd.core.lon1.homescale.cloud.
   - target:
       kind: OnePasswordItem
       name: op-onepassword
@@ -73,10 +96,61 @@ patches:
       name: teleport-cluster
     patch: |-
       - op: add
+        path: /spec/sources/0/helm/valuesObject/clusterName
+        value: teleport.homescale.cloud
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/KubeClusterName
+        value: lon1-core
+      - op: add
         path: /spec/sources/0/helm/valuesObject/labels
         value:
           region: lon1
           platform: doks
       - op: add
-        path: /spec/sources/0/helm/valuesObject/annotations/service/tailscale.com~1tags
-        value: "tag:lon1-core,tag:admin-app"
+        path: /spec/sources/0/helm/valuesObject/annotations/service
+        value:
+          tailscale.com/hostname: "teleport"
+          external-dns.alpha.kubernetes.io/hostname: teleport.homescale.cloud.
+          tailscale.com/tags: "tag:lon1-core,tag:admin-app"
+  - target:
+      kind: OnePasswordItem
+      name: op-omni
+    patch: |-
+      - op: add
+        path: /spec/itemPath
+        value: "vaults/lon1-core/items/omni"
+  - target:
+      kind: Certificate
+      name: teleport-tls
+    patch: |-
+      - op: add
+        path: /spec/dnsNames
+        value:
+          - "teleport.homescale.cloud"
+      - op: add
+        path: /spec/commonName
+        value: "teleport.homescale.cloud"
+  - target:
+      kind: TeleportGithubConnector
+      name: github
+    patch: |-
+      - op: add
+        path: /spec/client_id
+        value: "<path:vaults/lon1-core/items/teleport#oidc-client-id>"
+      - op: add
+        path: /spec/client_secret
+        value: "<path:vaults/lon1-core/items/teleport#oidc-client-secret>"
+      - op: add
+        path: /spec/redirect_url
+        value: "https://teleport.homescale.cloud/v1/webapi/github/callback"
+  - target:
+      kind: Certificate
+      name: omni-tls
+    patch: |-
+      - op: add
+        path: /spec/dnsNames
+        value:
+          - "omni.homescale.cloud"
+      - op: add
+        path: /spec/commonName
+        value: "omni.homescale.cloud"

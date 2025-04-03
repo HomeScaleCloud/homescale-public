@@ -11,8 +11,6 @@ spec:
       targetRevision: 17.4.2
       helm:
         valuesObject:
-          clusterName: teleport.homescale.cloud
-          kubeClusterName: teleport-cluster
           authentication:
             type: github
             localAuth: false
@@ -27,12 +25,7 @@ spec:
           tls:
             existingSecretName: teleport-tls #pragma: allowlist secret
           annotations:
-            service:
-              tailscale.com/hostname: "teleport"
-              external-dns.alpha.kubernetes.io/hostname: teleport.homescale.cloud.
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'apps/teleport/teleport-cluster'
+            service: {}
   destination:
     server: https://kubernetes.default.svc
     namespace: teleport
