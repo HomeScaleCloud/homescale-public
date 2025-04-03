@@ -15,12 +15,6 @@ variable "cloudflare_zone_id" {
   type        = string
 }
 
-variable "vultr_token" {
-  description = "Vultr API Token"
-  type        = string
-  sensitive   = true
-}
-
 variable "digitalocean_token" {
   description = "DigitalOcean API Token"
   type        = string
@@ -35,6 +29,24 @@ variable "digitalocean_spaces_id" {
 
 variable "digitalocean_spaces_key" {
   description = "DigitalOcean Spaces Secret Access Key"
+  type        = string
+  sensitive   = true
+}
+
+variable "tailscale_tailnet" {
+  description = "Tailscale tailnet domain"
+  type        = string
+  sensitive   = true
+}
+
+variable "tailscale_oauth_client_id" {
+  description = "Tailscale OAuth Client ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "tailscale_oauth_client_secret" {
+  description = "Tailscale OAuth Client Secret"
   type        = string
   sensitive   = true
 }
