@@ -8,6 +8,6 @@ spec:
   issuerRef:
     name: letsencrypt
     kind: ClusterIssuer
-  dnsNames:
-    - "REDACTED"
-  commonName: "REDACTED"
+  dnsNames: {}
+    # - "REDACTED"
+  # commonName: "REDACTED"

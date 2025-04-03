@@ -8,4 +8,3 @@ resources:
   - omni-pvc.yaml
   - omni-secret.yaml
   - omni-service.yaml
-  # - omni-argocd.yaml

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: metrics-uk-brs-1-prod
+  name: metrics
   namespace: argocd
 spec:
   project: default
@@ -15,13 +15,13 @@ spec:
             service:
               type: LoadBalancer
               loadBalancerClass: tailscale
-              annotations:
-                tailscale.com/hostname: "metrics-uk-brs-1-prod"
-                tailscale.com/tags: "tag:uk-brs-1-prod,tag:admin-app"
-                external-dns.alpha.kubernetes.io/hostname: REDACTED.
+              # annotations:
+              #   tailscale.com/hostname: "metrics-uk-boa-1-dev"
+              #   tailscale.com/tags: "tag:uk-boa-1-dev,tag:admin-app"
+              #   external-dns.alpha.kubernetes.io/hostname: REDACTED.
             grafana.ini:
               server:
-                root_url: https://REDACTED/
+                # root_url: https://REDACTED/
             persistence:
               enabled: true
               type: pvc
@@ -43,9 +43,6 @@ spec:
                     resources:
                       requests:
                         storage: 50Gi
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'apps/metrics/uk-brs-1-prod'
   destination:
     server: https://kubernetes.default.svc
     namespace: metrics
