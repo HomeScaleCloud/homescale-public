@@ -10,7 +10,7 @@ spec:
   sources:
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
-      path: 'deploy/lon1/core'
+      path: 'deploy/argocd/lon1/core'
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd
