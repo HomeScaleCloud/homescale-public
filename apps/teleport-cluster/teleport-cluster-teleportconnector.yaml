@@ -7,6 +7,11 @@ spec:
   display: GitHub
   teams_to_roles:
     - organization: HomeScaleCloud
-      team: admins
+      team: lon1-core-admin
       roles:
-        - admin
+        - teleport-admin
+        - lon1-core-admin
+    - organization: HomeScaleCloud
+      team: boa1-prod-admin
+      roles:
+        - boa1-prod-admin
