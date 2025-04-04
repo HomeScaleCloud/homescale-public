@@ -33,3 +33,6 @@ override.tf.json
 
 # macOS Weirdness
 .DS_Store
+
+# direnv local folder
+.direnv
