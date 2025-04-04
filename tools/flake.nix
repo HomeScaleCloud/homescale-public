@@ -1,25 +1,50 @@
 {
-  description = "Homescale development environment for tools";
+  description = "Homescale dev shell";
 
-  # Define inputs (dependencies)
   inputs = {
-    # Use a specific branch or version of nixpkgs
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  # Outputs section defines the dev shell environment
   outputs = { nixpkgs, ... }: let
-    # Make sure to define the path correctly, assuming it's in the same directory as the flake.nix
-    toolsPath = ./.tools;
+    system = "x86_64-linux";
+    pkgs = import nixpkgs {
+      inherit system;
+      config.allowUnfree = true;
+    };
   in {
-    devShells.x86_64-linux.tools = nixpkgs.legacyPackages.x86_64-linux.mkShell {
-      buildInputs = [
-        nixpkgs.legacyPackages.x86_64-linux.bash          # Bash
-        nixpkgs.legacyPackages.x86_64-linux.coreutils     # Core utilities like `cp`, `mv`, etc.
-        nixpkgs.legacyPackages.x86_64-linux.opentofu      # Opentofu (for homescale-tofu.sh)
+    devShells.${system}.default = pkgs.mkShell {
+      buildInputs = with pkgs; [
+        bashInteractive
+        bash-completion
+        jq
+        yq
+        opentofu
+        kubectl
+        kubecolor
+        talosctl
+        omnictl
+        librespeed-cli
+        pre-commit
+        k9s
+        argocd
+        teleport_17
+        act
+        fzf
+        yamllint
+        _1password-cli
       ];
 
-      # Optional: set environment variables if needed
+      shellHook = ''
+        export EDITOR=nvim
+        export KUBECONFIG="$HOME/.kube/config-homescale"
+        export TALOSCONFIG="$HOME/.talos/config-homescale"
+        export OMNICONFIG="$HOME/.omni/config-homescale"
+        export TELEPORT_HOME="$HOME/.tsh-homescale"
+        export TELEPORT_PROXY="teleport.homescale.cloud:443"
+        pre-commit.exe install
+        export PATH=$PWD/tools:$PATH
+        echo "HomeScale dev shell loaded"
+      '';
     };
   };
 }
