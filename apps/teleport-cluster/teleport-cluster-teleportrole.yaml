@@ -17,15 +17,15 @@ metadata:
 spec:
   allow:
     app_labels:
-      'homescale.cloud/cluster': 'lon1-core'
+      'cluster': 'lon1-core'
     db_labels:
-      'homescale.cloud/cluster': 'lon1-core'
+      'cluster': 'lon1-core'
     db_users:
       - '*'
     kubernetes_groups:
       - system:masters
     kubernetes_labels:
-      'homescale.cloud/cluster': 'lon1-core'
+      'cluster': 'lon1-core'
     kubernetes_resources:
       - kind: '*'
         name: '*'
@@ -37,9 +37,9 @@ spec:
       - ubuntu
       - admin
     node_labels:
-      'homescale.cloud/cluster': 'lon1-core'
+      'cluster': 'lon1-core'
     windows_desktop_labels:
-      'homescale.cloud/cluster': 'lon1-core'
+      'cluster': 'lon1-core'
 ---
 apiVersion: resources.teleport.dev/v1
 kind: TeleportRoleV7
@@ -49,15 +49,15 @@ metadata:
 spec:
   allow:
     app_labels:
-      'homescale.cloud/cluster': 'boa1-prod'
+      'cluster': 'boa1-prod'
     db_labels:
-      'homescale.cloud/cluster': 'boa1-prod'
+      'cluster': 'boa1-prod'
     db_users:
       - '*'
     kubernetes_groups:
       - system:masters
     kubernetes_labels:
-      'homescale.cloud/cluster': 'boa1-prod'
+      'cluster': 'boa1-prod'
     kubernetes_resources:
       - kind: '*'
         name: '*'
@@ -69,6 +69,6 @@ spec:
       - ubuntu
       - admin
     node_labels:
-      'homescale.cloud/cluster': 'boa1-prod'
+      'cluster': 'boa1-prod'
     windows_desktop_labels:
-      'homescale.cloud/cluster': 'boa1-prod'
+      'cluster': 'boa1-prod'
