@@ -1,0 +1,3 @@
+* @HomeScaleCloud/code-owners
+/deploy/*/lon1/core/* @HomeScaleCloud/lon1-core-admin
+/deploy/*/boa1/prod/* @HomeScaleCloud/boa1-prod-admin
