@@ -1,81 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HomeScale</title>
-    <style>
-        body {
-            background-color: #000;
-            color: #fff;
-            font-family: 'Arial', sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HomeScale</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-        .container {
-            max-width: 600px;
-        }
+    .container {
+      max-width: 600px;
+    }
 
-        .fade-in {
-            opacity: 0;
-            animation: fadeIn 2s forwards;
-            font-size: 3em;
-            font-weight: bold;
-        }
+    .logo-fade-in {
+      opacity: 0;
+      animation: fadeIn 2s forwards;
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+    .logo-fade-in img {
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 1rem; /* controls gap between logo and text */
+    }
 
-        .delayed-fade-in {
-            opacity: 0;
-            animation: fadeIn 2s forwards 3s;
-            font-size: 1.2em;
-        }
+    .text-fade-in {
+      opacity: 0;
+      animation: fadeIn 2s forwards 2.5s;
+      font-size: 1.2em;
+    }
 
-        .footer-fade-in {
-            opacity: 0;
-            animation: fadeIn 2s forwards 6s;
-            font-size: 1em;
-            color: #888;
-        }
+    .footer-fade-in {
+      opacity: 0;
+      animation: fadeIn 2s forwards 5s;
+      font-size: 1em;
+      color: #888;
+      margin-top: 2rem;
+    }
 
-        a {
-            color: #0196F1;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
 
-        footer {
-            margin-top: 20px;
-        }
-    </style>
+    a {
+      color: #0196F1;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="fade-in">
-            <img src="homescale-transparent.png" alt="HomeScale Logo" style="max-width: 100%; height: auto;" />
-        </div>
-        <div class="delayed-fade-in">
-            <p>Enterprise-grade infrastructure, built for homelab.</p>
-            <p>This domain (homescale.cloud) is home to a collection of private clouds for myself, friends, and family.</p>
-            <p>Explore all the Infrastructure as Code (IaC) powering this network:</p>
-            <p><a href="https://github.com/HomeScaleCloud/homescale" target="_blank">https://github.com/HomeScaleCloud/homescale</a></p>
-        </div>
-        <footer class="footer-fade-in">
-            <p></p>
-            &copy; 2025 HomeScale</a>.
-        </footer>
+  <div class="container">
+    <div class="logo-fade-in">
+      <img src="https://raw.githubusercontent.com/HomeScaleCloud/homescale/refs/heads/add-logo-homepage/media/homescale-transparent.png" alt="HomeScale Logo" />
     </div>
+    <div class="text-fade-in">
+      <p>Enterprise-grade infrastructure, built for homelab.</p>
+      <p>This domain (<strong>homescale.cloud</strong>) is home to a collection of private clouds for myself, friends, and family.</p>
+      <p>Explore all the Infrastructure as Code (IaC) powering this network:</p>
+      <p><a href="https://github.com/HomeScaleCloud/homescale" target="_blank">github.com/HomeScaleCloud/homescale</a></p>
+    </div>
+    <footer class="footer-fade-in">
+      &copy; 2025 HomeScale
+    </footer>
+  </div>
 </body>
 </html>
