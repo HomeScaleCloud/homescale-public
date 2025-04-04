@@ -68,7 +68,7 @@ patches:
         path: /metadata/annotations
         value:
           tailscale.com/hostname: "argocd-lon1-core"
-          tailscale.com/tags: "tag:lon1-core,tag:admin-app"
+          tailscale.com/tags: "tag:admin-app-lon1-core"
           external-dns.alpha.kubernetes.io/hostname: argocd.core.lon1.homescale.cloud.
   - target:
       kind: Service
@@ -78,7 +78,7 @@ patches:
         path: /metadata/annotations
         value:
           tailscale.com/hostname: "omni"
-          tailscale.com/tags: "tag:lon1-core,tag:admin-app"
+          tailscale.com/tags: "tag:admin-app-lon1-core"
           external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
   - target:
       version: v1
@@ -119,11 +119,11 @@ patches:
         path: /spec/sources/0/helm/valuesObject
         value:
           proxyConfig:
-            defaultTags: "tag:lon1-core"
+            defaultTags: "tag:app-lon1-core"
           operatorConfig:
             hostname: lon1-core
             defaultTags:
-              - "tag:lon1-core"
+              - "tag:app-lon1-core"
           oauth:
             clientId: <path:vaults/lon1-core/items/tailscale#oauth-client-id>
             clientSecret: <path:vaults/lon1-core/items/tailscale#oauth-client-secret>
@@ -147,7 +147,7 @@ patches:
         value:
           tailscale.com/hostname: "teleport"
           external-dns.alpha.kubernetes.io/hostname: teleport.homescale.cloud.
-          tailscale.com/tags: "tag:lon1-core,tag:admin-app"
+          tailscale.com/tags: "tag:admin-app-lon1-core"
   - target:
       kind: OnePasswordItem
       name: op-omni

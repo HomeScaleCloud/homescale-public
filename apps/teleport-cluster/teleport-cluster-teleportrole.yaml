@@ -1,22 +1,31 @@
 apiVersion: resources.teleport.dev/v1
 kind: TeleportRoleV7
 metadata:
-  name: admin
+  name: teleport-admin
+  namespace: teleport
+spec:
+  allow:
+    rules:
+      - resources: ['*']
+        verbs: ['*']
+---
+apiVersion: resources.teleport.dev/v1
+kind: TeleportRoleV7
+metadata:
+  name: lon1-core-admin
   namespace: teleport
 spec:
   allow:
     app_labels:
-      '*': '*'
+      'homescale.cloud/cluster': 'lon1-core'
     db_labels:
-      '*': '*'
-    db_names:
-      - '*'
+      'homescale.cloud/cluster': 'lon1-core'
     db_users:
       - '*'
     kubernetes_groups:
       - system:masters
     kubernetes_labels:
-      '*': '*'
+      'homescale.cloud/cluster': 'lon1-core'
     kubernetes_resources:
       - kind: '*'
         name: '*'
@@ -28,11 +37,38 @@ spec:
       - ubuntu
       - admin
     node_labels:
-      '*': '*'
-    rules:
-      - resources:
-          - '*'
+      'homescale.cloud/cluster': 'lon1-core'
+    windows_desktop_labels:
+      'homescale.cloud/cluster': 'lon1-core'
+---
+apiVersion: resources.teleport.dev/v1
+kind: TeleportRoleV7
+metadata:
+  name: boa1-prod-admin
+  namespace: teleport
+spec:
+  allow:
+    app_labels:
+      'homescale.cloud/cluster': 'boa1-prod'
+    db_labels:
+      'homescale.cloud/cluster': 'boa1-prod'
+    db_users:
+      - '*'
+    kubernetes_groups:
+      - system:masters
+    kubernetes_labels:
+      'homescale.cloud/cluster': 'boa1-prod'
+    kubernetes_resources:
+      - kind: '*'
+        name: '*'
+        namespace: '*'
         verbs:
           - '*'
+    logins:
+      - root
+      - ubuntu
+      - admin
+    node_labels:
+      'homescale.cloud/cluster': 'boa1-prod'
     windows_desktop_labels:
-      '*': '*'
+      'homescale.cloud/cluster': 'boa1-prod'
