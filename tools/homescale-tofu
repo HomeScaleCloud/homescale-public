@@ -9,7 +9,9 @@ export TF_VAR_cloudflare_zone_id="op://common/cloudflare/zone-id"
 export TF_VAR_digitalocean_token="op://common/digitalocean/credential"
 export TF_VAR_digitalocean_spaces_id="op://common/digitalocean/spaces-access-key-id"
 export TF_VAR_digitalocean_spaces_key="op://common/digitalocean/spaces-secret-access-key"
-export TF_VAR_vultr_token="op://common/vultr/credential"
+export TF_VAR_tailscale_tailnet="op://common/tailscale/tailnet"
+export TF_VAR_tailscale_oauth_client_id="op://github-actions/tailscale/oauth-client-id"
+export TF_VAR_tailscale_oauth_client_secret="op://github-actions/tailscale/oauth-client-secret" #pragma: allowlist secret
 
 cd "$HOME/Repos/homescale/deploy/tofu"
 
