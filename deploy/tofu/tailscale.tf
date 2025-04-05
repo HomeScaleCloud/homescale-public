@@ -1,5 +1,6 @@
 resource "tailscale_acl" "acl" {
   acl = <<EOF
+    // This tailnet's ACLs are maintained in https://github.com/HomeScaleCloud/homescale
     {
       "groups": {
         "group:lon1-core-admin": [
