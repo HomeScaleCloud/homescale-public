@@ -1,13 +1,16 @@
 terraform {
   required_providers {
     cloudflare = {
-      source = "cloudflare/cloudflare"
+      source  = "cloudflare/cloudflare"
+      version = "5.1.0"
     }
     digitalocean = {
-      source = "digitalocean/digitalocean"
+      source  = "digitalocean/digitalocean"
+      version = "2.49.0"
     }
     tailscale = {
-      source = "tailscale/tailscale"
+      source  = "tailscale/tailscale"
+      version = "0.18.0"
     }
   }
 }
