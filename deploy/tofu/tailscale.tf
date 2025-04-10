@@ -32,7 +32,7 @@ resource "tailscale_acl" "acl" {
         {
           "action": "accept",
           "src": ["tag:boa1-prod-router"],
-          "dst": ["tag:admin-app-lon1-core"]
+          "dst": ["tag:admin-app-lon1-core:*"]
         },
         {
           "action": "accept",
