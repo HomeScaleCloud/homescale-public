@@ -31,10 +31,14 @@ resource "tailscale_acl" "acl" {
         },
         {
           "action": "accept",
+          "src": ["tag:boa1-prod-router"],
+          "dst": ["tag:admin-app-lon1-core"]
+        },
+        {
+          "action": "accept",
           "src": ["group:boa1-prod-admin"],
           "dst": ["tag:boa1-prod-app:*"]
         },
-
         {
           "action": "accept",
           "src": ["tag:github-actions"],
@@ -48,6 +52,7 @@ resource "tailscale_acl" "acl" {
         "tag:k8s-operator": [],
         "tag:app-lon1-core": ["tag:k8s-operator"],
         "tag:admin-app-lon1-core": ["tag:k8s-operator"],
+        "tag:boa1-prod-router": [],
         "tag:boa1-prod-app": ["tag:k8s-operator"],
         "tag:boa1-prod-admin-app": ["tag:k8s-operator"],
         "tag:github-actions": []
