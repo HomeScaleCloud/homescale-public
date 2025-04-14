@@ -7,6 +7,15 @@ resource "cloudflare_dns_record" "github_verify" {
   type    = "TXT"
 }
 
+resource "cloudflare_dns_record" "azure_verify" {
+  zone_id = var.cloudflare_zone_id
+  name    = "homescale.cloud"
+  comment = "Domain ownership verification for Azure"
+  content = "MS=ms57084443" #pragma: allowlist secret
+  ttl     = 3600
+  type    = "TXT"
+}
+
 # resource "cloudflare_dns_record" "smtpgo_1" {
 #   zone_id = var.cloudflare_zone_id
 #   name    = "em569112.homescale.cloud"
