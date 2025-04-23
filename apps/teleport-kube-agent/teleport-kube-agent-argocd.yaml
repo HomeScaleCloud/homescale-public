@@ -10,7 +10,7 @@ spec:
   sources:
     - repoURL: https://charts.releases.teleport.dev
       chart: teleport-kube-agent
-      targetRevision: 17.4.5
+      targetRevision: 17.4.6
       helm:
         valuesObject:
           # authToken: <path:vaults/ci-cd/items/teleport#uk-boa-1-dev-token>
