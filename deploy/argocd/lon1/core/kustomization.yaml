@@ -72,7 +72,7 @@ patches:
           external-dns.alpha.kubernetes.io/hostname: argocd.core.lon1.homescale.cloud.
   - target:
       kind: Service
-      name: omni
+      name: omni-ui
     patch: |-
       - op: add
         path: /metadata/annotations
