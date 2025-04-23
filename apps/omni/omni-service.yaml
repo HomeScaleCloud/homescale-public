@@ -5,7 +5,6 @@ metadata:
   namespace: omni
   labels:
     app: omni
-
 spec:
   selector:
     app: omni
