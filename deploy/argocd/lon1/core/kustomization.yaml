@@ -72,7 +72,7 @@ patches:
           external-dns.alpha.kubernetes.io/hostname: xxx.
   - target:
       kind: Service
-      name: omni
+      name: omni-ui
     patch: |-
       - op: add
         path: /metadata/annotations
