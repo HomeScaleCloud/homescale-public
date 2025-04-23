@@ -77,7 +77,7 @@ patches:
       - op: add
         path: /metadata/annotations
         value:
-          external-dns.alpha.kubernetes.io/hostname: omni-ui.homescale.cloud.
+          external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
   - target:
       kind: Service
       name: omni-ui
@@ -87,7 +87,7 @@ patches:
         value:
           tailscale.com/hostname: "omni"
           tailscale.com/tags: "tag:admin-app-lon1-core"
-          external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
+          external-dns.alpha.kubernetes.io/hostname: omni-ui.homescale.cloud.
   - target:
       version: v1
       kind: Deployment
