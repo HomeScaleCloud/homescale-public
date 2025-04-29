@@ -16,92 +16,59 @@ resource "cloudflare_dns_record" "azure_verify" {
   type    = "TXT"
 }
 
-# resource "cloudflare_dns_record" "smtpgo_1" {
-#   zone_id = var.cloudflare_zone_id
-#   name    = "xxx"
-#   content = "return.smtp2go.net"
-#   ttl     = 1
-#   type    = "CNAME"
-# }
+resource "cloudflare_dns_record" "exchange_autodiscover" {
+  zone_id = var.cloudflare_zone_id
+  name    = "xxx"
+  content = "autodiscover.outlook.com"
+  ttl     = 1
+  type    = "CNAME"
+}
 
-# resource "cloudflare_dns_record" "smtpgo_2" {
-#   zone_id = var.cloudflare_zone_id
-#   name    = "xxx"
-#   content = "track.smtp2go.net"
-#   ttl     = 1
-#   type    = "CNAME"
-# }
+resource "cloudflare_dns_record" "exchange_mx" {
+  zone_id  = var.cloudflare_zone_id
+  name     = "xxx"
+  content  = "homescale-cloud.mail.protection.outlook.com"
+  priority = 1
+  ttl      = 1
+  type     = "MX"
+}
 
-# resource "cloudflare_dns_record" "smtpgo_3" {
-#   zone_id = var.cloudflare_zone_id
-#   name    = "xxx"
-#   content = "dkim.smtp2go.net"
-#   ttl     = 1
-#   type    = "CNAME"
-# }
+resource "cloudflare_dns_record" "exchange_spf" {
+  zone_id = var.cloudflare_zone_id
+  name    = "xxx"
+  content = "v=spf1 include:spf.protection.outlook.com -all"
+  ttl     = 1
+  type    = "TXT"
+}
 
-# resource "cloudflare_dns_record" "protonmail_domainkey_1" {
-#   zone_id = var.cloudflare_zone_id
-#   name    = "xxx"
-#   content = "protonmail.domainkey.dhbmfi47x6nlcfx52qhqroqsbgn77curmn2yz4mckm6stp7jytj3a.domains.proton.ch"
-#   ttl     = 1
-#   type    = "CNAME"
-# }
+resource "cloudflare_dns_record" "exchange_dkim_1" {
+  zone_id = var.cloudflare_zone_id
+  name    = "xxx"
+  content = "selector1-homescale-cloud._domainkey.nanni237gmail.onmicrosoft.com"
+  ttl     = 1
+  type    = "CNAME"
+}
 
-# resource "cloudflare_dns_record" "protonmail_domainkey_2" {
-#   zone_id = var.cloudflare_zone_id
-#   name    = "xxx"
-#   content = "protonmail2.domainkey.dhbmfi47x6nlcfx52qhqroqsbgn77curmn2yz4mckm6stp7jytj3a.domains.proton.ch"
-#   ttl     = 1
-#   type    = "CNAME"
-# }
+resource "cloudflare_dns_record" "exchange_dkim_2" {
+  zone_id = var.cloudflare_zone_id
+  name    = "xxx"
+  content = "selector2-homescale-cloud._domainkey.nanni237gmail.onmicrosoft.com"
+  ttl     = 1
+  type    = "CNAME"
+}
 
-# resource "cloudflare_dns_record" "protonmail_domainkey_3" {
-#   zone_id = var.cloudflare_zone_id
-#   name    = "xxx"
-#   content = "protonmail3.domainkey.dhbmfi47x6nlcfx52qhqroqsbgn77curmn2yz4mckm6stp7jytj3a.domains.proton.ch"
-#   ttl     = 1
-#   type    = "CNAME"
-# }
+resource "cloudflare_dns_record" "intune_registration" {
+  zone_id = var.cloudflare_zone_id
+  name    = "xxx"
+  content = "enterpriseregistration.windows.net"
+  ttl     = 1
+  type    = "CNAME"
+}
 
-# resource "cloudflare_dns_record" "protonmail_mx_1" {
-#   zone_id  = var.cloudflare_zone_id
-#   name     = "xxx"
-#   content  = "mail.protonmail.ch"
-#   priority = 10
-#   ttl      = 1
-#   type     = "MX"
-# }
-
-# resource "cloudflare_dns_record" "protonmail_mx_2" {
-#   zone_id  = var.cloudflare_zone_id
-#   name     = "xxx"
-#   content  = "mailsec.protonmail.ch"
-#   priority = 20
-#   ttl      = 1
-#   type     = "MX"
-# }
-
-# resource "cloudflare_dns_record" "protonmail_spf" {
-#   zone_id = var.cloudflare_zone_id
-#   name    = "xxx"
-#   content = "v=spf1 include:_spf.protonmail.ch ~all"
-#   ttl     = 1
-#   type    = "TXT"
-# }
-
-# resource "cloudflare_dns_record" "protonmail_verify" {
-#   zone_id = var.cloudflare_zone_id
-#   name    = "xxx"
-#   content = "protonmail-verification=9eddebf7a991dd53bf71aebe5bdc71672527e6a4"
-#   ttl     = 1
-#   type    = "TXT"
-# }
-
-# resource "cloudflare_dns_record" "status" {
-#   zone_id = var.cloudflare_zone_id
-#   name    = "xxx"
-#   content = "statuspage.betteruptime.com"
-#   ttl     = 1
-#   type    = "CNAME"
-# }
+resource "cloudflare_dns_record" "intune_enrollment" {
+  zone_id = var.cloudflare_zone_id
+  name    = "xxx"
+  content = "enterpriseenrollment-s.manage.microsoft.com"
+  ttl     = 1
+  type    = "CNAME"
+}
