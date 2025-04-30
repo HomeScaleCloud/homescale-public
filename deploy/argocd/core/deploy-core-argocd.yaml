@@ -4,13 +4,13 @@ metadata:
   name: argocd
   namespace: argocd
   annotations:
-    avp-kustomize.kubernetes.io/path: "vaults/lon1-core/items/argocd"
+    avp-kustomize.kubernetes.io/path: "vaults/core/items/argocd"
 spec:
   project: default
   sources:
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
-      path: 'deploy/argocd/lon1/core'
+      path: 'deploy/argocd/core'
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd

@@ -1,6 +1,6 @@
 resource "cloudflare_dns_record" "github_verify" {
   zone_id = var.cloudflare_zone_id
-  name    = "_gh-HomeScaleCloud-o.homescale.cloud"
+  name    = "_gh-homescalecloud-o.homescale.cloud"
   comment = "Domain ownership verification for GitHub"
   content = "064743fb98" #pragma: allowlist secret
   ttl     = 1
