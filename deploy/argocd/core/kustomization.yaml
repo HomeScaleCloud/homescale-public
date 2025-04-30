@@ -10,6 +10,7 @@ resources:
   - ../../../apps/homepage
   - ../../../apps/metrics-server
   - ../../../apps/onepassword
+  - ../../../apps/rancher
 patches:
   - target:
       kind: ConfigMap
@@ -24,7 +25,7 @@ patches:
           connectors:
             - type: microsoft
               id: microsoft
-              name: HomeScale
+              name: Entra ID
               config:
                 clientID: <path:vaults/core/items/argocd#oidc-client-id>
                 clientSecret: <path:vaults/core/items/argocd#oidc-client-secret>
@@ -71,3 +72,10 @@ patches:
       - op: add
         path: /spec/itemPath
         value: "vaults/core/items/onepassword"
+  - target:
+      kind: Application
+      name: rancher
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/hostname
+        value: rancher.homescale.cloud
