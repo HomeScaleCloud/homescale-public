@@ -29,14 +29,12 @@
   },
   "terraform": {
     "fileMatch": [
-      "infra/tofu/.*\\.tf$"
+      "infra/terraform/.*\\.tf$"
     ]
   },
   "kubernetes": {
     "fileMatch": [
-      "apps/.+/.+\\.yaml$",
-      "infra/crossplane/.+\\.yaml$",
-      "infra/teleport/.+\\.yaml$"
+      "apps/.+/.+\\.yaml$"
     ]
   },
   "github-actions": {
@@ -52,9 +50,6 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "infra/crossplane/.+\\.yaml$"
-      ],
       "matchStrings": [
         "package:\\s*\"(?<depName>[^:]+):(?<currentValue>[^\\s\"]+)\""
       ],

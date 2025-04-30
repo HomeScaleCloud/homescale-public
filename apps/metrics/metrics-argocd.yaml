@@ -8,17 +8,12 @@ spec:
   sources:
     - repoURL: https://prometheus-community.github.io/helm-charts
       chart: kube-prometheus-stack
-      targetRevision: 71.0.0
+      targetRevision: 71.1.0
       helm:
         valuesObject:
           grafana:
             service:
-              type: LoadBalancer
-              loadBalancerClass: tailscale
-              # annotations:
-              #   tailscale.com/hostname: "metrics-uk-boa-1-dev"
-              #   tailscale.com/tags: "tag:uk-boa-1-dev,tag:admin-app"
-              #   external-dns.alpha.kubernetes.io/hostname: metrics.dev.uk-boa-1.homescale.cloud.
+              type: ClusterIP
             grafana.ini:
               server:
                 # root_url: https://metrics.dev.uk-boa-1.homescale.cloud/

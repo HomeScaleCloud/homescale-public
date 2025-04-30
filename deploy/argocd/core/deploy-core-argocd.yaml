@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  annotations:
+    avp-kustomize.kubernetes.io/path: "vaults/core/items/argocd"
+spec:
+  project: default
+  sources:
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
+      targetRevision: main
+      path: 'deploy/argocd/core'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=true
