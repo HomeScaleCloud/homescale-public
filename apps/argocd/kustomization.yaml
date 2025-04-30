@@ -7,16 +7,8 @@ resources:
   - argocd-namespace.yaml
   - argocd-cmp-cm.yaml
   - avp-role.yaml
-  - argocd-certificate.yaml
+  # - argocd-certificate.yaml
   - argocd-secret.yaml
 patches:
   - path: argocd-deployment.yaml
   - path: argocd-configmap.yaml
-  - target:
-      version: v1
-      kind: Deployment
-      name: argocd-server
-    patch: |-
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: '--insecure'
