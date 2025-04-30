@@ -38,101 +38,46 @@ jobs:
           context: ./apps/homepage
           push: true
           tags: ghcr.io/homescalecloud/homepage:latest
-  deploy-tofu:
-    name: "Deploy - OpenTofu"
+  deploy-terraform:
+    name: "Deploy - Terraform"
     runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
-        working-directory: ./deploy/tofu
+        working-directory: ./deploy/terraform
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v1
-      - name: Format Check
-        id: fmt-check
-        run: tofu fmt -check
       - name: Import Secrets
         uses: 1password/load-secrets-action@v2
         with:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          AWS_ACCESS_KEY_ID: op://common/digitalocean/spaces-access-key-id
-          AWS_SECRET_ACCESS_KEY: op://common/digitalocean/spaces-secret-access-key #pragma: allowlist secret
+          TF_TOKEN_app_terraform_io: op://github-actions/terraform-cloud/credential
           TF_VAR_cloudflare_token: op://common/cloudflare/credential
           TF_VAR_cloudflare_account_id: op://common/cloudflare/account-id
           TF_VAR_cloudflare_zone_id: op://common/cloudflare/zone-id
           TF_VAR_digitalocean_token: op://common/digitalocean/credential
           TF_VAR_digitalocean_spaces_id: op://common/digitalocean/spaces-access-key-id
           TF_VAR_digitalocean_spaces_key: op://common/digitalocean/spaces-secret-access-key
-          TF_VAR_tailscale_tailnet: op://common/tailscale/tailnet
-          TF_VAR_tailscale_oauth_client_id: op://github-actions/tailscale/oauth-client-id
-          TF_VAR_tailscale_oauth_client_secret: op://github-actions/tailscale/oauth-client-secret #pragma: allowlist secret
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Format Check
+        id: fmt-check
+        run: terraform fmt -check
       - name: Initialize
         id: init
-        run: tofu init
+        run: terraform init
       - name: Validate
         id: validate
-        run: tofu validate
+        run: terraform validate
       - name: Plan
         id: plan
-        run: tofu plan -out=tfplan
+        run: terraform plan -out=tfplan
       - name: Apply
-        run: tofu apply -auto-approve tfplan
+        run: terraform apply -auto-approve tfplan
         if: github.ref == 'refs/heads/main'
-  deply-omni:
-    name: "Deploy - Omni"
-    runs-on: ubuntu-latest
-    needs: deploy-tofu
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./deploy/omni
-    env:
-      OMNI_ENDPOINT: "https://omni.homescale.cloud"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Get omnictl
-        run: |
-          wget https://github.com/siderolabs/omni/releases/download/v0.47.0/omnictl-linux-amd64 -O omnictl &&
-          chmod +x omnictl
-      - name: Validate clusters
-        run: |
-          find . -type f -name '*-cluster.yaml' | while read -r cluster; do
-            ./omnictl cluster template validate -f "$cluster"
-          done
-      - name: Import Secrets
-        if: github.ref == 'refs/heads/main'
-        uses: 1password/load-secrets-action@v2
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          OMNI_SERVICE_ACCOUNT_KEY: op://common/omni/credential #pragma: allowlist secret
-          TS_ID: op://github-actions/tailscale/oauth-client-id
-          TS_SECRET: op://github-actions/tailscale/oauth-client-secret #pragma: allowlist secret
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v3
-        if: github.ref == 'refs/heads/main'
-        with:
-          oauth-client-id: $TS_ID
-          oauth-secret: $TS_SECRET
-          tags: tag:github-actions
-      - name: Sync machineclasses
-        if: github.ref == 'refs/heads/main'
-        run: |
-          find . -type f -name '*-machineclasses.yaml' | while read -r file; do
-            ./omnictl apply -f "$file"
-          done
-      - name: Sync clusters
-        if: github.ref == 'refs/heads/main'
-        run: |
-          find . -type f -name '*-cluster.yaml' | while read -r cluster; do
-            ./omnictl cluster template sync -f "$cluster"
-          done
