@@ -12,6 +12,7 @@ spec:
       helm:
         valuesObject:
           controller:
+            type: ClusterIP
             autoscaling:
               enabled: true
               minReplicas: 1
