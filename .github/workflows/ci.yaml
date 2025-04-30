@@ -62,8 +62,7 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          AWS_ACCESS_KEY_ID: op://common/digitalocean/spaces-access-key-id
-          AWS_SECRET_ACCESS_KEY: op://common/digitalocean/spaces-secret-access-key #pragma: allowlist secret
+          TFC_TOKEN: op://github-actions/terraform-cloud/credential
           TF_VAR_cloudflare_token: op://common/cloudflare/credential
           TF_VAR_cloudflare_account_id: op://common/cloudflare/account-id
           TF_VAR_cloudflare_zone_id: op://common/cloudflare/zone-id
