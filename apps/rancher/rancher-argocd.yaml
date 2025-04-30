@@ -15,10 +15,6 @@ spec:
           replicas: 1
           ingress:
             enabled: false
-          letsEncrypt:
-            ingress:
-              class: nginx
-            email: tls@homescale.cloud
   destination:
     server: https://kubernetes.default.svc
     namespace: cattle-system
