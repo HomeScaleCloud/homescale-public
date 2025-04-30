@@ -51,9 +51,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Format Check
-        id: fmt-check
-        run: terraform fmt -check
       - name: Import Secrets
         uses: 1password/load-secrets-action@v2
         with:
@@ -71,6 +68,9 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           cli_config_credentials_token: $TF_CLOUD_TOKEN
+      - name: Format Check
+        id: fmt-check
+        run: terraform fmt -check
       - name: Initialize
         id: init
         run: terraform init
