@@ -71,13 +71,3 @@ patches:
       - op: add
         path: /spec/itemPath
         value: "vaults/core/items/onepassword"
-  - target:
-      kind: Ingress
-      name: argocd
-    patch: |-
-      - op: replace
-        path: /spec/rules/0/host
-        value: argocd-core.homescale.cloud
-      - op: replace
-        path: /spec/tls/0/hosts/0
-        value: argocd-core.homescale.cloud
