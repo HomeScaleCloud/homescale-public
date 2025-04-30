@@ -51,8 +51,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
       - name: Format Check
         id: fmt-check
         run: terraform fmt -check
@@ -62,13 +60,17 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          TFC_TOKEN: op://github-actions/terraform-cloud/credential
+          TF_CLOUD_TOKEN: op://github-actions/terraform-cloud/credential
           TF_VAR_cloudflare_token: op://common/cloudflare/credential
           TF_VAR_cloudflare_account_id: op://common/cloudflare/account-id
           TF_VAR_cloudflare_zone_id: op://common/cloudflare/zone-id
           TF_VAR_digitalocean_token: op://common/digitalocean/credential
           TF_VAR_digitalocean_spaces_id: op://common/digitalocean/spaces-access-key-id
           TF_VAR_digitalocean_spaces_key: op://common/digitalocean/spaces-secret-access-key
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: $TF_CLOUD_TOKEN
       - name: Initialize
         id: init
         run: terraform init
