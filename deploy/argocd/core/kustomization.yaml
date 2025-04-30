@@ -7,7 +7,6 @@ resources:
   - ../../../apps/cloudflared
   - ../../../apps/generic-device-plugin
   - ../../../apps/ingress-nginx
-  - ../../../apps/external-dns
   - ../../../apps/homepage
   - ../../../apps/metrics-server
   - ../../../apps/onepassword
