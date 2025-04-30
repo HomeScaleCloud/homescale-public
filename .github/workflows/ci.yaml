@@ -57,7 +57,7 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          TF_CLOUD_TOKEN: op://github-actions/terraform-cloud/credential
+          TFC_TOKEN: op://github-actions/terraform-cloud/credential
           TF_VAR_cloudflare_token: op://common/cloudflare/credential
           TF_VAR_cloudflare_account_id: op://common/cloudflare/account-id
           TF_VAR_cloudflare_zone_id: op://common/cloudflare/zone-id
@@ -67,7 +67,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          cli_config_credentials_token: $TF_CLOUD_TOKEN
+          cli_config_credentials_token: $TFC_TOKEN
       - name: Format Check
         id: fmt-check
         run: terraform fmt -check
