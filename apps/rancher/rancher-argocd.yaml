@@ -13,6 +13,7 @@ spec:
         valuesObject:
           # hostname: rancher.morrislan.net
           replicas: 1
+          tls: external
           ingress:
             enabled: false
   destination:
