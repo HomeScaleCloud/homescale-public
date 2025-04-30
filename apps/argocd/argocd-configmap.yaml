@@ -122,4 +122,4 @@ metadata:
   name: argocd-rbac-cm
 data:
   policy.csv: |
-      g, HomeScaleCloud:core-admin, role:admin
+      g, Admins, role:admin
