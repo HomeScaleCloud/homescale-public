@@ -18,16 +18,13 @@
         bash-completion
         jq
         yq
-        opentofu
+        terraform
         kubectl
         kubecolor
-        talosctl
-        omnictl
         librespeed-cli
         pre-commit
         k9s
         argocd
-        teleport_17
         act
         fzf
         yamllint
@@ -37,10 +34,6 @@
       shellHook = ''
         export EDITOR=nvim
         export KUBECONFIG="$HOME/.kube/config-homescale"
-        export TALOSCONFIG="$HOME/.talos/config-homescale"
-        export OMNICONFIG="$HOME/.omni/config-homescale"
-        export TELEPORT_HOME="$HOME/.tsh-homescale"
-        export TELEPORT_PROXY="teleport.homescale.cloud:443"
         pre-commit.exe install
         export PATH=$PWD/tools:$PATH
         echo "HomeScale dev shell loaded"
