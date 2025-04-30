@@ -23,14 +23,15 @@ patches:
         path: /data/dex.config
         value: |
           connectors:
-            - type: github
-              id: github
-              name: GitHub
+            - type: microsoft
+              id: microsoft
+              name: HomeScale
               config:
                 clientID: <path:vaults/core/items/argocd#oidc-client-id>
                 clientSecret: <path:vaults/core/items/argocd#oidc-client-secret>
-                orgs:
-                - name: HomeScaleCloud
+                tenant: <path:vaults/common/items/entra#tenant>
+                groups:
+                - Admins
   - target:
       kind: ConfigMap
       name: argocd-notifications-cm
