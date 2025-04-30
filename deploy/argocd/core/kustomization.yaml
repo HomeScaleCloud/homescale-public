@@ -17,7 +17,7 @@ patches:
     patch: |-
       - op: add
         path: /data/url
-        value: https://argocd.core.homescale.cloud
+        value: https://argocd-core.homescale.cloud
       - op: add
         path: /data/dex.config
         value: |
@@ -46,10 +46,10 @@ patches:
       - op: add
         path: /spec/dnsNames
         value:
-          - "argocd.core.homescale.cloud"
+          - "argocd-core.homescale.cloud"
       - op: add
         path: /spec/commonName
-        value: "argocd.core.homescale.cloud"
+        value: "argocd-core.homescale.cloud"
   - target:
       kind: OnePasswordItem
       name: op-argocd
@@ -77,7 +77,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/rules/0/host
-        value: argocd.core.homescale.cloud
+        value: argocd-core.homescale.cloud
       - op: replace
         path: /spec/tls/0/hosts/0
-        value: argocd.core.homescale.cloud
+        value: argocd-core.homescale.cloud
