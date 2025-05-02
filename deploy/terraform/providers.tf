@@ -1,8 +1,12 @@
 terraform {
   required_providers {
+    onepassword = {
+      source  = "1Password/onepassword"
+      version = "2.1.2"
+    }
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "5.3.0"
+      version = "5.1.0"
     }
     digitalocean = {
       source  = "digitalocean/digitalocean"
@@ -11,12 +15,15 @@ terraform {
   }
 }
 
+provider "onepassword" {
+  service_account_token = var.op_service_account_token
+}
+
+
 provider "cloudflare" {
-  api_token = var.cloudflare_token
+  api_token = data.onepassword_item.cloudflare.credential
 }
 
 provider "digitalocean" {
-  token             = var.digitalocean_token
-  spaces_access_id  = var.digitalocean_spaces_id
-  spaces_secret_key = var.digitalocean_spaces_key
+  token = data.onepassword_item.digitalocean.credential
 }
