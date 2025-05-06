@@ -21,10 +21,6 @@ resource "cloudflare_zero_trust_access_application" "rancher" {
     },
     {
       type = "public"
-      uri  = "xxx/assets"
-    },
-    {
-      type = "public"
       uri  = "xxx/api-ui"
     }
   ]
