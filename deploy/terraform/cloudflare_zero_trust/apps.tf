@@ -17,10 +17,6 @@ resource "cloudflare_zero_trust_access_application" "rancher" {
     },
     {
       type = "public"
-      uri  = "rancher.homescale.cloud/k8s/clusters"
-    },
-    {
-      type = "public"
       uri  = "rancher.homescale.cloud/api-ui"
     }
   ]
