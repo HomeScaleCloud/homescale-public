@@ -16,6 +16,15 @@ resource "cloudflare_dns_record" "azure_verify" {
   type    = "TXT"
 }
 
+resource "cloudflare_dns_record" "google_verify" {
+  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  name    = "homescale.cloud"
+  comment = "Domain ownership verification for Google"
+  content = "google-site-verification=u5Dge7wb90l5g-f6d09B6_8oPM2di4qmri5ZurpcXjY" #pragma: allowlist secret
+  ttl     = 3600
+  type    = "TXT"
+}
+
 resource "cloudflare_dns_record" "exchange_autodiscover" {
   zone_id = data.onepassword_item.cloudflare_zone_id.credential
   name    = "autodiscover.homescale.cloud"
