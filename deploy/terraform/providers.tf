@@ -12,6 +12,10 @@ terraform {
       source  = "digitalocean/digitalocean"
       version = "2.51.0"
     }
+    tailscale = {
+      source  = "tailscale/tailscale"
+      version = "0.19.0"
+    }
   }
 }
 
@@ -26,4 +30,10 @@ provider "cloudflare" {
 
 provider "digitalocean" {
   token = data.onepassword_item.digitalocean.credential
+}
+
+provider "tailscale" {
+  tailnet             = "homescale.cloud"
+  oauth_client_id     = data.onepassword_item.tailscale.password
+  oauth_client_secret = data.onepassword_item.tailscale.credential
 }

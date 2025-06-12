@@ -17,3 +17,8 @@ data "onepassword_item" "digitalocean" {
   vault = "common"
   title = "digitalocean"
 }
+
+data "onepassword_item" "tailscale" {
+  vault = "github-actions"
+  title = "tailscale"
+}

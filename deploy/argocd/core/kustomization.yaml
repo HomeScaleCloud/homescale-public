@@ -9,6 +9,7 @@ resources:
   - ../../../apps/ingress-nginx
   - ../../../apps/homepage
   - ../../../apps/metrics-server
+  - ../../../apps/omni
   - ../../../apps/onepassword
   - ../../../apps/rancher
 patches:
@@ -18,7 +19,7 @@ patches:
     patch: |-
       - op: add
         path: /data/url
-        value: https://argocd-core.homescale.cloud
+        value: https://argocd.core.homescale.cloud
       - op: add
         path: /data/dex.config
         value: |
@@ -47,10 +48,10 @@ patches:
       - op: add
         path: /spec/dnsNames
         value:
-          - "argocd-core.homescale.cloud"
+          - "argocd.core.homescale.cloud"
       - op: add
         path: /spec/commonName
-        value: "argocd-core.homescale.cloud"
+        value: "argocd.core.homescale.cloud"
   - target:
       kind: OnePasswordItem
       name: op-argocd
@@ -79,3 +80,60 @@ patches:
       - op: add
         path: /spec/sources/0/helm/valuesObject/hostname
         value: rancher.homescale.cloud
+  - target:
+      kind: Service
+      name: omni
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
+  - target:
+      kind: Service
+      name: omni-ui
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          tailscale.com/hostname: "omni"
+          tailscale.com/tags: "tag:admin-app-core"
+          external-dns.alpha.kubernetes.io/hostname: omni-ui.homescale.cloud.
+  - target:
+      version: v1
+      kind: Deployment
+      name: omni
+      namespace: omni
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --siderolink-api-advertised-url=https://omni.homescale.cloud:8095/
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --advertised-kubernetes-proxy-url=https://omni.homescale.cloud:8100/
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --siderolink-wireguard-advertised-addr=omni.homescale.cloud:50180
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --advertised-api-url=https://omni.homescale.cloud/
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --auth-saml-url=<path:vaults/core/items/omni#saml-url>
+  - target:
+      kind: OnePasswordItem
+      name: op-omni
+    patch: |-
+      - op: add
+        path: /spec/itemPath
+        value: "vaults/core/items/omni"
+  - target:
+      kind: Certificate
+      name: omni-tls
+    patch: |-
+      - op: add
+        path: /spec/dnsNames
+        value:
+          - "omni.homescale.cloud"
+      - op: add
+        path: /spec/commonName
+        value: "omni.homescale.cloud"
