@@ -11,7 +11,7 @@ resource "tailscale_acl" "acl" {
             },
             {
                 "action": "accept",
-                "src":    ["group:All Users@homescale.cloud"],
+                "src":    ["autogroup:member"],
                 "dst":    ["tag:app:*"],
             },
             {
