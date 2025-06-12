@@ -16,6 +16,11 @@ resource "tailscale_acl" "acl" {
             },
             {
                 "action": "accept",
+                "src":    ["autogroup:member"],
+                "dst":    ["autogroup:self:*"],
+            },
+            {
+                "action": "accept",
                 "src":    ["tag:github-actions"],
                 "dst": [
                     "tag:admin-app:443",
