@@ -16,7 +16,7 @@ variables:
   dockerfilePath: '$(Build.SourcesDirectory)/apps/homepage/Dockerfile'
   tag: '$(Build.SourceVersion)'
   # VM image for all jobs
-  vmImageName: 'ubuntu-latest'
+  vmImageName: 'self-hosted'
   terraformVersion: '1.5.0'
 
 stages:
