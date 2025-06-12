@@ -17,6 +17,7 @@ variables:
   tag: '$(Build.SourceVersion)'
   # VM image for all jobs
   vmImageName: 'ubuntu-latest'
+  terraformVersion: '1.5.0'
 
 stages:
   - stage: Build
@@ -65,36 +66,30 @@ stages:
           - checkout: self
             path: deploy/terraform
 
-          - task: TerraformCLI@0
+          - script: |
+              echo "Installing Terraform $(terraformVersion)…"
+              wget https://releases.hashicorp.com/terraform/$(terraformVersion)/terraform_$(terraformVersion)_linux_amd64.zip
+              unzip terraform_$(terraformVersion)_linux_amd64.zip
+              sudo mv terraform /usr/local/bin/
+            displayName: "Install Terraform $(terraformVersion)"
+
+          - script: terraform fmt -check
             displayName: "Terraform Format Check"
-            inputs:
-              workingDirectory: deploy/terraform
-              command: fmt
-              check: true
+            workingDirectory: deploy/terraform
 
-          - task: TerraformCLI@0
+          - script: terraform init
             displayName: "Terraform Init"
-            inputs:
-              workingDirectory: deploy/terraform
-              command: init
+            workingDirectory: deploy/terraform
 
-          - task: TerraformCLI@0
+          - script: terraform validate
             displayName: "Terraform Validate"
-            inputs:
-              workingDirectory: deploy/terraform
-              command: validate
+            workingDirectory: deploy/terraform
 
-          - task: TerraformCLI@0
+          - script: terraform plan -out=tfplan
             displayName: "Terraform Plan"
-            inputs:
-              workingDirectory: deploy/terraform
-              command: plan
-              args: "-out=tfplan"
+            workingDirectory: deploy/terraform
 
-          - task: TerraformCLI@0
+          - script: terraform apply -auto-approve tfplan
             displayName: "Terraform Apply"
+            workingDirectory: deploy/terraform
             condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
-            inputs:
-              workingDirectory: deploy/terraform
-              command: apply
-              args: "-auto-approve tfplan"
