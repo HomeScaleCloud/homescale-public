@@ -65,28 +65,36 @@ stages:
           - checkout: self
             path: deploy/terraform
 
-          - task: HashiCorpTerraformInstaller@0
-            displayName: "Install Terraform"
-            inputs:
-              terraformVersion: '1.5.0'
-
-          - script: terraform fmt -check
+          - task: TerraformCLI@0
             displayName: "Terraform Format Check"
-            workingDirectory: deploy/terraform
+            inputs:
+              workingDirectory: deploy/terraform
+              command: fmt
+              check: true
 
-          - script: terraform init
+          - task: TerraformCLI@0
             displayName: "Terraform Init"
-            workingDirectory: deploy/terraform
+            inputs:
+              workingDirectory: deploy/terraform
+              command: init
 
-          - script: terraform validate
+          - task: TerraformCLI@0
             displayName: "Terraform Validate"
-            workingDirectory: deploy/terraform
+            inputs:
+              workingDirectory: deploy/terraform
+              command: validate
 
-          - script: terraform plan -out=tfplan
+          - task: TerraformCLI@0
             displayName: "Terraform Plan"
-            workingDirectory: deploy/terraform
+            inputs:
+              workingDirectory: deploy/terraform
+              command: plan
+              args: "-out=tfplan"
 
-          - script: terraform apply -auto-approve tfplan
+          - task: TerraformCLI@0
             displayName: "Terraform Apply"
-            workingDirectory: deploy/terraform
             condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
+            inputs:
+              workingDirectory: deploy/terraform
+              command: apply
+              args: "-auto-approve tfplan"
