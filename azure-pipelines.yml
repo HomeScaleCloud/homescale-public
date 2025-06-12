@@ -66,12 +66,9 @@ stages:
           - checkout: self
             path: deploy/terraform
 
-          - script: |
-              echo "Installing Terraform $(terraformVersion)…"
-              wget https://releases.hashicorp.com/terraform/$(terraformVersion)/terraform_$(terraformVersion)_linux_amd64.zip
-              unzip terraform_$(terraformVersion)_linux_amd64.zip
-              sudo mv terraform /usr/local/bin/
-            displayName: "Install Terraform $(terraformVersion)"
+          - task: TerraformInstaller@0
+            inputs:
+              terraformVersion: 'latest'
 
           - script: terraform fmt -check
             displayName: "Terraform Format Check"
