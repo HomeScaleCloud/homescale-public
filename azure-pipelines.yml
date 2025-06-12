@@ -62,9 +62,8 @@ stages:
           TF_VAR_op_service_account_token: $(OP_SERVICE_ACCOUNT_TOKEN)
           TF_TOKEN_app_terraform_io: $(TF_TOKEN_app_terraform_io)
         steps:
-          - checkout:
-              repository: self
-              path: deploy/terraform
+          - checkout: self
+            path: deploy/terraform
 
           - task: HashiCorpTerraformInstaller@0
             displayName: "Install Terraform"
