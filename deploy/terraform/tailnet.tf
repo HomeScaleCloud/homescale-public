@@ -76,3 +76,9 @@ resource "tailscale_oauth_client" "operator_core" {
   scopes      = ["devices:core", "auth_keys"]
   tags        = ["tag:app", "tag:admin-app", "tag:k8s-operator"]
 }
+
+resource "tailscale_oauth_client" "operator_manor" {
+  description = "operator-manor"
+  scopes      = ["devices:core", "auth_keys"]
+  tags        = ["tag:app", "tag:admin-app", "tag:k8s-operator"]
+}

@@ -2,6 +2,10 @@ data "onepassword_vault" "core" {
   name = "core"
 }
 
+data "onepassword_vault" "manor" {
+  name = "manor"
+}
+
 data "onepassword_vault" "github_actions" {
   name = "github-actions"
 }
@@ -36,4 +40,11 @@ resource "onepassword_item" "tailscale_oauth_operator_core" {
   title    = "tailscale"
   username = tailscale_oauth_client.operator_core.id
   password = tailscale_oauth_client.operator_core.key
+}
+
+resource "onepassword_item" "tailscale_oauth_operator_manor" {
+  vault    = data.onepassword_vault.manor.uuid
+  title    = "tailscale"
+  username = tailscale_oauth_client.operator_manor.id
+  password = tailscale_oauth_client.operator_manor.key
 }
