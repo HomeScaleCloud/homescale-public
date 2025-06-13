@@ -92,7 +92,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Get omnictl
         run: |
-          wget https://github.com/siderolabs/omni/releases/download/v0.47.0/omnictl-linux-amd64 -O omnictl &&
+          wget https://github.com/siderolabs/omni/releases/download/v0.50.1/omnictl-linux-amd64 -O omnictl &&
           chmod +x omnictl
       - name: Validate clusters
         run: |
