@@ -19,12 +19,12 @@ data "onepassword_item" "digitalocean" {
 }
 
 data "onepassword_item" "tailscale" {
-  vault = "github-actions"
+  vault = "icuodmjsrcjgpj3w6zard3nsoa"
   title = "tailscale"
 }
 
 resource "onepassword_item" "tailscale_oauth_github_actions" {
-  vault    = "github-actions"
+  vault    = "icuodmjsrcjgpj3w6zard3nsoa"
   title    = "tailscale"
   username = tailscale_oauth_client.github_actions.id
   password = tailscale_oauth_client.github_actions.key
