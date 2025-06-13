@@ -7,7 +7,6 @@ resources:
   - ../../../apps/generic-device-plugin
   - ../../../apps/nfs-provisioner
   - ../../../apps/node-feature-discovery
-  - ../../../apps/homepage
   - ../../../apps/metrics-server
   - ../../../apps/external-dns
   - ../../../apps/home-assistant
