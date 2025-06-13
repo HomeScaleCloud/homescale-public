@@ -1,7 +1,6 @@
 kind: Cluster
 name: manor
 labels:
-  zone: manor
   region: boa
 talos:
   version: v1.9.5
