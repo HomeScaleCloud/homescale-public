@@ -7,6 +7,7 @@ resources:
   - ../../../apps/generic-device-plugin
   - ../../../apps/nfs-provisioner
   - ../../../apps/node-feature-discovery
+  - ../../../apps/ingress-nginx
   - ../../../apps/metrics-server
   - ../../../apps/external-dns
   - ../../../apps/home-assistant
@@ -88,6 +89,21 @@ patches:
           external-dns.alpha.kubernetes.io/hostname: ha.manor.homescale.cloud.
   - target:
       kind: Application
+      name: ingress-nginx
+    patch: |-
+      - op: replace
+        path: /spec/sources/0/helm/valuesObject/controller/service/type
+        value: "LoadBalancer"
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/controller/service/loadBalancerClass
+        value: "tailscale"
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/controller/service/annotations
+        value:
+          tailscale.com/hostname: "ingress-nginx-manor"
+          tailscale.com/tags: "tag:app"
+  - target:
+      kind: Application
       name: tailscale
     patch: |-
       - op: add
@@ -102,3 +118,20 @@ patches:
           oauth:
             clientId: <path:vaults/manor/items/tailscale#username>
             clientSecret: <path:vaults/manor/items/tailscale#password>
+  - target:
+      kind: Application
+      name: home-assistant
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/config
+        value:
+          clientID: "<path:vaults/manor/items/home-assistant#oidc-client-id>"
+          clientSecret: "<path:vaults/manor/items/home-assistant#oidc-client-secret>"
+          cookieSecret: "<path:vaults/manor/items/home-assistant-oidc#cookie-secret>"
+          redirectURL: "https://ha.manor.homescale.cloud/oauth2/callback"
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/config/extraArgs/-
+        value: - "--oidc-issuer-url=https://accounts.google.com"
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/ingress/hostname
+        value: "ha.manor.homescale.cloud"

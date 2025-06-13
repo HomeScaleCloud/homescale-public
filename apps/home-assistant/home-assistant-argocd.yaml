@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: home-assistant
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://charts.bitnami.com/bitnami
+      chart: oauth2-proxy
+      targetRevision: 7.0.2
+      helm:
+        valuesObject:
+          config:
+            provider: oidc
+            extraArgs:
+              - "--upstream=http://home-assistant.home-assistant.svc/"
+              - "--scope=openid email profile"
+              - "--email-domain=homescale.cloud"
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            pathRules:
+              - path: /oauth2
+                pathType: Prefix
+              - path: /
+                pathType: Prefix
+            annotations:
+              nginx.ingress.kubernetes.io/auth-url: "http://$host/oauth2/auth"
+              nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$request_uri"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: home-assistant
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

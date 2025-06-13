@@ -6,8 +6,6 @@ metadata:
   labels:
     app: home-assistant
 spec:
-  type: LoadBalancer
-  loadBalancerClass: tailscale
   selector:
     app: home-assistant
   ports:
