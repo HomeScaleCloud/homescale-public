@@ -20,4 +20,5 @@ patches:
         allowSchedulingOnControlPlanes: true
 ---
 kind: ControlPlane
-machines: []
+machines:
+  - 4c4c4544-0031-5310-8057-b7c04f584b32
