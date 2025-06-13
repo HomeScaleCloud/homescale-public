@@ -112,7 +112,7 @@ patches:
         value: --advertised-api-url=https://omni.homescale.cloud/
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --auth-saml-url=<path:vaults/core/items/omni#saml-url>
+        value: "--auth-saml-url=<path:vaults/core/items/omni#saml-url>"
   - target:
       kind: OnePasswordItem
       name: op-omni
