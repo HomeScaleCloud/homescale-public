@@ -158,5 +158,5 @@ patches:
             defaultTags:
               - "tag:app"
           oauth:
-            clientId: <path:vaults/core/items/tailscale#oauth-client-id>
-            clientSecret: <path:vaults/core/items/tailscale#oauth-client-secret>
+            clientId: <path:vaults/core/items/tailscale#username>
+            clientSecret: <path:vaults/core/items/tailscale#password>
