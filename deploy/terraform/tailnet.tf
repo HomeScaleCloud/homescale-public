@@ -5,7 +5,7 @@ resource "tailscale_acl" "acl" {
         "acls": [
             {
                 "action":     "accept",
-                "src":        ["group:Admins@homescale.cloud"],
+                "src":        ["group:admins@homescale.cloud"],
                 "dst":        ["tag:admin-app:*"],
                 "srcPosture": ["posture:linux", "posture:macos", "posture:windows"],
             },

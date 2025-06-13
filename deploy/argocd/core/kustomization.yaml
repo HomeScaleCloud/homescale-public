@@ -9,9 +9,10 @@ resources:
   - ../../../apps/ingress-nginx
   - ../../../apps/homepage
   - ../../../apps/metrics-server
+  - ../../../apps/external-dns
   - ../../../apps/omni
+  - ../../../apps/tailscale
   - ../../../apps/onepassword
-  - ../../../apps/rancher
 patches:
   - target:
       kind: ConfigMap
@@ -28,8 +29,8 @@ patches:
               id: microsoft
               name: Entra ID
               config:
-                clientID: <path:vaults/core/items/argocd#oidc-client-id>
-                clientSecret: <path:vaults/core/items/argocd#oidc-client-secret>
+                clientID: <path:vaults/common/items/argocd#oidc-client-id>
+                clientSecret: <path:vaults/common/items/argocd#oidc-client-secret>
                 tenant: <path:vaults/common/items/entra#tenant>
                 groups:
                 - Admins
@@ -73,13 +74,6 @@ patches:
       - op: add
         path: /spec/itemPath
         value: "vaults/core/items/onepassword"
-  - target:
-      kind: Application
-      name: rancher
-    patch: |-
-      - op: add
-        path: /spec/sources/0/helm/valuesObject/hostname
-        value: rancher.homescale.cloud
   - target:
       kind: Service
       name: omni
@@ -137,3 +131,39 @@ patches:
       - op: add
         path: /spec/commonName
         value: "omni.homescale.cloud"
+  - target:
+      kind: Service
+      name: argocd
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          tailscale.com/hostname: "argocd-core"
+          tailscale.com/tags: "tag:admin-app"
+          external-dns.alpha.kubernetes.io/hostname: argocd.core.homescale.cloud.
+  - target:
+      kind: Service
+      name: omni-ui
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          tailscale.com/hostname: "omni"
+          tailscale.com/tags: "tag:admin-app"
+          external-dns.alpha.kubernetes.io/hostname: omni-ui.homescale.cloud.
+  - target:
+      kind: Application
+      name: tailscale
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valuesObject
+        value:
+          proxyConfig:
+            defaultTags: "tag:app"
+          operatorConfig:
+            hostname: operator-core
+            defaultTags:
+              - "tag:app"
+          oauth:
+            clientId: <path:vaults/core/items/tailscale#oauth-client-id>
+            clientSecret: <path:vaults/core/items/tailscale#oauth-client-secret>
