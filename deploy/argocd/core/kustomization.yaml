@@ -6,6 +6,7 @@ resources:
   - ../../../apps/cert-manager
   - ../../../apps/generic-device-plugin
   - ../../../apps/ingress-nginx
+  - ../../../apps/node-feature-discovery
   - ../../../apps/homepage
   - ../../../apps/metrics-server
   - ../../../apps/external-dns

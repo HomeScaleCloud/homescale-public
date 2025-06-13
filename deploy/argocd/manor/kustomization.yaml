@@ -4,11 +4,14 @@ resources:
   - deploy-manor-argocd.yaml
   - ../../../apps/argocd
   - ../../../apps/cert-manager
-  - ../../../apps/cloudflared
   - ../../../apps/generic-device-plugin
-  - ../../../apps/metrics-server
   - ../../../apps/nfs-provisioner
+  - ../../../apps/node-feature-discovery
+  - ../../../apps/homepage
+  - ../../../apps/metrics-server
   - ../../../apps/external-dns
+  - ../../../apps/home-assistant
+  - ../../../apps/tailscale
   - ../../../apps/onepassword
 patches:
   - target:
@@ -17,7 +20,7 @@ patches:
     patch: |-
       - op: add
         path: /data/url
-        value: https://argocd.core.homescale.cloud
+        value: https://argocd.manor.homescale.cloud
       - op: add
         path: /data/dex.config
         value: |
@@ -63,11 +66,40 @@ patches:
     patch: |-
       - op: add
         path: /spec/itemPath
-        value: "vaults/core/items/onepassword"
+        value: "vaults/manor/items/onepassword"
   - target:
-      kind: OnePasswordItem
-      name: op-cloudflared
+      kind: Service
+      name: argocd
     patch: |-
       - op: add
-        path: /spec/itemPath
-        value: "vaults/manor/items/cloudflared"
+        path: /metadata/annotations
+        value:
+          tailscale.com/hostname: "argocd-manor"
+          tailscale.com/tags: "tag:admin-app"
+          external-dns.alpha.kubernetes.io/hostname: argocd.manor.homescale.cloud.
+  - target:
+      kind: Service
+      name: home-assistant
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          tailscale.com/hostname: "home-assistant-manor"
+          tailscale.com/tags: "tag:app"
+          external-dns.alpha.kubernetes.io/hostname: ha.manor.homescale.cloud.
+  - target:
+      kind: Application
+      name: tailscale
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valuesObject
+        value:
+          proxyConfig:
+            defaultTags: "tag:app"
+          operatorConfig:
+            hostname: operator-manor
+            defaultTags:
+              - "tag:app"
+          oauth:
+            clientId: <path:vaults/manor/items/tailscale#username>
+            clientSecret: <path:vaults/manor/items/tailscale#password>
