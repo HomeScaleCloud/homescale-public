@@ -4,7 +4,6 @@ resources:
   - deploy-core-argocd.yaml
   - ../../../apps/argocd
   - ../../../apps/cert-manager
-  - ../../../apps/cloudflared
   - ../../../apps/generic-device-plugin
   - ../../../apps/ingress-nginx
   - ../../../apps/homepage
