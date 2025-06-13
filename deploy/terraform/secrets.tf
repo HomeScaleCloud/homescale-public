@@ -30,9 +30,9 @@ resource "onepassword_item" "tailscale_oauth_github_actions" {
   password = tailscale_oauth_client.github_actions.key
 }
 
-resource "onepassword_item" "tailscale_oauth_operator_core" {
-  vault    = "core"
-  title    = "tailscale"
-  username = tailscale_oauth_client.operator_core.id
-  password = tailscale_oauth_client.operator_core.key
-}
+# resource "onepassword_item" "tailscale_oauth_operator_core" {
+#   vault    = "core"
+#   title    = "tailscale"
+#   username = tailscale_oauth_client.operator_core.id
+#   password = tailscale_oauth_client.operator_core.key
+# }
