@@ -120,6 +120,7 @@ patches:
         path: /spec/dnsNames
         value:
           - "xxx"
+          - "xxx"
       - op: add
         path: /spec/commonName
         value: "xxx"
