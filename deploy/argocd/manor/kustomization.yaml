@@ -17,19 +17,20 @@ patches:
     patch: |-
       - op: add
         path: /data/url
-        value: https://argocd.manor.homescale.cloud
+        value: https://argocd.core.homescale.cloud
       - op: add
         path: /data/dex.config
         value: |
           connectors:
-            - type: github
-              id: github
-              name: GitHub
+            - type: microsoft
+              id: microsoft
+              name: Entra ID
               config:
-                clientID: <path:vaults/manor/items/argocd#oidc-client-id>
-                clientSecret: <path:vaults/manor/items/argocd#oidc-client-secret>
-                orgs:
-                - name: HomeScaleCloud
+                clientID: <path:vaults/common/items/argocd#oidc-client-id>
+                clientSecret: <path:vaults/common/items/argocd#oidc-client-secret>
+                tenant: <path:vaults/common/items/entra#tenant>
+                groups:
+                - Admins
   - target:
       kind: ConfigMap
       name: argocd-notifications-cm
@@ -37,7 +38,7 @@ patches:
       - op: add
         path: /data/service.slack
         value: |
-          token: <path:vaults/manor/items/argocd#slack-token>
+          token: <path:vaults/common/items/argocd#slack-token>
   - target:
       kind: Certificate
       name: argocd-tls
