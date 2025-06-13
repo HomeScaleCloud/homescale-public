@@ -32,14 +32,14 @@ data "onepassword_item" "tailscale" {
 }
 
 resource "onepassword_item" "tailscale_oauth_github_actions" {
-  vault    = "github-actions"
+  vault    = data.onepassword_vault.github_actions.uuid
   title    = "tailscale"
   username = tailscale_oauth_client.github_actions.id
   password = tailscale_oauth_client.github_actions.key
 }
 
 resource "onepassword_item" "tailscale_oauth_operator_core" {
-  vault    = "core"
+  vault    = data.onepassword_vault.core.uuid
   title    = "tailscale"
   username = tailscale_oauth_client.operator_core.id
   password = tailscale_oauth_client.operator_core.key
