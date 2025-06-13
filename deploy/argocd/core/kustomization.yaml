@@ -41,7 +41,7 @@ patches:
       - op: add
         path: /data/service.slack
         value: |
-          token: <path:vaults/core/items/argocd#slack-token>
+          token: <path:vaults/common/items/argocd#slack-token>
   - target:
       kind: Certificate
       name: argocd-tls
@@ -60,13 +60,6 @@ patches:
       - op: add
         path: /spec/itemPath
         value: "vaults/core/items/argocd"
-  - target:
-      kind: OnePasswordItem
-      name: op-cloudflared
-    patch: |-
-      - op: add
-        path: /spec/itemPath
-        value: "vaults/core/items/cloudflared"
   - target:
       kind: OnePasswordItem
       name: op-onepassword
