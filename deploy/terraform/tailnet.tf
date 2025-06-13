@@ -69,3 +69,14 @@ resource "tailscale_dns_search_paths" "search_paths" {
     "homescale.cloud"
   ]
 }
+
+resource "tailscale_oauth_client" "github_actions" {
+  description = "github-actions"
+  scopes      = ["account_settings", "api_access_tokens", "devices:core:read", "devices:posture_attributes", "devices:routes", "dns", "feature_settings", "log_streaming", "oauth_keys", "policy_file", "users", "webhooks"]
+}
+
+resource "tailscale_oauth_client" "operator_core" {
+  description = "operator-core"
+  scopes      = ["devices:core", "auth_keys"]
+  tags        = ["tag:app", "tag:admin-app", "tag:k8s-operator"]
+}
