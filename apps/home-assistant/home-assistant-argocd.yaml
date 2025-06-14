@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: oci://registry-1.docker.io/bitnamicharts/oauth2-proxy
+    - repoURL: https://charts.bitnami.com/bitnami
       chart: oauth2-proxy
       targetRevision: 7.0.3
       helm:
