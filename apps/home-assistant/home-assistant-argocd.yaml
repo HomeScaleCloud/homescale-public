@@ -16,6 +16,7 @@ spec:
             ingressClassName: nginx
             annotations:
               cert-manager.io/cluster-issuer: letsencrypt
+              nginx.org/proxy-buffer-size: 8k
   destination:
     server: https://kubernetes.default.svc
     namespace: home-assistant
