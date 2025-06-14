@@ -17,7 +17,7 @@ spec:
             enabled: true
             ingressClassName: nginx
             hosts:
-              - REDACTED.
+              - REDACTED
             annotations:
               nginx.ingress.kubernetes.io/auth-url: "http://$host/oauth2/auth"
               nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$request_uri"
