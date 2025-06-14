@@ -125,6 +125,7 @@ patches:
       - op: add
         path: /spec/sources/0/helm/valuesObject/config
         value:
+          provider: oidc
           clientID: "<path:vaults/manor/items/home-assistant#oidc-client-id>"
           clientSecret: "<path:vaults/manor/items/home-assistant#oidc-client-secret>"
           cookieSecret: "<path:vaults/manor/items/home-assistant#cookie-secret>"

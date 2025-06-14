@@ -11,8 +11,6 @@ spec:
       targetRevision: 7.12.18
       helm:
         valuesObject:
-          config:
-            provider: oidc
           ingress:
             enabled: true
             ingressClassName: nginx
