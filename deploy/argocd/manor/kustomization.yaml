@@ -79,7 +79,7 @@ patches:
           external-dns.alpha.kubernetes.io/hostname: argocd.manor.homescale.cloud.
   - target:
       kind: Service
-      name: home-assistant
+      name: home-assistant-auth
     patch: |-
       - op: add
         path: /metadata/annotations
@@ -134,8 +134,4 @@ patches:
         value:
           --upstream=http://home-assistant.home-assistant.svc/
           --scope=openid email profile
-          --email-domain=homescale.cloud
           --oidc-issuer-url=<path:vaults/common/items/entra#oidc-issuer>
-      - op: add
-        path: /spec/sources/0/helm/valuesObject/ingress/hostname
-        value: "ha.manor.homescale.cloud"
