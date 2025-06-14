@@ -18,6 +18,10 @@ spec:
             ingressClassName: nginx
             hosts:
               - ha.manor.homescale.cloud
+            tls:
+              - hosts:
+                  - ha.manor.homescale.cloud
+                secretName: home-assistant-tls
             annotations:
               nginx.ingress.kubernetes.io/auth-url: "http://$host/oauth2/auth"
               nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$request_uri"
