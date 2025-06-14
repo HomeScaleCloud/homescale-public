@@ -125,15 +125,28 @@ patches:
       - op: add
         path: /spec/sources/0/helm/valuesObject/config
         value:
-          provider: oidc
           clientID: "<path:vaults/manor/items/home-assistant#oidc-client-id>"
           clientSecret: "<path:vaults/manor/items/home-assistant#oidc-client-secret>"
           cookieSecret: "<path:vaults/manor/items/home-assistant#cookie-secret>"
-          oidcIssuerUrl: "<path:vaults/common/items/entra#oidc-issuer>"
           redirectURL: "https://ha.manor.homescale.cloud/oauth2/callback"
           configFile: |-
             email_domains = [ "*" ]
             upstreams = [ "http://home-assistant.home-assistant.svc" ]
+            oidc_issuer_url = "<path:vaults/common/items/entra#oidc-issuer>"
+            oidc_groups_claim = "roles"
+            provider = "oidc"
+            pass_user_headers = true
+            set_xauthrequest = true
+            skip_provider_button = false
+            skip_auth_regex = "^/api/\\d+/webhook/"
+            provider_display_name = "Entra ID"
+            cookie_domains = ["homescale.cloud"]
+            cookie_expire = "1h"
+            cookie_httponly = false
+            cookie_secure = true
+            errors_to_info_log = true
+            show_debug_on_error = true
+            exclude_logging_paths = ["/ping"]
       - op: add
         path: /spec/sources/0/helm/valuesObject/ingress/hosts
         value:
