@@ -13,6 +13,9 @@ spec:
         valuesObject:
           config:
             provider: oidc
+          ingress:
+            enabled: true
+            ingressClassName: nginx
   destination:
     server: https://kubernetes.default.svc
     namespace: home-assistant
