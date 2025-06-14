@@ -13,10 +13,6 @@ spec:
         valuesObject:
           config:
             provider: oidc
-            extraArgs:
-              - "--upstream=http://home-assistant.home-assistant.svc/"
-              - "--scope=openid email profile"
-              - "--email-domain=homescale.cloud"
           ingress:
             enabled: true
             ingressClassName: nginx
