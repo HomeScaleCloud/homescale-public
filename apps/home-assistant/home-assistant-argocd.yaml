@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://charts.bitnami.com/bitnami
+    - repoURL: https://oauth2-proxy.github.io/manifests
       chart: oauth2-proxy
-      targetRevision: 7.0.3
+      targetRevision: 7.12.18
       helm:
         valuesObject:
           config:
