@@ -16,13 +16,15 @@ spec:
           ingress:
             enabled: true
             ingressClassName: nginx
-            pathRules:
-              - path: /oauth2
-                pathType: Prefix
-              - path: /
-                pathType: Prefix
+            hosts:
+              - host: ha.manor.homescale.cloud
+                paths:
+                  - path: /oauth2
+                    pathType: Prefix
+                  - path: /
+                    pathType: Prefix
             annotations:
-              nginx.ingress.kubernetes.io/auth-url: "http://$host/oauth2/auth"
+              nginx.ingress.kubernetes.io/auth-url: "https://$host/oauth2/auth"
               nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$request_uri"
   destination:
     server: https://kubernetes.default.svc
