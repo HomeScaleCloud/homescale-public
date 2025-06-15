@@ -142,6 +142,17 @@ patches:
             errors_to_info_log = true
             show_debug_on_error = true
             exclude_logging_paths = ["/ping"]
+            skip_auth_routes = [
+              "^/api.*",
+              "^/auth/token.*",
+              "^/auth/login_flow.*",
+              "^/.external_auth=.",
+              "^/service_worker.js",
+              "^/static.*",
+              "^/local.*",
+              "^/hacsfiles.*",
+              "^/frontend_latest.*"
+            ]
       - op: add
         path: /spec/sources/0/helm/valuesObject/ingress/hosts
         value:
