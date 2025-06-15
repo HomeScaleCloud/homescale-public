@@ -13,7 +13,7 @@ spec:
         valuesObject:
           nfs:
             server: 10.1.240.7
-            path: /mnt/data/clusters/prod
+            path: /mnt/data/apps
           storageClass:
             defaultClass: true
 
