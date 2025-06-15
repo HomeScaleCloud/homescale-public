@@ -4,20 +4,21 @@ labels:
   zone: manor
   region: boa
 talos:
-  version: v1.9.5
+  version: v1.10.4
 kubernetes:
-  version: v1.32.3
+  version: v1.33.1
 features:
   enableWorkloadProxy: true
   useEmbeddedDiscoveryService: true
   backupConfiguration:
     interval: 1h
 patches:
-  - file: ./global-patches.yaml
+  - file: global-patches.yaml
   - name: allow-schedule-control-plane
     inline:
       cluster:
         allowSchedulingOnControlPlanes: true
 ---
 kind: ControlPlane
-machines: []
+machines:
+  - 4c4c4544-0031-5310-8057-b7c04f584b32

@@ -4,9 +4,9 @@ resources:
   - deploy-core-argocd.yaml
   - ../../../apps/argocd
   - ../../../apps/cert-manager
-  - ../../../apps/cloudflared
   - ../../../apps/generic-device-plugin
   - ../../../apps/ingress-nginx
+  - ../../../apps/node-feature-discovery
   - ../../../apps/homepage
   - ../../../apps/metrics-server
   - ../../../apps/external-dns
@@ -74,7 +74,7 @@ patches:
       - op: add
         path: /metadata/annotations
         value:
-          external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
+          external-dns.alpha.kubernetes.io/hostname: omni-api.homescale.cloud.
   - target:
       kind: Service
       name: omni-ui
@@ -84,7 +84,7 @@ patches:
         value:
           tailscale.com/hostname: "omni"
           tailscale.com/tags: "tag:admin-app-core"
-          external-dns.alpha.kubernetes.io/hostname: omni-ui.homescale.cloud.
+          external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
   - target:
       version: v1
       kind: Deployment
@@ -93,19 +93,19 @@ patches:
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --siderolink-api-advertised-url=https://omni.homescale.cloud:8095/
+        value: --siderolink-api-advertised-url=https://omni-api.homescale.cloud:8095/
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --advertised-kubernetes-proxy-url=https://omni.homescale.cloud:8100/
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --siderolink-wireguard-advertised-addr=omni.homescale.cloud:50180
+        value: --siderolink-wireguard-advertised-addr=omni-api.homescale.cloud:50180
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --advertised-api-url=https://omni.homescale.cloud/
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: "--auth-saml-url=<path:vaults/core/items/omni#saml-url>"
+        value: --auth-saml-url=<path:vaults/core/items/omni#saml-url>
   - target:
       kind: OnePasswordItem
       name: op-omni
@@ -121,6 +121,7 @@ patches:
         path: /spec/dnsNames
         value:
           - "omni.homescale.cloud"
+          - "omni-api.homescale.cloud"
       - op: add
         path: /spec/commonName
         value: "omni.homescale.cloud"
@@ -143,7 +144,7 @@ patches:
         value:
           tailscale.com/hostname: "omni"
           tailscale.com/tags: "tag:admin-app"
-          external-dns.alpha.kubernetes.io/hostname: omni-ui.homescale.cloud.
+          external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
   - target:
       kind: Application
       name: tailscale
@@ -158,5 +159,5 @@ patches:
             defaultTags:
               - "tag:app"
           oauth:
-            clientId: <path:vaults/core/items/tailscale#oauth-client-id>
-            clientSecret: <path:vaults/core/items/tailscale#oauth-client-secret>
+            clientId: <path:vaults/core/items/tailscale#username>
+            clientSecret: <path:vaults/core/items/tailscale#password>

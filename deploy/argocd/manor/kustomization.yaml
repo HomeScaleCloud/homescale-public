@@ -2,14 +2,17 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - deploy-manor-argocd.yaml
-  - ../../../../apps/argocd
-  - ../../../../apps/cert-manager
-  - ../../../../apps/cloudflared
-  - ../../../../apps/generic-device-plugin
-  - ../../../../apps/metrics-server
-  - ../../../../apps/nfs-provisioner
-  - ../../../../apps/external-dns
-  - ../../../../apps/onepassword
+  - ../../../apps/argocd
+  - ../../../apps/cert-manager
+  - ../../../apps/generic-device-plugin
+  - ../../../apps/nfs-provisioner
+  - ../../../apps/node-feature-discovery
+  - ../../../apps/ingress-nginx
+  - ../../../apps/metrics-server
+  - ../../../apps/external-dns
+  - ../../../apps/home-assistant
+  - ../../../apps/tailscale
+  - ../../../apps/onepassword
 patches:
   - target:
       kind: ConfigMap
@@ -22,14 +25,15 @@ patches:
         path: /data/dex.config
         value: |
           connectors:
-            - type: github
-              id: github
-              name: GitHub
+            - type: microsoft
+              id: microsoft
+              name: Entra ID
               config:
-                clientID: <path:vaults/manor/items/argocd#oidc-client-id>
-                clientSecret: <path:vaults/manor/items/argocd#oidc-client-secret>
-                orgs:
-                - name: HomeScaleCloud
+                clientID: <path:vaults/common/items/argocd#oidc-client-id>
+                clientSecret: <path:vaults/common/items/argocd#oidc-client-secret>
+                tenant: <path:vaults/common/items/entra#tenant>
+                groups:
+                - Admins
   - target:
       kind: ConfigMap
       name: argocd-notifications-cm
@@ -37,7 +41,7 @@ patches:
       - op: add
         path: /data/service.slack
         value: |
-          token: <path:vaults/manor/items/argocd#slack-token>
+          token: <path:vaults/common/items/argocd#slack-token>
   - target:
       kind: Certificate
       name: argocd-tls
@@ -62,11 +66,100 @@ patches:
     patch: |-
       - op: add
         path: /spec/itemPath
-        value: "vaults/core/items/onepassword"
+        value: "vaults/manor/items/onepassword"
   - target:
-      kind: OnePasswordItem
-      name: op-cloudflared
+      kind: Service
+      name: argocd
     patch: |-
       - op: add
-        path: /spec/itemPath
-        value: "vaults/manor/items/cloudflared"
+        path: /metadata/annotations
+        value:
+          tailscale.com/hostname: "argocd-manor"
+          tailscale.com/tags: "tag:admin-app"
+          external-dns.alpha.kubernetes.io/hostname: argocd.manor.homescale.cloud.
+  - target:
+      kind: Service
+      name: home-assistant
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          tailscale.com/hostname: "home-assistant-manor"
+          tailscale.com/tags: "tag:app"
+          external-dns.alpha.kubernetes.io/hostname: ha.manor.homescale.cloud.
+  - target:
+      kind: Application
+      name: ingress-nginx
+    patch: |-
+      - op: replace
+        path: /spec/sources/0/helm/valuesObject/controller/service/type
+        value: "LoadBalancer"
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/controller/service/loadBalancerClass
+        value: "tailscale"
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/controller/service/annotations
+        value:
+          tailscale.com/hostname: "ingress-nginx-manor"
+          tailscale.com/tags: "tag:app"
+  - target:
+      kind: Application
+      name: tailscale
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valuesObject
+        value:
+          proxyConfig:
+            defaultTags: "tag:app"
+          operatorConfig:
+            hostname: operator-manor
+            defaultTags:
+              - "tag:app"
+          oauth:
+            clientId: <path:vaults/manor/items/tailscale#username>
+            clientSecret: <path:vaults/manor/items/tailscale#password>
+  - target:
+      kind: Application
+      name: home-assistant
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/config
+        value:
+          clientID: "<path:vaults/manor/items/home-assistant#oidc-client-id>"
+          clientSecret: "<path:vaults/manor/items/home-assistant#oidc-client-secret>"
+          cookieSecret: "<path:vaults/manor/items/home-assistant#cookie-secret>"
+          redirectURL: "https://ha.manor.homescale.cloud/oauth2/callback"
+          configFile: |-
+            email_domains = [ "*" ]
+            upstreams = [ "http://home-assistant.home-assistant.svc" ]
+            oidc_issuer_url = "<path:vaults/common/items/entra#oidc-issuer>"
+            oidc_groups_claim = "roles"
+            provider = "oidc"
+            pass_user_headers = true
+            set_xauthrequest = true
+            skip_provider_button = true
+            provider_display_name = "Entra ID"
+            errors_to_info_log = true
+            show_debug_on_error = true
+            exclude_logging_paths = ["/ping"]
+            skip_auth_routes = [
+              "^/api.*",
+              "^/auth/token.*",
+              "^/auth/login_flow.*",
+              "^/.external_auth=.",
+              "^/service_worker.js",
+              "^/static.*",
+              "^/local.*",
+              "^/hacsfiles.*",
+              "^/frontend_latest.*"
+            ]
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/ingress/hosts
+        value:
+          - ha.manor.homescale.cloud
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/ingress/tls
+        value:
+          - hosts:
+              - ha.manor.homescale.cloud
+            secretName: home-assistant-tls
