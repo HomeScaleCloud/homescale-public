@@ -41,7 +41,7 @@ data:
         command:
           - sh
           - "-c"
-          - "kustomize build ./manifests | argocd-vault-plugin generate -s op-argocd -"
+          - "kustomize build . | argocd-vault-plugin generate -s op-argocd -"
       lockRepo: false
   avp-helm.yaml: |
     apiVersion: argoproj.io/v1alpha1
