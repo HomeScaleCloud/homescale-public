@@ -36,7 +36,7 @@ data:
           command:
             - sh
             - "-c"
-            - "grep 'avp-kustomize.kubernetes.io' ."
+            - "grep 'avp-kustomize.kubernetes.io' *"
       generate:
         command:
           - sh
