@@ -10,7 +10,7 @@ patches:
       group: argoproj.io
       version: v1alpha1
       kind: Application
-      name: tailscale
+      name: tailscale-helm
     patch: |-
       - op: add
         path: /spec/sources/0/helm/valuesObject
