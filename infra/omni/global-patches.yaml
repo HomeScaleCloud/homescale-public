@@ -1,0 +1,20 @@
+cluster:
+  apiServer:
+    admissionControl:
+      - name: PodSecurity
+        configuration:
+          exemptions:
+            namespaces:
+              - rook-ceph
+              - metrics
+              - node-feature-discovery
+              - falco
+              - tailscale
+  extraManifests:
+    - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/infra/standalone-install.yaml
+machine:
+  kubelet:
+    extraArgs:
+      rotate-server-certificates: true
+  sysctls:
+    user.max_user_namespaces: "10000"

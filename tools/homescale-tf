@@ -3,7 +3,7 @@
 
 export TF_VAR_op_service_account_token="op://github-actions/onepassword/credential"
 
-cd "$HOME/Repos/homescale/deploy/terraform"
+cd "$HOME/Repos/homescale/infra/terraform"
 
 TF_BIN=""
 for path in "/usr/bin/terraform" "/home/linuxbrew/.linuxbrew/bin/terraform"; do

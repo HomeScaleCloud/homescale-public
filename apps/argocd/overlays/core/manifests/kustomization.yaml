@@ -1,0 +1,78 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+resources:
+  - ../../../base/manifests
+patches:
+  - target:
+      group: ""
+      version: v1
+      kind: ConfigMap
+      name: argocd-cm
+    patch: |-
+      - op: add
+        path: /data/url
+        value: https://argocd.core.homescale.cloud
+      - op: add
+        path: /data/dex.config
+        value: |
+          connectors:
+            - type: microsoft
+              id: microsoft
+              name: Entra ID
+              config:
+                clientID: <path:vaults/common/items/argocd#oidc-client-id>
+                clientSecret: <path:vaults/common/items/argocd#oidc-client-secret>
+                tenant: <path:vaults/common/items/entra#tenant>
+                groups:
+                - Admins
+
+  - target:
+      group: ""
+      version: v1
+      kind: ConfigMap
+      name: argocd-notifications-cm
+    patch: |-
+      - op: add
+        path: /data/service.slack
+        value: |
+          token: <path:vaults/common/items/argocd#slack-token>
+
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: argocd-tls
+    patch: |-
+      - op: add
+        path: /spec/dnsNames
+        value:
+          - "argocd.core.homescale.cloud"
+      - op: add
+        path: /spec/commonName
+        value: "argocd.core.homescale.cloud"
+
+  - target:
+      group: onepassword.com
+      version: v1
+      kind: OnePasswordItem
+      name: op-argocd
+    patch: |-
+      - op: add
+        path: /spec/itemPath
+        value: "vaults/core/items/argocd"
+
+  - target:
+      group: ""
+      version: v1
+      kind: Service
+      name: argocd
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          tailscale.com/hostname: "argocd-core"
+          tailscale.com/tags: "tag:admin-app"
+          external-dns.alpha.kubernetes.io/hostname: argocd.core.homescale.cloud.
+
