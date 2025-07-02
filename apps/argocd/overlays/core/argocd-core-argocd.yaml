@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: argocd
   namespace: argocd
-  annotations:
-    avp-kustomize.kubernetes.io/path: "vaults/core/items/argocd"
 spec:
   project: default
   sources:
