@@ -4,7 +4,7 @@ metadata:
   name: omni
   namespace: argocd
   annotations:
-    avp.kubernetes.io/path: "vaults/core/items/omni"
+    avp-kustomize.kubernetes.io/path: "vaults/core/items/omni"
 spec:
   project: default
   sources:
