@@ -12,6 +12,9 @@ spec:
       helm:
         valuesObject:
           controller:
+            service:
+              type: LoadBalancer
+              loadBalancerClass: tailscale
             autoscaling:
               enabled: true
               minReplicas: 1
