@@ -23,7 +23,7 @@ spec:
       path: 'apps/generic-device-plugin/base'
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
-      path: 'apps/ingress-nginx/base'
+      path: 'apps/ingress-nginx/overlays/core'
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/metrics-server/base'
