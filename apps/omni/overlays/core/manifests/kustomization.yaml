@@ -19,7 +19,7 @@ patches:
         value: --siderolink-api-advertised-url=https://xxx:8095/
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --advertised-kubernetes-proxy-url=https://xxx:8100/
+        value: --advertised-kubernetes-proxy-url=https://xxx/
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --siderolink-wireguard-advertised-addr=xxx:50180
@@ -53,4 +53,23 @@ patches:
       - op: replace
         path: /spec/tls/0/hosts
         value:
+          - xxx
+          - xxx
+          - xxx
+
+  - target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: omni
+      namespace: omni
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: xxx
+      - op: replace
+        path: /spec/tls/0/hosts
+        value:
+          - xxx
+          - xxx
           - xxx
