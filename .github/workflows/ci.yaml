@@ -90,6 +90,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Import Secrets
+        if: github.ref == 'refs/heads/main'
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          OMNI_SERVICE_ACCOUNT_KEY: op://github-actions/omni/password #pragma: allowlist secret
+          TS_ID: op://github-actions/tailscale/username
+          TS_SECRET: op://github-actions/tailscale/password #pragma: allowlist secret
       - name: Connect to Tailscale
         uses: tailscale/github-action@v3
         with:
@@ -105,16 +115,6 @@ jobs:
           find . -type f -name '*-cluster.yaml' | while read -r cluster; do
             ./omnictl cluster template validate -f "$cluster"
           done
-      - name: Import Secrets
-        if: github.ref == 'refs/heads/main'
-        uses: 1password/load-secrets-action@v2
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          OMNI_SERVICE_ACCOUNT_KEY: op://github-actions/omni/password #pragma: allowlist secret
-          TS_ID: op://github-actions/tailscale/username
-          TS_SECRET: op://github-actions/tailscale/password #pragma: allowlist secret
       - name: Sync machineclasses
         if: github.ref == 'refs/heads/main'
         run: |
