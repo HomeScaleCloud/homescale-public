@@ -44,7 +44,7 @@ patches:
       group: networking.k8s.io
       version: v1
       kind: Ingress
-      name: omni
+      name: omni-ui
       namespace: omni
     patch: |-
       - op: replace
@@ -61,7 +61,7 @@ patches:
       group: networking.k8s.io
       version: v1
       kind: Ingress
-      name: omni
+      name: omni-k8s
       namespace: omni
     patch: |-
       - op: replace
