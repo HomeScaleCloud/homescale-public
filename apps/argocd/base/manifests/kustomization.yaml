@@ -8,8 +8,7 @@ resources:
   - argocd-cmp-cm.yaml
   - avp-role.yaml
   - argocd-secret.yaml
-  - argocd-service.yaml
-  - argocd-certificate.yaml
+  - argocd-ingress.yaml
 patches:
   - path: argocd-deployment.yaml
   - path: argocd-configmap.yaml
