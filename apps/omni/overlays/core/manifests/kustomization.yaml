@@ -6,29 +6,6 @@ metadata:
 resources:
   - ../../../base/manifests
 patches:
-  - target:
-      group: ""
-      version: v1
-      kind: Service
-      name: omni
-    patch: |-
-      - op: add
-        path: /metadata/annotations
-        value:
-          external-dns.alpha.kubernetes.io/hostname: omni-api.homescale.cloud.
-
-  - target:
-      group: ""
-      version: v1
-      kind: Service
-      name: omni-ui
-    patch: |-
-      - op: add
-        path: /metadata/annotations
-        value:
-          tailscale.com/hostname: "omni"
-          tailscale.com/tags: "tag:admin-app-core"
-          external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
 
   - target:
       group: apps
@@ -64,29 +41,16 @@ patches:
         value: "vaults/core/items/omni"
 
   - target:
-      group: cert-manager.io
+      group: networking.k8s.io
       version: v1
-      kind: Certificate
-      name: omni-tls
+      kind: Ingress
+      name: omni
+      namespace: omni
     patch: |-
-      - op: add
-        path: /spec/dnsNames
+      - op: replace
+        path: /spec/rules/0/host
+        value: omni.homescale.cloud
+      - op: replace
+        path: /spec/tls/0/hosts
         value:
-          - "omni.homescale.cloud"
-          - "omni-api.homescale.cloud"
-      - op: add
-        path: /spec/commonName
-        value: "omni.homescale.cloud"
-
-  - target:
-      group: ""
-      version: v1
-      kind: Service
-      name: omni-ui
-    patch: |-
-      - op: add
-        path: /metadata/annotations
-        value:
-          tailscale.com/hostname: "omni"
-          tailscale.com/tags: "tag:admin-app"
-          external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
+          - omni.homescale.cloud

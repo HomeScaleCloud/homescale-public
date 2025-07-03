@@ -43,20 +43,6 @@ patches:
           token: <path:vaults/common/items/argocd#slack-token>
 
   - target:
-      group: cert-manager.io
-      version: v1
-      kind: Certificate
-      name: argocd-tls
-    patch: |-
-      - op: add
-        path: /spec/dnsNames
-        value:
-          - "argocd.core.homescale.cloud"
-      - op: add
-        path: /spec/commonName
-        value: "argocd.core.homescale.cloud"
-
-  - target:
       group: onepassword.com
       version: v1
       kind: OnePasswordItem
@@ -67,15 +53,17 @@ patches:
         value: "vaults/core/items/argocd"
 
   - target:
-      group: ""
+      group: networking.k8s.io
       version: v1
-      kind: Service
+      kind: Ingress
       name: argocd
+      namespace: argocd
     patch: |-
-      - op: add
-        path: /metadata/annotations
+      - op: replace
+        path: /spec/rules/0/host
+        value: argocd.core.homescale.cloud
+      - op: replace
+        path: /spec/tls/0/hosts
         value:
-          tailscale.com/hostname: "argocd-core"
-          tailscale.com/tags: "tag:admin-app"
-          external-dns.alpha.kubernetes.io/hostname: argocd.core.homescale.cloud.
+          - argocd.core.homescale.cloud
 

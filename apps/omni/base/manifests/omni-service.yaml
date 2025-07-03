@@ -25,16 +25,10 @@ metadata:
   namespace: omni
   labels:
     app: omni
-  # annotations:
-  #   tailscale.com/hostname: "omni"
-  #   tailscale.com/tags: "tag:core,tag:admin-app"
-  #   external-dns.alpha.kubernetes.io/hostname: omni.homescale.cloud.
 
 spec:
   selector:
     app: omni
-  type: LoadBalancer
-  loadBalancerClass: tailscale
 
   ports:
     - name: omni-ui
