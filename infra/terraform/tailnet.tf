@@ -4,12 +4,6 @@ resource "tailscale_acl" "acl" {
     {
         "acls": [
             {
-                "action":     "accept",
-                "src":        ["group:admins@homescale.cloud"],
-                "dst":        ["tag:admin-app:*"],
-                "srcPosture": ["posture:linux", "posture:macos", "posture:windows"],
-            },
-            {
                 "action": "accept",
                 "src":    ["autogroup:member"],
                 "dst":    ["tag:app:*"],
@@ -23,14 +17,13 @@ resource "tailscale_acl" "acl" {
                 "action": "accept",
                 "src":    ["tag:github-actions"],
                 "dst": [
-                    "tag:admin-app:443",
+                    "tag:app:443",
                 ],
             },
         ],
         "tagOwners": {
             "tag:k8s-operator":   [],
             "tag:app":            ["tag:k8s-operator"],
-            "tag:admin-app":      ["tag:k8s-operator"],
             "tag:github-actions": [],
         },
         "postures": {
@@ -74,11 +67,11 @@ resource "tailscale_dns_search_paths" "search_paths" {
 resource "tailscale_oauth_client" "operator_core" {
   description = "operator-core"
   scopes      = ["devices:core", "auth_keys"]
-  tags        = ["tag:app", "tag:admin-app", "tag:k8s-operator"]
+  tags        = ["tag:app", "tag:k8s-operator"]
 }
 
 resource "tailscale_oauth_client" "operator_manor" {
   description = "operator-manor"
   scopes      = ["devices:core", "auth_keys"]
-  tags        = ["tag:app", "tag:admin-app", "tag:k8s-operator"]
+  tags        = ["tag:app", "tag:k8s-operator"]
 }
