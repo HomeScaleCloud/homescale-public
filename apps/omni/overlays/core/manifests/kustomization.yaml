@@ -16,13 +16,13 @@ patches:
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --siderolink-api-advertised-url=https://omni-api.homescale.cloud:8095/
+        value: --siderolink-api-advertised-url=https://api.omni.homescale.cloud:8095/
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --advertised-kubernetes-proxy-url=https://omni.homescale.cloud:8100/
+        value: --advertised-kubernetes-proxy-url=https://k8s.omni.homescale.cloud/
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --siderolink-wireguard-advertised-addr=omni-api.homescale.cloud:50180
+        value: --siderolink-wireguard-advertised-addr=api.omni.homescale.cloud:50180
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --advertised-api-url=https://omni.homescale.cloud/
@@ -54,3 +54,22 @@ patches:
         path: /spec/tls/0/hosts
         value:
           - omni.homescale.cloud
+          - api.omni.homescale.cloud
+          - k8s.omni.homescale.cloud
+
+  - target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: omni
+      namespace: omni
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: k8s.omni.homescale.cloud
+      - op: replace
+        path: /spec/tls/0/hosts
+        value:
+          - omni.homescale.cloud
+          - api.omni.homescale.cloud
+          - k8s.omni.homescale.cloud

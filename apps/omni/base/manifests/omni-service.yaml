@@ -35,6 +35,21 @@ spec:
       port: 443
       targetPort: 8080
       protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: omni-k8s
+  namespace: omni
+  labels:
+    app: omni
+
+spec:
+  selector:
+    app: omni
+
+  ports:
     - name: k8s-proxy
-      port: 8100
+      port: 443
+      targetPort: 8100
       protocol: TCP
