@@ -58,12 +58,6 @@ resource "tailscale_tailnet_settings" "settings" {
   users_role_allowed_to_join_external_tailnet = "admin"
 }
 
-resource "tailscale_dns_search_paths" "search_paths" {
-  search_paths = [
-    "homescale.cloud"
-  ]
-}
-
 resource "tailscale_oauth_client" "operator_core" {
   description = "operator-core"
   scopes      = ["devices:core", "auth_keys"]
