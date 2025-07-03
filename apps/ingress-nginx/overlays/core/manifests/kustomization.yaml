@@ -11,5 +11,5 @@ patches:
       - op: add
         path: /spec/sources/0/helm/valuesObject/controller/service/annotations
         value:
-          tailscale.com/hostname: "ingress-nginx-manor"
+          tailscale.com/hostname: "ingress-nginx-core"
           tailscale.com/tags: "tag:app"
