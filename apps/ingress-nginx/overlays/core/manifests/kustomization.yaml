@@ -6,7 +6,7 @@ resources:
 patches:
   - target:
       kind: Application
-      name: ingress-nginx
+      name: ingress-nginx-helm
     patch: |-
       - op: add
         path: /spec/sources/0/helm/valuesObject/controller/service/annotations
