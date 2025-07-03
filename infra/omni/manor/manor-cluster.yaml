@@ -4,9 +4,9 @@ labels:
   zone: manor
   region: boa
 talos:
-  version: v1.10.4
+  version: v1.10.5
 kubernetes:
-  version: v1.33.1
+  version: v1.33.2
 features:
   enableWorkloadProxy: true
   useEmbeddedDiscoveryService: true
