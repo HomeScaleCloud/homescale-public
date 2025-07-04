@@ -1,0 +1,9 @@
+metadata:
+  namespace: default
+  type: MachineClasses.omni.sidero.dev
+  id: manor
+spec:
+  matchlabels:
+    - omni.sidero.dev/platform = metal
+    - node.homescale.cloud/region = boa
+    - node.homescale.cloud/zone = manor

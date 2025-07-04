@@ -13,6 +13,8 @@ cluster:
   extraManifests:
     - https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml
 machine:
+  nodeLabels:
+    node.homescale.cloud/omni-managed: true
   kubelet:
     extraArgs:
       rotate-server-certificates: true

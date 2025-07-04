@@ -1,0 +1,34 @@
+kind: Cluster
+name: manor
+labels:
+  zone: manor
+  region: boa
+talos:
+  version: v1.10.5
+kubernetes:
+  version: v1.33.2
+features:
+  enableWorkloadProxy: true
+  useEmbeddedDiscoveryService: true
+  backupConfiguration:
+    interval: 1h
+patches:
+  - name: nodeLabels
+    inline:
+      machine:
+        nodeLabels:
+          cluster.homescale.cloud/name: manor
+          node.homescale.cloud/region: boa
+          node.homescale.cloud/zone: manor
+  - file: ./patches/global-patch.yaml
+  - file: ./patches/allow-schedule-control-plane-patch.yaml
+---
+kind: ControlPlane
+machineClass:
+  name: manor
+  size: 3
+---
+kind: Workers
+machineClass:
+  name: manor
+  size: unlimited
