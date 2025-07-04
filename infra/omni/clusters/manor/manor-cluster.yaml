@@ -1,10 +1,9 @@
 kind: Cluster
 name: manor
 labels:
-  cluster.homescale.cloud/name: manor
-  cluster.homescale.cloud/region: boa
-  cluster.homescale.cloud/zone: manor
-  cluster.homescale.cloud/platform: metal
+  region: boa
+  zone: manor
+  platform: metal
 talos:
   version: v1.10.5
 kubernetes:
