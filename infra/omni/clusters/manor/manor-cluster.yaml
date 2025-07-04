@@ -1,7 +1,10 @@
 kind: Cluster
 name: manor
 labels:
-  zone: manor
+  xxx/name: manor
+  xxx/region: boa
+  xxx/zone: manor
+  omni.sidero.dev/platform: metal
   region: boa
 talos:
   version: v1.10.5
