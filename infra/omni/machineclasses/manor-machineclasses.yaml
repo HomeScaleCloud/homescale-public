@@ -4,4 +4,4 @@ metadata:
   id: manor
 spec:
   matchlabels:
-    - node.homescale.cloud/region = boa,node.homescale.cloud/zone = manor,node.homescale.cloud/platform = metal
+    - region = boa,zone = manor,platform = metal
