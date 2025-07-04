@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: cluster-manor
   namespace: argocd
-  annotations:
-    avp-kustomize.kubernetes.io/path: "vaults/manor/items/argocd"
 spec:
   project: default
   sources:
