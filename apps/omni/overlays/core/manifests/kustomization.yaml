@@ -40,39 +40,39 @@ patches:
         path: /spec/itemPath
         value: "vaults/core/items/omni"
 
-  - target:
-      group: networking.k8s.io
-      version: v1
-      kind: Ingress
-      name: omni-ui
-      namespace: omni
-    patch: |-
-      - op: replace
-        path: /spec/rules/0/host
-        value: REDACTED
-      - op: replace
-        path: /spec/tls/0/hosts
-        value:
-          - REDACTED
-          - REDACTED
-          - REDACTED
+  # - target:
+  #     group: networking.k8s.io
+  #     version: v1
+  #     kind: Ingress
+  #     name: omni-ui
+  #     namespace: omni
+  #   patch: |-
+  #     - op: replace
+  #       path: /spec/rules/0/host
+  #       value: REDACTED
+  #     - op: replace
+  #       path: /spec/tls/0/hosts
+  #       value:
+  #         - REDACTED
+  #         - REDACTED
+  #         - REDACTED
 
-  - target:
-      group: networking.k8s.io
-      version: v1
-      kind: Ingress
-      name: omni-k8s
-      namespace: omni
-    patch: |-
-      - op: replace
-        path: /spec/rules/0/host
-        value: REDACTED
-      - op: replace
-        path: /spec/tls/0/hosts
-        value:
-          - REDACTED
-          - REDACTED
-          - REDACTED
+  # - target:
+  #     group: networking.k8s.io
+  #     version: v1
+  #     kind: Ingress
+  #     name: omni-k8s
+  #     namespace: omni
+  #   patch: |-
+  #     - op: replace
+  #       path: /spec/rules/0/host
+  #       value: REDACTED
+  #     - op: replace
+  #       path: /spec/tls/0/hosts
+  #       value:
+  #         - REDACTED
+  #         - REDACTED
+  #         - REDACTED
 
   - target:
       kind: Service
@@ -82,3 +82,19 @@ patches:
         path: /metadata/annotations
         value:
           external-dns.alpha.kubernetes.io/hostname: REDACTED.
+
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: omni-tls
+    patch: |-
+      - op: add
+        path: /spec/dnsNames
+        value:
+          - "REDACTED"
+          - "REDACTED"
+          - "REDACTED"
+      - op: add
+        path: /spec/commonName
+        value: "REDACTED"
