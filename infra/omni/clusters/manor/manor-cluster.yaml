@@ -5,7 +5,6 @@ labels:
   xxx/region: boa
   xxx/zone: manor
   xxx/platform: metal
-  region: boa
 talos:
   version: v1.10.5
 kubernetes:
