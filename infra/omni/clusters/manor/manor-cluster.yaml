@@ -1,7 +1,10 @@
 kind: Cluster
 name: manor
 labels:
-  zone: manor
+  cluster.homescale.cloud/name: manor
+  cluster.homescale.cloud/region: boa
+  cluster.homescale.cloud/zone: manor
+  omni.sidero.dev/platform: metal
   region: boa
 talos:
   version: v1.10.5
