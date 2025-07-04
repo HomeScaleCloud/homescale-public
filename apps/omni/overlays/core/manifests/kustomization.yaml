@@ -73,3 +73,12 @@ patches:
           - omni.homescale.cloud
           - api.omni.homescale.cloud
           - k8s.omni.homescale.cloud
+
+  - target:
+      kind: Service
+      name: omni
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          external-dns.alpha.kubernetes.io/hostname: api.omni.homescale.cloud.

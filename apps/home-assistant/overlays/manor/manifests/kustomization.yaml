@@ -4,16 +4,6 @@ kind: Kustomization
 resources:
   - ../../../base/manifests
 patches:
-  - target:
-      kind: Service
-      name: home-assistant
-    patch: |-
-      - op: add
-        path: /metadata/annotations
-        value:
-          tailscale.com/hostname: "home-assistant-manor"
-          tailscale.com/tags: "tag:app"
-          external-dns.alpha.kubernetes.io/hostname: ha.manor.homescale.cloud.
 
   - target:
       kind: Application
