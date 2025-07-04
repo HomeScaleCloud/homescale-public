@@ -4,7 +4,7 @@ labels:
   xxx/name: manor
   xxx/region: boa
   xxx/zone: manor
-  omni.sidero.dev/platform: metal
+  xxx/platform: metal
   region: boa
 talos:
   version: v1.10.5
@@ -23,6 +23,7 @@ patches:
           xxx/name: manor
           xxx/region: boa
           xxx/zone: manor
+          xxx/platform: metal
   - file: ./patches/global-patch.yaml
   - file: ./patches/allow-schedule-control-plane-patch.yaml
 ---
