@@ -97,4 +97,4 @@ patches:
           - "k8s.omni.homescale.cloud"
       - op: add
         path: /spec/commonName
-        value: "omni.homescale.cloud"
+        value: "api.omni.homescale.cloud"
