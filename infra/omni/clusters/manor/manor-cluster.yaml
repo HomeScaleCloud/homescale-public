@@ -5,7 +5,6 @@ labels:
   cluster.homescale.cloud/region: boa
   cluster.homescale.cloud/zone: manor
   cluster.homescale.cloud/platform: metal
-  region: boa
 talos:
   version: v1.10.5
 kubernetes:
