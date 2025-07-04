@@ -5,7 +5,6 @@ labels:
   REDACTED/region: boa
   REDACTED/zone: manor
   REDACTED/platform: metal
-  region: boa
 talos:
   version: v1.10.5
 kubernetes:
