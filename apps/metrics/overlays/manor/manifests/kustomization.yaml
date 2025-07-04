@@ -11,3 +11,16 @@ patches:
       - op: add
         path: /spec/sources/0/helm/valuesObject/grafana/grafana.ini/server/root_url
         value: https://metrics.manor.homescale.cloud/
+
+  - target:
+      kind: Application
+      name: metrics-helm
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/grafana/ingress/hosts
+        value:
+          - metrics.manor.homescale.cloud
+      - op: add
+        path: /spec/sources/0/helm/valuesObject/grafana/ingress/tls/0/hosts
+        value:
+          - metrics.manor.homescale.cloud
