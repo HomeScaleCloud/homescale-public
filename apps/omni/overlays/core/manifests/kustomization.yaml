@@ -40,39 +40,39 @@ patches:
         path: /spec/itemPath
         value: "vaults/core/items/omni"
 
-  # - target:
-  #     group: networking.k8s.io
-  #     version: v1
-  #     kind: Ingress
-  #     name: omni-ui
-  #     namespace: omni
-  #   patch: |-
-  #     - op: replace
-  #       path: /spec/rules/0/host
-  #       value: omni.homescale.cloud
-  #     - op: replace
-  #       path: /spec/tls/0/hosts
-  #       value:
-  #         - omni.homescale.cloud
-  #         - api.omni.homescale.cloud
-  #         - k8s.omni.homescale.cloud
+  - target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: omni-ui
+      namespace: omni
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: omni.homescale.cloud
+      # - op: replace
+      #   path: /spec/tls/0/hosts
+      #   value:
+      #     - omni.homescale.cloud
+      #     - api.omni.homescale.cloud
+      #     - k8s.omni.homescale.cloud
 
-  # - target:
-  #     group: networking.k8s.io
-  #     version: v1
-  #     kind: Ingress
-  #     name: omni-k8s
-  #     namespace: omni
-  #   patch: |-
-  #     - op: replace
-  #       path: /spec/rules/0/host
-  #       value: k8s.omni.homescale.cloud
-  #     - op: replace
-  #       path: /spec/tls/0/hosts
-  #       value:
-  #         - omni.homescale.cloud
-  #         - api.omni.homescale.cloud
-  #         - k8s.omni.homescale.cloud
+  - target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: omni-k8s
+      namespace: omni
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: k8s.omni.homescale.cloud
+      # - op: replace
+      #   path: /spec/tls/0/hosts
+      #   value:
+      #     - omni.homescale.cloud
+      #     - api.omni.homescale.cloud
+      #     - k8s.omni.homescale.cloud
 
   - target:
       kind: Service
