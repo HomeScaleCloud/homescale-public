@@ -23,6 +23,14 @@ spec:
               accessModes:
                 - ReadWriteOnce
               size: 5Gi
+            ingress:
+              enabled: true
+              annotations:
+                cert-manager.io/cluster-issuer: letsencrypt
+              hosts: {}
+              tls:
+                - hosts: {}
+                  secretName: grafana-tls
           prometheus:
             annotations:
               argocd.argoproj.io/skip-health-check: 'true'
