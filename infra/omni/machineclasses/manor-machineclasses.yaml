@@ -4,4 +4,4 @@ metadata:
   id: manor
 spec:
   matchlabels:
-    - region = boa, zone = manor, platform = metal
+    - omni.sidero.dev/infra-provider-id = manor-metal
