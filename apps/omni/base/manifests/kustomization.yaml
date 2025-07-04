@@ -8,3 +8,4 @@ resources:
   - omni-secret.yaml
   - omni-service.yaml
   - omni-ingress.yaml
+  - omni-certificate.yaml
