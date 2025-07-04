@@ -4,6 +4,4 @@ metadata:
   id: manor
 spec:
   matchlabels:
-    - xxx/region = boa
-    - xxx/zone = manor
-    - xxx/platform = metal
+    - xxx/region = boa,xxx/zone = manor,xxx/platform = metal
