@@ -4,6 +4,6 @@ metadata:
   id: manor
 spec:
   matchlabels:
-    - omni.sidero.dev/platform = metal
     - node.homescale.cloud/region = boa
     - node.homescale.cloud/zone = manor
+    - node.homescale.cloud/platform = metal

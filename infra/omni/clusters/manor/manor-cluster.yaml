@@ -4,7 +4,7 @@ labels:
   cluster.homescale.cloud/name: manor
   cluster.homescale.cloud/region: boa
   cluster.homescale.cloud/zone: manor
-  omni.sidero.dev/platform: metal
+  cluster.homescale.cloud/platform: metal
   region: boa
 talos:
   version: v1.10.5
@@ -23,6 +23,7 @@ patches:
           cluster.homescale.cloud/name: manor
           node.homescale.cloud/region: boa
           node.homescale.cloud/zone: manor
+          node.homescale.cloud/platform: metal
   - file: ./patches/global-patch.yaml
   - file: ./patches/allow-schedule-control-plane-patch.yaml
 ---
