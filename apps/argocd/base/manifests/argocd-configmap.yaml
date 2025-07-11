@@ -123,17 +123,15 @@ metadata:
 data:
   policy.csv: |
     g, ArgoCD Admins, role:admin
-    g, ArgoCD Users, role:readonly-sync
 
-  policy.default: role:readonly
-
-  roles: |
-    p, role:readonly-sync, applications, get, *, allow
-    p, role:readonly-sync, applications, list, *, allow
-    p, role:readonly-sync, applications, watch, *, allow
-    p, role:readonly-sync, applications, sync, *, allow
-    p, role:readonly-sync, applications, refresh, *, allow
-    p, role:readonly-sync, projects, get, *, allow
-    p, role:readonly-sync, projects, list, *, allow
-    p, role:readonly-sync, clusters, get, *, allow
-    p, role:readonly-sync, repositories, get, *, allow
+    p, role:argo-users, applications, get, *, allow
+    p, role:argo-users, applications, list, *, allow
+    p, role:argo-users, applications, watch, *, allow
+    p, role:argo-users, applications, refresh, *, allow
+    p, role:argo-users, applications.resources, get, *, allow
+    p, role:argo-users, projects, get, *, allow
+    p, role:argo-users, projects, list, *, allow
+    p, role:argo-users, applications.manifest, get, *, deny
+    p, role:argo-users, applications.resource, get, *, deny
+    p, role:argo-users, logs, get, *, deny
+    g, ArgoCD Users, role:argo-users
