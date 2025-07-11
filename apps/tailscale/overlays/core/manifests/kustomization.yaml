@@ -24,4 +24,3 @@ patches:
           oauth:
             clientId: <path:vaults/core/items/tailscale#username>
             clientSecret: <path:vaults/core/items/tailscale#password>
-
