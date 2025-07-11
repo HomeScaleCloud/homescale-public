@@ -31,7 +31,7 @@ spec:
                 auth_url: https://login.microsoftonline.com/<path:vaults/common/items/entra#tenant>/oauth2/v2.0/authorize
                 token_url: https://login.microsoftonline.com/<path:vaults/common/items/entra#tenant>/oauth2/v2.0/token
                 api_url: https://graph.microsoft.com/oidc/userinfo
-                role_attribute_path: "contains(groups[*], 'Grafana Admins') && 'Admin' || 'Viewer'"
+                role_attribute_path: "contains(groups[*], 'Grafana Admins') && 'Admin' || (contains(groups[*], 'Grafana Users') && 'Viewer')"
             persistence:
               enabled: true
               type: pvc
