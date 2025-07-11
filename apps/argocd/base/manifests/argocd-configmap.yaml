@@ -125,7 +125,7 @@ data:
   policy.csv: |
     g, ArgoCD Admins, role:admin
 
-    p, role:argo-users, applications, list, *, allow
+    p, role:argo-users, applications, get, *, allow
     p, role:argo-users, applications, refresh, *, allow
     p, role:argo-users, projects, get, *, allow
     p, role:argo-users, repositories, get, *, allow
