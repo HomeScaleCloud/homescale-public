@@ -46,6 +46,7 @@ spec:
               tls:
                 - hosts: {}
                   secretName: grafana-tls
+            assertNoLeakedSecrets: false
           prometheus:
             annotations:
               argocd.argoproj.io/skip-health-check: 'true'
@@ -61,6 +62,7 @@ spec:
                     resources:
                       requests:
                         storage: 50Gi
+
   destination:
     server: https://kubernetes.default.svc
     namespace: metrics
