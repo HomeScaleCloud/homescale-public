@@ -54,7 +54,7 @@ spec:
               default:
                 k8s-views-global:
                   gnetId: 15757
-                  revision: 1
+                  revision: 43
                   datasource: Prometheus
                 k8s-views-namespaces:
                   gnetId: 15758
