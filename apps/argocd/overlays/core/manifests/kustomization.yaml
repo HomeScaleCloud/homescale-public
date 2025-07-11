@@ -66,4 +66,3 @@ patches:
         path: /spec/tls/0/hosts
         value:
           - argocd.core.homescale.cloud
-
