@@ -122,4 +122,18 @@ metadata:
   name: argocd-rbac-cm
 data:
   policy.csv: |
-      g, Admins, role:admin
+    g, ArgoCD Admins, role:admin
+    g, ArgoCD Users, role:readonly-sync
+
+  policy.default: role:readonly
+
+  roles: |
+    p, role:readonly-sync, applications, get, *, allow
+    p, role:readonly-sync, applications, list, *, allow
+    p, role:readonly-sync, applications, watch, *, allow
+    p, role:readonly-sync, applications, sync, *, allow
+    p, role:readonly-sync, applications, refresh, *, allow
+    p, role:readonly-sync, projects, get, *, allow
+    p, role:readonly-sync, projects, list, *, allow
+    p, role:readonly-sync, clusters, get, *, allow
+    p, role:readonly-sync, repositories, get, *, allow
