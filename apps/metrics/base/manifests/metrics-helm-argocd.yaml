@@ -21,6 +21,9 @@ spec:
                 # root_url: https://metrics.dev.uk-boa-1.homescale.cloud/
               auth:
                 disable_login_form: true
+              users:
+                auto_assign_org: false
+                auto_assign_org_role: ''
               auth.generic_oauth:
                 enabled: true
                 name: Entra ID
