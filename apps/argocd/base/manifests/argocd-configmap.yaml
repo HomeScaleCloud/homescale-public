@@ -8,6 +8,7 @@ metadata:
 data:
   admin.enabled: "false"
   statusbadge.enabled: "true"
+  server.rbac.log.enforce.enable: "true"
   resource.exclusions: |
     - apiGroups:
       - cilium.io
@@ -125,10 +126,11 @@ data:
     g, ArgoCD Admins, role:admin
 
     p, role:argo-users, applications, get, *, allow
-    p, role:argo-users, applications, list, *, allow
-    p, role:argo-users, applications, watch, *, allow
-    p, role:argo-users, applications.resources, get, *, allow
     p, role:argo-users, applications, refresh, *, allow
     p, role:argo-users, projects, get, *, allow
-    p, role:argo-users, projects, list, *, allow
+    p, role:argo-users, repositories, get, *, allow
+    p, role:argo-users, clusters, get, *, allow
+    p, role:argo-users, accounts, get, *, allow
+    p, role:argo-users, logs, get, *, deny
+    p, role:argo-users, logs, get, */*, deny
     g, ArgoCD Users, role:argo-users
