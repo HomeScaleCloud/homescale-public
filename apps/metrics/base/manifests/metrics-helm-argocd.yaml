@@ -13,6 +13,7 @@ spec:
       targetRevision: 74.2.2
       helm:
         valuesObject:
+          defaultDashboardsEnabled: false
           grafana:
             service:
               type: ClusterIP
