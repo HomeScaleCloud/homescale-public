@@ -67,6 +67,12 @@ spec:
                 k8s-system-api-server:
                   url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-api-server.json
                   token: ''
+                k8s-addons-prometheus:
+                  url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-addons-prometheus.json
+                  token: ''
+                k8s-addons-trivy-operator:
+                  url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-addons-trivy-operator.json
+                  token: ''
                 k8s-system-coredns:
                   url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-coredns.json
                   token: ''
