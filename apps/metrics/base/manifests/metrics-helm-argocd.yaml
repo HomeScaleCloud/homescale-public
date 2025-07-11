@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: metrics-helm
   namespace: argocd
+  annotations:
+    avp-kustomize.kubernetes.io/path: "vaults/common/items/metrics"
 spec:
   project: default
   sources:
@@ -17,6 +19,19 @@ spec:
             grafana.ini:
               server: {}
                 # root_url: https://metrics.dev.uk-boa-1.homescale.cloud/
+              auth:
+                disable_login_form: true
+              auth.generic_oauth:
+                enabled: true
+                name: Entra ID
+                allow_sign_up: true
+                client_id: <path:vaults/common/items/metrics#oidc-client-id>
+                client_secret: <path:vaults/common/items/metrics#oidc-client-secret>
+                scopes: openid email profile
+                auth_url: https://login.microsoftonline.com/<path:vaults/common/items/entra#tenant>/oauth2/v2.0/authorize
+                token_url: https://login.microsoftonline.com/<path:vaults/common/items/entra#tenant>/oauth2/v2.0/token
+                api_url: https://graph.microsoft.com/oidc/userinfo
+                role_attribute_path: "contains(groups[*], 'Grafana Admins') && 'Admin' || 'Viewer'"
             persistence:
               enabled: true
               type: pvc

@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: metrics
   namespace: argocd
+  annotations:
+    avp-kustomize.kubernetes.io/path: "vaults/common/items/metrics"
 spec:
   project: default
   sources:
