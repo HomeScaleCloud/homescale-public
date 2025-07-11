@@ -98,6 +98,12 @@ spec:
                       requests:
                         storage: 50Gi
 
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: alloy
+      targetRevision: 1.1.2
+      helm:
+        valuesObject: {}
+
   destination:
     server: https://kubernetes.default.svc
     namespace: metrics
