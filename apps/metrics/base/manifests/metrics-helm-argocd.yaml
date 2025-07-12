@@ -21,9 +21,7 @@ spec:
                 # root_url: https://xxx/
               auth:
                 disable_login_form: true
-              users:
-                auto_assign_org: false
-                auto_assign_org_role: ''
+                auto_login: true
               auth.generic_oauth:
                 enabled: true
                 name: Entra ID
