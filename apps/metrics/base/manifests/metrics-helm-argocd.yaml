@@ -28,11 +28,14 @@ spec:
                 allow_sign_up: true
                 client_id: <path:vaults/common/items/metrics#oidc-client-id>
                 client_secret: <path:vaults/common/items/metrics#oidc-client-secret>
-                scopes: openid email profile groups
+                scopes: openid email profile offline_access User.Read GroupMember.Read.All
                 auth_url: https://login.microsoftonline.com/<path:vaults/common/items/entra#tenant>/oauth2/v2.0/authorize
                 token_url: https://login.microsoftonline.com/<path:vaults/common/items/entra#tenant>/oauth2/v2.0/token
-                api_url: https://graph.microsoft.com/oidc/userinfo
-                role_attribute_path: "contains(groups[*], 'Grafana Admins') && 'Admin' || (contains(groups[*], 'Grafana Users') && 'Viewer')"
+                api_url: https://graph.microsoft.com/v1.0/me/memberOf
+                use_token_auth: true
+                role_attribute_path: >
+                  contains([*].displayName, 'Grafana Admins') && 'Admin' ||
+                  (contains([*].displayName, 'Grafana Users') && 'Viewer') || 'Viewer'
             persistence:
               enabled: true
               type: pvc
