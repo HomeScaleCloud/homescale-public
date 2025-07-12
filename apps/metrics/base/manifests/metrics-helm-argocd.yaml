@@ -114,13 +114,10 @@ spec:
       targetRevision: 6.31.0
       helm:
         valuesObject:
-          global:
-            extraArgs:
-              - -config.expand-env=true
           loki:
             schemaConfig:
               configs:
-                - from: 2024-04-01
+                - from: "2024-04-01"
                   store: tsdb
                   object_store: s3
                   schema: v13
