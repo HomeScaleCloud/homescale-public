@@ -34,8 +34,8 @@ spec:
                 api_url: https://graph.microsoft.com/v1.0/me/memberOf
                 use_token_auth: true
                 role_attribute_path: >
-                  contains([*].displayName, 'Grafana Admins') && 'Admin' ||
-                  (contains([*].displayName, 'Grafana Users') && 'Viewer') || 'Viewer'
+                  contains(to_string([*].displayName), 'Grafana Admins') && 'Admin' ||
+                  contains(to_string([*].displayName), 'Grafana Users') && 'Viewer' || 'Viewer'
             persistence:
               enabled: true
               type: pvc
