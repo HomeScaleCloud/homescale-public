@@ -135,37 +135,11 @@ spec:
             querier:
               max_concurrent: 4
           deploymentMode: SingleBinary
-
-          backend:
-            replicas: 0
-          read:
-            replicas: 0
-          write:
-            replicas: 0
-
           minio:
             enabled: true
 
           singleBinary:
             replicas: 1
-          ingester:
-            replicas: 0
-          querier:
-            replicas: 0
-          queryFrontend:
-            replicas: 0
-          queryScheduler:
-            replicas: 0
-          distributor:
-            replicas: 0
-          compactor:
-            replicas: 0
-          indexGateway:
-            replicas: 0
-          bloomCompactor:
-            replicas: 0
-          bloomGateway:
-            replicas: 0
 
     - repoURL: https://grafana.github.io/helm-charts
       chart: alloy
@@ -191,7 +165,7 @@ spec:
 
                 loki.write "loki" {
                   endpoint {
-                    url = "http://loki:3100/loki/api/v1/push"
+                    url = "http://metrics-helm-loki.metrics.svc:3100/loki/api/v1/push"
                   }
                 }
 
