@@ -184,11 +184,10 @@ spec:
                 loki.source.kubernetes "pods" {
                   targets    = discovery.kubernetes.pods.targets
                   forward_to = [loki.write.loki.receiver]
-
                   labels = {
-                    "pod"       = "pod.name"
-                    "namespace" = "pod.namespace"
-                    "container" = "pod.container.name"
+                    "pod"       = "pod.name",
+                    "namespace" = "pod.namespace",
+                    "container" = "pod.container.name",
                   }
                 }
 
