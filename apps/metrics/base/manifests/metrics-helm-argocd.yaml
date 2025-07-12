@@ -202,12 +202,16 @@ spec:
       helm:
         valuesObject:
           config:
+            maxEventAgeSeconds: 60
             receivers:
               - name: loki
                 loki:
                   url: "http://metrics-helm-loki.metrics.svc:3100/loki/api/v1/push"
                   streamLabels:
-                    app: kubernetes-event-exporter
+                    namespace: "{{ .involvedObject.namespace }}"
+                    kind: "{{ .involvedObject.kind }}"
+                    reason: "{{ .reason }}"
+                    component: "{{ .source.component }}"
             route:
               routes:
                 - match:
