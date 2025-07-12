@@ -132,6 +132,13 @@ spec:
               max_concurrent: 4
           deploymentMode: SingleBinary
 
+          backend:
+            replicas: 0
+          read:
+            replicas: 0
+          write:
+            replicas: 0
+
           minio:
             enabled: true
 
