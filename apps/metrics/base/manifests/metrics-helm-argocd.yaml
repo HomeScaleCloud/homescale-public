@@ -119,8 +119,6 @@ spec:
         valuesObject:
           loki:
             auth_enabled: false
-            config:
-              auth_enabled: false
             schemaConfig:
               configs:
                 - from: "2024-04-01"
