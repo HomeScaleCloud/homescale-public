@@ -117,7 +117,7 @@ spec:
           deploymentMode: "SingleBinary"
           loki:
             auth_enabled: false
-            storage: {}  # prevent default cloud bucket assumptions
+            storage: {}
             commonConfig:
               path_prefix: /var/loki
             storage_config:
