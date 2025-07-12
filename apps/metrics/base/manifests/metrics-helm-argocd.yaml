@@ -134,8 +134,8 @@ spec:
               enabled: true
             querier:
               max_concurrent: 4
-          commonConfig:
-            replication_factor: 1
+            commonConfig:
+              replication_factor: 1
           deploymentMode: SingleBinary
           minio:
             enabled: true
