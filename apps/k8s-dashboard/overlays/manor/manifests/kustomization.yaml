@@ -9,6 +9,6 @@ patches:
       name: k8s-dashboard-helm
     patch: |-
       - op: add
-        path: /spec/sources/0/helm/valuesObject/ingress/hosts
+        path: /spec/sources/0/helm/valuesObject/app/ingress/hosts
         value:
           - dashboard.manor.homescale.cloud
