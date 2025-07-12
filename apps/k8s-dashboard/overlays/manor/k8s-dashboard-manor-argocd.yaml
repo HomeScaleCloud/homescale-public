@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: k8s-dashboard
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
+      targetRevision: main
+      path: 'apps/k8s-dashboard/overlays/manor/manifests'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: dashboard
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=true
