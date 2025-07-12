@@ -185,21 +185,35 @@ spec:
                   role = "pod"
                 }
 
-                discovery.kubernetes "events" {
-                  role = "event"
-                }
-
                 loki.source.kubernetes "pods" {
                   targets    = discovery.kubernetes.pods.targets
-                  forward_to = [kubernetes_metadata.pods.input]
-                }
-
-                kubernetes_metadata "pods" {
-                  inputs = [loki.source.kubernetes.pods.output]
-                }
-
-                kubernetes_events "events" {
                   forward_to = [loki.write.loki.receiver]
+
+                  relabel {
+                    from = "pod"
+                    to   = "pod"
+                  }
+
+                  relabel {
+                    from = "namespace"
+                    to   = "namespace"
+                  }
+
+                  relabel {
+                    from = "container"
+                    to   = "container"
+                  }
+
+                  relabel {
+                    from = "node"
+                    to   = "node"
+                  }
+
+                  relabel {
+                    from = "app"
+                    to   = "app"
+                    optional = true
+                  }
                 }
 
                 loki.write "loki" {
