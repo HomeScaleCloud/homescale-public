@@ -28,12 +28,16 @@ spec:
                 auto_login: true
                 client_id: <path:vaults/common/items/metrics#oidc-client-id>
                 client_secret: <path:vaults/common/items/metrics#oidc-client-secret>
-                scopes: openid email profile offline_access User.Read GroupMember.Read.All
+                scopes: openid email profile offline_access User.Read
                 auth_url: https://login.microsoftonline.com/<path:vaults/common/items/entra#tenant>/oauth2/v2.0/authorize
                 token_url: https://login.microsoftonline.com/<path:vaults/common/items/entra#tenant>/oauth2/v2.0/token
-                api_url: https://graph.microsoft.com/v1.0/me/memberOf
-                force_use_graph_api: true
                 role_attribute_path: '"Admin"'
+                role_attribute_strict: false
+                allow_assign_grafana_admin: true
+              users:
+                auto_assign_org: true
+                auto_assign_org_role: Admin
+                allow_sign_up: true
             persistence:
               enabled: true
               type: pvc
