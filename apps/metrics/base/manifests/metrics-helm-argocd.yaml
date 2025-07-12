@@ -119,8 +119,6 @@ spec:
             auth_enabled: false
             commonConfig:
               path_prefix: /var/loki
-            storage:
-              type: filesystem
             storage_config:
               boltdb_shipper:
                 active_index_directory: /var/loki/index
