@@ -91,6 +91,12 @@ spec:
                 k8s-views-pods:
                   url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-pods.json
                   token: ''
+                k8s-events-exporter:
+                  url: https://grafana.com/api/dashboards/17882/revisions/2/download
+                  token: ''
+                ipmi-exporter:
+                  url: https://raw.githubusercontent.com/srkaviani/prometheus_exporters/refs/heads/main/ipmi_exporter/IPMI%20Exporter%20Grafana%20Dashboard.json
+                  token: ''
             additionalDataSources:
               - name: Loki
                 type: loki
