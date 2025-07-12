@@ -114,6 +114,9 @@ spec:
       targetRevision: 6.31.0
       helm:
         valuesObject:
+          global:
+            extraArgs:
+              - -config.expand-env=true
           loki:
             schemaConfig:
               configs:
