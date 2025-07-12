@@ -142,29 +142,29 @@ spec:
             replicas: 1
 
           backend:
-            enabled: false
+            replicas: 0
           read:
-            enabled: false
+            replicas: 0
           write:
-            enabled: false
+            replicas: 0
           ingester:
-            enabled: false
+            replicas: 0
           querier:
-            enabled: false
+            replicas: 0
           queryFrontend:
-            enabled: false
+            replicas: 0
           queryScheduler:
-            enabled: false
+            replicas: 0
           distributor:
-            enabled: false
+            replicas: 0
           compactor:
-            enabled: false
+            replicas: 0
           indexGateway:
-            enabled: false
+            replicas: 0
           bloomCompactor:
-            enabled: false
+            replicas: 0
           bloomGateway:
-            enabled: false
+            replicas: 0
 
     - repoURL: https://grafana.github.io/helm-charts
       chart: alloy
