@@ -204,21 +204,22 @@ spec:
           metrics:
             enabled: true
           config:
-            maxEventAgeSeconds: 60
-
-            # receivers:
-            #   - name: loki
-            #     loki:
-            #       url: "http://metrics-helm-loki.metrics.svc:3100/loki/api/v1/push"
-            #       streamLabels:
-            #         namespace: "{{ .involvedObject.namespace }}"
-            #         kind: "{{ .involvedObject.kind }}"
-            #         reason: "{{ .reason }}"
-            #         component: "{{ .source.component }}"
-            # route:
-            #   routes:
-            #     - match:
-            #         - receiver: "loki"
+            receivers:
+              - name: loki
+                loki:
+                  url: "http://metrics-helm-loki.metrics.svc:3100/loki/api/v1/push"
+                  streamLabels:
+                    namespace: "{{ .Namespace }}"
+                    kind: "{{ .InvolvedObject.Kind }}"
+                    reason: "{{ .Reason }}"
+                    component: "{{ .Source.Component }}"
+                    host: "{{ .Source.Host }}"
+                    name: "{{ .InvolvedObject.Name }}"
+                    count: "{{ .Count }}"
+            route:
+              routes:
+                - match:
+                    - receiver: "loki"
 
   destination:
     server: https://kubernetes.default.svc
