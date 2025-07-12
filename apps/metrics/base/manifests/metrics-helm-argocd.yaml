@@ -115,8 +115,6 @@ spec:
       helm:
         valuesObject:
           deploymentMode: "SingleBinary"
-          singleBinary:
-            enabled: true
           loki:
             auth_enabled: false
             commonConfig:
@@ -145,12 +143,6 @@ spec:
             size: 10Gi
           gateway:
             enabled: false
-          backend:
-            enabled: false
-          read:
-            enabled: false
-          write:
-            enabled: false
 
     - repoURL: https://grafana.github.io/helm-charts
       chart: alloy
@@ -172,6 +164,12 @@ spec:
                 loki.source.kubernetes "pods" {
                   targets    = discovery.kubernetes.pods.targets
                   forward_to = [loki.write.loki.receiver]
+
+                  labels = {
+                    "pod"       = "pod.name"
+                    "namespace" = "pod.namespace"
+                    "container" = "pod.container.name"
+                  }
                 }
 
                 loki.write "loki" {
@@ -179,7 +177,6 @@ spec:
                     url = "http://loki:3100/loki/api/v1/push"
                   }
                 }
-
 
   destination:
     server: https://kubernetes.default.svc
