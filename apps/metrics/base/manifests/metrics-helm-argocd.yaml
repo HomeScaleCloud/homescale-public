@@ -33,9 +33,7 @@ spec:
                 token_url: https://login.microsoftonline.com/<path:vaults/common/items/entra#tenant>/oauth2/v2.0/token
                 api_url: https://graph.microsoft.com/v1.0/me/memberOf
                 force_use_graph_api: true
-                role_attribute_path: >
-                  contains([*].id, 'acb8ff75-7dce-4c9b-bc91-ff0aeb200733') && 'Admin' ||
-                  'Viewer'
+                role_attribute_path: '"Admin"'
             persistence:
               enabled: true
               type: pvc
