@@ -33,9 +33,8 @@ spec:
                 token_url: https://login.microsoftonline.com/<path:vaults/common/items/entra#tenant>/oauth2/v2.0/token
                 api_url: https://graph.microsoft.com/v1.0/me/memberOf
                 use_token_auth: true
-                role_attribute_path: >
-                  contains(to_string([*].displayName), 'Grafana Admins') && 'Admin' ||
-                  contains(to_string([*].displayName), 'Grafana Users') && 'Viewer' || 'Viewer'
+                role_attribute_path: to_string([*].displayName)
+
             persistence:
               enabled: true
               type: pvc
