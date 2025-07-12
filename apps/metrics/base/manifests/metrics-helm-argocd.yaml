@@ -136,10 +136,12 @@ spec:
                   index:
                     prefix: index_
                     period: 24h
-          persistence:
-            enabled: true
-            accessModes: ["ReadWriteOnce"]
-            size: 10Gi
+          singleBinary:
+            persistence:
+              enabled: true
+              accessModes:
+                - ReadWriteOnce
+              size: 10Gi
           gateway:
             enabled: false
 
