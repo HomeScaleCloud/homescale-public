@@ -14,6 +14,7 @@ spec:
       helm:
         valuesObject:
           grafana:
+            defaultDashboardsEnabled: false
             service:
               type: ClusterIP
             grafana.ini:
@@ -94,8 +95,8 @@ spec:
                 k8s-events-exporter:
                   url: https://grafana.com/api/dashboards/17882/revisions/2/download
                   token: ''
-                ipmi-exporter:
-                  url: https://raw.githubusercontent.com/srkaviani/prometheus_exporters/refs/heads/main/ipmi_exporter/IPMI%20Exporter%20Grafana%20Dashboard.json
+                ingress-controller:
+                  url: https://grafana.com/api/dashboards/9614/revisions/1/download
                   token: ''
             additionalDataSources:
               - name: Loki
