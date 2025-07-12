@@ -216,7 +216,6 @@ spec:
                   url: "http://metrics-helm-loki.metrics.svc:3100/loki/api/v1/push"
                   streamLabels:
                     source: kubernetes-event-exporter
-                    container: kubernetes-event-exporter
             route:
               routes:
                 - match:
