@@ -187,42 +187,12 @@ spec:
 
                 loki.source.kubernetes "pods" {
                   targets    = discovery.kubernetes.pods.targets
-                  forward_to = [loki.write.loki.receiver]
-
-                  relabel {
-                    from = "pod"
-                    to   = "pod"
-                  }
-
-                  relabel {
-                    from = "namespace"
-                    to   = "namespace"
-                  }
-
-                  relabel {
-                    from = "container"
-                    to   = "container"
-                  }
-
-                  relabel {
-                    from = "node"
-                    to   = "node"
-                  }
-
-                  relabel {
-                    from = "app"
-                    to   = "app"
-                    optional = true
-                  }
+                  forward_to = [loki.write.default.receiver]
                 }
 
-                loki.write "loki" {
+                loki.write "default" {
                   endpoint {
                     url = "http://metrics-helm-loki.metrics.svc:3100/loki/api/v1/push"
-                  }
-
-                  label "job" {
-                    value = "kubernetes-pods"
                   }
                 }
 
