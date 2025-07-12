@@ -67,15 +67,12 @@ spec:
                     options:
                       path: /var/lib/grafana/dashboards/grafana-dashboards-kubernetes
             dashboards:
-              grafana-dashboards-kubernetes:
+              grafana-dashboards:
                 k8s-system-api-server:
                   url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-api-server.json
                   token: ''
                 k8s-addons-prometheus:
                   url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-addons-prometheus.json
-                  token: ''
-                k8s-addons-trivy-operator:
-                  url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-addons-trivy-operator.json
                   token: ''
                 k8s-system-coredns:
                   url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-coredns.json
@@ -97,6 +94,12 @@ spec:
                   token: ''
                 ingress-controller:
                   url: https://grafana.com/api/dashboards/9614/revisions/1/download
+                  token: ''
+                k8s-addons-trivy-operator:
+                  url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-addons-trivy-operator.json
+                  token: ''
+                node-exporter-full:
+                  url: https://grafana.com/api/dashboards/1860/revisions/41/download
                   token: ''
             additionalDataSources:
               - name: Loki
