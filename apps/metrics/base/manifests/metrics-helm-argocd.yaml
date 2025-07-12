@@ -206,8 +206,9 @@ spec:
                   endpoint {
                     url = "http://metrics-helm-loki.metrics.svc:3100/loki/api/v1/push"
                   }
-                  labels = {
-                    job = "kubernetes-pods"
+
+                  label "job" {
+                    value = "kubernetes-pods"
                   }
                 }
 
