@@ -115,14 +115,14 @@ spec:
       helm:
         valuesObject:
           loki:
-            schemaConfig:
+            schema_config:
               configs:
-                - from: 2024-04-01
-                  store: tsdb
-                  object_store: s3
-                  schema: v13
+                - from: "2024-04-01"
+                  store: boltdb-shipper
+                  object_store: filesystem
+                  schema: v11
                   index:
-                    prefix: loki_index_
+                    prefix: index_
                     period: 24h
             ingester:
               chunk_encoding: snappy
