@@ -196,6 +196,23 @@ spec:
                   }
                 }
 
+    - repoURL: https://charts.bitnami.com/bitnami
+      chart: kubernetes-event-exporter
+      targetRevision: 3.6.0
+      helm:
+        valuesObject:
+          config:
+            receivers:
+              - name: loki
+                loki:
+                  url: "http://metrics-helm-loki.metrics.svc:3100/loki/api/v1/push"
+                  streamLabels:
+                    app: kubernetes-event-exporter
+            route:
+              routes:
+                - match:
+                    - receiver: "loki"
+
   destination:
     server: https://kubernetes.default.svc
     namespace: metrics
