@@ -139,7 +139,6 @@ spec:
           deploymentMode: SingleBinary
           minio:
             enabled: true
-            drivesPerNode: 1
 
           singleBinary:
             replicas: 1
