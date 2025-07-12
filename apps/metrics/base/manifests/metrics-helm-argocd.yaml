@@ -122,34 +122,28 @@ spec:
             schemaConfig:
               configs:
                 - from: "2024-04-01"
-                  store: boltdb-shipper
-                  object_store: filesystem
+                  store: tsdb
+                  object_store: s3
                   schema: v13
                   index:
                     prefix: loki_index_
                     period: 24h
-            storage_config:
-              boltdb_shipper:
-                shared_store: filesystem
-              filesystem:
-                directory: /var/loki
-            persistence:
-              enabled: true
-              accessModes:
-                - ReadWriteOnce
-              size: 10Gi
-              # storageClassName: default  # Optional: set your preferred StorageClass
             ingester:
               chunk_encoding: snappy
             tracing:
               enabled: true
+            querier:
+              max_concurrent: 4
           commonConfig:
             replication_factor: 1
           deploymentMode: SingleBinary
           minio:
-            enabled: false
+            enabled: true
+            drivesPerNode: 1
+
           singleBinary:
             replicas: 1
+
           backend:
             replicas: 0
           read:
