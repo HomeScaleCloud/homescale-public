@@ -185,14 +185,29 @@ spec:
                   role = "pod"
                 }
 
+                discovery.kubernetes "events" {
+                  role = "event"
+                }
+
                 loki.source.kubernetes "pods" {
                   targets    = discovery.kubernetes.pods.targets
+                  forward_to = [kubernetes_metadata.pods.input]
+                }
+
+                kubernetes_metadata "pods" {
+                  inputs = [loki.source.kubernetes.pods.output]
+                }
+
+                kubernetes_events "events" {
                   forward_to = [loki.write.loki.receiver]
                 }
 
                 loki.write "loki" {
                   endpoint {
                     url = "http://metrics-helm-loki.metrics.svc:3100/loki/api/v1/push"
+                  }
+                  labels = {
+                    job = "kubernetes-pods"
                   }
                 }
 
