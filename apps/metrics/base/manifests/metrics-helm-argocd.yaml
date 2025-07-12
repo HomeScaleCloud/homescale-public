@@ -210,16 +210,24 @@ spec:
           metrics:
             enabled: true
           config:
+            logLevel: debug
+            logFormat: pretty
+            metricsNamePrefix: event_exporter_
             receivers:
+              - name: "dump"
+                file:
+                  path: "/dev/stdout"
+                  layout: {}
               - name: loki
                 loki:
                   url: "http://metrics-helm-loki.metrics.svc:3100/loki/api/v1/push"
                   streamLabels:
                     source: kubernetes-event-exporter
-                    container: event-exporter
+                    container: kubernetes-event-exporter
             route:
               routes:
                 - match:
+                    - receiver: "dump"
                     - receiver: "loki"
 
     - repoURL: https://prometheus-community.github.io/helm-charts
