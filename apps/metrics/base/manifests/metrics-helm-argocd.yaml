@@ -21,11 +21,11 @@ spec:
                 # root_url: https://metrics.dev.uk-boa-1.homescale.cloud/
               auth:
                 disable_login_form: true
-                auto_login: true
               auth.generic_oauth:
                 enabled: true
                 name: Entra ID
                 allow_sign_up: true
+                auto_login: true
                 client_id: <path:vaults/common/items/metrics#oidc-client-id>
                 client_secret: <path:vaults/common/items/metrics#oidc-client-secret>
                 scopes: openid email profile offline_access User.Read GroupMember.Read.All
