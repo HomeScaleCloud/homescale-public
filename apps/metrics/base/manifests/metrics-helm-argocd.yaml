@@ -95,6 +95,7 @@ spec:
                 ingress-controller:
                   url: https://grafana.com/api/dashboards/9614/revisions/1/download
                   token: ''
+                  datasource: Prometheus
                 k8s-addons-trivy-operator:
                   url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-addons-trivy-operator.json
                   token: ''
