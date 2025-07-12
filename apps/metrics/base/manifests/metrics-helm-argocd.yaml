@@ -141,6 +141,31 @@ spec:
           singleBinary:
             replicas: 1
 
+          backend:
+            enabled: false
+          read:
+            enabled: false
+          write:
+            enabled: false
+          ingester:
+            enabled: false
+          querier:
+            enabled: false
+          queryFrontend:
+            enabled: false
+          queryScheduler:
+            enabled: false
+          distributor:
+            enabled: false
+          compactor:
+            enabled: false
+          indexGateway:
+            enabled: false
+          bloomCompactor:
+            enabled: false
+          bloomGateway:
+            enabled: false
+
     - repoURL: https://grafana.github.io/helm-charts
       chart: alloy
       targetRevision: 1.1.2
