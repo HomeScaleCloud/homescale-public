@@ -58,14 +58,14 @@ spec:
               dashboardproviders.yaml:
                 apiVersion: 1
                 providers:
-                  - name: 'grafana-dashboards-kubernetes'
+                  - name: 'grafana-dashboards'
                     orgId: 1
-                    folder: 'Kubernetes'
+                    folder: ''
                     type: file
                     disableDeletion: true
                     editable: true
                     options:
-                      path: /var/lib/grafana/dashboards/grafana-dashboards-kubernetes
+                      path: /var/lib/grafana/dashboards/grafana-dashboards
             dashboards:
               grafana-dashboards:
                 k8s-system-api-server:
