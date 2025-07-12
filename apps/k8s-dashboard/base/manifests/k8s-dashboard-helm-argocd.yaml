@@ -17,6 +17,7 @@ spec:
               ingressClassName: nginx
               annotations:
                 cert-manager.io/cluster-issuer: letsencrypt
+              hosts: {}
               tls:
                 enabled: true
   destination:
