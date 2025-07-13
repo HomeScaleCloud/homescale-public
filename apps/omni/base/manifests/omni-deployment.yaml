@@ -32,6 +32,7 @@ spec:
             - --private-key-source=file:///omni.asc
             - --enable-break-glass-configs
             - --auth-saml-enabled=true
+            - --etcd-backup-local-path=/backups
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -58,6 +59,8 @@ spec:
           volumeMounts:
             - name: omni-etcd
               mountPath: /_out
+            - name: omni-backups
+              mountPath: /backups
             - name: omni-asc
               mountPath: /omni.asc
               subPath: "omni.asc"
@@ -69,6 +72,9 @@ spec:
         - name: omni-etcd
           persistentVolumeClaim:
             claimName: omni-etcd
+        - name: omni-backups
+          persistentVolumeClaim:
+            claimName: omni-backups
         - name: omni-asc
           secret:
             secretName: op-omni
