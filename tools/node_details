@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Get useful information about HomeScale nodes/Omni machines in useful formats.
+# 100% LLM drivel that I cannot be held accountable for, but seems to work.
+set -euo pipefail
+
+LABEL_FILTER=""
+OUTPUT_FORMAT="table"
+
+# Parse args
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -l|--labels)
+      LABEL_FILTER="$2"
+      shift 2
+      ;;
+    -o|--output)
+      OUTPUT_FORMAT="$2"
+      shift 2
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+raw_json=$(omnictl get machinestatus -o json)
+
+flat_json=$(echo "$raw_json" | jq '
+  .items // [.] | map({
+    id: .metadata.id,
+    node: (.spec.network.hostname // "unknown"),
+    infra: (.metadata.labels["omni.sidero.dev/infra-provider-id"] // "unknown"),
+    zone: (
+      (.metadata.labels | to_entries | map(select(.key|test("/zone$"))) | .[0].value) // "unknown"
+    ),
+    region: (
+      (.metadata.labels | to_entries | map(select(.key|test("/region$"))) | .[0].value) // "unknown"
+    ),
+    bmc: "UNKNOWN_BMC",
+    cluster: (.spec.cluster // "unknown"),
+    platform: (.metadata.labels["omni.sidero.dev/platform"] // "unknown"),
+    version: (.spec.talosversion // "unknown")
+  })')
+
+# Apply label filter
+if [[ -n "$LABEL_FILTER" ]]; then
+  jq_filter=".[]"
+  IFS=',' read -ra filters <<< "$LABEL_FILTER"
+  for filter in "${filters[@]}"; do
+    key="${filter%%=*}"
+    val="${filter#*=}"
+    jq_filter+=" | select(.$key == \"$val\")"
+  done
+  output_json=$(echo "$flat_json" | jq -c "[ $jq_filter ]")
+else
+  output_json="$flat_json"
+fi
+
+# Output
+case "$OUTPUT_FORMAT" in
+  json)
+    echo "$output_json" | jq .
+    ;;
+  yaml)
+    if command -v yq &>/dev/null; then
+      # Convert JSON to YAML with yq (Python yq)
+      echo "$output_json" | yq -y
+    else
+      echo "yq not found. Please install yq (https://github.com/kislyuk/yq) for YAML output." >&2
+      exit 1
+    fi
+    ;;
+  table)
+    printf "%-36s %-20s %-14s %-8s %-8s %-18s %-10s %-10s %-8s\n" \
+      "MACHINE-ID" "NODE" "INFRA" "ZONE" "REGION" "BMC-ADDRESS" "CLUSTER" "PLATFORM" "VERSION"
+    echo "$output_json" |
+      jq -r '.[] | [
+        .id,
+        .node,
+        .infra,
+        .zone,
+        .region,
+        .bmc,
+        .cluster,
+        .platform,
+        .version
+      ] | @tsv' |
+      awk -F'\t' '{ printf "%-36s %-20s %-14s %-8s %-8s %-18s %-10s %-10s %-8s\n", $1,$2,$3,$4,$5,$6,$7,$8,$9 }'
+    ;;
+  *)
+    echo "Unknown output format: $OUTPUT_FORMAT" >&2
+    exit 1
+    ;;
+esac
