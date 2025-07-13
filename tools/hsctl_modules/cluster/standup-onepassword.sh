@@ -25,3 +25,10 @@ CONNECT_CREDENTIALS=$(base64 -w 0 "$CONNECT_CREDENTIALS_FILE")
     operator-token="$OPERATOR_TOKEN" connect-credentials="$CONNECT_CREDENTIALS"
 
 rm $CONNECT_CREDENTIALS_FILE
+
+kubectl create ns onepassword
+kubectl create secret generic "op-onepassword" \
+  --from-literal=operator-token="$OPERATOR_TOKEN" \
+  --from-literal=connect-credentials="$CONNECT_CREDENTIALS" \
+  -n onepassword
+kubectl delete pods --all -n onepassword
