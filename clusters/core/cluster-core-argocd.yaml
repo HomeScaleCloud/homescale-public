@@ -44,7 +44,7 @@ spec:
       path: 'apps/omni/overlays/core'
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
-      path: 'apps/pinniped/base'
+      path: 'apps/pinniped/overlays/core'
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd

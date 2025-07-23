@@ -1,20 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: pinniped-helm
+  name: pinniped
   namespace: argocd
 spec:
   project: default
   sources:
-    - repoURL: registry-1.docker.io/bitnamicharts
-      chart: pinniped
-      targetRevision: 2.4.20
-      helm:
-        valuesObject:
-          supervisor:
-            enabled: false
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
+      targetRevision: main
+      path: 'apps/pinniped/overlays/core/manifests'
   destination:
-    server: https://kubernetes.default.svc
+    server: 'https://kubernetes.default.svc'
     namespace: pinniped
   syncPolicy:
     automated:
