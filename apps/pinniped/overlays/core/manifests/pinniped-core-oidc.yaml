@@ -10,6 +10,6 @@ spec:
     allowPasswordGrant: false
   claims:
     username: email
-    groups: groups
+    groups: GroupMember.Read.All
   client:
     secretName: op-pinniped-oidc
