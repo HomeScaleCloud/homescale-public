@@ -3,10 +3,21 @@ kind: Kustomization
 
 resources:
   - ../../../base/manifests
-  - pinniped-oidc.yaml
-  - pinniped-secret.yaml
+  - pinniped-core-oidc.yaml
+  - pinniped-core-secret.yaml
+  - pinniped-core-federation.yaml
 
 patches:
+  - target:
+      group: authentication.concierge.pinniped.dev
+      version: v1alpha1
+      kind: JWTAuthenticator
+      name: supervisor-core
+    patch: |-
+      - op: add
+        path: /spec/audience
+        value: core
+
   - target:
       group: argoproj.io
       version: v1alpha1
