@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - pinniped-helm-argocd.yaml
+  - pinniped-jwt.yaml
