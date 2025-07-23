@@ -29,7 +29,8 @@ patches:
         value:
           enabled: true
           service:
-            type: ClusterIP
+            public:
+              type: ClusterIP
           ingress:
             enabled: true
             ingressClassName: nginx
