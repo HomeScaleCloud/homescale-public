@@ -3,6 +3,8 @@ kind: Kustomization
 
 resources:
   - ../../../base/manifests
+  - pinniped-oidc.yaml
+  - pinniped-secret.yaml
 
 patches:
   - target:
