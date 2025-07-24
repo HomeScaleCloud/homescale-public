@@ -12,6 +12,7 @@ spec:
       helm:
         valuesObject:
           controller:
+            allowSnippetAnnotations: true
             metrics:
               enabled: true
               serviceMonitor:
