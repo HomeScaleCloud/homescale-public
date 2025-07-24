@@ -15,7 +15,6 @@ patches:
         value:
           proxyConfig:
             defaultTags: "tag:app"
-            defaultProxyClass: true
           operatorConfig:
             hostname: operator-manor
             defaultTags:
