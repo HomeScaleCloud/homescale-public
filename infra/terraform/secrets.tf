@@ -35,16 +35,16 @@ data "onepassword_item" "tailscale" {
   title = "tailscale"
 }
 
-resource "onepassword_item" "tailscale_oauth_operator_core" {
+resource "onepassword_item" "tailscale_oauth_k8s_core" {
   vault    = data.onepassword_vault.core.uuid
   title    = "tailscale"
-  username = tailscale_oauth_client.operator_core.id
-  password = tailscale_oauth_client.operator_core.key
+  username = tailscale_oauth_client.k8s_core.id
+  password = tailscale_oauth_client.k8s_core.key
 }
 
-resource "onepassword_item" "tailscale_oauth_operator_manor" {
+resource "onepassword_item" "tailscale_oauth_k8s_manor" {
   vault    = data.onepassword_vault.manor.uuid
   title    = "tailscale"
-  username = tailscale_oauth_client.operator_manor.id
-  password = tailscale_oauth_client.operator_manor.key
+  username = tailscale_oauth_client.k8s_manor.id
+  password = tailscale_oauth_client.k8s_manor.key
 }
