@@ -10,7 +10,9 @@ spec:
       chart: tailscale-operator
       targetRevision: 1.84.3
       helm:
-        valuesObject: {}
+        valuesObject:
+          apiServerProxyConfig:
+            mode: "true"
   destination:
     server: https://kubernetes.default.svc
     namespace: tailscale
