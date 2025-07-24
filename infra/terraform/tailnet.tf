@@ -26,20 +26,6 @@ resource "tailscale_acl" "acl" {
             "tag:app":            ["tag:k8s-operator"],
             "tag:github-actions": [],
         },
-        "postures": {
-            "posture:tsVersion": ["node:tsVersion >= '1.80.2'"],
-            "posture:linux":     ["node:os == 'linux'"],
-            "posture:macos":     ["node:os == 'macos'", "node:osVersion >= '15.3.2'"],
-            "posture:windows":   ["node:os == 'windows'", "node:osVersion >= '10.0.26100.3476'"],
-            "posture:ios":       ["node:os == 'ios'", "node:osVersion >= '18.3.2'"],
-        },
-        "defaultSrcPosture": [
-            "posture:tsVersion",
-            "posture:linux",
-            "posture:macos",
-            "posture:windows",
-            "posture:ios",
-        ],
         "nodeAttrs": [
             {
                 "target": ["autogroup:member"],
