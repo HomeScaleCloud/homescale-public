@@ -1,0 +1,15 @@
+apiVersion: idp.supervisor.pinniped.dev/v1alpha1
+kind: OIDCIdentityProvider
+metadata:
+  namespace: pinniped
+  name: entra
+spec:
+  issuer: https://login.microsoftonline.com/8cc566b2-a652-49cd-88ab-49c6caeeae08/v2.0
+  authorizationConfig:
+    additionalScopes: ["openid", "email", "profile"]
+    allowPasswordGrant: false
+  claims:
+    username: email
+    groups: groups
+  client:
+    secretName: op-pinniped-oidc
