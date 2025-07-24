@@ -6,7 +6,7 @@ metadata:
 spec:
   issuer: https://login.microsoftonline.com/8cc566b2-a652-49cd-88ab-49c6caeeae08/v2.0
   authorizationConfig:
-    additionalScopes: [offline_access, groups, email]
+    additionalScopes: [offline_access, groups, email, User.Read]
     allowPasswordGrant: false
   claims:
     username: email
