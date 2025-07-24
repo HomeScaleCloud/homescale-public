@@ -43,4 +43,5 @@ patches:
               nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
               nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
               nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+              nginx.ingress.kubernetes.io/proxy-ssl-name: "auth.k8s.api.homescale.cloud"
             tls: true
