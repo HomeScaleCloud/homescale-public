@@ -4,9 +4,9 @@ metadata:
   name: homescale
   namespace: pinniped
 spec:
-  issuer: https://k8s.homescale.cloud/issuer
+  issuer: https://auth.k8s.api.homescale.cloud/issuer
   tls:
-    secretName: k8s.homescale.cloud-tls
+    secretName: auth.k8s.api.homescale.cloud-tls
   identityProviders:
     - displayName: Entra ID
       objectRef:

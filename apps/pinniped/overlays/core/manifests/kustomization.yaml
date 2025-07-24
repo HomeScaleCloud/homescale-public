@@ -34,7 +34,7 @@ patches:
           ingress:
             enabled: true
             ingressClassName: nginx
-            hostname: k8s.homescale.cloud
+            hostname: auth.k8s.api.homescale.cloud
             path: /
             annotations:
               cert-manager.io/cluster-issuer: letsencrypt
