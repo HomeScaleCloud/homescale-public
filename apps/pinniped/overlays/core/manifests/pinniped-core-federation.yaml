@@ -5,6 +5,8 @@ metadata:
   namespace: pinniped
 spec:
   issuer: https://REDACTED/issuer
+  tls:
+    secretName: REDACTED-tls
   identityProviders:
     - displayName: Entra ID
       objectRef:
