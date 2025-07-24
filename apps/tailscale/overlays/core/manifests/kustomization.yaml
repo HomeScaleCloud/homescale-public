@@ -18,9 +18,10 @@ patches:
           proxyConfig:
             defaultTags: "tag:app"
           operatorConfig:
-            hostname: operator-core
+            hostname: k8s-core
             defaultTags:
-              - "tag:app"
+              - "tag:k8s-operator"
+              - "tag:k8s-api"
           oauth:
             clientId: <path:vaults/core/items/tailscale#username>
             clientSecret: <path:vaults/core/items/tailscale#password>
