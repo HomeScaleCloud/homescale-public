@@ -16,6 +16,9 @@ spec:
           tls: letsEncrypt
           ingress:
             enabled: true
+          letsEncrypt:
+            ingress:
+              class: nginx
   destination:
     server: https://kubernetes.default.svc
     namespace: cattle-system
