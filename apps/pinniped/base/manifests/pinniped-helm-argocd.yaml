@@ -11,12 +11,6 @@ spec:
       targetRevision: 2.4.20
       helm:
         valuesObject:
-          concierge:
-            credentialIssuerConfig: |
-              impersonationProxy:
-                mode: auto
-                service:
-                  type: ClusterIP
           supervisor:
             enabled: false
   destination:

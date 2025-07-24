@@ -25,9 +25,6 @@ patches:
       name: pinniped-helm
     patch: |-
       - op: replace
-        path: /spec/sources/0/helm/valuesObject/concierge/configuration/discovery/url
-        value: https://k8s.api.core.homescale.cloud
-      - op: replace
         path: /spec/sources/0/helm/valuesObject/supervisor
         value:
           enabled: true
