@@ -41,12 +41,6 @@ spec:
       path: 'apps/trivy-operator/base'
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
-      path: 'apps/omni/overlays/core'
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'apps/pinniped/overlays/core'
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
       path: 'apps/rancher/overlays/core'
   destination:
     server: 'https://kubernetes.default.svc'
