@@ -14,3 +14,16 @@ patches:
       - op: replace
         path: /spec/sources/0/helm/valuesObject/hostname
         value: k8s.homescale.cloud
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: tls-rancher-ingress
+    patch: |-
+      - op: add
+        path: /spec/commonName
+        value: k8s.homescale.cloud
+      - op: add
+        path: /spec/dnsNames
+        value:
+          - k8s.homescale.cloud
