@@ -1,0 +1,6 @@
+apiVersion: authentication.concierge.pinniped.dev/v1alpha1
+kind: JWTAuthenticator
+metadata:
+  name: supervisor-core
+spec:
+  issuer: https://auth.k8s.api.homescale.cloud/issuer
