@@ -16,9 +16,10 @@ patches:
           proxyConfig:
             defaultTags: "tag:app"
           operatorConfig:
-            hostname: operator-manor
+            hostname: k8s-manor
             defaultTags:
-              - "tag:app"
+              - "tag:k8s-operator"
+              - "tag:k8s-api"
           oauth:
             clientId: <path:vaults/manor/items/tailscale#username>
             clientSecret: <path:vaults/manor/items/tailscale#password>
