@@ -1,24 +1,25 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tailscale-helm
+  name: pinniped-helm
   namespace: argocd
 spec:
   project: default
   sources:
-    - repoURL: https://pkgs.tailscale.com/helmcharts
-      chart: tailscale-operator
-      targetRevision: 1.84.3
+    - repoURL: registry-1.docker.io/bitnamicharts
+      chart: pinniped
+      targetRevision: 2.4.20
       helm:
         valuesObject:
-          apiServerProxyConfig:
-            mode: "true"
+          supervisor:
+            enabled: false
   destination:
     server: https://kubernetes.default.svc
-    namespace: tailscale
+    namespace: pinniped
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
+      - ServerSideApply=true
       - CreateNamespace=true
