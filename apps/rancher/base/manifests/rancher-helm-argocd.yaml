@@ -13,10 +13,12 @@ spec:
         valuesObject:
           # hostname: rancher.morrislan.net
           replicas: 1
-          tls: letsEncrypt
           ingress:
+            tls:
+              source: letsEncrypt
             enabled: true
           letsEncrypt:
+            email: ssl@homescale.cloud
             ingress:
               class: nginx
   destination:
