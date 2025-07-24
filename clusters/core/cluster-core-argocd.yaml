@@ -39,9 +39,6 @@ spec:
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'apps/trivy-operator/base'
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'apps/pinniped/overlays/core'
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd
