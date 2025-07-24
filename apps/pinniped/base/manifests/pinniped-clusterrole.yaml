@@ -22,3 +22,16 @@ subjects:
   - kind: Group
     apiGroup: rbac.authorization.k8s.io
     name: 559f7da2-9c65-482c-a927-6c8e98d04e34
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pinniped-admins
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: 0815ff20-7d9d-4b2e-bd2a-7f186fb8d935
