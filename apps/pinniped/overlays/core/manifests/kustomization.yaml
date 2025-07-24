@@ -56,3 +56,4 @@ patches:
         value:
           tailscale.com/hostname: "k8s-core"
           tailscale.com/tags: "tag:app"
+          external-dns.alpha.kubernetes.io/hostname: k8s.api.core.homescale.cloud
