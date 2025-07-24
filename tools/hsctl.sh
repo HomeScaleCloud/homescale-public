@@ -20,18 +20,21 @@ if [[ -z "$COMMAND" ]]; then
   exit 1
 fi
 
+# Drop the command word
 shift || true
-[[ -n "${SUBCOMMAND:-}" ]] && shift || true
 
-# 1. Nested command: hsctl get nodes → hsctl_modules/get/nodes.sh
+# Only drop the subcommand if there's a nested-module .sh for it
+if [[ -n "$SUBCOMMAND" && -f "$MODULE_DIR/$COMMAND/$SUBCOMMAND.sh" ]]; then
+  shift
+fi
+
+# Paths and func names
 CMD_PATH_NESTED="$MODULE_DIR/$COMMAND/$SUBCOMMAND.sh"
 FUNC_NAME_NESTED="${COMMAND}_${SUBCOMMAND//-/_}"
-
-# 2. Top-level command: hsctl speedtest → hsctl_modules/speedtest.sh
 CMD_PATH_TOP="$MODULE_DIR/$COMMAND.sh"
 FUNC_NAME_TOP="${COMMAND//-/_}"
 
-if [[ -n "${SUBCOMMAND:-}" && -f "$CMD_PATH_NESTED" ]]; then
+if [[ -n "$SUBCOMMAND" && -f "$CMD_PATH_NESTED" ]]; then
   source "$CMD_PATH_NESTED"
   if declare -f "$FUNC_NAME_NESTED" > /dev/null; then
     "$FUNC_NAME_NESTED" "$@"
@@ -39,6 +42,7 @@ if [[ -n "${SUBCOMMAND:-}" && -f "$CMD_PATH_NESTED" ]]; then
     echo "Function $FUNC_NAME_NESTED not found in $CMD_PATH_NESTED" >&2
     exit 1
   fi
+
 elif [[ -f "$CMD_PATH_TOP" ]]; then
   source "$CMD_PATH_TOP"
   if declare -f "$FUNC_NAME_TOP" > /dev/null; then
@@ -47,8 +51,10 @@ elif [[ -f "$CMD_PATH_TOP" ]]; then
     echo "Function $FUNC_NAME_TOP not found in $CMD_PATH_TOP" >&2
     exit 1
   fi
+
 elif [[ "$COMMAND" == "version" ]]; then
   cat "$SCRIPT_DIR/../VERSION"
+
 else
   echo "Unknown command: $COMMAND ${SUBCOMMAND:-}" >&2
   exit 1
