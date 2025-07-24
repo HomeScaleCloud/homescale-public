@@ -14,3 +14,16 @@ patches:
       - op: replace
         path: /spec/sources/0/helm/valuesObject/hostname
         value: xxx
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: tls-rancher-ingress
+    patch: |-
+      - op: add
+        path: /spec/commonName
+        value: xxx
+      - op: add
+        path: /spec/dnsNames
+        value:
+          - xxx
