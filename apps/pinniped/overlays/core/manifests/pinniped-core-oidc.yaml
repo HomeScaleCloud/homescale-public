@@ -6,10 +6,10 @@ metadata:
 spec:
   issuer: https://login.microsoftonline.com/8cc566b2-a652-49cd-88ab-49c6caeeae08/v2.0
   authorizationConfig:
-    additionalScopes: [offline_access, GroupMember.Read.All, email]
+    additionalScopes: [offline_access, groups, email]
     allowPasswordGrant: false
   claims:
     username: email
-    groups: GroupMember.Read.All
+    groups: groups
   client:
     secretName: op-pinniped-oidc
