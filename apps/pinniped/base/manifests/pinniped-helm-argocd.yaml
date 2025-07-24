@@ -16,10 +16,7 @@ spec:
               impersonationProxy:
                 mode: auto
                 service:
-                  type: LoadBalancer
-                  loadBalancerClass: tailscale
-                  annotations:
-                    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "4000"
+                  type: ClusterIP
           supervisor:
             enabled: false
   destination:

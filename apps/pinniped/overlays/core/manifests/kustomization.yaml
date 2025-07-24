@@ -47,3 +47,12 @@ patches:
               nginx.ingress.kubernetes.io/proxy-ssl-name: "auth.k8s.api.homescale.cloud"
               nginx.ingress.kubernetes.io/proxy-ssl-server-name: "on"
             tls: true
+  - target:
+      kind: Service
+      name: pinniped-impersonation
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          tailscale.com/hostname: "k8s-core"
+          tailscale.com/tags: "tag:app"
