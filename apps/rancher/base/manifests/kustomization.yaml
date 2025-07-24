@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - rancher-helm-argocd.yaml
+  - rancher-cert.yaml
