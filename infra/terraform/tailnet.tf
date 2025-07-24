@@ -2,36 +2,71 @@ resource "tailscale_acl" "acl" {
   acl = <<EOF
     // This tailnet's ACLs are maintained in https://github.com/HomeScaleCloud/homescale
     {
-        "acls": [
-            {
-                "action": "accept",
-                "src":    ["autogroup:member"],
-                "dst":    ["tag:app:*"],
-            },
-            {
-                "action": "accept",
-                "src":    ["autogroup:member"],
-                "dst":    ["autogroup:self:*"],
-            },
-            {
-                "action": "accept",
-                "src":    ["tag:github-actions"],
-                "dst": [
-                    "tag:app:443",
-                ],
-            },
-        ],
-        "tagOwners": {
-            "tag:k8s-operator":   [],
-            "tag:app":            ["tag:k8s-operator"],
-            "tag:github-actions": [],
+      "acls": [
+        {
+          "action": "accept",
+          "src": ["autogroup:member"],
+          "dst": ["tag:app:*"]
         },
-        "nodeAttrs": [
-            {
-                "target": ["autogroup:member"],
-                "attr":   ["mullvad"],
-            },
-        ],
+        {
+          "action": "accept",
+          "src": ["autogroup:member"],
+          "dst": ["autogroup:self:*"]
+        },
+        {
+          "action": "accept",
+          "src": ["tag:github-actions"],
+          "dst": ["tag:app:443"]
+        },
+        {
+          "action": "accept",
+          "src": [
+            "group:Kubernetes Viewers@homescale.cloud",
+            "group:Kubernetes Admins@homescale.cloud"
+          ],
+          "dst": ["tag:k8s-api:443"]
+        }
+      ],
+      "tagOwners": {
+        "tag:k8s-operator": [],
+        "tag:k8s-api": ["tag:k8s-operator"],
+        "tag:app": ["tag:k8s-operator"],
+        "tag:github-actions": []
+      },
+      "nodeAttrs": [
+        {
+          "target": ["autogroup:member"],
+          "attr": ["mullvad"]
+        }
+      ],
+      "grants": [
+        {
+          "src": ["group:Kubernetes Viewers@homescale.cloud"],
+          "dst": ["tag:k8s-api"],
+          "app": {
+            "tailscale.com/cap/kubernetes": [
+              {
+                "impersonate": {
+                  "groups": ["kubernetes-viewers"]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "src": ["group:Kubernetes Admins@homescale.cloud"],
+          "dst": ["tag:k8s-api"],
+          "app": {
+            "tailscale.com/cap/kubernetes": [
+              {
+                "impersonate": {
+                  "groups": ["system:masters"]
+                }
+              }
+            ]
+          }
+        },
+      ]
     }
   EOF
 }
@@ -43,14 +78,14 @@ resource "tailscale_tailnet_settings" "settings" {
   users_role_allowed_to_join_external_tailnet = "admin"
 }
 
-resource "tailscale_oauth_client" "operator_core" {
-  description = "operator-core"
+resource "tailscale_oauth_client" "k8s_core" {
+  description = "k8s-core"
   scopes      = ["devices:core", "auth_keys"]
-  tags        = ["tag:app", "tag:k8s-operator"]
+  tags        = ["tag:app", "tag:k8s-operator", "tag:k8s-api"]
 }
 
-resource "tailscale_oauth_client" "operator_manor" {
-  description = "operator-manor"
+resource "tailscale_oauth_client" "k8s_manor" {
+  description = "k8s-manor"
   scopes      = ["devices:core", "auth_keys"]
-  tags        = ["tag:app", "tag:k8s-operator"]
+  tags        = ["tag:app", "tag:k8s-operator", "tag:k8s-api"]
 }
