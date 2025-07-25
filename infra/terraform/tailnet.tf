@@ -28,7 +28,7 @@ resource "tailscale_acl" "acl" {
         }
       ],
       "tagOwners": {
-        "tag:k8s-operator": [],
+        "tag:k8s-operator": ["tag:k8s-operator"],
         "tag:k8s-api": ["tag:k8s-operator"],
         "tag:app": ["tag:k8s-operator"],
         "tag:github-actions": []
@@ -81,11 +81,11 @@ resource "tailscale_tailnet_settings" "settings" {
 resource "tailscale_oauth_client" "k8s_core" {
   description = "k8s-core"
   scopes      = ["devices:core", "auth_keys"]
-  tags        = ["tag:app", "tag:k8s-operator", "tag:k8s-api"]
+  tags        = ["tag:k8s-operator", "tag:app", "tag:k8s-api"]
 }
 
 resource "tailscale_oauth_client" "k8s_manor" {
   description = "k8s-manor"
   scopes      = ["devices:core", "auth_keys"]
-  tags        = ["tag:app", "tag:k8s-operator", "tag:k8s-api"]
+  tags        = ["tag:k8s-operator", "tag:app", "tag:k8s-api"]
 }
