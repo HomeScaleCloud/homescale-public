@@ -20,3 +20,9 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=true
+  ignoreDifferences:
+    - group: apiregistration.k8s.io
+      kind: APIService
+      name: v1beta1.metrics.k8s.io
+      jsonPointers:
+        - /metadata/annotations
