@@ -3,7 +3,7 @@ kind: Kustomization
 
 namespace: argocd
 resources:
-  - https://raw.githubusercontent.com/argoproj/argo-cd/v2.14.7/manifests/install.yaml
+  - https://raw.githubusercontent.com/argoproj/argo-cd/v3.0.12/manifests/install.yaml
   - argocd-namespace.yaml
   - argocd-cmp-cm.yaml
   - avp-role.yaml
