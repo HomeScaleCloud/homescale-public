@@ -3,14 +3,82 @@ kind: ClusterRole
 metadata:
   name: kubernetes-viewers
 rules:
-  - apiGroups: ["*"]
-    resources: ["*"]
-    verbs: ["get", "list", "watch"]
-  - nonResourceURLs: ["*"]
-    verbs: ["get"]
   - apiGroups: [""]
-    resources: ["secrets"]
+    resources:
+      - pods
+      - configmaps
+      - services
+      - endpoints
+      - persistentvolumeclaims
+      - persistentvolumes
+      - namespaces
+      - nodes
+      - replicationcontrollers
+      - resourcequotas
+      - limitranges
+      - events
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - daemonsets
+      - replicasets
+      - statefulsets
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - networkpolicies
+      - ingresses
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["policy"]
+    resources:
+      - poddisruptionbudgets
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources:
+      - roles
+      - rolebindings
+      - clusterroles
+      - clusterrolebindings
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources:
+      - leases
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: [""]
+    resources:
+      - secrets
     verbs: ["list"]
+  - apiGroups: [""]
+    resources:
+      - pods/exec
+    verbs: []
+  - apiGroups: [""]
+    resources:
+      - pods/attach
+      - pods/portforward
+    verbs: []
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources:
+      - customresourcedefinitions
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["metrics.k8s.io"]
+    resources:
+      - pods
+      - nodes
+    verbs: ["get", "list", "watch"]
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
