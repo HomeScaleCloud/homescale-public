@@ -8,7 +8,7 @@ spec:
   sources:
     - repoURL: https://kubernetes-sigs.github.io/metrics-server/
       chart: metrics-server
-      targetRevision: 3.12.2
+      targetRevision: 3.13.0
       helm: {}
   destination:
     server: https://kubernetes.default.svc
@@ -20,3 +20,9 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=true
+  ignoreDifferences:
+    - group: apiregistration.k8s.io
+      kind: APIService
+      name: v1beta1.metrics.k8s.io
+      jsonPointers:
+        - /metadata/annotations
