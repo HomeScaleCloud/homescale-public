@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-dns
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
+      targetRevision: main
+      path: 'apps/external-dns/base/manifests'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: external-dns
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=true
