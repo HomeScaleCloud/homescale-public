@@ -8,7 +8,7 @@ spec:
   sources:
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
-      path: 'clusters/core'
+      path: 'clusters/core/apps'
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd
