@@ -78,6 +78,12 @@ resource "tailscale_tailnet_settings" "settings" {
   users_role_allowed_to_join_external_tailnet = "admin"
 }
 
+resource "tailscale_webhook" "slack" {
+  endpoint_url  = data.onepassword_item.tailscale_slack.password
+  provider_type = "slack"
+  subscriptions = ["exitNodeIPForwardingNotEnabled", "subnetIPForwardingNotEnabled", "policyUpdate", "userCreated", "userRoleUpdated"]
+}
+
 resource "tailscale_oauth_client" "k8s_core" {
   description = "k8s-core"
   scopes      = ["devices:core", "auth_keys"]

@@ -35,6 +35,11 @@ data "onepassword_item" "tailscale" {
   title = "tailscale"
 }
 
+data "onepassword_item" "tailscale_slack" {
+  vault = "github-actions"
+  title = "tailscale-slack"
+}
+
 resource "onepassword_item" "tailscale_oauth_k8s_core" {
   vault    = data.onepassword_vault.core.uuid
   title    = "tailscale"
