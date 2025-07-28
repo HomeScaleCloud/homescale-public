@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: cluster-core
   namespace: argocd
-  annotations:
-    avp.kubernetes.io/path: "vaults/core/items/argocd"
 spec:
   project: default
   sources:
