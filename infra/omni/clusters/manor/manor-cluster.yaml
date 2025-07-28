@@ -28,8 +28,3 @@ patches:
 kind: ControlPlane
 machines:
   - 4c4c4544-0031-5310-8057-b7c04f584b32
----
-kind: Workers
-machineClass:
-  name: manor
-  size: unlimited
