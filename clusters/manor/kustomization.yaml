@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../apps/argocd/overlays/manor
+  - ../../apps/cert-manager/base
+  - ../../apps/external-dns/base
+  - ../../apps/generic-device-plugin/base
+  - ../../apps/home-assistant/overlays/manor
+  - ../../apps/ingress-nginx/overlays/manor
+  - ../../apps/metrics/overlays/manor
+  - ../../apps/metrics-server/base
+  - ../../apps/nfs-provisioner/overlays/manor
+  - ../../apps/node-feature-discovery/base
+  - ../../apps/onepassword/overlays/manor
+  - ../../apps/tailscale/overlays/manor
+  - ../../apps/trivy-operator/base
