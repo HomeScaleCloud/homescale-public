@@ -3,14 +3,14 @@ kind: Application
 metadata:
   name: cluster-core
   namespace: argocd
+  annotations:
+    avp.kubernetes.io/path: "vaults/core/items/argocd"
 spec:
   project: default
   sources:
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'clusters/core/apps'
-      plugin:
-        name: {}
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd
