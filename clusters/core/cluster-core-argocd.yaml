@@ -9,7 +9,8 @@ spec:
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'clusters/core/apps'
-      plugin: {}
+      plugin:
+        name: {}
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd
