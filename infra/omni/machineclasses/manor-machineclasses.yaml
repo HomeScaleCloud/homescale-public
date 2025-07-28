@@ -4,4 +4,4 @@ metadata:
   id: manor
 spec:
   matchlabels:
-    - omni.sidero.dev/infra-provider-id = manor-metal
+    - omni.sidero.dev/infra-provider-id = manor

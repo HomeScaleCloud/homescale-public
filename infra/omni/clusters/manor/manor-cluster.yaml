@@ -26,9 +26,8 @@ patches:
   - file: ./patches/allow-schedule-control-plane-patch.yaml
 ---
 kind: ControlPlane
-machineClass:
-  name: manor
-  size: 3
+machines:
+  - 4c4c4544-0031-5310-8057-b7c04f584b32
 ---
 kind: Workers
 machineClass:
