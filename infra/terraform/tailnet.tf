@@ -66,7 +66,15 @@ resource "tailscale_acl" "acl" {
             ]
           }
         },
-      ]
+      ],
+      "ssh": [
+        {
+          "action": "check",
+          "src":    ["autogroup:member"],
+          "dst":    ["autogroup:self"],
+          "users":  ["autogroup:nonroot", "root"],
+        },
+      ],
     }
   EOF
 }
