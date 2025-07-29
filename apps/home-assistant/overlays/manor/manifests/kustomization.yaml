@@ -54,3 +54,26 @@ patches:
           - hosts:
               - ha.manor.homescale.cloud
             secretName: home-assistant-tls
+  - target:
+      kind: Deployment
+      name: home-assistant
+      namespace: home-assistant
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: home-assistant
+      spec:
+        template:
+          spec:
+            containers:
+              - name: home-assistant
+                volumeMounts:
+                  - name: usb-tty0
+                    mountPath: /dev/ttyUSB0
+                    readOnly: true
+            volumes:
+              - name: usb-tty0
+                hostPath:
+                  path: /dev/ttyUSB0
+                  type: CharDevice
