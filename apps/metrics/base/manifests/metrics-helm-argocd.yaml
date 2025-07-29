@@ -102,6 +102,9 @@ spec:
                 node-exporter-full:
                   url: https://grafana.com/api/dashboards/1860/revisions/41/download
                   token: ''
+                argocd-overview:
+                  url: https://grafana.com/api/dashboards/14584/revisions/1/download
+                  token: ''
             additionalDataSources:
               - name: Loki
                 type: loki
