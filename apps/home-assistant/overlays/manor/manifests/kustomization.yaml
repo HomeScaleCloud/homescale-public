@@ -68,6 +68,8 @@ patches:
           spec:
             containers:
               - name: home-assistant
+                securityContext:
+                  privileged: true
                 volumeMounts:
                   - name: usb-tty0
                     mountPath: /dev/ttyUSB0
