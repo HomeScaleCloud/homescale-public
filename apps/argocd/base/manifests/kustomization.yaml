@@ -9,6 +9,7 @@ resources:
   - avp-role.yaml
   - argocd-secret.yaml
   - argocd-ingress.yaml
+  - argocd-servicemonitor.yaml
 patches:
   - path: argocd-deployment.yaml
   - path: argocd-configmap.yaml
