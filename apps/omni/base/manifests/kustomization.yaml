@@ -9,4 +9,4 @@ resources:
   - omni-service.yaml
   - omni-ingress.yaml
   - omni-certificate.yaml
-  - omni-servicemonitor.yaml
+  # - omni-servicemonitor.yaml
