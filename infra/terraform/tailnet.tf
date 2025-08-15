@@ -39,7 +39,7 @@ resource "tailscale_acl" "acl" {
         "tag:k8s-operator": ["tag:k8s-operator"],
         "tag:k8s-api": ["tag:k8s-operator"],
         "tag:app": ["tag:k8s-operator"],
-        "tag:node": []
+        "tag:node": [],
         "tag:github-actions": []
       },
       "nodeAttrs": [
