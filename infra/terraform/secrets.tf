@@ -6,6 +6,10 @@ data "onepassword_vault" "manor" {
   name = "manor"
 }
 
+data "onepassword_vault" "common" {
+  name = "common"
+}
+
 data "onepassword_vault" "github_actions" {
   name = "github-actions"
 }
@@ -52,4 +56,10 @@ resource "onepassword_item" "tailscale_oauth_k8s_manor" {
   title    = "tailscale"
   username = tailscale_oauth_client.k8s_manor.id
   password = tailscale_oauth_client.k8s_manor.key
+}
+
+resource "onepassword_item" "tailscale_node_key" {
+  vault    = data.onepassword_vault.common.uuid
+  title    = "tailscale-node-key"
+  password = tailscale_tailnet_key.node_key.key
 }

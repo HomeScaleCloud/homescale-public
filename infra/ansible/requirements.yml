@@ -1,0 +1,5 @@
+collections:
+  - name: community.general
+    version: "10.7.2"
+  - name: netbox.netbox
+    version: "3.21.0"

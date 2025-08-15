@@ -1,0 +1,3 @@
+region: manor
+platform: metal
+k8s_ip: "10.1.245.15"
