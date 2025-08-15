@@ -25,12 +25,21 @@ resource "tailscale_acl" "acl" {
             "group:Kubernetes Admins@homescale.cloud"
           ],
           "dst": ["tag:k8s-api:443"]
+        },
+        {
+          "action": "accept",
+          "src": [
+            "group:SSH Admins@homescale.cloud",
+            "tag:github-actions"
+          ],
+          "dst": ["tag:node:22"]
         }
       ],
       "tagOwners": {
         "tag:k8s-operator": ["tag:k8s-operator"],
         "tag:k8s-api": ["tag:k8s-operator"],
         "tag:app": ["tag:k8s-operator"],
+        "tag:node": []
         "tag:github-actions": []
       },
       "nodeAttrs": [
@@ -72,7 +81,20 @@ resource "tailscale_acl" "acl" {
           "action": "check",
           "src":    ["autogroup:member"],
           "dst":    ["autogroup:self"],
-          "users":  ["autogroup:nonroot", "root"],
+          "users":  ["autogroup:nonroot"],
+        },
+        {
+          "action": "check",
+          "checkPeriod": "10h",
+          "src": ["group:SSH Admins@homescale.cloud"],
+          "dst": ["tag:node"],
+          "users": ["admin"],
+        },
+        {
+          "action": "accept",
+          "src": ["tag:github-actions"],
+          "dst": ["tag:node"],
+          "users": ["admin"],
         },
       ],
     }
@@ -102,4 +124,12 @@ resource "tailscale_oauth_client" "k8s_manor" {
   description = "k8s-manor"
   scopes      = ["devices:core", "auth_keys"]
   tags        = ["tag:k8s-operator", "tag:app", "tag:k8s-api"]
+}
+
+resource "tailscale_tailnet_key" "node_key" {
+  reusable            = true
+  preauthorized       = true
+  recreate_if_invalid = "always"
+  description         = "Node key"
+  tags                = ["tag:node"]
 }

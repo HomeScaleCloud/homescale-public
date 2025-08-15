@@ -1,0 +1,88 @@
+- name: Ensure RKE2 is installed
+  stat:
+    path: /usr/local/bin/rke2
+  register: rke2_installed
+
+- name: Download RKE2 install script
+  get_url:
+    url: https://get.rke2.io
+    dest: /tmp/install-rke2.sh
+    mode: '0755'
+  when: not rke2_installed.stat.exists
+
+- name: Install RKE2
+  command: /tmp/install-rke2.sh
+  environment:
+    INSTALL_RKE2_CHANNEL: "{{ k8s_version }}"
+  when: not rke2_installed.stat.exists
+
+- name: Retrieve region k8s token
+  set_fact:
+    k8s_token: "{{ lookup('community.general.onepassword', 'k8s-token', field='password', vault=region) }}"
+
+- name: Create RKE2 manifests directory
+  become: true
+  file:
+    path: /var/lib/rancher/rke2/server/manifests
+    state: directory
+    owner: root
+    group: root
+
+- name: Enable Cilium kube-proxy replacement
+  become: true
+  ansible.builtin.copy:
+    dest: /var/lib/rancher/rke2/server/manifests/rke2-cilium-config.yaml
+    content: |
+      apiVersion: helm.cattle.io/v1
+      kind: HelmChartConfig
+      metadata:
+        name: rke2-cilium
+        namespace: kube-system
+      spec:
+        valuesContent: |-
+          kubeProxyReplacement: true
+          k8sServiceHost: "localhost"
+          k8sServicePort: "6443"
+    owner: root
+    group: root
+
+- name: Create RKE2 config directory
+  become: true
+  file:
+    path: /etc/rancher/rke2/config.yaml.d
+    state: directory
+    owner: root
+    group: root
+
+- name: Set global RKE2 config
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/rancher/rke2/config.yaml
+    content: |
+      write-kubeconfig-mode: 600
+      cni: cilium
+      disable-kube-proxy: true
+      ingress-controller: none
+      disable:
+        - rke2-ingress-nginx
+    owner: root
+    group: root
+
+- name: Set region RKE2 config
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/rancher/rke2/config.yaml.d/{{ region }}.yaml
+    content: |
+      token: "{{ k8s_token }}"
+      cluster-domain: k8s.{{ region }}.homecale.cloud
+      node-label+:
+        - "node.homescale.cloud/region={{ region }}"
+        - "node.homescale.cloud/platform={{ platform }}"
+    owner: root
+    group: root
+
+- name: Ensure RKE2 is running
+  ansible.builtin.systemd_service:
+    name: rke2-server.service
+    state: started
+    enabled: true
