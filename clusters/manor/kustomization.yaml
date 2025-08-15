@@ -8,7 +8,6 @@ resources:
   - ../../apps/home-assistant/overlays/manor
   - ../../apps/ingress-nginx/overlays/manor
   - ../../apps/metrics/overlays/manor
-  - ../../apps/metrics-server/base
   - ../../apps/nfs-provisioner/overlays/manor
   - ../../apps/node-feature-discovery/base
   - ../../apps/onepassword/overlays/manor
