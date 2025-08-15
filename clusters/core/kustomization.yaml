@@ -7,7 +7,6 @@ resources:
   - ../../apps/generic-device-plugin/base
   - ../../apps/homepage/base
   - ../../apps/ingress-nginx/overlays/core
-  - ../../apps/metrics-server/base
   - ../../apps/node-feature-discovery/base
   - ../../apps/omni/overlays/core
   - ../../apps/onepassword/overlays/core
