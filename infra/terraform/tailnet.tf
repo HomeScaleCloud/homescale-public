@@ -85,7 +85,7 @@ resource "tailscale_acl" "acl" {
         },
         {
           "action": "check",
-          "checkPeriod": "10h",
+          "checkPeriod": "2h",
           "src": ["group:SSH Admins@homescale.cloud"],
           "dst": ["tag:node"],
           "users": ["admin"],
