@@ -14,10 +14,10 @@ check_op_logged_in() {
   fi
 
   # If not signed in, do so and cache session
-  if ! /usr/bin/op whoami &>/dev/null; then
+  if ! op whoami &>/dev/null; then
     echo "🔐 Signing in to 1Password..."
     mkdir -p "$(dirname "$SESSION_FILE")"
-    SESSION_TOKEN=$(/usr/bin/op signin --raw)
+    SESSION_TOKEN=$(op signin --raw)
 
     if [[ -z "$SESSION_TOKEN" ]]; then
       echo "❌ Failed to sign in to 1Password." >&2
@@ -34,20 +34,5 @@ tf() {
   check_op_logged_in
 
   cd "$HOME/Repos/homescale/infra/terraform"
-
-  TF_BIN=""
-  for path in "/usr/bin/terraform" "/home/linuxbrew/.linuxbrew/bin/terraform"; do
-    if [[ -x "$path" ]]; then
-      TF_BIN="$path"
-      break
-    fi
-  done
-
-  if [[ -z "$TF_BIN" ]]; then
-    echo "Error: Terraform binary not found." >&2
-    exit 1
-  fi
-
-  # Pass all args (e.g. init, plan, apply, etc.) through to terraform
-  /usr/bin/op run -- "$TF_BIN" "$@"
+  op run -- terraform "$@"
 }

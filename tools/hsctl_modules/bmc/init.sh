@@ -90,13 +90,13 @@ bmc_init() {
     local item="BMC-$node_id"
 
     # 6) Write to 1Password
-    if /usr/bin/op item get "$item" >/dev/null 2>&1; then
-      /usr/bin/op item edit "$item" \
+    if op item get "$item" >/dev/null 2>&1; then
+      op item edit "$item" \
         password="$new_pass" \
         url="https://$matched_ip" \
         --vault bmc
     else
-      /usr/bin/op item create \
+      op item create \
         --vault bmc \
         --category login \
         --title "$item" \
