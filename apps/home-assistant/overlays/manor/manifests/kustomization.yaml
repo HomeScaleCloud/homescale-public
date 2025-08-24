@@ -8,52 +8,6 @@ metadata:
 resources:
   - ../../../base/manifests
 patches:
-
-  - target:
-      kind: Application
-      name: home-assistant-helm
-    patch: |-
-      - op: add
-        path: /spec/sources/0/helm/valuesObject/config
-        value:
-          clientID: "<path:vaults/manor/items/home-assistant#oidc-client-id>"
-          clientSecret: "<path:vaults/manor/items/home-assistant#oidc-client-secret>"
-          cookieSecret: "<path:vaults/manor/items/home-assistant#cookie-secret>"
-          redirectURL: "https://ha.manor.homescale.cloud/oauth2/callback"
-          configFile: |-
-            email_domains = [ "*" ]
-            upstreams = [ "http://home-assistant.home-assistant.svc" ]
-            oidc_issuer_url = "<path:vaults/common/items/entra#oidc-issuer>"
-            oidc_groups_claim = "roles"
-            provider = "oidc"
-            pass_user_headers = true
-            set_xauthrequest = true
-            skip_provider_button = true
-            provider_display_name = "Entra ID"
-            errors_to_info_log = true
-            show_debug_on_error = true
-            exclude_logging_paths = ["/ping"]
-            skip_auth_routes = [
-              "^/api.*",
-              "^/auth/token.*",
-              "^/auth/login_flow.*",
-              "^/.external_auth=.",
-              "^/service_worker.js",
-              "^/static.*",
-              "^/local.*",
-              "^/hacsfiles.*",
-              "^/frontend_latest.*"
-            ]
-      - op: add
-        path: /spec/sources/0/helm/valuesObject/ingress/hosts
-        value:
-          - ha.manor.homescale.cloud
-      - op: add
-        path: /spec/sources/0/helm/valuesObject/ingress/tls
-        value:
-          - hosts:
-              - ha.manor.homescale.cloud
-            secretName: home-assistant-tls
   - target:
       kind: Deployment
       name: home-assistant
@@ -78,3 +32,17 @@ patches:
                 hostPath:
                   path: /dev/ttyUSB0
                   type: CharDevice
+  - target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: home-assistant
+      namespace: home-assistant
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: ha.manor.homescale.cloud
+      - op: replace
+        path: /spec/tls/0/hosts
+        value:
+          - ha.manor.homescale.cloud
