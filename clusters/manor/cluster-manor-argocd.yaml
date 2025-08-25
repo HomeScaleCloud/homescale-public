@@ -9,14 +9,6 @@ spec:
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'clusters/manor'
-    - repoURL: ghcr.io/homescalecloud/helm
-      targetRevision: 0.1.0
-      path: home-assistant
-      chart: home-assistant
-      helm:
-        valuesObject:
-          ingress:
-            host: ha.manor.homescale.cloud 
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd
