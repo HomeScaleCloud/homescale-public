@@ -11,6 +11,7 @@ spec:
       path: 'clusters/manor'
     - repoURL: oci://ghcr.io/homescalecloud/helm/home-assistant
       targetRevision: 0.1.0
+      path: .
       helm:
         valuesObject:
           ingress:
