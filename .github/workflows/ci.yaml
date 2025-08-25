@@ -68,7 +68,7 @@ jobs:
       - name: Package Helm chart
         run: |
           helm package ./apps/${{ matrix.name }}
-      - name: Push Helm chart to Vultr registry
+      - name: Push Helm chart
         run: |
           CHART_VERSION=$(yq '.version' ./apps/${{ matrix.name }}/Chart.yaml)
           helm push ${{ matrix.name }}-${CHART_VERSION}.tgz oci://ghcr.io/homescalecloud/helm
