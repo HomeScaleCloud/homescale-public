@@ -11,4 +11,5 @@ ingress:
   className: "nginx"
   clusterIssuer: "letsencrypt"
 pvc:
+  pvName: home-assistant
   size: 25Gi
