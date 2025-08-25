@@ -184,7 +184,7 @@ spec:
 
     - repoURL: https://grafana.github.io/helm-charts
       chart: alloy
-      targetRevision: 1.2.0
+      targetRevision: 1.2.1
       helm:
         valuesObject:
           alloy:
