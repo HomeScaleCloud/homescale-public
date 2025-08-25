@@ -9,9 +9,10 @@ spec:
     - repoURL: 'https://github.com/HomeScaleCloud/homescale'
       targetRevision: main
       path: 'clusters/manor'
-    - repoURL: oci://ghcr.io/homescalecloud/helm/home-assistant
+    - repoURL: oci://ghcr.io/homescalecloud/helm
       targetRevision: 0.1.0
-      path: .
+      path: 'home-assistant'
+      chart: home-assistant
       helm:
         valuesObject:
           ingress:
