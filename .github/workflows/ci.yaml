@@ -46,7 +46,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
   release:
-    name: Release – ${{ matrix.name }}
+    name: "Release – ${{ matrix.name }}"
     if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
