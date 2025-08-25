@@ -11,9 +11,13 @@ on:
     branches:
       - main
 jobs:
-  build-homepage:
-    name: "Build - homepage"
+  build:
+    name: "Build - ${{ matrix.name }}"
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: homepage
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,25 +27,59 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/homescalecloud/${{ matrix.name }}
+          tags: |
+            type=raw,value=${{ github.sha }}
+            type=raw,value=latest,enable={{is_default_branch}}
       - name: Build
-        id: build
         uses: docker/build-push-action@v6
         with:
-          context: ./apps/homepage/base
+          context: ./apps/${{ matrix.name }}/src
           push: true
-          tags: ghcr.io/homescalecloud/homepage:${{ github.sha }}
-      - name: Build latest
-        id: build-latest
-        uses: docker/build-push-action@v6
-        if: github.ref == 'refs/heads/main'
-        with:
-          context: ./apps/homepage/base
-          push: true
-          tags: ghcr.io/homescalecloud/homepage:latest
-  deploy-terraform:
-    name: "Deploy - Terraform"
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  release:
+    name: Release – ${{ matrix.name }}
+    if: github.ref == 'refs/heads/main'
+    needs: build
     runs-on: ubuntu-latest
-    needs: build-homepage
+    strategy:
+      matrix:
+        include:
+          - name: home-assistant
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set up Helm
+        uses: azure/setup-helm@v4.3.1
+        with:
+          version: v3.18.6
+      - name: Login to ghcr
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Package Helm chart
+        run: |
+          helm package ./apps/${{ matrix.name }}
+      - name: Push Helm chart to Vultr registry
+        run: |
+          CHART_VERSION=$(yq '.version' ./apps/${{ matrix.name }}/Chart.yaml)
+          helm push ${{ matrix.name }}-${CHART_VERSION}.tgz oci://ghcr.io/homescalecloud/helm
+  infra-terraform:
+    name: "Infra - Terraform"
+    runs-on: ubuntu-latest
+    needs: 
+      - build
+      - release
     defaults:
       run:
         shell: bash
@@ -77,53 +115,3 @@ jobs:
       - name: Apply
         run: terraform apply -auto-approve tfplan
         if: github.ref == 'refs/heads/main'
-  deploy-omni:
-    name: "Deploy - Omni"
-    runs-on: ubuntu-latest
-    needs: deploy-terraform
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./infra/omni
-    env:
-      OMNI_ENDPOINT: "https://omni.homescale.cloud"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Import Secrets
-        if: github.ref == 'refs/heads/main'
-        uses: 1password/load-secrets-action@v2
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          OMNI_SERVICE_ACCOUNT_KEY: op://github-actions/omni/password #pragma: allowlist secret
-          TS_ID: op://github-actions/tailscale/username
-          TS_SECRET: op://github-actions/tailscale/password #pragma: allowlist secret
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: $TS_ID
-          oauth-secret: $TS_SECRET
-          tags: tag:github-actions
-      - name: Get omnictl
-        run: |
-          wget https://omni.homescale.cloud/omnictl/omnictl-linux-amd64 -O omnictl &&
-          chmod +x omnictl
-      - name: Validate clusters
-        run: |
-          find . -type f -name '*-cluster.yaml' | while read -r cluster; do
-            ./omnictl cluster template validate -f "$cluster"
-          done
-      - name: Sync machineclasses
-        if: github.ref == 'refs/heads/main'
-        run: |
-          find . -type f -name '*-machineclasses.yaml' | while read -r file; do
-            ./omnictl apply -f "$file"
-          done
-      - name: Sync clusters
-        if: github.ref == 'refs/heads/main'
-        run: |
-          find . -type f -name '*-cluster.yaml' | while read -r cluster; do
-            ./omnictl cluster template sync -f "$cluster"
-          done
