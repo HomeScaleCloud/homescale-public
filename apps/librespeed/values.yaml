@@ -3,5 +3,5 @@ image:
   tag: "5.4.1"
 ingress:
   enabled: true
-  # host: REDACTED
+  host: REDACTED
   className: "nginx"
