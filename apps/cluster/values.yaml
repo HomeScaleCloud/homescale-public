@@ -1,0 +1,72 @@
+global:
+  project: default
+  repoURL: oci://ghcr.io/homescalecloud/helm
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+apps:
+  cert-manager:
+    enabled: true
+    targetRevision: 0.1.0
+    destination: 
+      namespace: cert-manager
+
+  external-dns:
+    enabled: true
+    targetRevision: 0.1.0
+    destination: 
+      namespace: external-dns
+
+  ingress-nginx:
+    enabled: true
+    targetRevision: 0.1.0
+    destination: 
+      namespace: ingress-nginx
+
+  librespeed:
+    enabled: true
+    targetRevision: 0.1.0
+    destination: 
+      namespace: librespeed
+
+  metrics:
+    enabled: true
+    targetRevision: 0.1.0
+    destination: 
+      namespace: metrics
+
+  nfd:
+    enabled: true
+    targetRevision: 0.1.0
+    destination: 
+      namespace: nfd
+
+  onepassword:
+    enabled: true
+    targetRevision: 0.1.0
+    destination: 
+      namespace: onepassword
+
+  rbac:
+    enabled: true
+    targetRevision: 0.1.0
+    destination: 
+      namespace: rbac
+
+  tailscale:
+    enabled: true
+    targetRevision: 0.1.0
+    destination: 
+      namespace: tailscale
+
+  trivy-operator:
+    enabled: true
+    targetRevision: 0.1.0
+    destination: 
+      namespace: trivy-system

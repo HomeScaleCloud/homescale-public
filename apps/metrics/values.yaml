@@ -5,7 +5,7 @@ kube-prometheus-stack:
       type: ClusterIP
     grafana.ini:
       server:
-        # root_url: "https://metrics.dev.homescale.cloud"
+        root_url: "https://metrics.dev.homescale.cloud"
       auth:
         disable_login_form: false
       auth.generic_oauth:
@@ -36,10 +36,10 @@ kube-prometheus-stack:
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt
       hosts:
-        # - metrics.dev.homescale.cloud
+        - metrics.dev.homescale.cloud
       tls:
         - hosts:
-          # - metrics.dev.homescale.cloud
+          - metrics.dev.homescale.cloud
           secretName: grafana-tls
     assertNoLeakedSecrets: false
     dashboardProviders:
