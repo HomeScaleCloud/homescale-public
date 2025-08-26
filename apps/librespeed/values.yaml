@@ -1,0 +1,7 @@
+image:
+  repository: ghcr.io/linuxserver/librespeed
+  tag: "5.4.1"
+ingress:
+  enabled: true
+  # host: speedtest.dev.homescale.cloud
+  className: "nginx"

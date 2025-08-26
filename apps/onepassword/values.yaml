@@ -1,0 +1,12 @@
+cluster:
+  name: dev
+connect:
+  connect:
+    serviceType: ClusterIP
+    credentialsName: op-onepassword
+    credentialsKey: connect-credentials
+  operator:
+    create: true
+    token:
+      name: op-onepassword
+      key: operator-token

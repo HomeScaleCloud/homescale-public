@@ -1,0 +1,16 @@
+rook-ceph:
+  monitoring:
+    enabled: true
+
+rook-ceph-cluster:
+  monitoring:
+    enabled: true
+    createPrometheusRules: true
+  cephClusterSpec:
+    mgr:
+      modules:
+        - name: rook
+          enabled: true
+    storage:
+      useAllNodes: true
+      useAllDevices: true

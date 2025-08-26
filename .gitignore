@@ -37,3 +37,7 @@ override.tf.json
 
 # direnv local folder
 .direnv
+
+# Helm things
+Chart.lock
+**/charts/**.tgz

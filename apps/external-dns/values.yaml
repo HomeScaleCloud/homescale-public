@@ -1,0 +1,11 @@
+external-dns:
+  provider:
+    name: cloudflare
+  env:
+    - name: CF_API_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: op-cloudflare
+          key: credential
+  domainFilters:
+    - homescale.cloud

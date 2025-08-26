@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ .Release.Name }}
 spec:
-  volumeName: {{ .Values.pvc.pvName }}
+  volumeName: {{ .Release.Name }}
   accessModes:
     - ReadWriteOnce
   resources:
