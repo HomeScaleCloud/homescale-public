@@ -240,7 +240,7 @@ spec:
 
     - repoURL: https://prometheus-community.github.io/helm-charts
       chart: prometheus-ipmi-exporter
-      targetRevision: 0.6.2
+      targetRevision: 0.6.3
       helm:
         valuesObject:
           serviceMonitor:
