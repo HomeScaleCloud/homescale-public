@@ -5,7 +5,7 @@ kube-prometheus-stack:
       type: ClusterIP
     grafana.ini:
       server:
-        # root_url: "https://xxx"
+        root_url: "https://xxx"
       auth:
         disable_login_form: false
       auth.generic_oauth:
@@ -36,10 +36,10 @@ kube-prometheus-stack:
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt
       hosts:
-        # - xxx
+        - xxx
       tls:
         - hosts:
-          # - xxx
+          - xxx
           secretName: grafana-tls
     assertNoLeakedSecrets: false
     dashboardProviders:
