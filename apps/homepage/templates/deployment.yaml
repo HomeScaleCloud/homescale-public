@@ -13,15 +13,8 @@ spec:
     spec:
       hostNetwork: true
       containers:
-        - name: home-assistant
+        - name: homepage
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8123
-          volumeMounts:
-            - name: {{ .Release.Name }}
-              mountPath: /config
-      volumes:
-        - name: {{ .Release.Name }}
-          persistentVolumeClaim:
-            claimName: {{ .Release.Name }}
+            - containerPort: 80

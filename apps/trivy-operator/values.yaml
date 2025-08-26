@@ -1,0 +1,7 @@
+trivy:
+  trivy:
+    ignoreUnfixed: true
+  service:
+    headless: false
+  serviceMonitor:
+    enabled: true
