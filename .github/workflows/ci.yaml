@@ -79,6 +79,9 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Helm dependencies
+        run: |
+          helm dependency build ./apps/${{ matrix.name }}
       - name: Package Helm chart
         run: |
           helm package ./apps/${{ matrix.name }}
