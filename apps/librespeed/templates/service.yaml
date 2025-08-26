@@ -7,4 +7,4 @@ spec:
     app: {{ .Release.Name }}
   ports:
     - port: 80
-      targetPort: 8123
+      targetPort: 80

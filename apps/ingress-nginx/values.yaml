@@ -1,0 +1,20 @@
+ingress-nginx:
+  controller:
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+    service:
+      type: LoadBalancer
+      loadBalancerClass: tailscale
+      annotations:
+        # tailscale.com/hostname: "ingress-dev"
+        tailscale.com/tags: "tag:app"
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+    ingressClassResource:
+      default: true
+    extraArgs:
+      enable-ssl-passthrough: true
