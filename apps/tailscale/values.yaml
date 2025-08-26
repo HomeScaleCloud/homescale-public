@@ -1,0 +1,13 @@
+tailscale-operator:
+  apiServerProxyConfig:
+    mode: "true"
+  proxyConfig:
+    defaultTags: "tag:app"
+  operatorConfig:
+    # hostname: k8s-core
+    defaultTags:
+      - "tag:k8s-operator"
+      - "tag:k8s-api"
+  # oauth:
+  #   clientId: <path:vaults/core/items/tailscale#username>
+  #   clientSecret: <path:vaults/core/items/tailscale#password>
