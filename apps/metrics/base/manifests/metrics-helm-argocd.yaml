@@ -212,7 +212,7 @@ spec:
 
     - repoURL: registry-1.docker.io/bitnamicharts
       chart: kubernetes-event-exporter
-      targetRevision: 3.6.0
+      targetRevision: 3.6.3
       helm:
         valuesObject:
           metrics:
