@@ -93,6 +93,7 @@ jobs:
           path: ./${{ matrix.name }}*.tgz
           if-no-files-found: error
       - name: Push Helm chart
+        if: github.ref == 'refs/heads/main'
         run: |
           CHART_VERSION=$(yq '.version' ./apps/${{ matrix.name }}/Chart.yaml)
           helm push ${{ matrix.name }}-${CHART_VERSION}.tgz oci://ghcr.io/homescalecloud/helm
