@@ -115,18 +115,6 @@ resource "tailscale_webhook" "slack" {
   subscriptions = ["exitNodeIPForwardingNotEnabled", "subnetIPForwardingNotEnabled", "policyUpdate", "userCreated", "userRoleUpdated"]
 }
 
-resource "tailscale_oauth_client" "k8s_core" {
-  description = "k8s-core"
-  scopes      = ["devices:core", "auth_keys"]
-  tags        = ["tag:k8s-operator", "tag:app", "tag:k8s-api"]
-}
-
-resource "tailscale_oauth_client" "k8s_manor" {
-  description = "k8s-manor"
-  scopes      = ["devices:core", "auth_keys"]
-  tags        = ["tag:k8s-operator", "tag:app", "tag:k8s-api"]
-}
-
 resource "tailscale_tailnet_key" "node_key" {
   reusable            = true
   preauthorized       = true
