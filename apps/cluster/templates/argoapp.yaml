@@ -1,6 +1,0 @@
-{{- range $name, $app := .Values.apps }}
-{{- if $app.enabled }}
-{{ include "argocd.application" (dict "name" $name "app" $app "Values" $.Values) }}
----
-{{- end }}
-{{- end }}
