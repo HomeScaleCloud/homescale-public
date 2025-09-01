@@ -8,8 +8,8 @@ ingress-nginx:
       type: LoadBalancer
       loadBalancerClass: tailscale
       annotations:
-        tailscale.com/hostname: "ingress-dev"
-        tailscale.com/tags: "tag:app"
+        # tailscale.com/hostname: "ingress-dev"
+        # tailscale.com/tags: "tag:app"
     autoscaling:
       enabled: true
       minReplicas: 1

@@ -2,19 +2,56 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: cluster-core
-  namespace: argocd
+  labels:
+    app.homescale.cloud/managed: true
 spec:
   project: default
-  sources:
-    - repoURL: 'https://github.com/HomeScaleCloud/homescale'
-      targetRevision: main
-      path: 'clusters/core'
+  source:
+    repoURL: oci://ghcr.io/homescalecloud/helm
+    chart: cluster
+    targetRevision: 0.1.0
+    helm:
+      valuesObject:
+        apps:
+          ingress-nginx:
+            ingress-nginx:
+             controller:
+               service:
+                 annotations:
+                   tailscale.com/hostname: "ingress-core"
+                   tailscale.com/tags: "tag:app"
+
+          metrics:
+            kube-prometheus-stack:
+              grafana:
+                ingress:
+                  hosts:
+                    - metrics.core.homescale.cloud
+                  tls:
+                    - hosts:
+                      - metrics.core.homescale.cloud
+                grafana.ini:
+                  server:
+                    root_url: "https://metrics.core.homescale.cloud"
+
+          onepassword:
+            cluster:
+              name: core
+
+          tailscale:
+            tailscale-operator:
+              operatorConfig:
+                hostname: k8s-core
+              oauth:
+                clientId: thing
+                clientSecret: thing
+            
+
   destination:
-    server: 'https://kubernetes.default.svc'
-    namespace: argocd
+    server: https://kubernetes.default.svc
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+    - CreateNamespace=true

@@ -1,11 +1,3 @@
-data "onepassword_vault" "core" {
-  name = "core"
-}
-
-data "onepassword_vault" "manor" {
-  name = "manor"
-}
-
 data "onepassword_vault" "common" {
   name = "common"
 }
@@ -42,20 +34,6 @@ data "onepassword_item" "tailscale" {
 data "onepassword_item" "tailscale_slack" {
   vault = "github-actions"
   title = "tailscale-slack"
-}
-
-resource "onepassword_item" "tailscale_oauth_k8s_core" {
-  vault    = data.onepassword_vault.core.uuid
-  title    = "tailscale"
-  username = tailscale_oauth_client.k8s_core.id
-  password = tailscale_oauth_client.k8s_core.key
-}
-
-resource "onepassword_item" "tailscale_oauth_k8s_manor" {
-  vault    = data.onepassword_vault.manor.uuid
-  title    = "tailscale"
-  username = tailscale_oauth_client.k8s_manor.id
-  password = tailscale_oauth_client.k8s_manor.key
 }
 
 resource "onepassword_item" "tailscale_node_key" {
