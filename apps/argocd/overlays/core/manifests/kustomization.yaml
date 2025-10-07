@@ -20,17 +20,8 @@ patches:
       - op: add
         path: /data/dex.config
         value: |
-          connectors:
-            - type: microsoft
-              id: microsoft
-              name: Entra ID
-              config:
-                clientID: <path:vaults/common/items/argocd#oidc-client-id>
-                clientSecret: <path:vaults/common/items/argocd#oidc-client-secret>
-                tenant: <path:vaults/common/items/entra#tenant>
-                groups:
-                - ArgoCD Users
-                - ArgoCD Admins
+
+
 
   - target:
       group: ""

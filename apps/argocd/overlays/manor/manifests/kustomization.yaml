@@ -27,8 +27,8 @@ patches:
                 clientSecret: <path:vaults/common/items/argocd#oidc-client-secret>
                 tenant: <path:vaults/common/items/entra#tenant>
                 groups:
-                - ArgoCD Users
-                - ArgoCD Admins
+                - team-k8s-infra
+                - sg-k8s-infra-admin
 
   - target:
       kind: ConfigMap

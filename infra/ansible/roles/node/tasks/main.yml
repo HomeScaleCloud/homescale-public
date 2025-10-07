@@ -1,3 +1,0 @@
-- name: Include RKE2 tasks
-  ansible.builtin.include_tasks:
-    file: rke2.yaml
