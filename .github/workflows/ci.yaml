@@ -50,6 +50,7 @@ jobs:
     strategy:
       matrix:
         include:
+          - name: argocd
           - name: cert-manager
           - name: cnpg
           - name: external-dns
@@ -66,7 +67,6 @@ jobs:
           - name: rook-ceph
           - name: tailscale
           - name: trivy-operator
-          - name: cluster
     steps:
       - name: Checkout
         uses: actions/checkout@v5

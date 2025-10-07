@@ -21,15 +21,15 @@ resource "tailscale_acl" "acl" {
         {
           "action": "accept",
           "src": [
-            "group:Kubernetes Viewers@REDACTED",
-            "group:Kubernetes Admins@REDACTED"
+            "group:team-k8s-infra@REDACTED",
+            "group:sg-k8s-infra-admin@REDACTED"
           ],
           "dst": ["tag:k8s-api:443"]
         },
         {
           "action": "accept",
           "src": [
-            "group:SSH Admins@REDACTED",
+            "group:sg-k8s-infra-admin@REDACTED",
             "tag:github-actions"
           ],
           "dst": ["tag:node:22"]
@@ -50,20 +50,20 @@ resource "tailscale_acl" "acl" {
       ],
       "grants": [
         {
-          "src": ["group:Kubernetes Viewers@REDACTED"],
+          "src": ["group:team-k8s-infra@REDACTED"],
           "dst": ["tag:k8s-api"],
           "app": {
             "tailscale.com/cap/kubernetes": [
               {
                 "impersonate": {
-                  "groups": ["kubernetes-viewers"]
+                  "groups": ["team-k8s-infra"]
                 }
               }
             ]
           }
         },
         {
-          "src": ["group:Kubernetes Admins@REDACTED"],
+          "src": ["group:sg-k8s-infra-admin@REDACTED"],
           "dst": ["tag:k8s-api"],
           "app": {
             "tailscale.com/cap/kubernetes": [
@@ -86,7 +86,7 @@ resource "tailscale_acl" "acl" {
         {
           "action": "check",
           "checkPeriod": "2h",
-          "src": ["group:SSH Admins@REDACTED"],
+          "src": ["group:sg-k8s-infra-admin@REDACTED"],
           "dst": ["tag:node"],
           "users": ["admin"],
         },
@@ -105,6 +105,7 @@ resource "tailscale_tailnet_settings" "settings" {
   devices_auto_updates_on        = true
   devices_key_duration_days      = 35
   posture_identity_collection_on = true
+  devices_approval_on                         = true
   acls_externally_managed_on     = true
   acls_external_link             = "https://github.com/HomeScaleCloud/homescale"
 }
