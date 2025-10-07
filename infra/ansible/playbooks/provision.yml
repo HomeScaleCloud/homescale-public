@@ -1,6 +1,0 @@
-- name: Provision Nodes
-  hosts: device_roles_node
-  become: true
-  roles:
-    - base
-    - node

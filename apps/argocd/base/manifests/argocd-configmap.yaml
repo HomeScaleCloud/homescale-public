@@ -123,7 +123,7 @@ metadata:
   name: argocd-rbac-cm
 data:
   policy.csv: |
-    g, ArgoCD Admins, role:admin
+    g, sg-k8s-infra-admin, role:admin
 
     p, role:argo-users, applications, get, *, allow
     p, role:argo-users, applications, refresh, *, allow

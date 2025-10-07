@@ -9,7 +9,7 @@ variable "region" {
 }
 
 variable "kubeconfig" {
-  description = "Kubeconfig to use for chart deployment"
+  description = "Kubeconfig to use for app deployment"
   type        = string
   sensitive   = true
 }

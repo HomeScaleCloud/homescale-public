@@ -21,15 +21,15 @@ resource "tailscale_acl" "acl" {
         {
           "action": "accept",
           "src": [
-            "group:Kubernetes Viewers@homescale.cloud",
-            "group:Kubernetes Admins@homescale.cloud"
+            "group:team-k8s-infra@homescale.cloud",
+            "group:sg-k8s-infra-admin@homescale.cloud"
           ],
           "dst": ["tag:k8s-api:443"]
         },
         {
           "action": "accept",
           "src": [
-            "group:SSH Admins@homescale.cloud",
+            "group:sg-k8s-infra-admin@homescale.cloud",
             "tag:github-actions"
           ],
           "dst": ["tag:node:22"]
@@ -50,20 +50,20 @@ resource "tailscale_acl" "acl" {
       ],
       "grants": [
         {
-          "src": ["group:Kubernetes Viewers@homescale.cloud"],
+          "src": ["group:team-k8s-infra@homescale.cloud"],
           "dst": ["tag:k8s-api"],
           "app": {
             "tailscale.com/cap/kubernetes": [
               {
                 "impersonate": {
-                  "groups": ["kubernetes-viewers"]
+                  "groups": ["team-k8s-infra"]
                 }
               }
             ]
           }
         },
         {
-          "src": ["group:Kubernetes Admins@homescale.cloud"],
+          "src": ["group:sg-k8s-infra-admin@homescale.cloud"],
           "dst": ["tag:k8s-api"],
           "app": {
             "tailscale.com/cap/kubernetes": [
@@ -86,7 +86,7 @@ resource "tailscale_acl" "acl" {
         {
           "action": "check",
           "checkPeriod": "2h",
-          "src": ["group:SSH Admins@homescale.cloud"],
+          "src": ["group:sg-k8s-infra-admin@homescale.cloud"],
           "dst": ["tag:node"],
           "users": ["admin"],
         },
@@ -105,6 +105,7 @@ resource "tailscale_tailnet_settings" "settings" {
   devices_auto_updates_on        = true
   devices_key_duration_days      = 35
   posture_identity_collection_on = true
+  devices_approval_on                         = true
   acls_externally_managed_on     = true
   acls_external_link             = "https://github.com/HomeScaleCloud/homescale"
 }
