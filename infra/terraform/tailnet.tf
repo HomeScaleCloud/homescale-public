@@ -32,7 +32,7 @@ resource "tailscale_acl" "acl" {
             "group:sg-k8s-infra-admin@homescale.cloud",
             "tag:github-actions"
           ],
-          "dst": ["tag:node:22"]
+          "dst": ["tag:node:22,50000,50001,6443"]
         }
       ],
       "tagOwners": {
