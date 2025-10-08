@@ -48,11 +48,11 @@ locals {
   }
 }
 
-variable "vip" {
+variable "controlplane_vip" {
   description = "Virtual IP Address (VIP) to be used for k8s controlplane"
   type        = string
   validation {
-    condition     = can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", var.vip))
+    condition     = can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", var.controlplane_vip))
     error_message = "VIP must be a valid IPv4 address."
   }
 }
