@@ -26,14 +26,14 @@ resource "onepassword_item" "tailscale_k8s_operator" {
 }
 
 resource "onepassword_item" "talosconfig" {
-  count  = var.store_talosconfig ? 1 : 0
+  count    = var.store_talosconfig ? 1 : 0
   vault    = data.onepassword_vault.cluster.uuid
   title    = "talosconfig"
   password = data.talos_client_configuration.controlplane.talos_config
 }
 
 resource "onepassword_item" "kubeconfig" {
-  count  = var.store_kubeconfig ? 1 : 0
+  count    = var.store_kubeconfig ? 1 : 0
   vault    = data.onepassword_vault.cluster.uuid
   title    = "kubeconfig"
   password = talos_cluster_kubeconfig.cluster.kubeconfig_raw
