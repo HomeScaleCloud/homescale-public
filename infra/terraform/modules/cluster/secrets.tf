@@ -28,7 +28,7 @@ resource "onepassword_item" "tailscale_k8s_operator" {
 resource "onepassword_item" "talosconfig" {
   vault    = data.onepassword_vault.cluster.uuid
   title    = "talosconfig"
-  password = data.talos_client_configuration.cluster.talos_config
+  password = data.talos_client_configuration.controlplane.talos_config
 }
 
 resource "onepassword_item" "kubeconfig" {
