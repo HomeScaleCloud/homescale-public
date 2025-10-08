@@ -105,7 +105,7 @@ resource "tailscale_tailnet_settings" "settings" {
   devices_auto_updates_on        = true
   devices_key_duration_days      = 35
   posture_identity_collection_on = true
-  devices_approval_on                         = true
+  devices_approval_on            = true
   acls_externally_managed_on     = true
   acls_external_link             = "https://github.com/HomeScaleCloud/homescale"
 }
