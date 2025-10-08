@@ -51,3 +51,15 @@ variable "vip" {
     error_message = "VIP must be a valid IPv4 address."
   }
 }
+
+variable "store_kubeconfig" {
+  description = "Enable to store kubeconfig in 1Password"
+  type    = bool
+  default = false
+}
+
+variable "store_talosconfig" {
+  description = "Enable to store talosconfig in 1Password"
+  type    = bool
+  default = false
+}
