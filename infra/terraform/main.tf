@@ -1,4 +1,4 @@
-module "cluster" {
+module "cluster_atlas" {
   source                        = "./modules/cluster"
   cluster                       = "atlas"
   controlplane_nodes            = ["10.1.245.5"]
