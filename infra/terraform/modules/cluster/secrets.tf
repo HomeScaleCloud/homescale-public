@@ -7,16 +7,15 @@ data "onepassword_item" "onepassword" {
   title = "onepassword"
 }
 
-# resource "kubernetes_secret" "onepassword_creds" {
-#   metadata {
-#     name      = "onepassword"
-#     namespace = "onepassword"
-#   }
-#   data = {
-#     operator-token = data.onepassword_item.onepassword.password
-#     connect-credentials = data.onepassword_item.onepassword.credential
-#   }
-# }
+data "onepassword_item" "argocd_oidc" {
+  vault = "common"
+  title = "argocd-oidc"
+}
+
+data "onepassword_item" "entra_tenant" {
+  vault = "common"
+  title = "entra-tenant"
+}
 
 resource "onepassword_item" "tailscale_k8s_operator" {
   vault    = data.onepassword_vault.cluster.uuid
