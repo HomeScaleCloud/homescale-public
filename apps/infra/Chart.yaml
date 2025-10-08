@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cluster
+description: Helm chart for deploying HomeScale clusters
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

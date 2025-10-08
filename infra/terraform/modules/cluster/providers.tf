@@ -1,19 +1,30 @@
 terraform {
   required_providers {
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-    }
+    # kubernetes = {
+    #   source  = "hashicorp/kubernetes"
+    # }
     onepassword = {
-      source  = "1Password/onepassword"
+      source = "1Password/onepassword"
     }
     tailscale = {
-      source  = "tailscale/tailscale"
+      source = "tailscale/tailscale"
+    }
+    talos = {
+      source = "siderolabs/talos"
+    }
+    helm = {
+      source = "hashicorp/helm"
     }
   }
 }
 
-provider "kubernetes" {
-  config_path = var.kubeconfig
+provider "helm" {
+  kubernetes = {
+    host                   = data.talos_machine_configuration.node.cluster_endpoint
+    cluster_ca_certificate = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.ca_certificate)
+    client_certificate     = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.client_certificate)
+    client_key             = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.client_key)
+  }
 }
 
 provider "onepassword" {
