@@ -50,23 +50,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: argocd
-          - name: cert-manager
-          - name: cnpg
-          - name: external-dns
-          - name: generic-device-plugin
           - name: home-assistant
           - name: homepage
-          - name: ingress-nginx
           - name: librespeed
-          - name: metrics
-          - name: nfd
-          - name: nfs-provisioner
-          - name: onepassword
           - name: rbac
-          - name: rook-ceph
-          - name: tailscale
-          - name: trivy-operator
     steps:
       - name: Checkout
         uses: actions/checkout@v5
