@@ -8,6 +8,15 @@ variable "region" {
   type        = string
 }
 
+variable "gateway" {
+  description = "IPv4 gateway to be used by nodes"
+  type        = string
+  validation {
+    condition     = can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$", var.gateway))
+    error_message = "gateway must be a valid IPv4 address."
+  }
+}
+
 # variable "kubeconfig" {
 #   description = "Kubeconfig to use for app deployment"
 #   type        = string
@@ -57,14 +66,20 @@ variable "controlplane_vip" {
   }
 }
 
+variable "workloads_on_controlplane" {
+  description = "Whether to allow workload pods to run on controlplane nodes"
+  type        = bool
+  default     = false
+}
+
 variable "store_kubeconfig" {
-  description = "Enable to store kubeconfig in 1Password"
+  description = "Whether to store kubeconfig in 1Password"
   type        = bool
   default     = false
 }
 
 variable "store_talosconfig" {
-  description = "Enable to store talosconfig in 1Password"
+  description = "Whether to store talosconfig in 1Password"
   type        = bool
   default     = false
 }
