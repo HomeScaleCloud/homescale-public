@@ -15,7 +15,7 @@ data "talos_machine_configuration" "controlplane" {
 }
 
 resource "talos_machine_configuration_apply" "controlplane" {
-  for_each = local.controlplane_nodes
+  for_each                    = local.controlplane_nodes
   client_configuration        = talos_machine_secrets.controlplane.client_configuration
   machine_configuration_input = data.talos_machine_configuration.controlplane.machine_configuration
   node                        = each.value
