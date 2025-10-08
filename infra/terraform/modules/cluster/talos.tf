@@ -79,7 +79,7 @@ resource "talos_machine_bootstrap" "controlplane" {
 
 resource "talos_cluster_kubeconfig" "cluster" {
   depends_on = [
-    talos_machine_bootstrap.cluster
+    talos_machine_bootstrap.controlplane
   ]
   client_configuration = talos_machine_secrets.controlplane.client_configuration
   node                 = var.vip
