@@ -9,7 +9,7 @@ data "talos_client_configuration" "controlplane" {
 data "talos_machine_configuration" "controlplane" {
   cluster_name     = var.cluster
   machine_type     = "controlplane"
-  cluster_endpoint = "https://${var.vip}:6443"
+  cluster_endpoint = "https://${var.controlplane_vip}:6443"
   talos_version    = var.talos_version
   machine_secrets  = talos_machine_secrets.controlplane.machine_secrets
 }
@@ -24,6 +24,56 @@ resource "talos_machine_configuration_apply" "controlplane" {
       machine = {
         network = {
           hostname = format("%s-cp-%d", var.cluster, each.key)
+        }
+      }
+    }),
+    yamldecode({
+      cluster = {
+        apiServer = {
+          admissionControl = [
+            {
+              name = "PodSecurity"
+              configuration = {
+                exemptions = {
+                  namespaces = [
+                    "rook-ceph",
+                    "metrics",
+                    "node-feature-discovery",
+                    "falco",
+                    "tailscale",
+                    "trivy-system",
+                    "home-assistant",
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    }),
+    yamldecode({
+      cluster = {
+        extraManifests = [
+          "https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml"
+        ]
+      }
+      machine = {
+        kubelet = {
+          extraArgs = {
+            rotate-server-certificates = true
+          }
+        }
+      }
+    }),
+    yamldecode({
+      cluster = {
+        extraManifests = [
+          "https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml"
+        ]
+      }
+      machine = {
+        sysctls = {
+          "user.max_user_namespaces" = "10000"
         }
       }
     }),
@@ -52,7 +102,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
               interface = "eno1"
               dhcp      = true
               vip = {
-                ip = var.vip
+                ip = var.controlplane_vip
               }
             }
           ]
@@ -81,7 +131,7 @@ resource "talos_cluster_kubeconfig" "cluster" {
     talos_machine_bootstrap.controlplane
   ]
   client_configuration = talos_machine_secrets.controlplane.client_configuration
-  node                 = var.vip
+  node                 = var.controlplane_vip
 }
 
 resource "helm_release" "cilium" {
