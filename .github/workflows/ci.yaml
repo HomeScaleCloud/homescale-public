@@ -122,6 +122,8 @@ jobs:
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           TF_TOKEN_app_terraform_io: op://github-actions/terraform-cloud/credential
+          TS_ID: op://github-actions/tailscale/username
+          TS_SECRET: op://github-actions/tailscale/password #pragma: allowlist secret
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
       - name: Format Check
@@ -133,6 +135,12 @@ jobs:
       - name: Validate
         id: validate
         run: terraform validate
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: $TS_ID
+          oauth-secret: $TS_SECRET
+          tags: tag:github-actions
       - name: Plan
         id: plan
         run: terraform plan -out=tfplan
