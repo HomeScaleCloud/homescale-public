@@ -29,6 +29,13 @@ resource "talos_machine_configuration_apply" "controlplane" {
     }),
     yamlencode({
       machine = {
+        nodeLabels = {
+            "cluster.homescale.cloud/name" = var.cluster
+        }
+      }
+    }),
+    yamlencode({
+      machine = {
         install = { diskSelector = { size = 250059350016 } }
       }
     }),
