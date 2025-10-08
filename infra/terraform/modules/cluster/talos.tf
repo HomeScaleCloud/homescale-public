@@ -21,7 +21,11 @@ resource "talos_machine_configuration_apply" "controlplane" {
   node                        = each.value
   config_patches = [
     yamlencode({
-      hostname = format("%s-cp-%d", var.cluster, each.key)
+      machine = {
+        network = {
+            hostname = format("%s-cp-%d", var.cluster, each.key)
+        }
+      }
     }),
     yamlencode({
       machine = {
