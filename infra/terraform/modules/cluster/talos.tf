@@ -89,6 +89,11 @@ resource "talos_machine_configuration_apply" "controlplane" {
         }
       }
     }),
+    var.workloads_on_controlplane ? yamlencode({
+      cluster = {
+        allowSchedulingOnControlPlanes = true
+      }
+    }) : null,
     yamlencode({
       machine = {
         install = { diskSelector = { size = 250059350016 } }
@@ -100,11 +105,21 @@ resource "talos_machine_configuration_apply" "controlplane" {
           interfaces = [
             {
               interface = "eno1"
-              dhcp      = true
+              dhcp      = false
+              addresses = ["${each.value}/24"]
+              routes = [
+                {
+                  network = "0.0.0.0/0"
+                  gateway = var.gateway
+                }
+              ]
               vip = {
                 ip = var.controlplane_vip
               }
             }
+          ]
+          nameservers = [
+            "10.1.245.1",
           ]
         }
       }
