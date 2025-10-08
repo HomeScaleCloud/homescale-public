@@ -9,12 +9,3 @@ resource "tailscale_oauth_client" "k8s_operator" {
   scopes      = ["devices:core", "auth_keys"]
   tags        = ["tag:k8s-operator", "tag:app", "tag:k8s-api"]
 }
-
-resource "tailscale_tailnet_key" "node" {
-  reusable      = true
-  ephemeral     = false
-  preauthorized = false
-  expiry        = 1200
-  description   = "Node Key"
-  tags          = ["tag:node"]
-}
