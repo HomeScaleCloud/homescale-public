@@ -10,7 +10,7 @@ data "talos_machine_configuration" "controlplane" {
   cluster_name     = var.cluster
   machine_type     = "controlplane"
   cluster_endpoint = "https://${var.vip}:6443"
-  talos_version    = "1.11.2"
+  talos_version    = var.talos_version
   machine_secrets  = talos_machine_secrets.controlplane.machine_secrets
 }
 
@@ -23,14 +23,19 @@ resource "talos_machine_configuration_apply" "controlplane" {
     yamlencode({
       machine = {
         network = {
-            hostname = format("%s-cp-%d", var.cluster, each.key)
+          hostname = format("%s-cp-%d", var.cluster, each.key)
         }
       }
     }),
     yamlencode({
       machine = {
         nodeLabels = {
-            "REDACTED/name" = var.cluster
+          "REDACTED/name"    = var.cluster
+          "REDACTED/region"  = var.region
+          "REDACTED/region"     = var.region
+          "REDACTED/os"         = "talos"
+          "REDACTED/os-version" = var.talos_version
+
         }
       }
     }),
