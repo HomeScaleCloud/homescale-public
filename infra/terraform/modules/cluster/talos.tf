@@ -27,7 +27,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
         }
       }
     }),
-    yamldecode({
+    yamlencode({
       cluster = {
         apiServer = {
           admissionControl = [
@@ -51,7 +51,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
         }
       }
     }),
-    yamldecode({
+    yamlencode({
       cluster = {
         extraManifests = [
           "https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml"
@@ -65,7 +65,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
         }
       }
     }),
-    yamldecode({
+    yamlencode({
       cluster = {
         extraManifests = [
           "https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml"
