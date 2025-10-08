@@ -3,6 +3,11 @@ variable "cluster" {
   type        = string
 }
 
+variable "region" {
+  description = "Name of the region the cluster resides in"
+  type        = string
+}
+
 # variable "kubeconfig" {
 #   description = "Kubeconfig to use for app deployment"
 #   type        = string
@@ -54,12 +59,18 @@ variable "vip" {
 
 variable "store_kubeconfig" {
   description = "Enable to store kubeconfig in 1Password"
-  type    = bool
-  default = false
+  type        = bool
+  default     = false
 }
 
 variable "store_talosconfig" {
   description = "Enable to store talosconfig in 1Password"
-  type    = bool
-  default = false
+  type        = bool
+  default     = false
+}
+
+variable "talos_version" {
+  description = "Version of Talos Linux to deploy"
+  type        = string
+  default     = "1.11.2"
 }
