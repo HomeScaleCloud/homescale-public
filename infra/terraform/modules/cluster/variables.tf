@@ -31,7 +31,7 @@ variable "controlplane_nodes" {
   description = "List of controlplane node IPs"
   type        = list(string)
   validation {
-    condition     = length(var.nodes) > 0
+    condition     = length(var.controlplane_nodes) > 0
     error_message = "At least one node must be specified."
   }
 }
