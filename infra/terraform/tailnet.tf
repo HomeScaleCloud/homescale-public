@@ -32,7 +32,7 @@ resource "tailscale_acl" "acl" {
             "group:sg-k8s-infra-admin@homescale.cloud",
             "tag:github-actions"
           ],
-          "dst": ["tag:node:22,50000,50001,6443"]
+          "dst": ["tag:node:22,50000,50001,6443,5252","10.1.245.0/24"]
         }
       ],
       "tagOwners": {
@@ -113,7 +113,7 @@ resource "tailscale_tailnet_settings" "settings" {
 resource "tailscale_webhook" "slack" {
   endpoint_url  = data.onepassword_item.tailscale_slack.password
   provider_type = "slack"
-  subscriptions = ["exitNodeIPForwardingNotEnabled", "subnetIPForwardingNotEnabled", "policyUpdate", "userCreated", "userRoleUpdated"]
+  subscriptions = ["exitNodeIPForwardingNotEnabled", "subnetIPForwardingNotEnabled", "policyUpdate", "userCreated", "userRoleUpdated", "nodeNeedsApproval", "nodeApproved"]
 }
 
 resource "tailscale_tailnet_key" "node_key" {

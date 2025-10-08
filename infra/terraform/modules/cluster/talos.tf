@@ -1,25 +1,28 @@
-resource "talos_machine_secrets" "cluster" {}
+resource "talos_machine_secrets" "controlplane" {}
 
-data "talos_client_configuration" "cluster" {
+data "talos_client_configuration" "controlplane" {
   cluster_name         = var.cluster
-  client_configuration = talos_machine_secrets.cluster.client_configuration
-  nodes                = var.nodes
+  client_configuration = talos_machine_secrets.controlplane.client_configuration
+  nodes                = var.controlplane_nodes
 }
 
-data "talos_machine_configuration" "node" {
+data "talos_machine_configuration" "controlplane" {
   cluster_name     = var.cluster
   machine_type     = "controlplane"
   cluster_endpoint = "https://${var.vip}:6443"
   talos_version    = "1.11.2"
-  machine_secrets  = talos_machine_secrets.cluster.machine_secrets
+  machine_secrets  = talos_machine_secrets.controlplane.machine_secrets
 }
 
-resource "talos_machine_configuration_apply" "node" {
-  for_each                    = toset(var.nodes)
-  client_configuration        = talos_machine_secrets.cluster.client_configuration
-  machine_configuration_input = data.talos_machine_configuration.node.machine_configuration
+resource "talos_machine_configuration_apply" "controlplane" {
+  for_each = local.controlplane_nodes
+  client_configuration        = talos_machine_secrets.controlplane.client_configuration
+  machine_configuration_input = data.talos_machine_configuration.controlplane.machine_configuration
   node                        = each.value
   config_patches = [
+    yamlencode({
+      hostname = format("%s-cp-%d", var.cluster, each.key)
+    }),
     yamlencode({
       machine = {
         install = { diskSelector = { size = 250059350016 } }
@@ -66,25 +69,25 @@ resource "talos_machine_configuration_apply" "node" {
   ]
 }
 
-resource "talos_machine_bootstrap" "cluster" {
+resource "talos_machine_bootstrap" "controlplane" {
   depends_on = [
-    talos_machine_configuration_apply.node
+    talos_machine_configuration_apply.controlplane
   ]
-  node                 = var.nodes[0]
-  client_configuration = talos_machine_secrets.cluster.client_configuration
+  node                 = var.controlplane_nodes[0]
+  client_configuration = talos_machine_secrets.controlplane.client_configuration
 }
 
 resource "talos_cluster_kubeconfig" "cluster" {
   depends_on = [
     talos_machine_bootstrap.cluster
   ]
-  client_configuration = talos_machine_secrets.cluster.client_configuration
+  client_configuration = talos_machine_secrets.controlplane.client_configuration
   node                 = var.vip
 }
 
 resource "helm_release" "cilium" {
   depends_on = [
-    talos_machine_bootstrap.cluster
+    talos_machine_bootstrap.controlplane
   ]
   name       = "cilium"
   repository = "https://helm.cilium.io/"
