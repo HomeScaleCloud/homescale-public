@@ -51,9 +51,15 @@ jobs:
       matrix:
         include:
           - name: home-assistant
+          - name: cert-manager-crs
+          - name: external-dns-crs
+          - name: tailscale-crs
           - name: homepage
           - name: librespeed
           - name: rbac
+          - name: generic-device-plugin
+          - name: metrics
+          - name: rook-ceph
     steps:
       - name: Checkout
         uses: actions/checkout@v5

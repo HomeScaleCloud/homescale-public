@@ -38,7 +38,6 @@ resource "talos_machine_configuration_apply" "controlplane" {
                   namespaces = [
                     "rook-ceph",
                     "metrics",
-                    "node-feature-discovery",
                     "falco",
                     "tailscale",
                     "trivy-system",

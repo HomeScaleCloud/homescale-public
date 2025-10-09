@@ -1,156 +1,356 @@
-resource "helm_release" "cilium" {
-  depends_on = [
-    talos_machine_bootstrap.controlplane
-  ]
-  name       = "cilium"
-  repository = "https://helm.cilium.io/"
-  chart      = "cilium"
-  version    = "1.18.2"
-  namespace  = "kube-system"
-
-  set = [
+locals {
+  apps_all = [
     {
-      name  = "ipam.mode"
-      value = "kubernetes"
+      releaseName    = "cert-manager"
+      chart          = "cert-manager"
+      repoURL        = "https://charts.jetstack.io"
+      targetRevision = "v1.18.2"
+      namespace      = "cert-manager"
+      enabled        = var.app_cert_manager_enabled
     },
     {
-      name  = "kubeProxyReplacement"
-      value = "true"
+      releaseName    = "cert-manager-crs"
+      chart          = "cert-manager-crs"
+      repoURL        = "ghcr.io/homescalecloud/helm/cert-manager-crs"
+      targetRevision = "0.1.0"
+      namespace      = "cert-manager"
+      enabled        = var.app_cert_manager_crs_enabled
     },
     {
-      name  = "securityContext.capabilities.ciliumAgent"
-      value = "{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}"
+      releaseName    = "external-dns"
+      chart          = "external-dns"
+      repoURL        = "https://kubernetes-sigs.github.io/external-dns/"
+      targetRevision = "1.18.0"
+      namespace      = "external-dns"
+      values = {
+        provider = {
+          name = "cloudflare"
+        }
+        env = [
+          {
+            name = "CF_API_TOKEN"
+            valueFrom = {
+              secretKeyRef = {
+                name = "op-cloudflare"
+                key  = "credential"
+              }
+            }
+          }
+        ]
+        domainFilters = ["homescale.cloud"]
+      }
+      enabled        = var.app_external_dns_enabled
     },
     {
-      name  = "securityContext.capabilities.cleanCiliumState"
-      value = "{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}"
+      releaseName    = "external-dns-crs"
+      chart          = "external-dns-crs"
+      repoURL        = "ghcr.io/homescalecloud/helm/external-dns-crs"
+      targetRevision = "0.1.0"
+      namespace      = "external-dns"
+      enabled        = var.app_external_dns_crs_enabled
     },
     {
-      name  = "cgroup.autoMount.enabled"
-      value = "false"
+      releaseName    = "generic-device-plugin"
+      chart          = "generic-device-plugin"
+      repoURL        = "ghcr.io/homescalecloud/helm/generic-device-plugin"
+      targetRevision = "0.1.0"
+      namespace      = "kube-system"
+      enabled        = var.app_generic_device_plugin_enabled
     },
     {
-      name  = "cgroup.hostRoot"
-      value = "/sys/fs/cgroup"
+      releaseName    = "home-assistant"
+      chart          = "home-assistant"
+      repoURL        = "ghcr.io/homescalecloud/helm/home-assistant"
+      targetRevision = "0.1.0"
+      namespace      = "home-assistant"
+      values = {
+        ingress = {
+          host = "ha.${var.cluster}.${var.region}.homescale.cloud"
+        }
+      }
+      enabled        = var.app_home_assistant_enabled
     },
     {
-      name  = "k8sServiceHost"
-      value = "localhost"
+      releaseName    = "homepage"
+      chart          = "homepage"
+      repoURL        = "ghcr.io/homescalecloud/helm/homepage"
+      targetRevision = "0.1.0"
+      namespace      = "homepage"
+      values = {
+        ingress = {
+          host = "homescale.cloud"
+        }
+      }
+      enabled        = var.app_homepage_enabled
     },
     {
-      name  = "k8sServicePort"
-      value = "7445"
+      releaseName    = "ingress-nginx"
+      chart          = "ingress-nginx"
+      repoURL        = "https://kubernetes.github.io/ingress-nginx"
+      targetRevision = "4.12.1"
+      namespace      = "ingress-nginx"
+      values = {
+        controller = {
+          metrics = {
+            enabled        = true
+            serviceMonitor = {
+              enabled = true
+            }
+          }
+          service = {
+            type              = "LoadBalancer"
+            loadBalancerClass = "tailscale"
+            annotations = {
+              "tailscale.com/hostname" = "ingress-${var.cluster}-${var.region}"
+              "tailscale.com/tags"     = "tag:app"
+            }
+          }
+          autoscaling = {
+            enabled     = true
+            minReplicas = 1
+            maxReplicas = 5
+          }
+          ingressClassResource = {
+            default = true
+          }
+          extraArgs = {
+            "enable-ssl-passthrough" = true
+          }
+        }
+      }
+      enabled        = var.app_ingress_nginx_enabled
+    },
+    {
+      releaseName    = "librespeed"
+      chart          = "librespeed"
+      repoURL        = "ghcr.io/homescalecloud/helm/librespeed"
+      targetRevision = "0.1.0"
+      namespace      = "librespeed"
+      values = {
+        ingress = {
+          host = "librespeed.${var.cluster}.${var.region}.homescale.cloud"
+        }
+      }
+      enabled        = var.app_librespeed_enabled
+    },
+    {
+      releaseName    = "metrics"
+      chart          = "metrics"
+      repoURL        = "ghcr.io/homescalecloud/helm/metrics"
+      targetRevision = "0.1.0"
+      namespace      = "metrics"
+      values = {
+        kube-prometheus-stack = {
+          grafana = {
+            "grafana.ini" = {
+              server = {
+                root_url = "https://metrics.${var.cluster}.${var.region}.homescale.cloud"
+              }
+              auth = {
+                generic_oauth = {
+                  client_id     = data.onepassword_item.grafana_oidc.username
+                  client_secret = data.onepassword_item.grafana_oidc.password
+                }
+              }
+            }
+            ingress = {
+              enabled = true
+              hosts   = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
+              tls = [
+                {
+                  hosts = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
+                }
+              ]
+            }
+          }
+        }
+      }
+      enabled        = var.app_metrics_enabled
+    },
+    {
+      releaseName    = "node-feature-discovery"
+      chart          = "node-feature-discovery"
+      repoURL        = "https://kubernetes-sigs.github.io/node-feature-discovery/charts"
+      targetRevision = "0.17.3"
+      namespace      = "kube-system"
+      enabled        = var.app_node_feature_discovery_enabled
+    },
+    {
+      releaseName    = "nfs-provisioner"
+      chart          = "nfs-provisioner"
+      repoURL        = "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/"
+      targetRevision = "4.0.18"
+      namespace      = "nfs-provisioner"
+      values = {
+        nfs = {
+          server = var.nfs_server
+          path = var.nfs_path
+        }
+        storageClass = {
+          defaultClass = true
+        }
+      }
+      enabled        = var.app_nfs_provisioner_enabled
+    },
+    {
+      releaseName    = "onepassword"
+      chart          = "connect"
+      repoURL        = "https://1password.github.io/connect-helm-charts/"
+      targetRevision = "2.0.2"
+      namespace      = "onepassword"
+      values = {
+        connect = {
+          connect = {
+            serviceType     = "ClusterIP"
+            credentialsName = "onepassword"
+            credentialsKey  = "connect-credentials"
+          }
+          operator = {
+            create = true
+            token = {
+              name = "onepassword"
+              key  = "operator-token"
+            }
+          }
+        }
+      }
+      enabled        = var.app_onepassword_enabled
+    },
+    {
+      releaseName    = "rbac"
+      chart          = "rbac"
+      repoURL        = "ghcr.io/homescalecloud/helm/rbac"
+      targetRevision = "0.1.0"
+      namespace      = "rbac"
+      enabled        = var.app_rbac_enabled
+    },
+    {
+      releaseName    = "rook-ceph"
+      chart          = "rook-ceph"
+      repoURL        = "ghcr.io/homescalecloud/helm/rook-ceph"
+      targetRevision = "0.1.0"
+      namespace      = "rook-ceph"
+      enabled        = var.app_rook_ceph_enabled
+    },
+    {
+      releaseName    = "tailscale"
+      chart          = "tailscale-operator"
+      repoURL        = "https://pkgs.tailscale.com/helmcharts"
+      targetRevision = "1.86.2"
+      namespace      = "tailscale"
+      values = {
+        tailscale-operator = {
+          apiServerProxyConfig = {
+            mode = "true"
+          }
+          proxyConfig = {
+            defaultTags = "tag:app"
+          }
+          operatorConfig = {
+            hostname = "k8s-${var.cluster}-${var.region}"
+            defaultTags = [
+              "tag:k8s-operator",
+              "tag:k8s-api",
+            ]
+          }
+        }
+      }
+      enabled        = var.app_tailscale_enabled
+    },
+    {
+      releaseName    = "tailscale-crs"
+      chart          = "tailscale-crs"
+      repoURL        = "ghcr.io/homescalecloud/helm/tailscale-crs"
+      targetRevision = "0.1.0"
+      namespace      = "tailscale"
+      values = {
+        operatorOauth = {
+          secretPath = "vaults/${var.cluster}/items/tailscale"
+        }
+      }
+      enabled        = var.app_tailscale_crs_enabled
+    },
+    {
+      releaseName    = "trivy-operator"
+      chart          = "trivy-operator"
+      repoURL        = "https://aquasecurity.github.io/helm-charts/"
+      targetRevision = "0.29.3"
+      namespace      = "trivy-system"
+      values = {
+        trivy = {
+          trivy = {
+            ignoreUnfixed = true
+          }
+          service = {
+            headless = false
+          }
+          serviceMonitor = {
+            enabled = true
+          }
+        }
+      }
+      enabled        = var.app_trivy_operator_enabled
     }
   ]
+  apps = [for a in local.apps_all : a if a.enabled]
 }
 
-resource "helm_release" "argocd" {
-  depends_on = [
-    helm_release.cilium
-  ]
-
-  name             = "argocd"
-  repository       = "https://argoproj.github.io/argo-helm"
-  chart            = "argo-cd"
-  version          = "8.3.3"
-  namespace        = "argocd"
-  create_namespace = true
-
-  values = [
-    yamlencode({
-      global = {
-        domain = "argocd.${var.cluster}.${var.region}.homescale.cloud"
+resource "kubernetes_manifest" "argocd_app" {
+  for_each = { for a in local.apps : a.releaseName => a }
+  depends_on = [ helm_release.argocd ]
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = each.value.releaseName
+      namespace = "argocd"
+    }
+    spec = {
+      project = "default"
+      source = {
+        repoURL        = each.value.repoURL
+        chart          = each.value.chart
+        targetRevision = each.value.targetRevision
+        helm = merge(
+          { releaseName = each.value.releaseName },
+          lookup(each.value, "values", null) != null ? { values = yamlencode(each.value.values) } : {}
+        )
       }
-
-      certificate = {
-        enabled = true
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = each.value.namespace
       }
-
-      server = {
-        ingress = {
-          enabled          = true
-          ingressClassName = "nginx"
-          annotations = {
-            "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
-            "nginx.ingress.kubernetes.io/ssl-passthrough"    = "true"
-            "cert-manager.io/cluster-issuer"                 = "letsencrypt"
-          }
-          tls = true
+      syncPolicy = {
+        automated = {
+          prune = true
+          selfHeal = true
         }
+        syncOptions = [
+          "ServerSideApply=true",
+          "CreateNamespace=true"
+        ]
       }
+    }
+  }
+}
 
-      configs = {
-        cm = {
-          "dex.config" = <<-YAML
-            connectors:
-              - type: microsoft
-                id: microsoft
-                name: Entra ID
-                config:
-                  clientID: ${data.onepassword_item.argocd_oidc.username}
-                  clientSecret: ${data.onepassword_item.argocd_oidc.password}
-                  tenant: ${data.onepassword_item.entra_tenant.credential}
-                  groups:
-                    - team-k8s-infra
-                    - sg-k8s-infra-admin
-          YAML
-          "admin.enabled"                  = false
-          "statusbadge.enabled"            = true
-          "server.rbac.log.enforce.enable" = "true"
-          "timeout.reconciliation"         = "45s"
-        }
+resource "kubernetes_manifest" "argocd_homescale_helm" {
+  depends_on = [ helm_release.argocd ]
+  manifest = {
+    apiVersion = "v1"
+    kind       = "Secret"
+    metadata = {
+      name      = "argocd-homescale-helm"
+      namespace = "argocd"
+      labels = {
+        "argocd.argoproj.io/secret-type" = "repository"
       }
-
-      rbac = {
-        "policy.csv" = <<-CSV
-          g, sg-k8s-infra-admin, role:admin
-          p, role:argo-users, applications, get, *, allow
-          p, role:argo-users, applications, refresh, *, allow
-          p, role:argo-users, applications, sync, *, allow
-          p, role:argo-users, projects, get, *, allow
-          p, role:argo-users, repositories, get, *, allow
-          p, role:argo-users, clusters, get, *, allow
-          p, role:argo-users, accounts, get, *, allow
-          p, role:argo-users, logs, get, *, deny
-          p, role:argo-users, logs, get, */*, deny
-          g, team-k8s-infra, role:argo-users
-        CSV
-      }
-
-      notifications = {
-        subscriptions = <<-YAML
-          - recipients:
-              - slack:argocd
-            triggers:
-              - on-update-failed
-        YAML
-
-        templates = {
-          "template.app-update-failed" = <<-YAML
-            slack:
-              attachments: |
-                [{
-                  "title": "{{ .app.metadata.name}}",
-                  "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
-                  "color": "#E96D76",
-                  "fields": [
-                    { "title": "Sync Status", "value": "Failed", "short": true },
-                    { "title": "Finished At", "value": "{{.app.status.operationState.finishedAt}}", "short": true },
-                    { "title": "Error", "value": "{{.app.status.operationState.message}}", "short": true }
-                  ]
-                }]
-          YAML
-        }
-
-        triggers = {
-          "trigger.on-update-failed" = <<-YAML
-            - description: Application update has failed
-              send:
-                - app-update-failed
-              when: app.status.operationState.phase in ['Failed', 'Error', 'Unknown']
-          YAML
-        }
-      }
-    })
-  ]
+    }
+    stringData = {
+      url       = "ghcr.io/homescalecloud/helm"
+      name      = "homescale-helm"
+      type      = "helm"
+      enableOCI = "true"
+    }
+  }
 }

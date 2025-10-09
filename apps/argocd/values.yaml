@@ -1,9 +1,0 @@
-image:
-  repository: ghcr.io/home-assistant/home-assistant
-  tag: "2025.8.2"
-ingress:
-  enabled: true
-  # host: ha.dev.homescale.cloud
-  className: "nginx"
-pvc:
-  size: 25Gi
