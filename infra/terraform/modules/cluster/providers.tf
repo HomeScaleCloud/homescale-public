@@ -12,10 +12,20 @@ terraform {
     talos = {
       source = "siderolabs/talos"
     }
+    kubernetes = {
+      source = "hashicorp/kubernetes"
+    }
     helm = {
       source = "hashicorp/helm"
     }
   }
+}
+
+provider "kubernetes" {
+  host                   = data.talos_machine_configuration.controlplane.cluster_endpoint
+  cluster_ca_certificate = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.ca_certificate)
+  client_certificate     = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.client_certificate)
+  client_key             = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.client_key)
 }
 
 provider "helm" {

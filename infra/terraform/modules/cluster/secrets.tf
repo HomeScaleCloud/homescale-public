@@ -12,6 +12,11 @@ data "onepassword_item" "argocd_oidc" {
   title = "argocd-oidc"
 }
 
+data "onepassword_item" "grafana_oidc" {
+  vault = "common"
+  title = "grafana-oidc"
+}
+
 data "onepassword_item" "entra_tenant" {
   vault = "common"
   title = "entra-tenant"
