@@ -3,6 +3,8 @@ module "cluster_atlas" {
   cluster                       = "atlas"
   region                        = "boa1"
   gateway                       = "10.1.245.1"
+  nfs_server = "10.1.240.5"
+  nfs_path = "/mnt/data/apps"
   controlplane_vip              = "10.1.245.15"
   controlplane_nodes            = ["10.1.245.5"]
   workloads_on_controlplane     = true
