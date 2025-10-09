@@ -11,7 +11,7 @@ locals {
     {
       releaseName    = "cert-manager-crs"
       chart          = "cert-manager-crs"
-      repoURL        = "ghcr.io/homescalecloud/helm/cert-manager-crs"
+      repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "cert-manager"
       enabled        = var.app_cert_manager_crs_enabled
@@ -44,7 +44,7 @@ locals {
     {
       releaseName    = "external-dns-crs"
       chart          = "external-dns-crs"
-      repoURL        = "ghcr.io/homescalecloud/helm/external-dns-crs"
+      repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "external-dns"
       enabled        = var.app_external_dns_crs_enabled
@@ -52,7 +52,7 @@ locals {
     {
       releaseName    = "generic-device-plugin"
       chart          = "generic-device-plugin"
-      repoURL        = "ghcr.io/homescalecloud/helm/generic-device-plugin"
+      repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "kube-system"
       enabled        = var.app_generic_device_plugin_enabled
@@ -60,7 +60,7 @@ locals {
     {
       releaseName    = "home-assistant"
       chart          = "home-assistant"
-      repoURL        = "ghcr.io/homescalecloud/helm/home-assistant"
+      repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "home-assistant"
       values = {
@@ -73,7 +73,7 @@ locals {
     {
       releaseName    = "homepage"
       chart          = "homepage"
-      repoURL        = "ghcr.io/homescalecloud/helm/homepage"
+      repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "homepage"
       values = {
@@ -123,7 +123,7 @@ locals {
     {
       releaseName    = "librespeed"
       chart          = "librespeed"
-      repoURL        = "ghcr.io/homescalecloud/helm/librespeed"
+      repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "librespeed"
       values = {
@@ -136,7 +136,7 @@ locals {
     {
       releaseName    = "metrics"
       chart          = "metrics"
-      repoURL        = "ghcr.io/homescalecloud/helm/metrics"
+      repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "metrics"
       values = {
@@ -219,7 +219,7 @@ locals {
     {
       releaseName    = "rbac"
       chart          = "rbac"
-      repoURL        = "ghcr.io/homescalecloud/helm/rbac"
+      repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "rbac"
       enabled        = var.app_rbac_enabled
@@ -227,7 +227,7 @@ locals {
     {
       releaseName    = "rook-ceph"
       chart          = "rook-ceph"
-      repoURL        = "ghcr.io/homescalecloud/helm/rook-ceph"
+      repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "rook-ceph"
       enabled        = var.app_rook_ceph_enabled
@@ -260,7 +260,7 @@ locals {
     {
       releaseName    = "tailscale-crs"
       chart          = "tailscale-crs"
-      repoURL        = "ghcr.io/homescalecloud/helm/tailscale-crs"
+      repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "tailscale"
       values = {
