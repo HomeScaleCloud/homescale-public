@@ -39,7 +39,7 @@ locals {
         ]
         domainFilters = ["homescale.cloud"]
       }
-      enabled        = var.app_external_dns_enabled
+      enabled = var.app_external_dns_enabled
     },
     {
       releaseName    = "external-dns-crs"
@@ -68,7 +68,7 @@ locals {
           host = "ha.${var.cluster}.${var.region}.homescale.cloud"
         }
       }
-      enabled        = var.app_home_assistant_enabled
+      enabled = var.app_home_assistant_enabled
     },
     {
       releaseName    = "homepage"
@@ -81,7 +81,7 @@ locals {
           host = "homescale.cloud"
         }
       }
-      enabled        = var.app_homepage_enabled
+      enabled = var.app_homepage_enabled
     },
     {
       releaseName    = "ingress-nginx"
@@ -92,7 +92,7 @@ locals {
       values = {
         controller = {
           metrics = {
-            enabled        = true
+            enabled = true
             serviceMonitor = {
               enabled = true
             }
@@ -118,7 +118,7 @@ locals {
           }
         }
       }
-      enabled        = var.app_ingress_nginx_enabled
+      enabled = var.app_ingress_nginx_enabled
     },
     {
       releaseName    = "librespeed"
@@ -131,7 +131,7 @@ locals {
           host = "librespeed.${var.cluster}.${var.region}.homescale.cloud"
         }
       }
-      enabled        = var.app_librespeed_enabled
+      enabled = var.app_librespeed_enabled
     },
     {
       releaseName    = "metrics"
@@ -165,7 +165,7 @@ locals {
           }
         }
       }
-      enabled        = var.app_metrics_enabled
+      enabled = var.app_metrics_enabled
     },
     {
       releaseName    = "node-feature-discovery"
@@ -184,13 +184,13 @@ locals {
       values = {
         nfs = {
           server = var.nfs_server
-          path = var.nfs_path
+          path   = var.nfs_path
         }
         storageClass = {
           defaultClass = true
         }
       }
-      enabled        = var.app_nfs_provisioner_enabled
+      enabled = var.app_nfs_provisioner_enabled
     },
     {
       releaseName    = "onepassword"
@@ -214,7 +214,7 @@ locals {
           }
         }
       }
-      enabled        = var.app_onepassword_enabled
+      enabled = var.app_onepassword_enabled
     },
     {
       releaseName    = "rbac"
@@ -255,7 +255,7 @@ locals {
           }
         }
       }
-      enabled        = var.app_tailscale_enabled
+      enabled = var.app_tailscale_enabled
     },
     {
       releaseName    = "tailscale-crs"
@@ -268,7 +268,7 @@ locals {
           secretPath = "vaults/${var.cluster}/items/tailscale"
         }
       }
-      enabled        = var.app_tailscale_crs_enabled
+      enabled = var.app_tailscale_crs_enabled
     },
     {
       releaseName    = "trivy-operator"
@@ -289,15 +289,15 @@ locals {
           }
         }
       }
-      enabled        = var.app_trivy_operator_enabled
+      enabled = var.app_trivy_operator_enabled
     }
   ]
   apps = [for a in local.apps_all : a if a.enabled]
 }
 
 resource "kubernetes_manifest" "argocd_app" {
-  for_each = { for a in local.apps : a.releaseName => a }
-  depends_on = [ helm_release.argocd ]
+  for_each   = { for a in local.apps : a.releaseName => a }
+  depends_on = [helm_release.argocd]
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
@@ -322,7 +322,7 @@ resource "kubernetes_manifest" "argocd_app" {
       }
       syncPolicy = {
         automated = {
-          prune = true
+          prune    = true
           selfHeal = true
         }
         syncOptions = [
@@ -335,7 +335,7 @@ resource "kubernetes_manifest" "argocd_app" {
 }
 
 resource "kubernetes_manifest" "argocd_homescale_helm" {
-  depends_on = [ helm_release.argocd ]
+  depends_on = [helm_release.argocd]
   manifest = {
     apiVersion = "v1"
     kind       = "Secret"

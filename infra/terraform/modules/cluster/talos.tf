@@ -1,4 +1,7 @@
 resource "talos_machine_secrets" "controlplane" {}
+resource "talos_image_factory_schematic" "image" {
+
+}
 
 data "talos_client_configuration" "controlplane" {
   cluster_name         = var.cluster
@@ -79,11 +82,12 @@ resource "talos_machine_configuration_apply" "controlplane" {
     yamlencode({
       machine = {
         nodeLabels = {
-          "cluster.homescale.cloud/name"    = var.cluster
-          "cluster.homescale.cloud/region"  = var.region
-          "node.homescale.cloud/region"     = var.region
-          "node.homescale.cloud/os"         = "talos"
-          "node.homescale.cloud/os-version" = var.talos_version
+          "cluster.homescale.cloud/name"     = var.cluster
+          "cluster.homescale.cloud/region"   = var.region
+          "cluster.homescale.cloud/platform" = var.platform
+          "node.homescale.cloud/region"      = var.region
+          "node.homescale.cloud/os"          = "talos"
+          "node.homescale.cloud/os-version"  = var.talos_version
 
         }
       }
@@ -95,7 +99,10 @@ resource "talos_machine_configuration_apply" "controlplane" {
     }) : null,
     yamlencode({
       machine = {
-        install = { diskSelector = { size = 250059350016 } }
+        install = {
+          diskSelector = { size = 250059350016 }
+          image        = "factory.talos.dev/${var.platform}-installer-secureboot/${talos_image_factory_schematic.image.id}:${var.talos_version}"
+        }
       }
     }),
     yamlencode({
