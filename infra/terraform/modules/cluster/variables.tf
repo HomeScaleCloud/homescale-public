@@ -17,11 +17,15 @@ variable "gateway" {
   }
 }
 
-# variable "kubeconfig" {
-#   description = "Kubeconfig to use for app deployment"
-#   type        = string
-#   sensitive   = true
-# }
+variable "nfs_server" {
+  description = "IP address of NFS server to use"
+  type        = string
+}
+
+variable "nfs_path" {
+  description = "Path on NFS server to provision PVCs within"
+  type        = string
+}
 
 variable "op_service_account_token" {
   description = "1Password Service Account Token"
@@ -88,4 +92,95 @@ variable "talos_version" {
   description = "Version of Talos Linux to deploy"
   type        = string
   default     = "1.11.2"
+}
+
+# apps
+variable "app_cert_manager_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_cert_manager_crs_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_external_dns_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_external_dns_crs_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_generic_device_plugin_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_home_assistant_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "app_homepage_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "app_ingress_nginx_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_librespeed_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_metrics_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_node_feature_discovery_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_nfs_provisioner_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "app_onepassword_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_rbac_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_rook_ceph_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "app_tailscale_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_tailscale_crs_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "app_trivy_operator_enabled" {
+  type    = bool
+  default = true
 }
