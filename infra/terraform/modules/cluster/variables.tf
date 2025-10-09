@@ -20,11 +20,13 @@ variable "gateway" {
 variable "nfs_server" {
   description = "IP address of NFS server to use"
   type        = string
+  default = "null"
 }
 
 variable "nfs_path" {
   description = "Path on NFS server to provision PVCs within"
   type        = string
+  default = "null"
 }
 
 variable "op_service_account_token" {
