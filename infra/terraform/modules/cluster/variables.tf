@@ -8,6 +8,11 @@ variable "region" {
   type        = string
 }
 
+variable "platform" {
+  description = "Node platform to be used (metal, digital-ocean, etc)"
+  type        = string
+}
+
 variable "gateway" {
   description = "IPv4 gateway to be used by nodes"
   type        = string
@@ -20,13 +25,13 @@ variable "gateway" {
 variable "nfs_server" {
   description = "IP address of NFS server to use"
   type        = string
-  default = "null"
+  default     = "null"
 }
 
 variable "nfs_path" {
   description = "Path on NFS server to provision PVCs within"
   type        = string
-  default = "null"
+  default     = "null"
 }
 
 variable "op_service_account_token" {
@@ -93,7 +98,7 @@ variable "store_talosconfig" {
 variable "talos_version" {
   description = "Version of Talos Linux to deploy"
   type        = string
-  default     = "1.11.2"
+  default     = "v1.11.2"
 }
 
 # apps
