@@ -81,7 +81,7 @@ resource "helm_release" "argocd" {
 
       configs = {
         cm = {
-          "dex.config" = <<-YAML
+          "dex.config"                     = <<-YAML
             connectors:
               - type: microsoft
                 id: microsoft
