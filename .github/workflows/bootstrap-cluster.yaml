@@ -1,0 +1,54 @@
+name: "Bootstrap Cluster"
+permissions:
+  contents: read
+on:
+  workflow_dispatch:
+    inputs:
+      cluster:
+        description: 'Name of cluster to bootstrap'
+        required: true
+jobs:
+  bootstrap-cluster:
+    name: "Bootstrap Cluster"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./infra/terraform
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_VAR_op_service_account_token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Import Secrets
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          TF_TOKEN_app_terraform_io: op://github-actions/terraform-cloud/credential
+          TS_ID: op://github-actions/tailscale/username
+          TS_SECRET: op://github-actions/tailscale/password #pragma: allowlist secret
+      - name: Temporarily disable apps
+        run: |
+          rm ./modules/cluster/apps.tf
+          rm ./modules/cluster/core_apps.tf
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Initialize
+        id: init
+        run: terraform init
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: $TS_ID
+          oauth-secret: $TS_SECRET
+          tags: tag:github-actions
+      - name: Plan
+        id: plan
+        run: terraform plan -target module.cluster_$cluster -out=tfplan
+      - name: Apply
+        run: terraform apply -target module.cluster_$cluster -auto-approve tfplan
+        if: github.ref == 'refs/heads/main'

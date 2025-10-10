@@ -297,7 +297,7 @@ locals {
 
 resource "kubernetes_manifest" "argocd_app" {
   for_each   = { for a in local.apps : a.releaseName => a }
-  depends_on = [talos_machine_bootstrap.controlplane, helm_release.argocd]
+  depends_on = [helm_release.argocd]
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
@@ -330,27 +330,6 @@ resource "kubernetes_manifest" "argocd_app" {
           "CreateNamespace=true"
         ]
       }
-    }
-  }
-}
-
-resource "kubernetes_manifest" "argocd_homescale_helm" {
-  depends_on = [helm_release.argocd]
-  manifest = {
-    apiVersion = "v1"
-    kind       = "Secret"
-    metadata = {
-      name      = "argocd-homescale-helm"
-      namespace = "argocd"
-      labels = {
-        "argocd.argoproj.io/secret-type" = "repository"
-      }
-    }
-    stringData = {
-      url       = "ghcr.io/homescalecloud/helm"
-      name      = "homescale-helm"
-      type      = "helm"
-      enableOCI = "true"
     }
   }
 }
