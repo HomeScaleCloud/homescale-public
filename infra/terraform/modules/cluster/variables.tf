@@ -101,6 +101,11 @@ variable "talos_version" {
   default     = "v1.11.2"
 }
 
+variable "talos_disk_selector" {
+  description = "Selector for the disk to install Talos Linux to"
+  type        = map(number)
+}
+
 # apps
 variable "app_cert_manager_enabled" {
   type    = bool
