@@ -100,7 +100,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
     yamlencode({
       machine = {
         install = {
-          diskSelector = { size = 250059350016 }
+          diskSelector = var.talos_disk_selector
           image        = "factory.talos.dev/${var.platform}-installer-secureboot/${talos_image_factory_schematic.image.id}:${var.talos_version}"
         }
       }
