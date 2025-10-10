@@ -1,16 +1,16 @@
-name: "Bootstrap Cluster"
+name: "Initialise Talos"
 permissions:
   contents: read
 on:
   workflow_dispatch:
     inputs:
       cluster:
-        description: 'Cluster name'
+        description: 'Cluster'
         required: true
         
 jobs:
-  bootstrap-cluster:
-    name: "Bootstrap Cluster - ${{ github.event.inputs.cluster }}"
+  talos-init:
+    name: "Initialise Talos - ${{ github.event.inputs.cluster }}"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,7 +32,7 @@ jobs:
           TF_TOKEN_app_terraform_io: op://github-actions/terraform-cloud/credential
           TS_ID: op://github-actions/tailscale/username
           TS_SECRET: op://github-actions/tailscale/password #pragma: allowlist secret
-      - name: Temporarily disable apps
+      - name: Prepare Terraform workspace
         run: |
           rm ./modules/cluster/apps.tf
           rm ./modules/cluster/core_apps.tf
