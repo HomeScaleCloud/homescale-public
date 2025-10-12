@@ -157,24 +157,24 @@ resource "helm_release" "argocd" {
   ]
 }
 
-# resource "kubernetes_manifest" "argocd_homescale_helm" {
-#   count = var.cluster_init ? 0 : 1
-#   depends_on = [helm_release.argocd]
-#   manifest = {
-#     apiVersion = "v1"
-#     kind       = "Secret"
-#     metadata = {
-#       name      = "argocd-homescale-helm"
-#       namespace = "argocd"
-#       labels = {
-#         "argocd.argoproj.io/secret-type" = "repository"
-#       }
-#     }
-#     stringData = {
-#       url       = "ghcr.io/homescalecloud/helm"
-#       name      = "homescale-helm"
-#       type      = "helm"
-#       enableOCI = "true"
-#     }
-#   }
-# }
+resource "kubernetes_manifest" "argocd_homescale_helm" {
+  count      = var.cluster_init ? 0 : 1
+  depends_on = [helm_release.argocd]
+  manifest = {
+    apiVersion = "v1"
+    kind       = "Secret"
+    metadata = {
+      name      = "argocd-homescale-helm"
+      namespace = "argocd"
+      labels = {
+        "argocd.argoproj.io/secret-type" = "repository"
+      }
+    }
+    stringData = {
+      url       = "ghcr.io/homescalecloud/helm"
+      name      = "homescale-helm"
+      type      = "helm"
+      enableOCI = "true"
+    }
+  }
+}
