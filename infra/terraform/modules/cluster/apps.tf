@@ -264,7 +264,7 @@ locals {
       releaseName    = "tailscale-crs"
       chart          = "tailscale-crs"
       repoURL        = "ghcr.io/homescalecloud/helm"
-      targetRevision = "0.2.0"
+      targetRevision = "0.1.0"
       namespace      = "tailscale"
       values = {
         operatorOauth = {
