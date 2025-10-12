@@ -53,7 +53,6 @@ jobs:
           - name: home-assistant
           - name: cert-manager-crs
           - name: external-dns-crs
-          - name: tailscale-crs
           - name: homepage
           - name: librespeed
           - name: rbac
