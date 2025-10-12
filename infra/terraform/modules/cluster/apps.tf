@@ -203,13 +203,13 @@ locals {
           connect = {
             serviceType     = "ClusterIP"
             credentialsName = "onepassword"
-            credentialsKey  = "connect-credentials"
+            credentialsKey  = "credential"
           }
           operator = {
             create = true
             token = {
               name = "onepassword"
-              key  = "operator-token"
+              key  = "password"
             }
           }
         }
