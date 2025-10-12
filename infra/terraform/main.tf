@@ -9,7 +9,7 @@ module "cluster_atlas" {
   workloads_on_controlplane     = true
   talos_version                 = "v1.11.2"
   talos_disk_selector           = { size = 1000204886016 }
-  store_kubeconfig = true
+  store_kubeconfig              = true
   tailscale_oauth_client_id     = data.onepassword_item.tailscale.username
   tailscale_oauth_client_secret = data.onepassword_item.tailscale.password
   op_service_account_token      = var.op_service_account_token
