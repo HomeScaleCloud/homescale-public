@@ -320,7 +320,7 @@ resource "kubernetes_manifest" "argocd_app" {
         helm = merge(
           { releaseName = each.value.releaseName },
           lookup(each.value, "values", null) != null
-            ? { valuesObject = each.value.values }
+            ? { values = each.value.values }
             : {}
         )
       }
