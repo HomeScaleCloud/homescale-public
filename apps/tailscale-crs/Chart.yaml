@@ -2,4 +2,4 @@ apiVersion: v2
 name: tailscale-crs
 description: Helm chart for deploying Tailscale Operator config CRs
 type: application
-version: 0.1.0
+version: 0.2.0
