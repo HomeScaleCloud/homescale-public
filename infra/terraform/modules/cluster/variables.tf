@@ -193,11 +193,6 @@ variable "app_tailscale_enabled" {
   default = true
 }
 
-variable "app_tailscale_crs_enabled" {
-  type    = bool
-  default = true
-}
-
 variable "app_trivy_operator_enabled" {
   type    = bool
   default = true
