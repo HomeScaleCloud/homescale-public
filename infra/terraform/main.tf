@@ -1,5 +1,6 @@
 module "cluster_atlas" {
   source                        = "./modules/cluster"
+  cluster_init                  = true
   cluster                       = "atlas"
   region                        = "boa1"
   platform                      = "metal"
