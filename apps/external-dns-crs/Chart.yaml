@@ -3,4 +3,3 @@ name: external-dns-crs
 description: Helm chart for deploying external-dns config CRs
 type: application
 version: 0.1.0
-appVersion: "0.1.0"
