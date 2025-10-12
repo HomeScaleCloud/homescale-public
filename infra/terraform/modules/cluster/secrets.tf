@@ -56,6 +56,6 @@ resource "kubernetes_secret" "tailscale" {
   }
   data = {
     client_id = tailscale_oauth_client.k8s_operator.id
-    password = tailscale_oauth_client.k8s_operator.key
+    client_secret = tailscale_oauth_client.k8s_operator.key
   }
 }
