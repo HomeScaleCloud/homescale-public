@@ -261,19 +261,6 @@ locals {
       enabled = var.app_tailscale_enabled
     },
     {
-      releaseName    = "tailscale-crs"
-      chart          = "tailscale-crs"
-      repoURL        = "ghcr.io/homescalecloud/helm"
-      targetRevision = "0.2.0"
-      namespace      = "tailscale"
-      values = {
-        operatorOauth = {
-          secretPath = "vaults/${var.cluster}/items/tailscale"
-        }
-      }
-      enabled = var.app_tailscale_crs_enabled
-    },
-    {
       releaseName    = "trivy-operator"
       chart          = "trivy-operator"
       repoURL        = "https://aquasecurity.github.io/helm-charts/"

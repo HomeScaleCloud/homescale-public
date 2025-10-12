@@ -22,13 +22,6 @@ data "onepassword_item" "entra_tenant" {
   title = "entra-tenant"
 }
 
-resource "onepassword_item" "tailscale_k8s_operator" {
-  vault    = data.onepassword_vault.cluster.uuid
-  title    = "tailscale"
-  username = tailscale_oauth_client.k8s_operator.id
-  password = tailscale_oauth_client.k8s_operator.key
-}
-
 resource "onepassword_item" "talosconfig" {
   count    = var.store_talosconfig ? 1 : 0
   vault    = data.onepassword_vault.cluster.uuid
@@ -52,5 +45,17 @@ resource "kubernetes_secret" "onepassword" {
   data = {
     credential = data.onepassword_item.onepassword.credential
     password = data.onepassword_item.onepassword.password
+  }
+}
+
+resource "kubernetes_secret" "tailscale" {
+  count      = var.app_tailscale_enabled ? 1 : 0
+  metadata {
+    name      = "operator-oauth"
+    namespace = "tailscale"
+  }
+  data = {
+    client_id = tailscale_oauth_client.k8s_operator.id
+    password = tailscale_oauth_client.k8s_operator.key
   }
 }
