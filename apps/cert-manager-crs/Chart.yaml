@@ -3,4 +3,3 @@ name: cert-manager-crs
 description: Helm chart for cert-manager config CRs
 type: application
 version: 0.1.0
-appVersion: "0.1.0"
