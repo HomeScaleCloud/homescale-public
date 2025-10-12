@@ -158,6 +158,7 @@ resource "helm_release" "argocd" {
 }
 
 resource "kubernetes_manifest" "argocd_homescale_helm" {
+  count = var.cluster_init ? 0 : 1
   depends_on = [helm_release.argocd]
   manifest = {
     apiVersion = "v1"
