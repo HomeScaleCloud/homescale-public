@@ -298,6 +298,7 @@ locals {
 resource "kubernetes_manifest" "argocd_app" {
   for_each   = { for a in local.apps : a.releaseName => a }
   depends_on = [helm_release.argocd]
+
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
@@ -313,7 +314,9 @@ resource "kubernetes_manifest" "argocd_app" {
         targetRevision = each.value.targetRevision
         helm = merge(
           { releaseName = each.value.releaseName },
-          lookup(each.value, "values", null) != null ? { values = yamlencode(each.value.values) } : {}
+          lookup(each.value, "values", null) != null
+            ? { valuesObject = each.value.values }
+            : {}
         )
       }
       destination = {
