@@ -3,4 +3,3 @@ name: rbac
 description: Helm chart for HomeScale's k8s RBAC rules
 type: application
 version: 0.1.0
-appVersion: "0.1.0"

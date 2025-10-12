@@ -3,7 +3,6 @@ name: metrics
 description: Helm chart for deploying HomeScale metrics stack
 type: application
 version: 0.1.0
-appVersion: "0.1.0"
 dependencies:
   - name: kube-prometheus-stack
     version: "75.18.1"
