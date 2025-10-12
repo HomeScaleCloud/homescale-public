@@ -1,4 +1,5 @@
 resource "helm_release" "cilium" {
+  count = var.cluster_init ? 0 : 1
   depends_on = [
     talos_machine_bootstrap.controlplane
   ]
@@ -45,6 +46,7 @@ resource "helm_release" "cilium" {
 }
 
 resource "helm_release" "argocd" {
+  count = var.cluster_init ? 0 : 1
   depends_on = [
     helm_release.cilium
   ]
