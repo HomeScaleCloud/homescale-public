@@ -6,6 +6,11 @@ locals {
       repoURL        = "https://charts.jetstack.io"
       targetRevision = "1.19.0"
       namespace      = "cert-manager"
+      values = {
+        crds = {
+          enabled = true
+        }
+      }
       enabled        = var.app_cert_manager_enabled
     },
     {
