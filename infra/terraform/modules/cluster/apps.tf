@@ -205,17 +205,15 @@ locals {
       namespace      = "onepassword"
       values = {
         connect = {
-          connect = {
-            serviceType     = "ClusterIP"
-            credentialsName = "onepassword"
-            credentialsKey  = "credential"
-          }
-          operator = {
-            create = true
-            token = {
-              name = "onepassword"
-              key  = "password"
-            }
+          serviceType     = "ClusterIP"
+          credentialsName = "onepassword"
+          credentialsKey  = "credential"
+        }
+        operator = {
+          create = true
+          token = {
+            name = "onepassword"
+            key  = "password"
           }
         }
       }
