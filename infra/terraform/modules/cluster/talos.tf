@@ -53,7 +53,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
         }
       }
     }),
-    yamlencode({
+    var.cluster_init ? null : yamlencode({
       cluster = {
         extraManifests = [
           "https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml"
@@ -68,11 +68,6 @@ resource "talos_machine_configuration_apply" "controlplane" {
       }
     }),
     yamlencode({
-      cluster = {
-        extraManifests = [
-          "https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml"
-        ]
-      }
       machine = {
         sysctls = {
           "user.max_user_namespaces" = "10000"

@@ -292,7 +292,7 @@ locals {
       enabled = var.app_trivy_operator_enabled
     }
   ]
-  apps = [for a in local.apps_all : a if a.enabled]
+  apps = var.cluster_init ? [for a in local.apps_all : a if a.enabled] : []
 }
 
 resource "kubernetes_manifest" "argocd_app" {

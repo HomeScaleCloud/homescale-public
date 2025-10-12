@@ -13,6 +13,12 @@ variable "platform" {
   type        = string
 }
 
+variable "cluster_init" {
+  description = "Enable for the first apply of this cluster (disable after first apply to deploy apps)"
+  type        = bool
+  default     = false
+}
+
 variable "gateway" {
   description = "IPv4 gateway to be used by nodes"
   type        = string
