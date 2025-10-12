@@ -170,7 +170,7 @@ resource "kubernetes_manifest" "argocd_homescale_helm" {
         "argocd.argoproj.io/secret-type" = "repository"
       }
     }
-    stringData = {
+    data = {
       url       = "ghcr.io/homescalecloud/helm"
       name      = "homescale-helm"
       type      = "helm"
