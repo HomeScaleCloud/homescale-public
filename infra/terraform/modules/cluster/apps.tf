@@ -4,7 +4,7 @@ locals {
       releaseName    = "cert-manager"
       chart          = "cert-manager"
       repoURL        = "https://charts.jetstack.io"
-      targetRevision = "v1.18.2"
+      targetRevision = "1.19.0"
       namespace      = "cert-manager"
       enabled        = var.app_cert_manager_enabled
     },
