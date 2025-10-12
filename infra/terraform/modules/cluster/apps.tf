@@ -242,20 +242,18 @@ locals {
       targetRevision = "1.86.2"
       namespace      = "tailscale"
       values = {
-        tailscale-operator = {
-          apiServerProxyConfig = {
-            mode = "true"
-          }
-          proxyConfig = {
-            defaultTags = "tag:app"
-          }
-          operatorConfig = {
-            hostname = "k8s-${var.cluster}-${var.region}"
-            defaultTags = [
-              "tag:k8s-operator",
-              "tag:k8s-api",
-            ]
-          }
+        apiServerProxyConfig = {
+          mode = "true"
+        }
+        proxyConfig = {
+          defaultTags = "tag:app"
+        }
+        operatorConfig = {
+          hostname = "k8s-${var.cluster}-${var.region}"
+          defaultTags = [
+            "tag:k8s-operator",
+            "tag:k8s-api",
+          ]
         }
       }
       enabled = var.app_tailscale_enabled
