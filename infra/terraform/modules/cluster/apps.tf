@@ -329,7 +329,7 @@ resource "kubernetes_manifest" "argocd_app" {
           selfHeal = true
         }
         syncOptions = [
-          "ServerSideApply=true",
+          # "ServerSideApply=true",
           "CreateNamespace=true"
         ]
       }
