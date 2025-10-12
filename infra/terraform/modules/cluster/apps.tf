@@ -148,7 +148,7 @@ locals {
               }
               auth = {
                 generic_oauth = {
-                  client_id     = data.onepassword_item.grafana_oidc.username
+                  client_id     = data.onepassword_item.grafana_oidc.credential
                   client_secret = data.onepassword_item.grafana_oidc.password
                 }
               }
