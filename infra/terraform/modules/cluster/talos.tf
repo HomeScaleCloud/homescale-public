@@ -1,6 +1,14 @@
 resource "talos_machine_secrets" "controlplane" {}
 resource "talos_image_factory_schematic" "image" {
-
+  schematic = yamlencode(
+    {
+      customization = {
+        secureboot = {
+          includeWellKnownCertificates = true
+        }
+      }
+    }
+  )
 }
 
 data "talos_client_configuration" "controlplane" {
