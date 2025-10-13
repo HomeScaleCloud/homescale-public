@@ -68,7 +68,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
         ]
       }
     }),
-    var.cluster_init ? null : yamlencode({
+    var.cluster_init_core_apps ? null : yamlencode({
       machine = {
         kubelet = {
           extraArgs = {
