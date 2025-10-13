@@ -1,5 +1,5 @@
 resource "helm_release" "cilium" {
-  count = var.cluster_init_core_apps ? 0 : 1
+  count = var.cluster_init ? 0 : 1
   depends_on = [
     talos_machine_bootstrap.controlplane
   ]
@@ -41,7 +41,7 @@ resource "helm_release" "cilium" {
 }
 
 resource "helm_release" "argocd" {
-  count = var.cluster_init_core_apps ? 0 : 1
+  count = var.cluster_init ? 0 : 1
   depends_on = [
     helm_release.cilium
   ]
@@ -153,7 +153,7 @@ resource "helm_release" "argocd" {
 }
 
 resource "kubernetes_secret" "argocd_homescale_helm" {
-  count      = var.cluster_init_core_apps ? 0 : 1
+  count      = var.cluster_init ? 0 : 1
   depends_on = [helm_release.argocd]
   metadata {
     name      = "argocd-homescale-helm"
