@@ -266,15 +266,13 @@ locals {
       namespace      = "trivy-system"
       values = {
         trivy = {
-          trivy = {
-            ignoreUnfixed = true
-          }
-          service = {
-            headless = false
-          }
-          serviceMonitor = {
-            enabled = true
-          }
+          ignoreUnfixed = true
+        }
+        service = {
+          headless = false
+        }
+        serviceMonitor = {
+          enabled = true
         }
       }
       enabled = var.app_trivy_operator_enabled
