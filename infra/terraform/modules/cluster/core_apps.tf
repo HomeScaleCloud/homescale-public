@@ -13,10 +13,10 @@ resource "helm_release" "cilium" {
   values = [
     yamlencode({
       socketLB = {
-        socketLB.hostNamespaceOnly = true
+        hostNamespaceOnly = true
       }
       bpf = {
-        bpf.lbExternalClusterIP = true
+        lbExternalClusterIP = true
       }
       ipam = {
         mode = "kubernetes"
