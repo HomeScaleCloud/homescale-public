@@ -107,7 +107,7 @@ locals {
             loadBalancerClass = "tailscale"
             annotations = {
               "tailscale.com/hostname" = "ingress-${var.cluster}-${var.region}"
-              "tailscale.com/tags"     = "tag:app"
+              "tailscale.com/tags"     = "tag:app,tag:region-${var.region},tag:cluster-${var.cluster}"
             }
           }
           autoscaling = {
@@ -246,13 +246,14 @@ locals {
           mode = "true"
         }
         proxyConfig = {
-          defaultTags = "tag:app"
+          defaultTags = "tag:app,tag:region-${var.region},tag:cluster-${var.cluster}"
         }
         operatorConfig = {
           hostname = "k8s-${var.cluster}-${var.region}"
           defaultTags = [
-            "tag:k8s-operator",
-            "tag:k8s-api",
+            "tag:k8s",
+            "tag:region-${var.region}",
+            "tag:cluster-${var.cluster}"
           ]
         }
       }
