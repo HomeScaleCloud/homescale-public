@@ -11,7 +11,7 @@ locals {
           enabled = true
         }
       }
-      enabled        = var.app_cert_manager_enabled
+      enabled = var.app_cert_manager_enabled
     },
     {
       releaseName    = "cert-manager-crs"
@@ -302,8 +302,8 @@ resource "kubernetes_manifest" "argocd_app" {
         helm = merge(
           { releaseName = each.value.releaseName },
           lookup(each.value, "values", null) != null
-            ? { valuesObject = each.value.values }
-            : {}
+          ? { valuesObject = each.value.values }
+          : {}
         )
       }
       destination = {

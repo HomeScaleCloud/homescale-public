@@ -37,25 +37,25 @@ resource "onepassword_item" "kubeconfig" {
 }
 
 resource "kubernetes_secret" "onepassword" {
-  count      = var.app_onepassword_enabled ? 1 : 0
+  count = var.app_onepassword_enabled ? 1 : 0
   metadata {
     name      = "onepassword"
     namespace = "onepassword"
   }
   data = {
     credential = data.onepassword_item.onepassword.credential
-    password = data.onepassword_item.onepassword.password
+    password   = data.onepassword_item.onepassword.password
   }
 }
 
 resource "kubernetes_secret" "tailscale" {
-  count      = var.app_tailscale_enabled ? 1 : 0
+  count = var.app_tailscale_enabled ? 1 : 0
   metadata {
     name      = "operator-oauth"
     namespace = "tailscale"
   }
   data = {
-    client_id = tailscale_oauth_client.k8s_operator.id
+    client_id     = tailscale_oauth_client.k8s_operator.id
     client_secret = tailscale_oauth_client.k8s_operator.key
   }
 }
