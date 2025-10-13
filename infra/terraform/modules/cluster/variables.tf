@@ -14,7 +14,13 @@ variable "platform" {
 }
 
 variable "cluster_init" {
-  description = "Enable for the first apply of this cluster (disable after first apply to deploy apps)"
+  description = "Enable for the first apply to bootstrap Talos Linux"
+  type        = bool
+  default     = false
+}
+
+variable "cluster_init_core_apps" {
+  description = "Enable for the second apply to bootstrap core apps (CNI, ArgoCD, etc)"
   type        = bool
   default     = false
 }
