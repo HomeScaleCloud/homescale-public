@@ -1,7 +1,7 @@
 module "cluster_atlas" {
   source                        = "./modules/cluster"
   cluster                       = "atlas"
-  cluster_init                  = true
+  cluster_init_core_apps        = true
   region                        = "boa1"
   platform                      = "metal"
   gateway                       = "10.1.245.1"
