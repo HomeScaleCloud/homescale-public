@@ -24,7 +24,7 @@ resource "tailscale_acl" "acl" {
             "group:team-k8s-infra@homescale.cloud",
             "group:sg-k8s-infra-admin@homescale.cloud"
           ],
-          "dst": ["tag:k8s-api:443"]
+          "dst": ["tag:k8s:443"]
         },
         {
           "action": "accept",
@@ -36,9 +36,10 @@ resource "tailscale_acl" "acl" {
         }
       ],
       "tagOwners": {
-        "tag:k8s-operator": ["tag:k8s-operator"],
-        "tag:k8s-api": ["tag:k8s-operator"],
-        "tag:app": ["tag:k8s-operator"],
+        "tag:k8s": ["tag:k8s"],
+        "tag:app": ["tag:k8s"],
+        "tag:region-boa1": ["tag:k8s"],
+        "tag:cluster-atlas": ["tag:k8s"],
         "tag:node": [],
         "tag:github-actions": []
       },
@@ -51,7 +52,7 @@ resource "tailscale_acl" "acl" {
       "grants": [
         {
           "src": ["group:team-k8s-infra@homescale.cloud"],
-          "dst": ["tag:k8s-api"],
+          "dst": ["tag:k8s"],
           "app": {
             "tailscale.com/cap/kubernetes": [
               {
@@ -64,7 +65,7 @@ resource "tailscale_acl" "acl" {
         },
         {
           "src": ["group:sg-k8s-infra-admin@homescale.cloud"],
-          "dst": ["tag:k8s-api"],
+          "dst": ["tag:k8s"],
           "app": {
             "tailscale.com/cap/kubernetes": [
               {
