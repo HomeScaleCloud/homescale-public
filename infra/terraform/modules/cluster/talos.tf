@@ -61,12 +61,14 @@ resource "talos_machine_configuration_apply" "controlplane" {
         }
       }
     }),
-    var.cluster_init ? null : yamlencode({
+yamlencode({
       cluster = {
         extraManifests = [
           "https://raw.githubusercontent.com/alex1989hu/kubelet-serving-cert-approver/main/deploy/standalone-install.yaml"
         ]
       }
+    }),
+    var.cluster_init ? null : yamlencode({
       machine = {
         kubelet = {
           extraArgs = {
