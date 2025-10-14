@@ -114,7 +114,7 @@ resource "tailscale_tailnet_settings" "settings" {
 resource "tailscale_webhook" "slack" {
   endpoint_url  = data.onepassword_item.tailscale_slack.password
   provider_type = "slack"
-  subscriptions = ["exitNodeIPForwardingNotEnabled", "subnetIPForwardingNotEnabled", "policyUpdate", "userCreated", "userRoleUpdated", "nodeNeedsApproval", "nodeApproved"]
+  subscriptions = ["exitNodeIPForwardingNotEnabled", "subnetIPForwardingNotEnabled", "policyUpdate", "userCreated", "userRoleUpdated", "nodeNeedsApproval"]
 }
 
 resource "tailscale_tailnet_key" "node_key" {
