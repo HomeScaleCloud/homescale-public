@@ -26,18 +26,11 @@ data "talos_machine_configuration" "controlplane" {
 }
 
 resource "talos_machine_configuration_apply" "controlplane" {
-  for_each                    = local.controlplane_nodes
+  for_each                    = var.controlplane_nodes
   client_configuration        = talos_machine_secrets.controlplane.client_configuration
   machine_configuration_input = data.talos_machine_configuration.controlplane.machine_configuration
   node                        = each.value
   config_patches = [
-    yamlencode({
-      machine = {
-        network = {
-          hostname = format("%s-cp-%d", var.cluster, each.key)
-        }
-      }
-    }),
     yamlencode({
       cluster = {
         apiServer = {
@@ -68,7 +61,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
         ]
       }
     }),
-    var.cluster_init_core_apps ? null : yamlencode({
+    var.init_stage_2 ? null : yamlencode({
       machine = {
         kubelet = {
           extraArgs = {
@@ -91,6 +84,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
           "cluster.homescale.cloud/region"   = var.region
           "cluster.homescale.cloud/platform" = var.platform
           "node.homescale.cloud/region"      = var.region
+          "node.homescale.cloud/role"        = "controlplane"
           "node.homescale.cloud/os"          = "talos"
           "node.homescale.cloud/os-version"  = var.talos_version
 
