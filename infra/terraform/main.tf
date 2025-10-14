@@ -1,6 +1,7 @@
 module "cluster_atlas" {
   source                        = "./modules/cluster"
   cluster                       = "atlas"
+  init_stage_1                  = true
   region                        = "boa1"
   platform                      = "metal"
   gateway                       = "10.1.245.1"
@@ -9,7 +10,6 @@ module "cluster_atlas" {
   workloads_on_controlplane     = true
   talos_version                 = "v1.11.2"
   talos_disk_selector           = { size = 120034123776 }
-  store_kubeconfig              = true
   tailscale_oauth_client_id     = data.onepassword_item.tailscale.username
   tailscale_oauth_client_secret = data.onepassword_item.tailscale.password
   op_service_account_token      = var.op_service_account_token

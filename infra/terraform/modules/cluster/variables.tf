@@ -13,13 +13,13 @@ variable "platform" {
   type        = string
 }
 
-variable "cluster_init" {
+variable "init_stage_1" {
   description = "Enable for the first apply to bootstrap Talos Linux"
   type        = bool
   default     = false
 }
 
-variable "cluster_init_core_apps" {
+variable "init_stage_2" {
   description = "Enable for the second apply to bootstrap core apps (CNI, ArgoCD, etc)"
   type        = bool
   default     = false
@@ -70,13 +70,6 @@ variable "controlplane_nodes" {
   validation {
     condition     = length(var.controlplane_nodes) > 0
     error_message = "At least one node must be specified."
-  }
-}
-
-locals {
-  controlplane_nodes = {
-    for idx, ip in var.controlplane_nodes :
-    idx + 1 => ip
   }
 }
 
