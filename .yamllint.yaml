@@ -1,4 +1,6 @@
 extends: default
+ignore: |
+  apps/*/templates/**
 rules:
   truthy: disable
   document-start: disable
