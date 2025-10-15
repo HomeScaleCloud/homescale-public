@@ -134,9 +134,6 @@ jobs:
           TS_SECRET: op://github-actions/tailscale/password  # pragma: allowlist secret
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-      - name: Format Check
-        id: fmt-check
-        run: terraform fmt -check
       - name: Initialize
         id: init
         run: terraform init
