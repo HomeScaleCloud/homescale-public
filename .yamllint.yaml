@@ -6,3 +6,6 @@ rules:
   line-length:
     max: 251
     level: warning
+  braces:
+    forbid: false
+    max-spaces-inside: 1

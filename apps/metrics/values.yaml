@@ -14,7 +14,7 @@ kube-prometheus-stack:
         allow_sign_up: true
         auto_login: true
         client_id: "null"
-        client_secret: "null"
+        client_secret: "null"  # pragma: allowlist secret
         scopes: openid email profile offline_access User.Read
         auth_url: "null"
         token_url: "null"
@@ -39,7 +39,7 @@ kube-prometheus-stack:
         - metrics.dev.homescale.cloud
       tls:
         - hosts:
-          - metrics.dev.homescale.cloud
+            - metrics.dev.homescale.cloud
           secretName: grafana-tls
     assertNoLeakedSecrets: false
     dashboardProviders:

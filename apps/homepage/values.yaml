@@ -1,7 +1,6 @@
 image:
   repository: ghcr.io/homescalecloud/homepage
-  tag: "7f913671336025af98e2c3f062bcad6fcae52c46"
+  tag: "7f913671336025af98e2c3f062bcad6fcae52c46"  # pragma: allowlist secret
 ingress:
   enabled: true
-  # host: homepage.dev.homescale.cloud
   className: "nginx"
