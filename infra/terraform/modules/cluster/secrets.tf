@@ -37,7 +37,8 @@ resource "onepassword_item" "kubeconfig" {
 }
 
 resource "kubernetes_secret" "onepassword" {
-  count = (var.init_stage_1 || var.init_stage_2) ? 0 : (var.app_onepassword_enabled ? 1 : 0)
+  count      = (var.init_stage_1 || var.init_stage_2) ? 0 : (var.app_onepassword_enabled ? 1 : 0)
+  depends_on = [kubernetes_namespace.onepassword]
   metadata {
     name      = "onepassword"
     namespace = "onepassword"
@@ -49,7 +50,8 @@ resource "kubernetes_secret" "onepassword" {
 }
 
 resource "kubernetes_secret" "tailscale" {
-  count = (var.init_stage_1 || var.init_stage_2) ? 0 : (var.app_tailscale_enabled ? 1 : 0)
+  count      = (var.init_stage_1 || var.init_stage_2) ? 0 : (var.app_tailscale_enabled ? 1 : 0)
+  depends_on = [kubernetes_namespace.tailscale]
   metadata {
     name      = "operator-oauth"
     namespace = "tailscale"
