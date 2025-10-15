@@ -66,7 +66,7 @@ variable "tailscale_oauth_client_secret" {
 
 variable "controlplane_nodes" {
   description = "List of controlplane node IPs"
-  type        = list(string)
+  type        = set(string)
   validation {
     condition     = length(var.controlplane_nodes) > 0
     error_message = "At least one node must be specified."
