@@ -9,14 +9,14 @@ This monorepo contains the Infrastructure as Code (IaC) used to manage **HomeSca
 
 ### **Infrastructure**
 - [Kubernetes (k8s)](https://kubernetes.io/) - Workload/container orchestration
-- [Rancher](https://rancher.com/) - Kubernetes cluster management
-- [Harvester](https://harvesterhci.io/) - Cloud-native hypervisor with integration for Rancher
+- [Talos Linux](https://www.talos.dev) - API-driven OS designed for Kubernetes
 
 ### **Networking & Security**
-- [Cloudflare Access](https://www.cloudflare.com/en-gb/zero-trust/products/access/) - Cloud-based zero-trust networking
-- [1Password Operator](https://developer.1password.com/docs/k8s/k8s-operator/) - Kubernetes secrets management
+- [Entra ID](https://www.microsoft.com/en-us/security/business/identity-access/microsoft-entra-id) - Identity and privilege management
+- [Tailscale](https://tailscale.com) - Peer-to-peer zero-trust networking
+- [1Password (Operator)](https://developer.1password.com/docs/k8s/k8s-operator/) - Kubernetes secrets management
 
 ### **GitOps & Automation**
-- [GitHub Actions](https://github.com/features/actions) - CI/CD
+- [GitHub Actions](https://github.com/features/actions) - CI/Jobs runner
 - [Terraform](https://developer.hashicorp.com/terraform) - Infrastructure as Code (IaC)
 - [ArgoCD](https://argo-cd.readthedocs.io/en/stable/) - GitOps for Kubernetes
