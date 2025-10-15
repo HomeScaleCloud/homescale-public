@@ -37,13 +37,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Find Docker & Helm targets
         id: set
         shell: bash
         run: |
           set -euo pipefail
-
           # Find Dockerfiles under apps/** (supports apps/foo/src/Dockerfile or apps/foo/Dockerfile)
           docker_json='[]'
           while IFS= read -r df; do
@@ -67,14 +65,8 @@ jobs:
             name="$(basename "$chart_dir")"
             helm_json="$(jq --arg n "$name" --arg p "$chart_dir" '. + [{name:$n, path:$p}]' <<<"$helm_json")"
           done < <(find apps -maxdepth 2 -type f -name Chart.yaml | sort)
-
           echo "docker=$(jq -c . <<<"$docker_json")" >> "$GITHUB_OUTPUT"
           echo "helm=$(jq -c . <<<"$helm_json")" >> "$GITHUB_OUTPUT"
-
-      - name: Show discovered matrices (debug)
-        run: |
-          echo "Docker matrix: ${{ steps.set.outputs.docker }}"
-          echo "Helm matrix:   ${{ steps.set.outputs.helm }}"
 
   build-docker:
     name: "Build - Docker - ${{ matrix.name }}"
