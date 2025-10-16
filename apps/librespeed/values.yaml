@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/linuxserver/librespeed
-  tag: "5.4.1"
+  tag: "5.4.20240804"
 ingress:
   enabled: true
   className: "nginx"
