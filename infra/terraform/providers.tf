@@ -6,15 +6,15 @@ terraform {
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "5.7.1"
+      version = "5.11.0"
     }
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = "2.65.0"
+      version = "2.68.0"
     }
     tailscale = {
       source  = "tailscale/tailscale"
-      version = "0.22.0"
+      version = "0.23.0"
     }
     talos = {
       source  = "siderolabs/talos"
