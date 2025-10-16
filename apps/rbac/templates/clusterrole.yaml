@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: team-k8s-infra
+  name: team-infra-plat
 rules:
   - apiGroups: [""]
     resources:
@@ -80,12 +80,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: team-k8s-infra
+  name: team-infra-plat
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: team-k8s-infra
+  name: team-infra-plat
 subjects:
   - kind: Group
     apiGroup: rbac.authorization.k8s.io
-    name: team-k8s-infra
+    name: team-infra-plat
