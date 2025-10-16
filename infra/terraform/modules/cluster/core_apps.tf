@@ -88,8 +88,8 @@ resource "helm_release" "argocd" {
                   clientSecret: ${data.onepassword_item.argocd_oidc.password}
                   tenant: ${data.onepassword_item.entra_tenant.credential}
                   groups:
-                    - team-k8s-infra
-                    - sg-k8s-infra-admin
+                    - team-infra-plat
+                    - sec-infra-plat-pim
           YAML
           "admin.enabled"                  = false
           "statusbadge.enabled"            = true
@@ -100,7 +100,7 @@ resource "helm_release" "argocd" {
 
       rbac = {
         "policy.csv" = <<-CSV
-          g, sg-k8s-infra-admin, role:admin
+          g, sec-infra-plat-pim, role:admin
           p, role:argo-users, applications, get, *, allow
           p, role:argo-users, applications, refresh, *, allow
           p, role:argo-users, applications, sync, *, allow
@@ -110,7 +110,7 @@ resource "helm_release" "argocd" {
           p, role:argo-users, accounts, get, *, allow
           p, role:argo-users, logs, get, *, deny
           p, role:argo-users, logs, get, */*, deny
-          g, team-k8s-infra, role:argo-users
+          g, team-infra-plat, role:argo-users
         CSV
       }
 
