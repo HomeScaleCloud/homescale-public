@@ -5,7 +5,7 @@ type: application
 version: 0.1.0
 dependencies:
   - name: rook-ceph
-    version: "1.17.7"
+    version: "v1.18.4"
     repository: "https://charts.rook.io/release"
   - name: rook-ceph-cluster
     version: "v1.18.4"
