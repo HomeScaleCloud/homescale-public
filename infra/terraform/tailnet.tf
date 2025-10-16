@@ -21,15 +21,15 @@ resource "tailscale_acl" "acl" {
         {
           "action": "accept",
           "src": [
-            "group:team-k8s-infra@xxx",
-            "group:sg-k8s-infra-admin@xxx"
+            "group:team-infra-plat@xxx",
+            "group:sec-infra-plat-pim@xxx"
           ],
           "dst": ["tag:k8s:443"]
         },
         {
           "action": "accept",
           "src": [
-            "group:sg-k8s-infra-admin@xxx",
+            "group:sec-infra-plat-pim@xxx",
             "tag:github-actions"
           ],
           "dst": ["tag:node:22,50000,50001,6443,5252","10.1.245.0/24:*"]
@@ -51,20 +51,20 @@ resource "tailscale_acl" "acl" {
       ],
       "grants": [
         {
-          "src": ["group:team-k8s-infra@xxx"],
+          "src": ["group:team-infra-plat@xxx"],
           "dst": ["tag:k8s"],
           "app": {
             "tailscale.com/cap/kubernetes": [
               {
                 "impersonate": {
-                  "groups": ["team-k8s-infra"]
+                  "groups": ["team-infra-plat"]
                 }
               }
             ]
           }
         },
         {
-          "src": ["group:sg-k8s-infra-admin@xxx"],
+          "src": ["group:sec-infra-plat-pim@xxx"],
           "dst": ["tag:k8s"],
           "app": {
             "tailscale.com/cap/kubernetes": [
@@ -87,7 +87,7 @@ resource "tailscale_acl" "acl" {
         {
           "action": "check",
           "checkPeriod": "2h",
-          "src": ["group:sg-k8s-infra-admin@xxx"],
+          "src": ["group:sec-infra-plat-pim@xxx"],
           "dst": ["tag:node"],
           "users": ["admin"],
         },
