@@ -21,15 +21,15 @@ resource "tailscale_acl" "acl" {
         {
           "action": "accept",
           "src": [
-            "group:team-k8s-infra@REDACTED",
-            "group:sg-k8s-infra-admin@REDACTED"
+            "group:team-infra-plat@REDACTED",
+            "group:sec-infra-plat-pim@REDACTED"
           ],
           "dst": ["tag:k8s:443"]
         },
         {
           "action": "accept",
           "src": [
-            "group:sg-k8s-infra-admin@REDACTED",
+            "group:sec-infra-plat-pim@REDACTED",
             "tag:github-actions"
           ],
           "dst": ["tag:node:22,50000,50001,6443,5252","10.1.245.0/24:*"]
@@ -51,20 +51,20 @@ resource "tailscale_acl" "acl" {
       ],
       "grants": [
         {
-          "src": ["group:team-k8s-infra@REDACTED"],
+          "src": ["group:team-infra-plat@REDACTED"],
           "dst": ["tag:k8s"],
           "app": {
             "tailscale.com/cap/kubernetes": [
               {
                 "impersonate": {
-                  "groups": ["team-k8s-infra"]
+                  "groups": ["team-infra-plat"]
                 }
               }
             ]
           }
         },
         {
-          "src": ["group:sg-k8s-infra-admin@REDACTED"],
+          "src": ["group:sec-infra-plat-pim@REDACTED"],
           "dst": ["tag:k8s"],
           "app": {
             "tailscale.com/cap/kubernetes": [
@@ -87,7 +87,7 @@ resource "tailscale_acl" "acl" {
         {
           "action": "check",
           "checkPeriod": "2h",
-          "src": ["group:sg-k8s-infra-admin@REDACTED"],
+          "src": ["group:sec-infra-plat-pim@REDACTED"],
           "dst": ["tag:node"],
           "users": ["admin"],
         },
