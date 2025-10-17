@@ -77,9 +77,6 @@ kube-prometheus-stack:
         k8s-views-pods:
           url: https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-pods.json
           token: ''
-        k8s-events-exporter:
-          url: https://grafana.com/api/dashboards/17882/revisions/2/download
-          token: ''
         ingress-controller:
           url: https://grafana.com/api/dashboards/9614/revisions/1/download
           token: ''
@@ -189,27 +186,3 @@ alloy:
             url = "http://{{ .Release.Name }}-loki.metrics.svc:3100/loki/api/v1/push"
           }
         }
-
-kubernetes-event-exporter:
-  metrics:
-    enabled: true
-  config:
-    logLevel: debug
-    logFormat: pretty
-    metricsNamePrefix: event_exporter_
-    receivers:
-      - name: "dump"
-        file:
-          path: "/dev/stdout"
-          layout: {}
-      - name: loki
-        loki:
-          url: "http://{{ .Release.Name }}-loki.metrics.svc:3100/loki/api/v1/push"
-          streamLabels:
-            source: kubernetes-event-exporter
-            container: event-exporter
-    route:
-      routes:
-        - match:
-            - receiver: "dump"
-            - receiver: "loki"
