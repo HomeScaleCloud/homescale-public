@@ -178,7 +178,7 @@ locals {
             users = {
               auto_assign_org      = true
               auto_assign_org_role = "Admin"
-              allow_sign_up        = true
+              allow_sign_up        = false
             }
           }
           persistence = {
