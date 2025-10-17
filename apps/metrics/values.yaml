@@ -38,9 +38,9 @@ kube-prometheus-stack:
       hosts:
         - REDACTED
       tls:
-        - hosts:
+        - secretName: grafana-tls
+          hosts:
             - REDACTED
-          secretName: grafana-tls
     assertNoLeakedSecrets: false
     dashboardProviders:
       dashboardproviders.yaml:
