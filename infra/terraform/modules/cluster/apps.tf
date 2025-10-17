@@ -159,7 +159,7 @@ locals {
               root_url = "https://metrics.${var.cluster}.${var.region}.homescale.cloud"
             }
             auth = {
-              disable_login_form = false
+              disable_login_form = true
             }
             "auth.generic_oauth" = {
               enabled                    = true
