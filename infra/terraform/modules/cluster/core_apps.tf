@@ -63,6 +63,10 @@ resource "helm_release" "argocd" {
         enabled = true
       }
 
+      repoServer = {
+        extraArgs = ["--repo-cache-expiration=30m"]
+      }
+
       server = {
         ingress = {
           enabled          = true
