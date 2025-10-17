@@ -159,7 +159,8 @@ locals {
           }
         }
       }
-      enabled = var.app_metrics_enabled
+      enabled         = var.app_metrics_enabled
+      serverSideApply = true
     },
     {
       releaseName    = "node-feature-discovery"
