@@ -155,7 +155,7 @@ locals {
           hosts = ["metrics.${var.cluster}.${var.region}.xxx"]
           tls = {
             enabled = true
-            hosts   = ["metrics.${var.cluster}.${var.region}.xxx"]
+            hosts   = [{ host = "metrics.${var.cluster}.${var.region}.xxx", secretName = "oneuptime-tls" }] # pragma: allowlist secret
           }
         }
       }
