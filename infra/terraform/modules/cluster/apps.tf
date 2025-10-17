@@ -139,35 +139,23 @@ locals {
       enabled = var.app_librespeed_enabled
     },
     {
-      releaseName    = "metrics"
-      chart          = "metrics"
-      repoURL        = "ghcr.io/homescalecloud/helm"
-      targetRevision = "0.1.0"
+      releaseName    = "oneuptime"
+      chart          = "oneuptime"
+      repoURL        = "https://helm-chart.oneuptime.com/"
+      targetRevision = "8.0.5409"
       namespace      = "metrics"
       values = {
-        kube-prometheus-stack = {
-          grafana = {
-            "grafana.ini" = {
-              server = {
-                root_url = "https://metrics.${var.cluster}.${var.region}.homescale.cloud"
-              }
-              "auth.generic_oauth" = {
-                client_id     = data.onepassword_item.grafana_oidc.credential
-                client_secret = data.onepassword_item.grafana_oidc.password
-              }
-            }
-            ingress = {
-              enabled = true
-              hosts   = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
-              tls = [
-                {
-                  secretName = "grafana-tls" # pragma: allowlist secret
-                  hosts = [
-                    "metrics.${var.cluster}.${var.region}.homescale.cloud"
-                  ]
-                }
-              ]
-            }
+        host         = "metrics.${var.cluster}.${var.region}.homescale.cloud"
+        httpProtocol = "https"
+        oneuptimeIngress = {
+          enabled = true
+          annotations = {
+            "cert-manager.io/cluster-issuer" = "letsencrypt"
+          }
+          hosts = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
+          tls = {
+            enabled = true
+            hosts   = [{ host = "metrics.${var.cluster}.${var.region}.homescale.cloud", secretName = "oneuptime-tls" }] # pragma: allowlist secret
           }
         }
       }
