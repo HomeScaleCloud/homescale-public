@@ -139,26 +139,157 @@ locals {
       enabled = var.app_librespeed_enabled
     },
     {
-      releaseName    = "oneuptime"
-      chart          = "oneuptime"
-      repoURL        = "https://helm-chart.oneuptime.com/"
-      targetRevision = "8.0.5409"
+      releaseName    = "metrics"
+      chart          = "kube-prometheus-stack"
+      repoURL        = "https://prometheus-community.github.io/helm-charts"
+      targetRevision = "78.3.0"
       namespace      = "metrics"
       values = {
-        host         = "metrics.${var.cluster}.${var.region}.homescale.cloud"
-        httpProtocol = "https"
-        global = {
-          storageClass = "nfs-client"
-        }
-        oneuptimeIngress = {
-          enabled = true
-          annotations = {
-            "cert-manager.io/cluster-issuer" = "letsencrypt"
+        grafana = {
+          defaultDashboardsEnabled = false
+          service = {
+            type = "ClusterIP"
           }
-          hosts = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
-          tls = {
+          "grafana.ini" = {
+            server = {
+              root_url = "https://metrics.${var.cluster}.${var.region}.homescale.cloud"
+            }
+            auth = {
+              disable_login_form = false
+            }
+            "auth.generic_oauth" = {
+              enabled                    = true
+              name                       = "Entra ID"
+              allow_sign_up              = true
+              auto_login                 = true
+              client_id                  = data.onepassword_item.grafana_oidc.credential
+              client_secret              = data.onepassword_item.grafana_oidc.password # pragma: allowlist secret
+              scopes                     = "openid email profile offline_access User.Read"
+              auth_url                   = "https://login.microsoftonline.com/${data.onepassword_item.entra_tenant.credential}/oauth2/v2.0/authorize"
+              token_url                  = "https://login.microsoftonline.com/${data.onepassword_item.entra_tenant.credential}/oauth2/v2.0/token"
+              role_attribute_path        = "\"Admin\""
+              role_attribute_strict      = false
+              allow_assign_grafana_admin = true
+            }
+            users = {
+              auto_assign_org      = true
+              auto_assign_org_role = "Admin"
+              allow_sign_up        = true
+            }
+          }
+          persistence = {
+            enabled     = true
+            type        = "pvc"
+            accessModes = ["ReadWriteOnce"]
+            size        = "5Gi"
+          }
+          ingress = {
             enabled = true
-            hosts   = [{ host = "metrics.${var.cluster}.${var.region}.homescale.cloud", secretName = "oneuptime-tls" }] # pragma: allowlist secret
+            annotations = {
+              "cert-manager.io/cluster-issuer" = "letsencrypt"
+            }
+            hosts = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
+            tls = [
+              {
+                hosts      = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
+                secretName = "grafana-tls" # pragma: allowlist secret
+              }
+            ]
+          }
+          assertNoLeakedSecrets = false
+          dashboardProviders = {
+            "dashboardproviders.yaml" = {
+              apiVersion = 1
+              providers = [
+                {
+                  name            = "grafana-dashboards"
+                  orgId           = 1
+                  folder          = ""
+                  type            = "file"
+                  disableDeletion = true
+                  editable        = true
+                  options = {
+                    path = "/var/lib/grafana/dashboards/grafana-dashboards"
+                  }
+                }
+              ]
+            }
+          }
+          dashboards = {
+            "grafana-dashboards" = {
+              "k8s-system-api-server" = {
+                url   = "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-api-server.json"
+                token = ""
+              }
+              "k8s-addons-prometheus" = {
+                url   = "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-addons-prometheus.json"
+                token = ""
+              }
+              "k8s-system-coredns" = {
+                url   = "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-coredns.json"
+                token = ""
+              }
+              "k8s-views-global" = {
+                url   = "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-global.json"
+                token = ""
+              }
+              "k8s-views-namespaces" = {
+                url   = "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-namespaces.json"
+                token = ""
+              }
+              "k8s-views-nodes" = {
+                url   = "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-nodes.json"
+                token = ""
+              }
+              "k8s-views-pods" = {
+                url   = "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-pods.json"
+                token = ""
+              }
+              "k8s-events-exporter" = {
+                url   = "https://grafana.com/api/dashboards/17882/revisions/2/download"
+                token = ""
+              }
+              "ingress-controller" = {
+                url        = "https://grafana.com/api/dashboards/9614/revisions/1/download"
+                token      = ""
+                datasource = "Prometheus"
+              }
+              "k8s-addons-trivy-operator" = {
+                url   = "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-addons-trivy-operator.json"
+                token = ""
+              }
+              "node-exporter-full" = {
+                url   = "https://grafana.com/api/dashboards/1860/revisions/41/download"
+                token = ""
+              }
+              "argocd-overview" = {
+                url   = "https://grafana.com/api/dashboards/14584/revisions/1/download"
+                token = ""
+              }
+            }
+          }
+        }
+        prometheus = {
+          annotations = {
+            "argocd.argoproj.io/skip-health-check" = "true"
+          }
+          prometheusSpec = {
+            podMonitorSelectorNilUsesHelmValues     = false
+            serviceMonitorSelectorNilUsesHelmValues = false
+            serviceMonitorSelector                  = {}
+            serviceMonitorNamespaceSelector         = {}
+            storageSpec = {
+              volumeClaimTemplate = {
+                spec = {
+                  accessModes = ["ReadWriteOnce"]
+                  resources = {
+                    requests = {
+                      storage = "50Gi"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
