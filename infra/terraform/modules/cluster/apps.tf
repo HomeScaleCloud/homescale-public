@@ -182,7 +182,7 @@ locals {
     },
     {
       releaseName    = "nfs-provisioner"
-      chart          = "nfs-provisioner"
+      chart          = "nfs-subdir-external-provisioner"
       repoURL        = "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/"
       targetRevision = "4.0.18"
       namespace      = "nfs-provisioner"
