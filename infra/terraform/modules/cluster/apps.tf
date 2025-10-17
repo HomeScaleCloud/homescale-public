@@ -147,6 +147,9 @@ locals {
       values = {
         host         = "metrics.${var.cluster}.${var.region}.homescale.cloud"
         httpProtocol = "https"
+        global = {
+          storageClass = "nfs-client"
+        }
         oneuptimeIngress = {
           enabled = true
           annotations = {
