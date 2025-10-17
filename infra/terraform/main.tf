@@ -12,6 +12,7 @@ module "cluster_atlas" {
   app_nfs_provisioner_enabled   = true
   nfs_server                    = "10.1.245.4"
   nfs_path                      = "/mnt/data/apps"
+  app_home_assistant_enabled    = true
   tailscale_oauth_client_id     = data.onepassword_item.tailscale.username
   tailscale_oauth_client_secret = data.onepassword_item.tailscale.password
   op_service_account_token      = var.op_service_account_token
