@@ -96,22 +96,22 @@ resource "helm_release" "argocd" {
           "server.rbac.log.enforce.enable" = "true"
           "timeout.reconciliation"         = "45s"
         }
-      }
 
-      rbac = {
-        "policy.csv" = <<-YAML
-          g, sec-infra-plat-pim, role:admin
-          p, role:argo-users, applications, get, *, allow
-          p, role:argo-users, applications, refresh, *, allow
-          p, role:argo-users, applications, sync, *, allow
-          p, role:argo-users, projects, get, *, allow
-          p, role:argo-users, repositories, get, *, allow
-          p, role:argo-users, clusters, get, *, allow
-          p, role:argo-users, accounts, get, *, allow
-          p, role:argo-users, logs, get, *, deny
-          p, role:argo-users, logs, get, */*, deny
-          g, team-infra-plat, role:argo-users
-        YAML
+        rbac = {
+          "policy.csv" = <<-CSV
+            g, sec-infra-plat-pim, role:admin
+            p, role:argo-users, applications, get, *, allow
+            p, role:argo-users, applications, refresh, *, allow
+            p, role:argo-users, applications, sync, *, allow
+            p, role:argo-users, projects, get, *, allow
+            p, role:argo-users, repositories, get, *, allow
+            p, role:argo-users, clusters, get, *, allow
+            p, role:argo-users, accounts, get, *, allow
+            p, role:argo-users, logs, get, *, deny
+            p, role:argo-users, logs, get, */*, deny
+            g, team-infra-plat, role:argo-users
+          CSV
+        }
       }
 
       notifications = {
