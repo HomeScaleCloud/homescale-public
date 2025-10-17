@@ -151,11 +151,9 @@ locals {
               server = {
                 root_url = "https://metrics.${var.cluster}.${var.region}.homescale.cloud"
               }
-              auth = {
-                generic_oauth = {
-                  client_id     = data.onepassword_item.grafana_oidc.credential
-                  client_secret = data.onepassword_item.grafana_oidc.password
-                }
+              "auth.generic_oauth" = {
+                client_id     = data.onepassword_item.grafana_oidc.credential
+                client_secret = data.onepassword_item.grafana_oidc.password
               }
             }
             ingress = {
