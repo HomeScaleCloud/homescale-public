@@ -165,7 +165,7 @@ locals {
               enabled                    = true
               name                       = "Entra ID"
               allow_sign_up              = true
-              auto_login                 = true
+              auto_login                 = false
               client_id                  = data.onepassword_item.grafana_oidc.credential
               client_secret              = data.onepassword_item.grafana_oidc.password # pragma: allowlist secret
               scopes                     = "openid email profile offline_access User.Read"
