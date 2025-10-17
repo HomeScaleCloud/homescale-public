@@ -99,7 +99,7 @@ resource "helm_release" "argocd" {
       }
 
       rbac = {
-        "policy.csv" = <<-CSV
+        "policy.csv" = <<-YAML
           g, sec-infra-plat-pim, role:admin
           p, role:argo-users, applications, get, *, allow
           p, role:argo-users, applications, refresh, *, allow
@@ -111,7 +111,7 @@ resource "helm_release" "argocd" {
           p, role:argo-users, logs, get, *, deny
           p, role:argo-users, logs, get, */*, deny
           g, team-infra-plat, role:argo-users
-        CSV
+        YAML
       }
 
       notifications = {
