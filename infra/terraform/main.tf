@@ -9,6 +9,9 @@ module "cluster_atlas" {
   workloads_on_controlplane     = true
   talos_version                 = "v1.11.2"
   talos_disk_selector           = { size = 525112713216 }
+  app_nfs_provisioner_enabled   = true
+  nfs_server                    = "10.1.245.4"
+  nfs_path                      = "/mnt/data/apps"
   tailscale_oauth_client_id     = data.onepassword_item.tailscale.username
   tailscale_oauth_client_secret = data.onepassword_item.tailscale.password
   op_service_account_token      = var.op_service_account_token
