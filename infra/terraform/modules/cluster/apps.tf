@@ -155,7 +155,7 @@ locals {
           hosts = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
           tls = {
             enabled = true
-            hosts   = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
+            hosts   = [{ host = "metrics.${var.cluster}.${var.region}.homescale.cloud", secretName = "oneuptime-tls" }] # pragma: allowlist secret
           }
         }
       }
