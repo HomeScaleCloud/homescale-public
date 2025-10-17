@@ -163,7 +163,10 @@ locals {
               hosts   = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
               tls = [
                 {
-                  hosts = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
+                  secretName = "grafana-tls" # pragma: allowlist secret
+                  hosts = [
+                    "metrics.${var.cluster}.${var.region}.homescale.cloud"
+                  ]
                 }
               ]
             }

@@ -38,9 +38,9 @@ kube-prometheus-stack:
       hosts:
         - metrics.dev.homescale.cloud
       tls:
-        - hosts:
+        - secretName: grafana-tls
+          hosts:
             - metrics.dev.homescale.cloud
-          secretName: grafana-tls
     assertNoLeakedSecrets: false
     dashboardProviders:
       dashboardproviders.yaml:
