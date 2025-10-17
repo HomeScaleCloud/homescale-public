@@ -21,7 +21,21 @@ spec:
           volumeMounts:
             - name: {{ .Release.Name }}
               mountPath: /config
+            {{- if .Values.zigbee.local }}
+            - name: zigbee-local
+              mountPath: {{ .Values.zigbee.devicePath }}
+              readOnly: false
+            {{- end }}
+          securityContext:
+            privileged: true
+            allowPrivilegeEscalation: true
       volumes:
         - name: {{ .Release.Name }}
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}
+        {{- if .Values.zigbee.local }}
+        - name: zigbee-local
+          hostPath:
+            path: {{ .Values.zigbee.devicePath }}
+            type: CharDevice
+        {{- end }}

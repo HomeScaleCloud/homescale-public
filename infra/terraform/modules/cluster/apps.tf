@@ -72,6 +72,10 @@ locals {
         ingress = {
           host = "ha.${var.cluster}.${var.region}.homescale.cloud"
         }
+        zigbee = {
+          local      = true
+          devicePath = "/dev/ttyUSB0"
+        }
       }
       enabled = var.app_home_assistant_enabled
     },

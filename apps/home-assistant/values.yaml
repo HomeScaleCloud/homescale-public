@@ -3,7 +3,6 @@ image:
   tag: "2025.10.2"
 ingress:
   enabled: true
-  # host: ha.dev.homescale.cloud
   className: "nginx"
 pvc:
   size: 25Gi
