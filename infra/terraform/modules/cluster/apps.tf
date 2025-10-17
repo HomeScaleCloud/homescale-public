@@ -139,40 +139,27 @@ locals {
       enabled = var.app_librespeed_enabled
     },
     {
-      releaseName    = "metrics"
-      chart          = "metrics"
-      repoURL        = "ghcr.io/homescalecloud/helm"
-      targetRevision = "0.1.0"
+      releaseName    = "oneuptime"
+      chart          = "oneuptime"
+      repoURL        = "https://helm-chart.oneuptime.com/"
+      targetRevision = "8.0.5409"
       namespace      = "metrics"
       values = {
-        kube-prometheus-stack = {
-          grafana = {
-            "grafana.ini" = {
-              server = {
-                root_url = "https://metrics.${var.cluster}.${var.region}.REDACTED"
-              }
-              "auth.generic_oauth" = {
-                client_id     = data.onepassword_item.grafana_oidc.credential
-                client_secret = data.onepassword_item.grafana_oidc.password
-              }
-            }
-            ingress = {
-              enabled = true
-              hosts   = ["metrics.${var.cluster}.${var.region}.REDACTED"]
-              tls = [
-                {
-                  secretName = "grafana-tls" # pragma: allowlist secret
-                  hosts = [
-                    "metrics.${var.cluster}.${var.region}.REDACTED"
-                  ]
-                }
-              ]
-            }
+        host         = "metrics.${var.cluster}.${var.region}.REDACTED"
+        httpProtocol = "https"
+        oneuptimeIngress = {
+          enabled = true
+          annotations = {
+            "cert-manager.io/cluster-issuer" = "letsencrypt"
+          }
+          hosts = ["metrics.${var.cluster}.${var.region}.REDACTED"]
+          tls = {
+            enabled = true
+            hosts   = ["metrics.${var.cluster}.${var.region}.REDACTED"]
           }
         }
       }
-      enabled         = var.app_metrics_enabled
-      serverSideApply = true
+      enabled = var.app_metrics_enabled
     },
     {
       releaseName    = "node-feature-discovery"
