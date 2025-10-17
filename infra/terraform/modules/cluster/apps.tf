@@ -170,7 +170,8 @@ locals {
           }
         }
       }
-      enabled = var.app_metrics_enabled
+      enabled         = var.app_metrics_enabled
+      serverSideApply = true
     },
     {
       releaseName    = "node-feature-discovery"
@@ -316,8 +317,8 @@ resource "kubernetes_manifest" "argocd_app" {
           selfHeal = true
         }
         syncOptions = [
-          # "ServerSideApply=true",
-          "CreateNamespace=true"
+          "ServerSideApply=true",
+          lookup(each.value, "serverSideApply", false) ? "ServerSideApply=true" : ""
         ]
       }
     }
