@@ -11,6 +11,8 @@ spec:
       labels:
         app: {{ .Release.Name }}
     spec:
+      strategy:
+        type: Recreate
       hostNetwork: true
       containers:
         - name: home-assistant
