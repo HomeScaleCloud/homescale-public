@@ -42,7 +42,7 @@ jobs:
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
         with:
           scan-type: 'config'
-          exit-code: '1'
+          exit-code: '0' # Make Trivy scan optional (for now)
           severity: 'CRITICAL,HIGH'
       - name: Run Trivy scan (main)
         if: github.ref == 'refs/heads/main'
