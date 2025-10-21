@@ -42,14 +42,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Run Trivy scan
-        if: github.ref != 'refs/heads/main'
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
-        with:
-          scan-type: 'config'
-          exit-code: '0' # Make Trivy scan optional (for now)
-          severity: 'CRITICAL,HIGH'
-      - name: Run Trivy scan (main)
-        if: github.ref == 'refs/heads/main'
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
         with:
           scan-type: 'config'
@@ -57,8 +49,7 @@ jobs:
           output: 'trivy-results.sarif'
           exit-code: '0'
           severity: 'CRITICAL,HIGH'
-      - name: Upload Trivy scan results to GitHub Security tab
-        if: github.ref == 'refs/heads/main'
+      - name: Upload Trivy scan results to GitHub Security
         uses: github/codeql-action/upload-sarif@17783bfb99b07f70fae080b654aed0c514057477 # v4.30.9
         with:
           sarif_file: 'trivy-results.sarif'
