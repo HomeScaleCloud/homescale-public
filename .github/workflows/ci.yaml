@@ -32,6 +32,7 @@ jobs:
 
   trivy:
     name: Trivy Code Scan
+    needs: pre-commit
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -52,7 +53,7 @@ jobs:
 
   discover:
     name: "Discover build targets"
-    needs: pre-commit
+    needs: trivy
     runs-on: ubuntu-latest
     outputs:
       docker: ${{ steps.set.outputs.docker }}
