@@ -358,10 +358,43 @@ locals {
     {
       releaseName    = "rook-ceph"
       chart          = "rook-ceph"
-      repoURL        = "ghcr.io/homescalecloud/helm"
-      targetRevision = "0.1.0"
+      repoURL        = "https://charts.rook.io/release"
+      targetRevision = "v1.18.4"
       namespace      = "rook-ceph"
-      enabled        = var.app_rook_ceph_enabled
+      values = {
+        monitoring = {
+          enabled = true
+        }
+      }
+      enabled = var.app_rook_ceph_enabled
+    },
+    {
+      releaseName    = "rook-ceph-cluster"
+      chart          = "rook-ceph-cluster"
+      repoURL        = "https://charts.rook.io/release"
+      targetRevision = "v1.18.4"
+      namespace      = "rook-ceph"
+      values = {
+        monitoring = {
+          enabled               = true
+          createPrometheusRules = true
+        }
+        cephClusterSpec = {
+          mgr = {
+            modules = [
+              {
+                name    = "rook"
+                enabled = true
+              }
+            ]
+          }
+          storage = {
+            useAllNodes   = true
+            useAllDevices = true
+          }
+        }
+      }
+      enabled = var.app_rook_ceph_enabled
     },
     {
       releaseName    = "tailscale"
