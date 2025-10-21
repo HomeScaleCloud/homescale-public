@@ -30,9 +30,38 @@ jobs:
       - uses: pre-commit-ci/lite-action@5d6cc0eb514c891a40562a58a8e71576c5c7fb43 # v1.1.0
         if: always()
 
+  trivy:
+    name: Trivy Code Scan
+    needs: pre-commit
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Run Trivy scan
+        if: github.ref != 'refs/heads/main'
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
+        with:
+          scan-type: 'config'
+          exit-code: '0' # Make Trivy scan optional (for now)
+          severity: 'CRITICAL,HIGH'
+      - name: Run Trivy scan (main)
+        if: github.ref == 'refs/heads/main'
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
+        with:
+          scan-type: 'config'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: github.ref == 'refs/heads/main'
+        uses: github/codeql-action/upload-sarif@17783bfb99b07f70fae080b654aed0c514057477 # v4.30.9
+        with:
+          sarif_file: 'trivy-results.sarif'
+
   discover:
     name: "Discover build targets"
-    needs: pre-commit
+    needs: trivy
     runs-on: ubuntu-latest
     outputs:
       docker: ${{ steps.set.outputs.docker }}
@@ -107,6 +136,16 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
+
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
+        with:
+          image-ref: ${{ steps.meta.outputs.tags }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
   build-helm:
     name: "Build - Helm – ${{ matrix.name }}"
