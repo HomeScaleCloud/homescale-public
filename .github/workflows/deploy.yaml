@@ -6,6 +6,9 @@ permissions:
 
 on:
   workflow_call:
+    secrets:
+      op_service_account_token:
+        required: true
 
 concurrency:
   group: deploy
@@ -22,7 +25,7 @@ jobs:
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
-      TF_VAR_op_service_account_token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+      TF_VAR_op_service_account_token: ${{ secrets.op_service_account_token }}
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -31,7 +34,7 @@ jobs:
         with:
           export-env: true
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.op_service_account_token }}
           TF_TOKEN_app_terraform_io: op://github-actions/terraform-cloud/credential
           TS_ID: op://github-actions/tailscale/username
           TS_SECRET: op://github-actions/tailscale/password  # pragma: allowlist secret
