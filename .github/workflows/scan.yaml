@@ -28,7 +28,7 @@ jobs:
         if: always()
 
   trivy:
-    name: Trivy Code Scan
+    name: Trivy
     needs: pre-commit
     runs-on: ubuntu-24.04
     steps:
