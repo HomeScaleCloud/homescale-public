@@ -49,8 +49,8 @@ jobs:
           echo "docker=$(jq -c . <<<"$docker_json")" >> "$GITHUB_OUTPUT"
           echo "helm=$(jq -c . <<<"$helm_json")" >> "$GITHUB_OUTPUT"
 
-  build-docker:
-    name: "Build - Docker - ${{ matrix.name }}"
+  docker:
+    name: "Docker - ${{ matrix.name }}"
     needs: [discover]
     runs-on: ubuntu-latest
     strategy:
@@ -96,9 +96,9 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
-  build-helm:
-    name: "Build - Helm – ${{ matrix.name }}"
-    needs: [discover, build-docker]
+  helm:
+    name: "Helm – ${{ matrix.name }}"
+    needs: [discover, docker]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
