@@ -4,7 +4,7 @@ permissions:
 
 on:
   push:
-    branches: [max/redo-ci-2]
+    branches: [main]
 
 jobs:
   mirror:
