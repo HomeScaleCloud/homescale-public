@@ -1,4 +1,4 @@
-# ![HomeScale](https://raw.githubusercontent.com/HomeScaleCloud/homescale/refs/heads/main/media/homescale-banner.png)
+# ![HomeScale](https://raw.githubusercontent.com/HomeScaleCloud/homescale-public/refs/heads/main/media/homescale-banner.png)
 
 ### Enterprise-grade infrastructure, built for homelab
 ![ci](https://github.com/HomeScaleCloud/homescale/actions/workflows/ci.yaml/badge.svg?branch=main)
