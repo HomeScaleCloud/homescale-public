@@ -12,6 +12,9 @@ resource "helm_release" "cilium" {
 
   values = [
     yamlencode({
+      operator = {
+        replicas = 1
+      }
       socketLB = {
         hostNamespaceOnly = true
       }
