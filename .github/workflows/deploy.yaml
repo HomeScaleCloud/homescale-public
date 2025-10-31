@@ -59,6 +59,7 @@ jobs:
   terraform-apply:
     name: "Terraform - Apply"
     if: github.ref == 'refs/heads/main'
+    needs: terraform-plan
     environment: terraform
     runs-on: ubuntu-latest
     defaults:
