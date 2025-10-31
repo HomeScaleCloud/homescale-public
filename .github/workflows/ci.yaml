@@ -16,14 +16,14 @@ on:
 
 jobs:
   scan:
-    uses: ./.github/jobs/scan.yaml
+    uses: ./.github/workflows/scan.yaml
 
   build:
-    uses: ./.github/jobs/build.yaml
+    uses: ./.github/workflows/build.yaml
     needs: scan
 
   deploy:
-    uses: ./.github/jobs/deploy.yaml
+    uses: ./.github/workflows/deploy.yaml
     needs: build
     secrets:
       op_service_account_token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
