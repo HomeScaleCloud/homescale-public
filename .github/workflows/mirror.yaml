@@ -16,6 +16,6 @@ jobs:
       - name: Push to public mirror
         uses: yesolutions/mirror-action@master
         with:
-          REMOTE: git@github.com/HomeScaleCloud/homescale-public.git
+          REMOTE: git@github.com:HomeScaleCloud/homescale-public.git
           GIT_SSH_PRIVATE_KEY: ${{ secrets.PUBLIC_DEPLOY_KEY }}
           GIT_SSH_NO_VERIFY_HOST: "true"
