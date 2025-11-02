@@ -54,12 +54,11 @@ jobs:
           tags: tag:github-actions
       - name: Plan
         id: plan
-        run: terraform plan -out=tfplan
+        run: terraform plan
 
   terraform-apply:
     name: "Terraform - Apply"
     if: github.ref == 'refs/heads/main'
-    needs: terraform-plan
     environment: terraform
     runs-on: ubuntu-latest
     defaults:
