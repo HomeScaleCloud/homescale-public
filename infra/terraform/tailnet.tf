@@ -46,10 +46,10 @@ resource "tailscale_acl" "acl" {
         "tag:app-metrics": ["tag:k8s"],
 
         "tag:node": [],
-        "tag:github-actions": []
+        "tag:github-actions": [],
 
         "tag:region-boa1": ["tag:k8s"],
-        "tag:cluster-atlas": ["tag:k8s"],
+        "tag:cluster-atlas": ["tag:k8s"]
       },
       "nodeAttrs": [
         {
