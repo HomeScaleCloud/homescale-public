@@ -59,7 +59,7 @@ resource "helm_release" "argocd" {
   values = [
     yamlencode({
       global = {
-        domain = "argocd.${var.cluster}.${var.region}.homescale.cloud"
+        domain = "argocd-${var.cluster}.${var.tailscale_tailnet}"
       }
 
       certificate = {
@@ -73,11 +73,10 @@ resource "helm_release" "argocd" {
       server = {
         ingress = {
           enabled          = true
-          ingressClassName = "nginx"
+          ingressClassName = "tailscale"
           annotations = {
-            "nginx.ingress.kubernetes.io/force-ssl-redirect" = "true"
-            "nginx.ingress.kubernetes.io/ssl-passthrough"    = "true"
-            "cert-manager.io/cluster-issuer"                 = "letsencrypt"
+            "tailscale.com/hostname" = "argocd-${var.cluster}"
+            "tailscale.com/tags"     = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
           }
           tls = true
         }

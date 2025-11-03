@@ -41,7 +41,7 @@ provider "digitalocean" {
 }
 
 provider "tailscale" {
-  tailnet             = "homescale.cloud"
+  tailnet             = data.onepassword_item.tailscale_tailnet.credential
   oauth_client_id     = data.onepassword_item.tailscale.username
   oauth_client_secret = data.onepassword_item.tailscale.password
 }
