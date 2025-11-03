@@ -4,8 +4,7 @@ kind: Ingress
 metadata:
   name: {{ .Release.Name }}
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    {{ .Values.ingress.annotations | quote }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
@@ -22,7 +21,6 @@ spec:
                 port:
                   number: 80
   tls:
-    - secretName: {{ .Release.Name }}-tls
-      hosts:
+    - hosts:
         - {{ .Values.ingress.host | quote }}
 {{- end }}

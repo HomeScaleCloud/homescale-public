@@ -6,7 +6,7 @@ resource "tailscale_acl" "acl" {
         {
           "action": "accept",
           "src": ["autogroup:member"],
-          "dst": ["tag:app:*"]
+          "dst": ["tag:ingress:443"]
         },
         {
           "action": "accept",
@@ -16,7 +16,7 @@ resource "tailscale_acl" "acl" {
         {
           "action": "accept",
           "src": ["tag:github-actions"],
-          "dst": ["tag:app:443"]
+          "dst": ["tag:ingress:443"]
         },
         {
           "action": "accept",
@@ -37,11 +37,19 @@ resource "tailscale_acl" "acl" {
       ],
       "tagOwners": {
         "tag:k8s": ["tag:k8s"],
+        "tag:ingress": ["tag:k8s"],
+
         "tag:app": ["tag:k8s"],
-        "tag:region-boa1": ["tag:k8s"],
-        "tag:cluster-atlas": ["tag:k8s"],
+        "tag:app-argocd": ["tag:k8s"],
+        "tag:app-ha": ["tag:k8s"],
+        "tag:app-librespeed": ["tag:k8s"],
+        "tag:app-metrics": ["tag:k8s"],
+
         "tag:node": [],
         "tag:github-actions": []
+
+        "tag:region-boa1": ["tag:k8s"],
+        "tag:cluster-atlas": ["tag:k8s"],
       },
       "nodeAttrs": [
         {

@@ -52,6 +52,12 @@ variable "op_service_account_token" {
   sensitive   = true
 }
 
+variable "tailscale_tailnet" {
+  description = "Tailscale Tailnet Name"
+  type        = string
+  sensitive   = true
+}
+
 variable "tailscale_oauth_client_id" {
   description = "Tailscale OAuth Client ID"
   type        = string
@@ -156,7 +162,7 @@ variable "app_homepage_enabled" {
 
 variable "app_ingress_nginx_enabled" {
   type    = bool
-  default = true
+  default = false
 }
 
 variable "app_librespeed_enabled" {
