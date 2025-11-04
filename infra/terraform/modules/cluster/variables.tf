@@ -34,6 +34,13 @@ variable "gateway" {
   }
 }
 
+variable "mgmt_interface" {
+  description = "Ethernet interface to use for management traffic on nodes"
+  type        = string
+  sensitive   = false
+  default     = "eno1"
+}
+
 variable "nfs_server" {
   description = "IP address of NFS server to use"
   type        = string
