@@ -114,7 +114,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
         network = {
           interfaces = [
             {
-              interface = "eno1"
+              interface = var.mgmt_interface
               dhcp      = false
               addresses = ["${each.value}/24"]
               routes = [
