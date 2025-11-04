@@ -16,7 +16,6 @@ concurrency:
 jobs:
   terraform:
     name: "Terraform"
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,7 +39,7 @@ jobs:
           TS_SECRET: op://github-actions/tailscale/password  # pragma: allowlist secret
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
-      - name: Initialize
+      - name: Initialize Terraform
         id: init
         run: terraform init
       - name: Validate

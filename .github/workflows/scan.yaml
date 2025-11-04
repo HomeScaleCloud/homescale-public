@@ -1,6 +1,7 @@
 name: "Scan"
 permissions:
   actions: read
+  packages: read
   contents: read
   id-token: write
   issues: write
@@ -27,9 +28,32 @@ jobs:
       - uses: pre-commit-ci/lite-action@5d6cc0eb514c891a40562a58a8e71576c5c7fb43 # v1.1.0
         if: always()
 
+  codeql:
+    name: CodeQL
+    needs: pre-commit
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@16140ae1a102900babc80a33c44059580f687047 # v4.30.9
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      - name: Run CodeQL Scan
+        uses: github/codeql-action/analyze@16140ae1a102900babc80a33c44059580f687047 # v4.30.9
+        with:
+          category: "/language:${{matrix.language}}"
+
   trivy:
     name: Trivy
-    needs: pre-commit
+    needs: codeql
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
