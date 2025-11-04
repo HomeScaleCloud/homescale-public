@@ -7,7 +7,7 @@ resource "helm_release" "cilium" {
   name       = "cilium"
   repository = "https://helm.cilium.io/"
   chart      = "cilium"
-  version    = "1.18.2"
+  version    = "1.18.3"
   namespace  = "kube-system"
 
   values = [
@@ -39,6 +39,9 @@ resource "helm_release" "cilium" {
       }
       k8sServiceHost = "localhost"
       k8sServicePort = 7445
+      extraArgs = [
+        "--devices=${var.mgmt_interface}"
+      ]
     })
   ]
 }
