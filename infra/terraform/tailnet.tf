@@ -3,7 +3,7 @@ resource "tailscale_acl" "acl" {
     // This tailnet's ACLs are maintained in https://github.com/HomeScaleCloud/homescale
     {
       "acls": [
-        # Default ACLs
+        // Default ACLs
         {
           "action": "accept",
           "src": ["autogroup:member"],
@@ -15,8 +15,8 @@ resource "tailscale_acl" "acl" {
           "dst": ["autogroup:self:*"]
         },
 
-        # Apps
-        # argocd
+        // Apps
+        // argocd
         {
           "action": "accept",
           "src": [
@@ -25,20 +25,20 @@ resource "tailscale_acl" "acl" {
           ],
           "dst": ["tag:app-argocd:443"]
         },
-        # ha
+        // ha
         {
           "action": "accept",
           "src": ["group:Owners@homescale.cloud"],
           "dst": ["tag:app-ha:443"]
         },
-        # metrics
+        // metrics
         {
           "action": "accept",
           "src": ["group:team-infra-plat@homescale.cloud"],
           "dst": ["tag:app-metrics:443"]
         },
 
-        # Clusters + Nodes
+        // Clusters + Nodes
         {
           "action": "accept",
           "src": [
