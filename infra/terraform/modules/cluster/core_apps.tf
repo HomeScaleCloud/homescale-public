@@ -39,6 +39,9 @@ resource "helm_release" "cilium" {
       }
       k8sServiceHost = "localhost"
       k8sServicePort = 7445
+      extraArgs = [
+        "--devices=${var.mgmt_interface}"
+      ]
     })
   ]
 }
