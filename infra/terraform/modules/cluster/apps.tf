@@ -73,7 +73,7 @@ locals {
           host = "ha-${var.cluster}.${var.tailscale_tailnet}"
           annotations = {
             "tailscale.com/hostname" = "ha-${var.cluster}"
-            "tailscale.com/tags"     = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
+            "tailscale.com/tags"     = "tag:app-ha,tag:cluster-${var.cluster},tag:region-${var.region}"
           }
         }
         zigbee = {
@@ -115,7 +115,7 @@ locals {
             loadBalancerClass = "tailscale"
             annotations = {
               "tailscale.com/hostname" = "ingress-${var.cluster}"
-              "tailscale.com/tags"     = "tag:ingress,tag:cluster-${var.cluster},tag:region-${var.region}"
+              "tailscale.com/tags"     = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
             }
           }
           autoscaling = {
@@ -200,7 +200,7 @@ locals {
             ingressClassName = "tailscale"
             annotations = {
               "tailscale.com/hostname" = "metrics-${var.cluster}"
-              "tailscale.com/tags"     = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
+              "tailscale.com/tags"     = "tag:app-metrics,tag:cluster-${var.cluster},tag:region-${var.region}"
             }
             hosts = ["metrics-${var.cluster}.${var.tailscale_tailnet}"]
             tls = [
@@ -416,7 +416,7 @@ locals {
           mode = "true"
         }
         proxyConfig = {
-          defaultTags = "tag:cluster-${var.cluster},tag:region-${var.region}"
+          defaultTags = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
         }
         operatorConfig = {
           hostname = "k8s-${var.cluster}"
