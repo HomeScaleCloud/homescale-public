@@ -30,7 +30,6 @@ jobs:
 
   codeql:
     name: CodeQL
-    needs: pre-commit
     strategy:
       fail-fast: false
       matrix:
@@ -53,7 +52,6 @@ jobs:
 
   trivy:
     name: Trivy
-    needs: codeql
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
