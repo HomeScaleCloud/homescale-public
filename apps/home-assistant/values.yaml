@@ -3,7 +3,7 @@ image:
   tag: "2025.10.3"
 ingress:
   enabled: true
-  className: "nginx"
+  className: "tailscale"
 pvc:
   size: 25Gi
 zigbee:

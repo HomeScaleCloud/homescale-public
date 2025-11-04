@@ -3,6 +3,11 @@ resource "talos_image_factory_schematic" "image" {
   schematic = yamlencode(
     {
       customization = {
+        systemExtensions = {
+          officialExtensions = [
+            "siderolabs/tailscale"
+          ]
+        }
         secureboot = {
           includeWellKnownCertificates = true
         }
@@ -128,6 +133,23 @@ resource "talos_machine_configuration_apply" "controlplane" {
           ]
         }
       }
+    }),
+    yamlencode({
+      machine = {
+        install = {
+          extensions = [
+            {
+              image = "ghcr.io/siderolabs/tailscale:1.88.3"
+            }
+          ]
+        }
+      }
+    }),
+    yamlencode({
+      apiVersion  = "v1alpha1"
+      kind        = "ExtensionServiceConfig"
+      name        = "tailscale"
+      environment = ["TS_AUTHKEY=${tailscale_tailnet_key.node.key}"]
     }),
     yamlencode({
       cluster = {

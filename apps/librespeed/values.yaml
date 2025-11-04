@@ -3,4 +3,4 @@ image:
   tag: "5.4.20240804"
 ingress:
   enabled: true
-  className: "nginx"
+  className: "tailscale"
