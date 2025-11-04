@@ -2,7 +2,7 @@ terraform {
   required_providers {
     onepassword = {
       source  = "1Password/onepassword"
-      version = "2.1.2"
+      version = "2.2.0"
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
@@ -14,7 +14,7 @@ terraform {
     }
     tailscale = {
       source  = "tailscale/tailscale"
-      version = "0.23.0"
+      version = "0.24.0"
     }
     talos = {
       source  = "siderolabs/talos"
