@@ -70,7 +70,11 @@ locals {
       namespace      = "home-assistant"
       values = {
         ingress = {
-          host = "ha.${var.cluster}.${var.region}.homescale.cloud"
+          host = "ha-${var.cluster}.${var.tailscale_tailnet}"
+          annotations = {
+            "tailscale.com/hostname" = "ha-${var.cluster}"
+            "tailscale.com/tags"     = "tag:app-ha,tag:cluster-${var.cluster},tag:region-${var.region}"
+          }
         }
         zigbee = {
           local      = true
@@ -110,8 +114,8 @@ locals {
             type              = "LoadBalancer"
             loadBalancerClass = "tailscale"
             annotations = {
-              "tailscale.com/hostname" = "ingress-${var.cluster}-${var.region}"
-              "tailscale.com/tags"     = "tag:app,tag:region-${var.region},tag:cluster-${var.cluster}"
+              "tailscale.com/hostname" = "ingress-${var.cluster}"
+              "tailscale.com/tags"     = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
             }
           }
           autoscaling = {
@@ -137,7 +141,11 @@ locals {
       namespace      = "librespeed"
       values = {
         ingress = {
-          host = "librespeed.${var.cluster}.${var.region}.homescale.cloud"
+          host = "librespeed-${var.cluster}.${var.tailscale_tailnet}"
+          annotations = {
+            "tailscale.com/hostname" = "librespeed-${var.cluster}"
+            "tailscale.com/tags"     = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
+          }
         }
       }
       enabled = var.app_librespeed_enabled
@@ -156,7 +164,7 @@ locals {
           }
           "grafana.ini" = {
             server = {
-              root_url = "https://metrics.${var.cluster}.${var.region}.homescale.cloud"
+              root_url = "https://metrics-${var.cluster}.${var.tailscale_tailnet}"
             }
             auth = {
               disable_login_form = true
@@ -188,15 +196,16 @@ locals {
             size        = "5Gi"
           }
           ingress = {
-            enabled = true
+            enabled          = true
+            ingressClassName = "tailscale"
             annotations = {
-              "cert-manager.io/cluster-issuer" = "letsencrypt"
+              "tailscale.com/hostname" = "metrics-${var.cluster}"
+              "tailscale.com/tags"     = "tag:app-metrics,tag:cluster-${var.cluster},tag:region-${var.region}"
             }
-            hosts = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
+            hosts = ["metrics-${var.cluster}.${var.tailscale_tailnet}"]
             tls = [
               {
-                hosts      = ["metrics.${var.cluster}.${var.region}.homescale.cloud"]
-                secretName = "grafana-tls" # pragma: allowlist secret
+                hosts = ["metrics-${var.cluster}.${var.tailscale_tailnet}"]
               }
             ]
           }
@@ -407,14 +416,14 @@ locals {
           mode = "true"
         }
         proxyConfig = {
-          defaultTags = "tag:app,tag:region-${var.region},tag:cluster-${var.cluster}"
+          defaultTags = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
         }
         operatorConfig = {
-          hostname = "k8s-${var.cluster}-${var.region}"
+          hostname = "k8s-${var.cluster}"
           defaultTags = [
             "tag:k8s",
-            "tag:region-${var.region}",
-            "tag:cluster-${var.cluster}"
+            "tag:cluster-${var.cluster}",
+            "tag:region-${var.region}"
           ]
         }
       }

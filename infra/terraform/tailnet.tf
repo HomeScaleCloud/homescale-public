@@ -3,21 +3,42 @@ resource "tailscale_acl" "acl" {
     // This tailnet's ACLs are maintained in https://github.com/HomeScaleCloud/homescale
     {
       "acls": [
+        // Default ACLs
         {
           "action": "accept",
           "src": ["autogroup:member"],
-          "dst": ["tag:app:*"]
+          "dst": ["tag:app:443"]
         },
         {
           "action": "accept",
           "src": ["autogroup:member"],
           "dst": ["autogroup:self:*"]
         },
+
+        // Apps
+        // argocd
         {
           "action": "accept",
-          "src": ["tag:github-actions"],
-          "dst": ["tag:app:443"]
+          "src": [
+            "group:team-infra-plat@homescale.cloud",
+            "tag:github-actions"
+          ],
+          "dst": ["tag:app-argocd:443"]
         },
+        // ha
+        {
+          "action": "accept",
+          "src": ["group:Owners@homescale.cloud"],
+          "dst": ["tag:app-ha:443"]
+        },
+        // metrics
+        {
+          "action": "accept",
+          "src": ["group:team-infra-plat@homescale.cloud"],
+          "dst": ["tag:app-metrics:443"]
+        },
+
+        // Clusters + Nodes
         {
           "action": "accept",
           "src": [
@@ -32,23 +53,10 @@ resource "tailscale_acl" "acl" {
             "group:sec-infra-plat-pim@homescale.cloud",
             "tag:github-actions"
           ],
-          "dst": ["tag:node:22,50000,50001,6443,5252","10.1.245.0/24:*"]
+          "dst": ["tag:node:22,50000,50001,6443,5252","10.1.245.0/24:22,50000,50001,6443,5252"]
         }
       ],
-      "tagOwners": {
-        "tag:k8s": ["tag:k8s"],
-        "tag:app": ["tag:k8s"],
-        "tag:region-boa1": ["tag:k8s"],
-        "tag:cluster-atlas": ["tag:k8s"],
-        "tag:node": [],
-        "tag:github-actions": []
-      },
-      "nodeAttrs": [
-        {
-          "target": ["autogroup:member"],
-          "attr": ["mullvad"]
-        }
-      ],
+
       "grants": [
         {
           "src": ["group:team-infra-plat@homescale.cloud"],
@@ -64,7 +72,10 @@ resource "tailscale_acl" "acl" {
           }
         },
         {
-          "src": ["group:sec-infra-plat-pim@homescale.cloud"],
+          "src": [
+            "group:sec-infra-plat-pim@homescale.cloud",
+            "tag:github-actions"
+          ],
           "dst": ["tag:k8s"],
           "app": {
             "tailscale.com/cap/kubernetes": [
@@ -77,6 +88,7 @@ resource "tailscale_acl" "acl" {
           }
         },
       ],
+
       "ssh": [
         {
           "action": "check",
@@ -97,6 +109,28 @@ resource "tailscale_acl" "acl" {
           "dst": ["tag:node"],
           "users": ["admin"],
         },
+      ],
+
+      "tagOwners": {
+        "tag:k8s": ["tag:k8s"],
+        "tag:app": ["tag:k8s"],
+
+        "tag:app-argocd": ["tag:k8s"],
+        "tag:app-ha": ["tag:k8s"],
+        "tag:app-metrics": ["tag:k8s"],
+
+        "tag:node": [],
+        "tag:github-actions": [],
+
+        "tag:region-boa1": ["tag:k8s"],
+        "tag:cluster-atlas": ["tag:k8s"]
+      },
+
+      "nodeAttrs": [
+        {
+          "target": ["autogroup:member"],
+          "attr": ["mullvad"]
+        }
       ],
     }
   EOF
