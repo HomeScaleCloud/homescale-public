@@ -3,6 +3,11 @@ resource "talos_image_factory_schematic" "image" {
   schematic = yamlencode(
     {
       customization = {
+        systemExtensions = {
+          officialExtensions = [
+            "siderolabs/tailscale"
+          ]
+        }
         secureboot = {
           includeWellKnownCertificates = true
         }
