@@ -31,6 +31,11 @@ data "onepassword_item" "tailscale" {
   title = "tailscale"
 }
 
+data "onepassword_item" "tailscale_tailnet" {
+  vault = "common"
+  title = "tailscale-tailnet"
+}
+
 data "onepassword_item" "tailscale_slack" {
   vault = "github-actions"
   title = "tailscale-slack"
