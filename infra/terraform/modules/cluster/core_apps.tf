@@ -78,8 +78,9 @@ resource "helm_release" "argocd" {
           enabled          = true
           ingressClassName = "tailscale"
           annotations = {
-            "tailscale.com/hostname" = "argocd-${var.cluster}"
-            "tailscale.com/tags"     = "tag:app-argocd,tag:cluster-${var.cluster},tag:region-${var.region}"
+            "tailscale.com/hostname"    = "argocd-${var.cluster}"
+            "tailscale.com/tags"        = "tag:app-argocd,tag:cluster-${var.cluster},tag:region-${var.region}"
+            "tailscale.com/proxy-group" = "ingress"
           }
           tls = true
         }
