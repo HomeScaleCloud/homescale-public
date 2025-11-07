@@ -136,6 +136,7 @@ resource "tailscale_acl" "acl" {
       "autoApprovers": {
           "services": {
               "tag:k8s": ["tag:k8s"],
+              "tag:app": ["tag:app"],
           },
       }
     }
