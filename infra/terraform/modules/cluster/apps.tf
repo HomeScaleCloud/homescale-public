@@ -412,9 +412,6 @@ locals {
       targetRevision = "1.86.2"
       namespace      = "tailscale"
       values = {
-        apiServerProxyConfig = {
-          mode = "true"
-        }
         proxyConfig = {
           defaultTags = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
         }
