@@ -1,6 +1,6 @@
 resource "tailscale_oauth_client" "k8s_operator" {
   description = "k8s-${var.cluster}"
-  scopes      = ["devices:core", "auth_keys"]
+  scopes      = ["devices:core", "auth_keys", "services"]
   tags        = ["tag:k8s", "tag:app", "tag:app-argocd", "tag:app-ha", "tag:app-metrics", "tag:cluster-${var.cluster}", "tag:region-${var.region}"]
 }
 
