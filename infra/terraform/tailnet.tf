@@ -132,6 +132,12 @@ resource "tailscale_acl" "acl" {
           "attr": ["mullvad"]
         }
       ],
+
+      "autoApprovers": {
+          "services": {
+              "tag:k8s": ["tag:k8s"],
+          },
+      }
     }
   EOF
 }
