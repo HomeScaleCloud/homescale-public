@@ -19,7 +19,7 @@ locals {
       repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "cert-manager"
-      enabled        = var.app_cert_manager_crs_enabled
+      enabled        = var.app_cert_manager_enabled
     },
     {
       releaseName    = "external-dns"
@@ -52,7 +52,7 @@ locals {
       repoURL        = "ghcr.io/homescalecloud/helm"
       targetRevision = "0.1.0"
       namespace      = "external-dns"
-      enabled        = var.app_external_dns_crs_enabled
+      enabled        = var.app_external_dns_enabled
     },
     {
       releaseName    = "generic-device-plugin"
@@ -422,6 +422,19 @@ locals {
             "tag:cluster-${var.cluster}",
             "tag:region-${var.region}"
           ]
+        }
+      }
+      enabled = var.app_tailscale_enabled
+    },
+    {
+      releaseName    = "tailscale-crs"
+      chart          = "tailscale-crs"
+      repoURL        = "ghcr.io/homescalecloud/helm"
+      targetRevision = "0.1.0"
+      namespace      = "tailscale"
+      values = {
+        cluster = {
+          name = var.cluster
         }
       }
       enabled = var.app_tailscale_enabled
