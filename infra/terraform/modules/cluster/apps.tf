@@ -419,7 +419,7 @@ locals {
           defaultTags = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
         }
         operatorConfig = {
-          hostname = "k8s-${var.cluster}"
+          hostname = "ts-operator-${var.cluster}"
           defaultTags = [
             "tag:k8s",
             "tag:cluster-${var.cluster}",
@@ -437,7 +437,8 @@ locals {
       namespace      = "tailscale"
       values = {
         cluster = {
-          name = var.cluster
+          name   = var.cluster
+          region = var.region
         }
       }
       enabled = var.app_tailscale_enabled
