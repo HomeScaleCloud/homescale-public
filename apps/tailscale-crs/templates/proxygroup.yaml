@@ -4,7 +4,7 @@ metadata:
   name: k8s-{{ .Values.cluster.name }}
 spec:
   type: kube-apiserver
-  replicas: 2
+  replicas: {{ .Values.kubeProxy.replicas }}
   tags: ["tag:k8s", "tag:cluster-{{ .Values.cluster.name }}", "tag:region-{{ .Values.cluster.region }}"]
   kubeAPIServer:
     mode: auth
@@ -15,6 +15,6 @@ metadata:
   name: ingress
 spec:
   type: ingress
-  replicas: 2
+  replicas: {{ .Values.ingressProxy.replicas }}
   tags: ["tag:app", "tag:cluster-{{ .Values.cluster.name }}", "tag:region-{{ .Values.cluster.region }}"]
   hostnamePrefix: ingress-{{ .Values.cluster.name }}
