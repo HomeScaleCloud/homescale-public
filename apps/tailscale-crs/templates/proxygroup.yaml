@@ -5,6 +5,6 @@ metadata:
 spec:
   type: kube-apiserver
   replicas: 2
-  tags: ["tag:k8s"]
+  tags: ["tag:k8s", "tag:cluster-{{ .Values.cluster.name }}", "tag:region-{{ .Values.cluster.region }}"]
   kubeAPIServer:
     mode: auth
