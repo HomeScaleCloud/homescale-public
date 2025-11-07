@@ -413,7 +413,7 @@ locals {
       namespace      = "tailscale"
       values = {
         apiServerProxyConfig = {
-          allowImpersonation = true
+          allowImpersonation = "true"
         }
         proxyConfig = {
           defaultTags = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
