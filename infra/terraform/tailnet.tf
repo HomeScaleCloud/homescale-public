@@ -121,6 +121,7 @@ resource "tailscale_acl" "acl" {
 
         "tag:node": [],
         "tag:github-actions": [],
+        "tag:tv": [],
 
         "tag:region-boa1": ["tag:k8s"],
         "tag:cluster-atlas": ["tag:k8s"]
