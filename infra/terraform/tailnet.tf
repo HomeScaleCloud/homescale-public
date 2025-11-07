@@ -137,6 +137,9 @@ resource "tailscale_acl" "acl" {
           "services": {
               "tag:k8s": ["tag:k8s"],
               "tag:app": ["tag:app"],
+              "tag:app-argocd": ["tag:app"],
+              "tag:app-ha": ["tag:app"],
+              "tag:app-metrics": ["tag:app"],
           },
       }
     }
