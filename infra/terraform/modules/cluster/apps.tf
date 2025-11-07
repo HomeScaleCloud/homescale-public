@@ -199,8 +199,9 @@ locals {
             enabled          = true
             ingressClassName = "tailscale"
             annotations = {
-              "tailscale.com/hostname" = "metrics-${var.cluster}"
-              "tailscale.com/tags"     = "tag:app-metrics,tag:cluster-${var.cluster},tag:region-${var.region}"
+              "tailscale.com/hostname"    = "metrics-${var.cluster}"
+              "tailscale.com/tags"        = "tag:app-metrics,tag:cluster-${var.cluster},tag:region-${var.region}"
+              "tailscale.com/proxy-group" = "ingress"
             }
             hosts = ["metrics-${var.cluster}.${var.tailscale_tailnet}"]
             tls = [
