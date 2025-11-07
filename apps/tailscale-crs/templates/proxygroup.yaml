@@ -17,4 +17,4 @@ spec:
   type: ingress
   replicas: 2
   tags: ["tag:app", "tag:cluster-{{ .Values.cluster.name }}", "tag:region-{{ .Values.cluster.region }}"]
-  hostnamePrefix: {{ .Values.cluster.name }}
+  hostnamePrefix: ingress-{{ .Values.cluster.name }}
