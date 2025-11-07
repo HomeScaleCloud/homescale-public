@@ -8,7 +8,7 @@ resource "tailscale_tailnet_key" "node" {
   reusable      = true
   ephemeral     = false
   preauthorized = true
-  expiry        = 1200
+  expiry        = 2592000
   description   = "Node Key"
   tags          = ["tag:node", "tag:cluster-${var.cluster}", "tag:region-${var.region}"]
 }
