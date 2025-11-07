@@ -137,17 +137,7 @@ variable "app_cert_manager_enabled" {
   default = true
 }
 
-variable "app_cert_manager_crs_enabled" {
-  type    = bool
-  default = true
-}
-
 variable "app_external_dns_enabled" {
-  type    = bool
-  default = true
-}
-
-variable "app_external_dns_crs_enabled" {
   type    = bool
   default = true
 }
