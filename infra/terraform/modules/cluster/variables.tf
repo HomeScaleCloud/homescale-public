@@ -182,6 +182,11 @@ variable "app_nfs_provisioner_enabled" {
   default = false
 }
 
+variable "app_homecraft_enabled" {
+  type    = bool
+  default = false
+}
+
 variable "app_onepassword_enabled" {
   type    = bool
   default = true
