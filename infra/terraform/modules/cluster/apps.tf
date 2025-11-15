@@ -151,6 +151,35 @@ locals {
       enabled = var.app_librespeed_enabled
     },
     {
+      releaseName    = "homecraft"
+      chart          = "minecraft"
+      repoURL        = "https://itzg.github.io/minecraft-server-charts/"
+      targetRevision = "5.0.0"
+      namespace      = "homecraft"
+      values = {
+        minecraftServer = {
+          eula        = "TRUE"
+          type        = "PAPER"
+          gameMode    = "creative"
+          ops         = "m4xm0rris"
+          motd        = "homecraft on ${var.cluster}-${var.region}"
+          serviceType = "LoadBalancer"
+          serviceAnnotations = {
+            "tailscale.com/hostname" = "homecraft-${var.cluster}"
+            "tailscale.com/tags"     = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
+          }
+          loadBalancerClass = "tailscale"
+        }
+        persistence = {
+          dataDir = {
+            enabled = true
+            size    = "2Gi"
+          }
+        }
+      }
+      enabled = var.app_homecraft_enabled
+    },
+    {
       releaseName    = "metrics"
       chart          = "kube-prometheus-stack"
       repoURL        = "https://prometheus-community.github.io/helm-charts"
