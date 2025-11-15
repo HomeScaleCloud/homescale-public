@@ -167,8 +167,9 @@ locals {
           loadBalancerClass = "tailscale"
         }
         serviceAnnotations = {
-          "tailscale.com/hostname" = "homecraft-${var.cluster}"
-          "tailscale.com/tags"     = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
+          "tailscale.com/hostname"    = "homecraft-${var.cluster}"
+          "tailscale.com/tags"        = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
+          "tailscale.com/proxy-group" = "ingress"
         }
         persistence = {
           dataDir = {
