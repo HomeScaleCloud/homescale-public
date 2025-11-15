@@ -161,11 +161,3 @@ resource "tailscale_webhook" "slack" {
   provider_type = "slack"
   subscriptions = ["exitNodeIPForwardingNotEnabled", "subnetIPForwardingNotEnabled", "policyUpdate", "userCreated", "userRoleUpdated", "nodeNeedsApproval"]
 }
-
-resource "tailscale_tailnet_key" "node_key" {
-  reusable            = true
-  preauthorized       = true
-  recreate_if_invalid = "always"
-  description         = "Node key"
-  tags                = ["tag:node"]
-}
