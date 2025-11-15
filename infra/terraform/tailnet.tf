@@ -7,7 +7,7 @@ resource "tailscale_acl" "acl" {
         {
           "action": "accept",
           "src": ["autogroup:member"],
-          "dst": ["tag:app:443"]
+          "dst": ["tag:app:*"]
         },
         {
           "action": "accept",
