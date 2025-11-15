@@ -40,9 +40,3 @@ data "onepassword_item" "tailscale_slack" {
   vault = "github-actions"
   title = "tailscale-slack"
 }
-
-resource "onepassword_item" "tailscale_node_key" {
-  vault    = data.onepassword_vault.common.uuid
-  title    = "tailscale-node-key"
-  password = tailscale_tailnet_key.node_key.key
-}
