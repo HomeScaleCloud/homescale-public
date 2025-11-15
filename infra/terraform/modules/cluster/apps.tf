@@ -158,17 +158,17 @@ locals {
       namespace      = "homecraft"
       values = {
         minecraftServer = {
-          eula        = "TRUE"
-          type        = "PAPER"
-          gameMode    = "creative"
-          ops         = "m4xm0rris"
-          motd        = "homecraft on ${var.cluster}-${var.region}"
-          serviceType = "LoadBalancer"
-          serviceAnnotations = {
-            "tailscale.com/hostname" = "homecraft-${var.cluster}"
-            "tailscale.com/tags"     = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
-          }
+          eula              = "TRUE"
+          type              = "PAPER"
+          gameMode          = "creative"
+          ops               = "m4xm0rris"
+          motd              = "homecraft on ${var.cluster}-${var.region}"
+          serviceType       = "LoadBalancer"
           loadBalancerClass = "tailscale"
+        }
+        serviceAnnotations = {
+          "tailscale.com/hostname" = "homecraft-${var.cluster}"
+          "tailscale.com/tags"     = "tag:app,tag:cluster-${var.cluster},tag:region-${var.region}"
         }
         persistence = {
           dataDir = {
