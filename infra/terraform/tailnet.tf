@@ -37,6 +37,11 @@ resource "tailscale_acl" "acl" {
           "src": ["group:team-infra-plat@homescale.cloud"],
           "dst": ["tag:app-metrics:443"]
         },
+        {
+          "action": "accept",
+          "src": ["rainmitch.personal@outlook.com"],
+          "dst": ["tag:app-metrics:443"]
+        },
 
         // Clusters + Nodes
         {
