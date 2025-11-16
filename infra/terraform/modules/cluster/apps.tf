@@ -187,6 +187,28 @@ locals {
       targetRevision = "78.3.0"
       namespace      = "metrics"
       values = {
+        prometheus-node-exporter = {
+          prometheus = {
+            monitor = {
+              metricRelabelings = [
+                {
+                  sourceLabels = ["__meta_kubernetes_pod_node_name"]
+                  separator    = ";"
+                  regex        = "^(.*)$"
+                  targetLabel  = "instance"
+                  replacement  = "$1"
+                  action       = "replace"
+                },
+                {
+                  sourceLabels = ["nodename"]
+                  targetLabel  = "instance"
+                  regex        = "([^:]+)(:[0-9]+)?"
+                  replacement  = "${1}"
+                }
+              ]
+            }
+          }
+        }
         grafana = {
           defaultDashboardsEnabled = false
           service = {
