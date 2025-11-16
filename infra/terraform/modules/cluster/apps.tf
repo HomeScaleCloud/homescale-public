@@ -192,7 +192,7 @@ locals {
             monitor = {
               metricRelabelings = [
                 {
-                  sourceLabels = ["__meta_kubernetes_pod_node_name"]
+                  sourceLabels = "[__meta_kubernetes_pod_node_name]"
                   separator    = ";"
                   regex        = "^(.*)$"
                   targetLabel  = "instance"
@@ -200,7 +200,7 @@ locals {
                   action       = "replace"
                 },
                 {
-                  sourceLabels = ["nodename"]
+                  sourceLabels = "[nodename]"
                   targetLabel  = "instance"
                   regex        = "([^:]+)(:[0-9]+)?"
                   replacement  = "${1}"
