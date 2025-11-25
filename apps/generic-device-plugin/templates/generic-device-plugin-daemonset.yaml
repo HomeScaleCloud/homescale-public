@@ -3,7 +3,7 @@ kind: DaemonSet
 metadata:
   name: {{ .Release.Name }}
   labels:
-    app.kubernetes.io/name: generic-device-plugin
+    app.homescale.cloud/name: {{ .Release.Name }}
 spec:
   selector:
     matchLabels:
@@ -28,7 +28,7 @@ spec:
               groups:
                 - count: 1000
                   paths:
-                    - path: /dev/net/tun
+                    - path: {{ .Values.devPath }}
           name: generic-device-plugin
           resources:
             requests:
