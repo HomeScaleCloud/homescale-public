@@ -1,6 +1,7 @@
 extends: default
 ignore: |
   apps/*/templates/**
+  deploy/*/templates/**
 rules:
   truthy: disable
   document-start: disable
