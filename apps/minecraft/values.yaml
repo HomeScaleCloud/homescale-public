@@ -1,0 +1,17 @@
+minecraft:
+  minecraftServer:
+    eula: "{{ .Values.global.mcEula }}"
+    type: "{{ .Values.global.type }}"
+    gameMode: "{{ .Values.global.gameMode }}"
+    ops: "{{ .Values.global.ops }}"
+    motd: "{{ .Values.global.motd }}"
+    serviceType: "LoadBalancer"
+    loadBalancerClass: "tailscale"
+  serviceAnnotations:
+    "tailscale.com/hostname": "mc-{{ .Values.global.name }}-{{ .Values.global.cluster }}"
+    "tailscale.com/tags": "tag:app,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
+    "tailscale.com/proxy-group": "ingress"
+  persistence:
+    dataDir:
+      enabled: true
+      size: "2Gi"
