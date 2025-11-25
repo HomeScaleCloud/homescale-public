@@ -1,0 +1,178 @@
+global:
+  secrets:
+    grafana_oidc_client_id: ""
+    grafana_oidc_client_secret: ""
+    entra_tenant_id: ""
+
+nfs:
+  server: ""
+  path: ""
+
+apps:
+  cert-manager:
+    enabled: true
+    chart: cert-manager
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: cert-manager
+    syncOptions:
+      - CreateNamespace=true
+
+  external-dns:
+    enabled: true
+    chart: external-dns
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: external-dns
+    syncOptions:
+      - CreateNamespace=true
+
+  generic-device-plugin:
+    enabled: true
+    chart: generic-device-plugin
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: kube-system
+    syncOptions:
+      - CreateNamespace=true
+
+  home-assistant:
+    enabled: false
+    chart: home-assistant
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: home-assistant
+    syncOptions:
+      - CreateNamespace=true
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+        tailnet: {{ .Values.global.tailnet }}
+
+  homepage:
+    enabled: false
+    chart: homepage
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: homepage
+    syncOptions:
+      - CreateNamespace=true
+    values:
+      ingress:
+        host: "homescale.cloud"
+
+  librespeed:
+    enabled: true
+    chart: librespeed
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: librespeed
+    syncOptions:
+      - CreateNamespace=true
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+        tailnet: {{ .Values.global.tailnet }}
+
+  minecraft:
+    enabled: false
+    chart: minecraft
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: minecraft
+    syncOptions:
+      - CreateNamespace=true
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+        name: "{{ .Values.global.minecraft.name }}"
+        mcEula: "TRUE"
+        type: "PAPER"
+        gameMode: "creative"
+        ops: "m4xm0rris"
+        motd: "{{ .Values.global.minecraft.name }} - {{ .Values.global.minecraft.motd }}"
+
+  metrics:
+    enabled: true
+    chart: metrics
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: metrics
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+        tailnet: {{ .Values.global.tailnet }}
+
+  node-feature-discovery:
+    enabled: true
+    chart: node-feature-discovery
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: kube-system
+    syncOptions:
+      - CreateNamespace=true
+
+  nfs-provisioner:
+    enabled: true
+    chart: nfs-provisioner
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: nfs-provisioner
+    syncOptions:
+      - CreateNamespace=true
+
+  onepassword:
+    enabled: true
+    chart: onepassword
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: onepassword
+    syncOptions:
+      - CreateNamespace=true
+
+  rbac:
+    enabled: true
+    chart: rbac
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: rbac
+    syncOptions:
+      - CreateNamespace=true
+
+  rook-ceph:
+    enabled: true
+    chart: rook-ceph
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: rook-ceph
+    syncOptions:
+      - CreateNamespace=true
+
+  tailscale:
+    enabled: true
+    chart: tailscale
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: tailscale
+    syncOptions:
+      - CreateNamespace=true
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+
+  trivy:
+    enabled: true
+    chart: trivy
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: trivy-system
+    syncOptions:
+      - CreateNamespace=true
