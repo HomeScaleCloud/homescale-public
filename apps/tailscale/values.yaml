@@ -1,0 +1,16 @@
+kubeProxy:
+  replicas: 2
+ingressProxy:
+  replicas: 3
+
+tailscale-operator:
+  apiServerProxyConfig:
+    allowImpersonation: "true"
+  proxyConfig:
+    defaultTags: "tag:app,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
+  operatorConfig:
+    hostname: "ts-operator-{{ .Values.global.cluster }}"
+    defaultTags:
+      - "tag:k8s"
+      - "tag:cluster-{{ .Values.global.cluster }}"
+      - "tag:region-{{ .Values.global.region }}"
