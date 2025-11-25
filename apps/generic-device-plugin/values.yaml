@@ -1,3 +1,4 @@
 image:
   repository: ghcr.io/squat/generic-device-plugin
   tag: "0f7fddf166f17d58107d9811b53bec74e4d52e7c"  # pragma: allowlist secret
+devPath: /dev/net/tun
