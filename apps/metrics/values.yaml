@@ -21,7 +21,7 @@ kube-prometheus-stack:
 
     grafana.ini:
       server:
-        root_url: "https://metrics-{{ .Values.global.cluster }}.{{ .Values.global.tailnet }}"
+        root_url: "https://metrics-{{ .Values.global.cluster }}.tempel-carp.ts.net"
       auth:
         disable_login_form: true
       auth.generic_oauth:
@@ -57,10 +57,10 @@ kube-prometheus-stack:
         tailscale.com/tags: "tag:app-metrics,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
         tailscale.com/proxy-group: "ingress"
       hosts:
-        - "metrics-{{ .Values.global.cluster }}.{{ .Values.global.tailnet }}"
+        - "metrics-{{ .Values.global.cluster }}.tempel-carp.ts.net"
       tls:
         - hosts:
-            - "metrics-{{ .Values.global.cluster }}.{{ .Values.global.tailnet }}"
+            - "metrics-{{ .Values.global.cluster }}.tempel-carp.ts.net"
 
     assertNoLeakedSecrets: false
 

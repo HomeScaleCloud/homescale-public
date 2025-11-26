@@ -3,7 +3,7 @@ image:
   tag: "5.4.20240804"
 ingress:
   enabled: true
-  host: "librespeed-{{ .Values.global.cluster }}.{{ .Values.global.tailnet }}"
+  host: "librespeed-{{ .Values.global.cluster }}.tempel-carp.ts.net"
   annotations:
     "tailscale.com/hostname": "librespeed-{{ .Values.global.cluster }}"
     "tailscale.com/tags": "tag:app,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"

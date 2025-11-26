@@ -45,7 +45,6 @@ apps:
       global:
         cluster: {{ .Values.global.cluster }}
         region: {{ .Values.global.region }}
-        tailnet: {{ .Values.global.tailnet }}
 
   homepage:
     enabled: false
@@ -67,7 +66,6 @@ apps:
       global:
         cluster: {{ .Values.global.cluster }}
         region: {{ .Values.global.region }}
-        tailnet: {{ .Values.global.tailnet }}
 
   minecraft:
     enabled: false
@@ -98,7 +96,6 @@ apps:
       global:
         cluster: {{ .Values.global.cluster }}
         region: {{ .Values.global.region }}
-        tailnet: {{ .Values.global.tailnet }}
 
   node-feature-discovery:
     enabled: true
