@@ -1,0 +1,17 @@
+global:
+  cluster: atlas
+  region: boa1
+  tailnet: tempel-carp.ts.net
+
+apps:
+  generic-device-plugin-zigbee:
+    enabled: true
+  home-assistant:
+    enabled: true
+  nfs-provisioner:
+    enabled: true
+    values:
+      nfs-subdir-external-provisioner:
+        nfs:
+          server: 10.1.245.4
+          path: /mnt/data/apps
