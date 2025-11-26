@@ -6,6 +6,10 @@ resource "kubernetes_manifest" "argocd_app" {
     metadata = {
       name      = "homescale-apps-${var.cluster}"
       namespace = "argocd"
+      labels = {
+        "REDACTED/name"   = var.cluster
+        "REDACTED/region" = var.region
+      }
     }
     spec = {
       project = "default"
