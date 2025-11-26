@@ -70,7 +70,7 @@ resource "helm_release" "argocd" {
       }
 
       repoServer = {
-        extraArgs = ["--repo-cache-expiration=30m"]
+        extraArgs = ["--repo-cache-expiration=2m"]
       }
 
       server = {
@@ -104,7 +104,7 @@ resource "helm_release" "argocd" {
           "admin.enabled"                  = false
           "statusbadge.enabled"            = true
           "server.rbac.log.enforce.enable" = "true"
-          "timeout.reconciliation"         = "45s"
+          "timeout.hard.reconciliation"    = "90s"
         }
 
         rbac = {
