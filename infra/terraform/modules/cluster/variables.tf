@@ -41,18 +41,6 @@ variable "mgmt_interface" {
   default     = "eno1"
 }
 
-variable "nfs_server" {
-  description = "IP address of NFS server to use"
-  type        = string
-  default     = "null"
-}
-
-variable "nfs_path" {
-  description = "Path on NFS server to provision PVCs within"
-  type        = string
-  default     = "null"
-}
-
 variable "op_service_account_token" {
   description = "1Password Service Account Token"
   type        = string
@@ -129,85 +117,4 @@ variable "talos_version" {
 variable "talos_disk_selector" {
   description = "Selector for the disk to install Talos Linux to"
   type        = map(number)
-}
-
-# apps
-variable "app_cert_manager_enabled" {
-  type    = bool
-  default = true
-}
-
-variable "app_external_dns_enabled" {
-  type    = bool
-  default = true
-}
-
-variable "app_generic_device_plugin_enabled" {
-  type    = bool
-  default = true
-}
-
-variable "app_home_assistant_enabled" {
-  type    = bool
-  default = false
-}
-
-variable "app_homepage_enabled" {
-  type    = bool
-  default = false
-}
-
-variable "app_ingress_nginx_enabled" {
-  type    = bool
-  default = false
-}
-
-variable "app_librespeed_enabled" {
-  type    = bool
-  default = true
-}
-
-variable "app_metrics_enabled" {
-  type    = bool
-  default = true
-}
-
-variable "app_node_feature_discovery_enabled" {
-  type    = bool
-  default = true
-}
-
-variable "app_nfs_provisioner_enabled" {
-  type    = bool
-  default = false
-}
-
-variable "app_homecraft_enabled" {
-  type    = bool
-  default = false
-}
-
-variable "app_onepassword_enabled" {
-  type    = bool
-  default = true
-}
-
-variable "app_rbac_enabled" {
-  type    = bool
-  default = true
-}
-
-variable "app_rook_ceph_enabled" {
-  type    = bool
-  default = false
-}
-
-variable "app_tailscale_enabled" {
-  type    = bool
-  default = true
-}
-
-variable "app_trivy_operator_enabled" {
-  type    = bool
-  default = true
 }
