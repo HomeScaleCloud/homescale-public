@@ -25,8 +25,8 @@ metadata:
   namespace: argocd
   labels:
     xxx/name: {{ $appName }}
-    xxx/cluster: {{ .Values.global.cluster }}
-    xxx/region: {{ .Values.global.region }}
+    xxx/cluster: {{ $cluster }}
+    xxx/region: {{ $region }}
 spec:
   project: default
   source:
