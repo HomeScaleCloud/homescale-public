@@ -78,6 +78,15 @@ jobs:
             echo "Non-PR event; building all discovered apps."
           fi
 
+          # Ensure matrices are never empty to avoid workflow errors; when there are
+          # no targets we insert a skip entry consumed by job-level conditions.
+          if [[ "$(jq 'length' <<<"$docker_json")" -eq 0 ]]; then
+            docker_json='[{"name":"skip","context":".","skip":true}]'
+          fi
+          if [[ "$(jq 'length' <<<"$helm_json")" -eq 0 ]]; then
+            helm_json='[{"name":"skip","path":".","skip":true}]'
+          fi
+
           echo "docker=$(jq -c . <<<"$docker_json")" >> "$GITHUB_OUTPUT"
           echo "helm=$(jq -c . <<<"$helm_json")" >> "$GITHUB_OUTPUT"
 
@@ -90,10 +99,16 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.discover.outputs.docker) }}
     steps:
+      - name: Skip (no Docker targets)
+        if: ${{ matrix.skip == 'true' }}
+        run: echo "No Docker builds required for this run."
+
       - name: Checkout
+        if: ${{ matrix.skip != 'true' }}
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
       - name: Login to ghcr (Docker)
+        if: ${{ matrix.skip != 'true' }}
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
@@ -102,6 +117,7 @@ jobs:
 
       - name: Get image tags
         id: meta
+        if: ${{ matrix.skip != 'true' }}
         uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5.9.0
         with:
           images: ghcr.io/homescalecloud/${{ matrix.name }}
@@ -110,6 +126,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
+        if: ${{ matrix.skip != 'true' }}
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: ${{ matrix.context }}
@@ -119,6 +136,7 @@ jobs:
           platforms: linux/amd64
 
       - name: Run Trivy scan
+        if: ${{ matrix.skip != 'true' }}
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
         with:
           image-ref: ghcr.io/homescalecloud/${{ matrix.name }}:${{ github.sha }}
@@ -137,13 +155,20 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.discover.outputs.helm) }}
     steps:
+      - name: Skip (no Helm targets)
+        if: ${{ matrix.skip == 'true' }}
+        run: echo "No Helm builds required for this run."
+
       - name: Checkout
+        if: ${{ matrix.skip != 'true' }}
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
       - name: Set up Helm
+        if: ${{ matrix.skip != 'true' }}
         uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
         with:
           version: v3.18.6
       - name: Login to ghcr (Docker)
+        if: ${{ matrix.skip != 'true' }}
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
@@ -151,22 +176,26 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Login to ghcr (Helm OCI)
         shell: bash
+        if: ${{ matrix.skip != 'true' }}
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username "${{ github.actor }}" --password-stdin
       - name: Get Helm dependencies
+        if: ${{ matrix.skip != 'true' }}
         run: |
           helm dependency build "${{ matrix.path }}"
       - name: Package Helm chart
+        if: ${{ matrix.skip != 'true' }}
         run: |
           helm package "${{ matrix.path }}"
       - name: Upload chart artifacts
+        if: ${{ matrix.skip != 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: helm-${{ matrix.name }}
           path: ./${{ matrix.name }}-*.tgz
           if-no-files-found: error
       - name: Push Helm chart (main only)
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && matrix.skip != 'true'
         shell: bash
         run: |
           # Derive version without needing yq installed
