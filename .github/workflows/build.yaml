@@ -18,11 +18,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0
       - name: Find Docker & Helm targets
         id: set
         shell: bash
         run: |
           set -euo pipefail
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          head="${{ github.sha }}"
+          if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then
+            # Fallback for events without a usable base SHA (e.g. first push)
+            if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              base="HEAD^"
+            else
+              base="$head"
+            fi
+          fi
+          changed_apps="$(git diff --name-only "$base" "$head" -- 'apps/**' | awk -F/ 'NF>=2{print $2}' | sort -u | jq -R . | jq -cs '.')"
+
           # Find Dockerfiles under apps/** (supports apps/foo/src/Dockerfile or apps/foo/Dockerfile)
           docker_json='[]'
           while IFS= read -r df; do
@@ -46,6 +60,14 @@ jobs:
             name="$(basename "$chart_dir")"
             helm_json="$(jq --arg n "$name" --arg p "$chart_dir" '. + [{name:$n, path:$p}]' <<<"$helm_json")"
           done < <(find apps -maxdepth 2 -type f -name Chart.yaml | sort)
+
+          if [[ "$changed_apps" != "[]" ]]; then
+            docker_json="$(jq --argjson apps "$changed_apps" 'map(select(.name as $n | $apps | index($n)))' <<<"$docker_json")"
+            helm_json="$(jq --argjson apps "$changed_apps" 'map(select(.name as $n | $apps | index($n)))' <<<"$helm_json")"
+          else
+            docker_json='[]'
+            helm_json='[]'
+          fi
           echo "docker=$(jq -c . <<<"$docker_json")" >> "$GITHUB_OUTPUT"
           echo "helm=$(jq -c . <<<"$helm_json")" >> "$GITHUB_OUTPUT"
 
