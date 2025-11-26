@@ -1,11 +1,11 @@
 apiVersion: tailscale.com/v1alpha1
 kind: ProxyGroup
 metadata:
-  name: k8s-{{ .Values.cluster.name }}
+  name: k8s-{{ .Values.global.cluster }}
 spec:
   type: kube-apiserver
   replicas: {{ .Values.kubeProxy.replicas }}
-  tags: ["tag:k8s", "tag:cluster-{{ .Values.cluster.name }}", "tag:region-{{ .Values.cluster.region }}"]
+  tags: ["tag:k8s", "tag:cluster-{{ .Values.global.cluster }}", "tag:region-{{ .Values.global.cluster }}"]
   kubeAPIServer:
     mode: auth
 ---
@@ -16,5 +16,5 @@ metadata:
 spec:
   type: ingress
   replicas: {{ .Values.ingressProxy.replicas }}
-  tags: ["tag:app", "tag:cluster-{{ .Values.cluster.name }}", "tag:region-{{ .Values.cluster.region }}"]
-  hostnamePrefix: ingress-{{ .Values.cluster.name }}
+  tags: ["tag:app", "tag:cluster-{{ .Values.global.cluster }}", "tag:region-{{ .Values.global.region }}"]
+  hostnamePrefix: ingress-{{ .Values.global.cluster }}

@@ -1,0 +1,159 @@
+apps:
+  cert-manager:
+    enabled: true
+    chart: cert-manager
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: cert-manager
+
+  external-dns:
+    enabled: true
+    chart: external-dns
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: external-dns
+
+  generic-device-plugin-tun:
+    enabled: true
+    chart: generic-device-plugin
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: kube-system
+    values: |
+      devPath: /dev/net/tun
+
+  generic-device-plugin-zigbee:
+    enabled: false
+    chart: generic-device-plugin
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: kube-system
+    values: |
+      devPath: /dev/ttyUSB0
+
+  home-assistant:
+    enabled: false
+    chart: home-assistant
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: home-assistant
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+        tailnet: {{ .Values.global.tailnet }}
+
+  homepage:
+    enabled: false
+    chart: homepage
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: homepage
+    values: |
+      ingress:
+        host: "homescale.cloud"
+
+  librespeed:
+    enabled: true
+    chart: librespeed
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: librespeed
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+        tailnet: {{ .Values.global.tailnet }}
+
+  minecraft:
+    enabled: false
+    chart: minecraft
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: minecraft
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+        name: {{ .Values.global.minecraft.name }}
+        mcEula: "TRUE"
+        type: "PAPER"
+        gameMode: "creative"
+        ops: "m4xm0rris"
+        motd: "{{ .Values.global.minecraft.name }} - {{ .Values.global.minecraft.motd }}"
+
+  metrics:
+    enabled: true
+    chart: metrics
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: metrics
+    syncOptions:
+      - ServerSideApply=true
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+        tailnet: {{ .Values.global.tailnet }}
+
+  node-feature-discovery:
+    enabled: true
+    chart: node-feature-discovery
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: kube-system
+
+  nfs-provisioner:
+    enabled: false
+    chart: nfs-provisioner
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: nfs-provisioner
+
+  onepassword:
+    enabled: true
+    chart: onepassword
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: onepassword
+
+  rbac:
+    enabled: true
+    chart: rbac
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: rbac
+
+  rook-ceph:
+    enabled: false
+    chart: rook-ceph
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: rook-ceph
+
+  tailscale:
+    enabled: true
+    chart: tailscale
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: tailscale
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+      tailscale-operator:
+        proxyConfig:
+          defaultTags: "tag:app,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
+        operatorConfig:
+          hostname: "ts-operator-{{ .Values.global.cluster }}"
+          defaultTags:
+            - "tag:k8s"
+            - "tag:cluster-{{ .Values.global.cluster }}"
+            - "tag:region-{{ .Values.global.region }}"
+
+  trivy:
+    enabled: true
+    chart: trivy
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: trivy-system
