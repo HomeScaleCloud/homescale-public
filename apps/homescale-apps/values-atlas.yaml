@@ -31,7 +31,9 @@ apps:
       minecraft:
         minecraftServer:
           type: "PAPER"
-          gameMode: "creative"
+          gameMode: creative
           ops: "m4xm0rris"
           motd: "HomeCraft - Powered by HomeScale Cloud"
           icon: "https://raw.githubusercontent.com/HomeScaleCloud/homescale-public/c6e2a1e5698e5f0a319638e5877e25e83b50ba7d/media/homescale-icon.png"
+          maxPlayers: 50
+          spawnMonsters: "false"
