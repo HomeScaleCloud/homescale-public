@@ -25,8 +25,8 @@ metadata:
   namespace: argocd
   labels:
     app.homescale.cloud/name: {{ $appName }}
-    app.homescale.cloud/cluster: {{ .Values.global.cluster }}
-    app.homescale.cloud/region: {{ .Values.global.region }}
+    app.homescale.cloud/cluster: {{ $cluster }}
+    app.homescale.cloud/region: {{ $region }}
 spec:
   project: default
   source:

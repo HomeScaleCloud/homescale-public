@@ -1,9 +1,3 @@
-global:
-  secrets:
-    grafana_oidc_client_id: ""
-    grafana_oidc_client_secret: ""
-    entra_tenant_id: ""
-
 apps:
   cert-manager:
     enabled: true
@@ -25,7 +19,7 @@ apps:
     repoURL: ghcr.io/homescalecloud/helm
     targetRevision: 0.1.0
     namespace: kube-system
-    values:
+    values: |
       devPath: /dev/net/tun
 
   generic-device-plugin-zigbee:
@@ -34,7 +28,7 @@ apps:
     repoURL: ghcr.io/homescalecloud/helm
     targetRevision: 0.1.0
     namespace: kube-system
-    values:
+    values: |
       devPath: /dev/ttyUSB0
 
   home-assistant:
@@ -55,7 +49,7 @@ apps:
     repoURL: ghcr.io/homescalecloud/helm
     targetRevision: 0.1.0
     namespace: homepage
-    values:
+    values: |
       ingress:
         host: "homescale.cloud"
 
@@ -81,7 +75,7 @@ apps:
       global:
         cluster: {{ .Values.global.cluster }}
         region: {{ .Values.global.region }}
-        name: "{{ .Values.global.minecraft.name }}"
+        name: {{ .Values.global.minecraft.name }}
         mcEula: "TRUE"
         type: "PAPER"
         gameMode: "creative"
@@ -147,6 +141,15 @@ apps:
       global:
         cluster: {{ .Values.global.cluster }}
         region: {{ .Values.global.region }}
+      tailscale-operator:
+        proxyConfig:
+          defaultTags: "tag:app,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
+        operatorConfig:
+          hostname: "ts-operator-{{ .Values.global.cluster }}"
+          defaultTags:
+            - "tag:k8s"
+            - "tag:cluster-{{ .Values.global.cluster }}"
+            - "tag:region-{{ .Values.global.region }}"
 
   trivy:
     enabled: true
