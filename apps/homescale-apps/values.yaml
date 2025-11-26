@@ -20,7 +20,9 @@ apps:
     targetRevision: 0.1.0
     namespace: kube-system
     values: |
-      devPath: /dev/net/tun
+      device:
+        name: tun
+        path: /dev/net/tun
 
   generic-device-plugin-zigbee:
     enabled: false
@@ -29,7 +31,9 @@ apps:
     targetRevision: 0.1.0
     namespace: kube-system
     values: |
-      devPath: /dev/ttyUSB0
+      device:
+        name: zigbee
+        path: /dev/ttyUSB0
 
   home-assistant:
     enabled: false
