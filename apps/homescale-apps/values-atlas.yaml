@@ -34,6 +34,6 @@ apps:
           gameMode: creative
           ops: "m4xm0rris"
           motd: "HomeCraft - Powered by HomeScale Cloud"
-          icon: "https://raw.githubusercontent.com/HomeScaleCloud/homescale-public/8302c6247630c7b793ce46af05cebfcdf976b486/media/homecraft.png"
+          icon: "https://raw.githubusercontent.com/HomeScaleCloud/homescale-public/main/media/homecraft.png"
           maxPlayers: 50
           spawnMonsters: false
