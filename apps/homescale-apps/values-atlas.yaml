@@ -5,8 +5,10 @@ global:
 apps:
   generic-device-plugin-zigbee:
     enabled: true
+
   home-assistant:
     enabled: true
+
   nfs-provisioner:
     enabled: true
     values:
@@ -14,3 +16,22 @@ apps:
         nfs:
           server: 10.1.245.4
           path: /mnt/data/apps
+
+  homecraft:
+    enabled: false
+    chart: minecraft
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: minecraft
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+        name: homecraft
+      minecraft:
+        minecraftServer:
+          type: "PAPER"
+          gameMode: "creative"
+          ops: "m4xm0rris"
+          motd: "HomeCraft - Powered by HomeScale Cloud"
+          icon: "https://raw.githubusercontent.com/HomeScaleCloud/homescale-public/c6e2a1e5698e5f0a319638e5877e25e83b50ba7d/media/homescale-icon.png"
