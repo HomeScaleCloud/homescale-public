@@ -130,7 +130,7 @@ jobs:
 
   helm:
     name: "Helm – ${{ matrix.name }}"
-    needs: [discover, docker]
+    needs: [discover]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
