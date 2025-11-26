@@ -18,7 +18,7 @@ apps:
           path: /mnt/data/apps
 
   homecraft:
-    enabled: false
+    enabled: true
     chart: minecraft
     repoURL: ghcr.io/homescalecloud/helm
     targetRevision: 0.1.0
