@@ -24,11 +24,11 @@ spec:
           args:
             - --device
             - |
-              name: tun
+              name: {{ .Values.device.name }}
               groups:
                 - count: 1000
                   paths:
-                    - path: {{ .Values.devPath }}
+                    - path: {{ .Values.device.path }}
           name: generic-device-plugin
           resources:
             requests:
