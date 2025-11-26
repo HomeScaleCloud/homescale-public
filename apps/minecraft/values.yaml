@@ -1,7 +1,12 @@
 minecraft:
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 500m
   minecraftServer:
     eula: "TRUE"
+    memory: 2048M
   persistence:
     dataDir:
       enabled: true
-      size: "2Gi"
+      Size: "2Gi"
