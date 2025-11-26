@@ -1,7 +1,6 @@
 global:
   cluster: atlas
   region: boa1
-  tailnet: tempel-carp.ts.net
 
 apps:
   generic-device-plugin-zigbee:

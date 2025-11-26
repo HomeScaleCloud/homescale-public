@@ -1,6 +1,5 @@
 {{- $cluster := required "Deployment invalid: .Values.global.cluster is required!" .Values.global.cluster -}}
 {{- $region  := required "Deployment invalid: .Values.global.region is required!" .Values.global.region -}}
-{{- $tailnet := required "Deployment invalid: .Values.global.tailnet (tailnet MagicDNS name) is required!" .Values.global.tailnet -}}
 
 {{- range $appName, $appConfig := .Values.apps }}
 {{- if not (hasKey $appConfig "enabled") }}

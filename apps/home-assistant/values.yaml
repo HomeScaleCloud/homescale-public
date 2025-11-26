@@ -4,7 +4,7 @@ image:
 ingress:
   enabled: true
   className: "tailscale"
-  host: "ha-{{ .Values.global.cluster }}.{{ .Values.global.tailnet }}"
+  host: "ha-{{ .Values.global.cluster }}.tempel-carp.ts.net"
   annotations:
     "tailscale.com/hostname": "ha-{{ .Values.global.cluster }}"
     "tailscale.com/tags": "tag:app-ha,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
