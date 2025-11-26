@@ -1,10 +1,6 @@
 minecraft:
   minecraftServer:
-    eula: "{{ .Values.global.mcEula }}"
-    type: "{{ .Values.global.type }}"
-    gameMode: "{{ .Values.global.gameMode }}"
-    ops: "{{ .Values.global.ops }}"
-    motd: "{{ .Values.global.motd }}"
+    eula: "TRUE"
     serviceType: "LoadBalancer"
     loadBalancerClass: "tailscale"
   serviceAnnotations:
