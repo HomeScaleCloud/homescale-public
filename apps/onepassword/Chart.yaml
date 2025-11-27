@@ -3,7 +3,6 @@ name: onepassword
 description: Helm chart for deploying 1Password Operator
 type: application
 version: 0.1.0
-appVersion: 1.15.0
 dependencies:
   - name: connect
     version: 1.15.0

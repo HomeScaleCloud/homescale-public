@@ -3,7 +3,6 @@ name: tailscale
 description: Helm chart for deploying Tailscale Operator
 type: application
 version: 0.1.0
-appVersion: 1.90.8
 dependencies:
   - name: tailscale-operator
     version: 1.90.9
