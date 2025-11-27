@@ -2,11 +2,13 @@ kube-prometheus-stack:
   prometheus-node-exporter:
     prometheus:
       monitor:
-        metricRelabelings:
-          - action: replace
-            sourceLabels:
-              - __meta_kubernetes_endpoint_node_name
+        relabelings:
+          - sourceLabels: [__meta_kubernetes_pod_node_name]
+            separator: ;
+            regex: ^(.*)$
             targetLabel: node
+            replacement: $1
+            action: replace
   grafana:
     envFromSecret: "op-grafana-oidc"  # pragma: allowlist secret
     defaultDashboardsEnabled: false
