@@ -49,7 +49,6 @@ resource "talos_machine_configuration_apply" "controlplane" {
                     "metrics",
                     "falco",
                     "tailscale",
-                    "trivy-system",
                     "home-assistant",
                   ]
                 }
