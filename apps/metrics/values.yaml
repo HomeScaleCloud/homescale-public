@@ -3,17 +3,10 @@ kube-prometheus-stack:
     prometheus:
       monitor:
         metricRelabelings:
-          - sourceLabels: ["__meta_kubernetes_pod_node_name"]
-            separator: ";"
-            regex: "^(.*)$"
-            targetLabel: "instance"
-            replacement: "$1"
-            action: "replace"
-          - action: "replace"
-            sourceLabels: ["node"]
-            targetLabel: "instance"
-            regex: "([^:]+)(:[0-9]+)?"
-            replacement: "${1}"
+          - action: replace
+            sourceLabels:
+              - __meta_kubernetes_endpoint_node_name
+            targetLabel: node
   grafana:
     envFromSecret: "op-grafana-oidc"  # pragma: allowlist secret
     defaultDashboardsEnabled: false
