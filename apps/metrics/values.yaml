@@ -116,9 +116,11 @@ kube-prometheus-stack:
         - name: default-with-location
           default: true
           metricRelabelings:
-            - targetLabel: cluster
+            - action: replace
+              targetLabel: cluster
               replacement: "{{ .Values.global.cluster }}"
-            - targetLabel: region
+            - action: replace
+              targetLabel: region
               replacement: "{{ .Values.global.region }}"
       externalLabels:
         cluster: "{{ .Values.global.cluster }}"
