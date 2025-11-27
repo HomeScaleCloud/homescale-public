@@ -1,4 +1,5 @@
 resource "kubernetes_manifest" "argocd_app" {
+  count      = (!var.init_stage_1 && !var.init_stage_2) ? 1 : 0
   depends_on = [helm_release.argocd]
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
