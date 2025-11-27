@@ -9,7 +9,8 @@ kube-prometheus-stack:
             targetLabel: "instance"
             replacement: "$1"
             action: "replace"
-          - sourceLabels: ["nodename"]
+          - action: "replace"
+            sourceLabels: ["nodename"]
             targetLabel: "instance"
             regex: "([^:]+)(:[0-9]+)?"
             replacement: "${1}"
