@@ -3,7 +3,6 @@ name: node-feature-discovery
 description: Helm chart for node-feature-discovery
 type: application
 version: 0.1.0
-appVersion: 0.16.0
 dependencies:
   - name: node-feature-discovery
     version: 0.18.3

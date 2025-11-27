@@ -3,7 +3,6 @@ name: external-dns
 description: Helm chart for deploying external-dns
 type: application
 version: 0.1.0
-appVersion: 1.18.0
 dependencies:
   - name: external-dns
     version: 1.19.0
