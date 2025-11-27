@@ -103,6 +103,14 @@ kube-prometheus-stack:
     annotations:
       argocd.argoproj.io/skip-health-check: "true"
     prometheusSpec:
+      scrapeClasses:
+        - name: default-with-location
+          default: true
+          metricRelabelings:
+            - targetLabel: cluster
+              replacement: "{{ .Values.global.cluster }}"
+            - targetLabel: region
+              replacement: "{{ .Values.global.region }}"
       externalLabels:
         cluster: "{{ .Values.global.cluster }}"
         region: "{{ .Values.global.region }}"
