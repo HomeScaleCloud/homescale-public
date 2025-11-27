@@ -3,4 +3,3 @@ name: homescale-apps
 description: ArgoCD App-of-Apps chart to manage cluster workloads
 type: application
 version: 0.1.0
-appVersion: "0.1.0"

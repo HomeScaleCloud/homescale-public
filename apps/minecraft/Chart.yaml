@@ -3,7 +3,6 @@ name: minecraft
 description: Helm chart for deploying Minecraft servers
 type: application
 version: 0.1.0
-appVersion: 4.23.0
 dependencies:
   - name: minecraft
     version: 4.26.4
