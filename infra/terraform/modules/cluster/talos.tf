@@ -139,7 +139,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
         install = {
           extensions = [
             {
-              image = "ghcr.io/siderolabs/tailscale:1.88.3"
+              image = "ghcr.io/siderolabs/tailscale:1.90.6"
             }
           ]
         }
