@@ -3,7 +3,6 @@ name: cert-manager
 description: Helm chart for cert-manager
 type: application
 version: 0.1.0
-appVersion: 1.19.1
 dependencies:
   - name: cert-manager
     version: 1.19.1
