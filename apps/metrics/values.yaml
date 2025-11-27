@@ -103,6 +103,15 @@ kube-prometheus-stack:
     annotations:
       argocd.argoproj.io/skip-health-check: "true"
     prometheusSpec:
+      additionalScrapeConfigs:
+        relabel_configs:
+          - target_label: cluster
+            replacement: "{{ .Values.global.cluster }}"
+          - target_label: region
+            replacement: "{{ .Values.global.region }}"
+      enableRemoteWriteReceiver: true
+      enableFeatures:
+        - remote-write-receiver
       podMonitorSelectorNilUsesHelmValues: false
       serviceMonitorSelectorNilUsesHelmValues: false
       serviceMonitorSelector: {}
