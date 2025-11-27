@@ -15,6 +15,7 @@ kube-prometheus-stack:
             replacement: "${1}"
 
   grafana:
+    envFromSecret: "op-grafana-oidc"  # pragma: allowlist secret
     defaultDashboardsEnabled: false
     service:
       type: ClusterIP
@@ -29,11 +30,7 @@ kube-prometheus-stack:
         name: "Entra ID"
         allow_sign_up: true
         auto_login: false
-        client_id: "{{ .Values.global.secrets.grafana_oidc_client_id }}"
-        client_secret: "{{ .Values.global.secrets.grafana_oidc_client_secret }}"
         scopes: "openid email profile offline_access User.Read"
-        auth_url: "https://login.microsoftonline.com/{{ .Values.global.secrets.entra_tenant_id }}/oauth2/v2.0/authorize"
-        token_url: "https://login.microsoftonline.com/{{ .Values.global.secrets.entra_tenant_id }}/oauth2/v2.0/token"
         role_attribute_path: "\"Admin\""
         role_attribute_strict: false
         allow_assign_grafana_admin: true
