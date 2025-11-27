@@ -1,5 +1,7 @@
 kube-prometheus-stack:
   prometheus-node-exporter:
+    extraArgs:
+      - --collector.netdev.address-info
     prometheus:
       monitor:
         relabelings:
