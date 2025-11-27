@@ -12,7 +12,7 @@ spec:
 apiVersion: tailscale.com/v1alpha1
 kind: ProxyGroup
 metadata:
-  name: ingress
+  name: ingress-{{ .Values.global.cluster }}
 spec:
   type: ingress
   replicas: {{ .Values.ingressProxy.replicas }}
