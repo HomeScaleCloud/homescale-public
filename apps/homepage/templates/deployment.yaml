@@ -16,6 +16,9 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: IfNotPresent
           securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
