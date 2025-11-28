@@ -31,7 +31,6 @@ spec:
               squat.ai/zigbee: 1
           {{- end }}
           securityContext:
-            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
