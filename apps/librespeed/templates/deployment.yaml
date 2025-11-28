@@ -15,7 +15,7 @@ spec:
     spec:
       initContainers:
         - name: init-s6-ownership
-          image: busybox:1.36.1
+          image: busybox:1.37.0
           imagePullPolicy: IfNotPresent
           command:
             - sh
