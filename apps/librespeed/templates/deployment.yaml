@@ -17,3 +17,8 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
