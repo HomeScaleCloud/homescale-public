@@ -13,12 +13,26 @@ spec:
       labels:
         app: {{ .Release.Name }}
     spec:
+      initContainers:
+        - name: init-s6-ownership
+          image: busybox:1.36.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - chown 1000:1000 /run
+          volumeMounts:
+            - name: run
+              mountPath: /run
       containers:
         - name: librespeed
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
+          volumeMounts:
+            - name: run
+              mountPath: /run
           securityContext:
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
@@ -27,3 +41,6 @@ spec:
             runAsGroup: 1000
             capabilities:
               drop: ["ALL"]
+      volumes:
+        - name: run
+          emptyDir: {}
