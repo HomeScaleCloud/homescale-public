@@ -69,11 +69,68 @@ resource "helm_release" "argocd" {
         enabled = true
       }
 
+      controller = {
+        metrics = {
+          enabled = true
+          serviceMonitor = {
+            enabled = true
+          }
+        }
+      }
+
+      dex = {
+        metrics = {
+          enabled = true
+          serviceMonitor = {
+            enabled = true
+          }
+        }
+      }
+
+      redis = {
+        metrics = {
+          enabled = true
+          serviceMonitor = {
+            enabled = true
+          }
+        }
+      }
+
       repoServer = {
         extraArgs = ["--repo-cache-expiration=2m"]
+        metrics = {
+          enabled = true
+          serviceMonitor = {
+            enabled = true
+          }
+        }
+      }
+
+      applicationSet = {
+        metrics = {
+          enabled = true
+          serviceMonitor = {
+            enabled = true
+          }
+        }
+      }
+
+      commitServer = {
+        metrics = {
+          enabled = true
+          serviceMonitor = {
+            enabled = true
+          }
+        }
       }
 
       server = {
+        metrics = {
+          enabled = true
+          serviceMonitor = {
+            enabled = true
+          }
+        }
         ingress = {
           enabled          = true
           ingressClassName = "tailscale"
@@ -126,6 +183,12 @@ resource "helm_release" "argocd" {
       }
 
       notifications = {
+        metrics = {
+          enabled = true
+          serviceMonitor = {
+            enabled = true
+          }
+        }
         subscriptions = <<-YAML
           - recipients:
               - slack:argocd
