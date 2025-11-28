@@ -34,7 +34,6 @@ spec:
             - name: run
               mountPath: /run
           securityContext:
-            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             runAsNonRoot: true
             runAsUser: 1000
