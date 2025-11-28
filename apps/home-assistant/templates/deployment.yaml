@@ -13,7 +13,7 @@ spec:
       labels:
         app: {{ .Release.Name }}
     spec:
-      hostNetwork: true
+      # hostNetwork: true
       containers:
         - name: home-assistant
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -32,11 +32,15 @@ spec:
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
+            # runAsNonRoot: true
+            # runAsUser: 1000
+            # runAsGroup: 1000
             capabilities:
               drop: ["ALL"]
+              add:
+                - NET_ADMIN
+                - NET_RAW
+                - NET_BROADCAST
       volumes:
         - name: {{ .Release.Name }}
           persistentVolumeClaim:
