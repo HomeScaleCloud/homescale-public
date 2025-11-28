@@ -113,6 +113,7 @@ resource "helm_release" "argocd" {
             p, role:argo-users, applications, get, *, allow
             p, role:argo-users, applications, refresh, *, allow
             p, role:argo-users, applications, sync, *, allow
+            p, role:argo-users, pods, delete, *, allow
             p, role:argo-users, projects, get, *, allow
             p, role:argo-users, repositories, get, *, allow
             p, role:argo-users, clusters, get, *, allow
