@@ -30,6 +30,11 @@ spec:
             requests:
               squat.ai/zigbee: 1
           {{- end }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
       volumes:
         - name: {{ .Release.Name }}
           persistentVolumeClaim:
