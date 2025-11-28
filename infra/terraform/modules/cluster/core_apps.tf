@@ -118,8 +118,8 @@ resource "helm_release" "argocd" {
             p, role:argo-users, repositories, get, *, allow
             p, role:argo-users, clusters, get, *, allow
             p, role:argo-users, accounts, get, *, allow
-            p, role:argo-users, logs, get, *, deny
-            p, role:argo-users, logs, get, */*, deny
+            p, role:argo-users, logs, get, *, allow
+            p, role:argo-users, logs, get, */*, allow
             g, team-infra-plat, role:argo-users
           CSV
         }
