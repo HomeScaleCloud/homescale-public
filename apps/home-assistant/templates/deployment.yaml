@@ -30,9 +30,6 @@ spec:
             requests:
               squat.ai/zigbee: 1
           {{- end }}
-          securityContext:
-            privileged: true
-            allowPrivilegeEscalation: true
       volumes:
         - name: {{ .Release.Name }}
           persistentVolumeClaim:
