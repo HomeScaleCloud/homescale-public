@@ -66,6 +66,18 @@ apps:
       global:
         cluster: {{ .Values.global.cluster }}
         region: {{ .Values.global.region }}
+      openspeedtest:
+        hosts:
+          - host: "speedtest-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+            paths:
+              - path: /
+                pathType: ImplementationSpecific
+        tls:
+          - hosts:
+              - "speedtest-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+        annotations:
+          "tailscale.com/hostname": "speedtest-{{ .Values.global.cluster }}"
+          "tailscale.com/tags": "tag:app,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
 
   minecraft:
     enabled: false
