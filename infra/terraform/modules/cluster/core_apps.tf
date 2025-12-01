@@ -243,3 +243,13 @@ resource "kubernetes_secret" "argocd_homescale_helm" {
     enableOCI = "true"
   }
 }
+
+resource "helm_release" "kro" {
+  count      = var.init_stage_1 ? 0 : 1
+  depends_on = [helm_release.cilium]
+  name       = "kro"
+  repository = "oci://registry.k8s.io/kro/charts/kro"
+  chart      = "kro"
+  version    = "0.4.1"
+  namespace  = "kro"
+}
