@@ -1,0 +1,17 @@
+openspeedtest:
+  image:
+    repository: openspeedtest/latest
+    tag: "v2.0.6"
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: true
+    hosts:
+      - "speedtest-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+    tls:
+      - hosts:
+          - "speedtest-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+    annotations:
+      "tailscale.com/hostname": "speedtest-{{ .Values.global.cluster }}"
+      "tailscale.com/tags": "tag:app,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
+    className: "tailscale"

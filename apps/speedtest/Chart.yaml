@@ -1,0 +1,9 @@
+apiVersion: v2
+name: speedtest
+description: Helm chart for OpenSpeedTest
+type: application
+version: 0.1.0
+dependencies:
+  - name: openspeedtest
+    version: 0.1.2
+    repository: https://openspeedtest.github.io/Helm-chart/
