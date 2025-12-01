@@ -37,3 +37,17 @@ apps:
           icon: "https://raw.githubusercontent.com/HomeScaleCloud/homescale-public/main/media/homecraft.png"
           maxPlayers: 50
           spawnMonsters: false
+
+  speedtest:
+    openspeedtest:
+      hosts:
+        - host: "speedtest-atlas.tempel-carp.ts.net"
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - hosts:
+            - "speedtest-atlas.tempel-carp.ts.net"
+      annotations:
+        "tailscale.com/hostname": "speedtest-atlas"
+        "tailscale.com/tags": "tag:app,tag:cluster-atlas,tag:region-boa1"
