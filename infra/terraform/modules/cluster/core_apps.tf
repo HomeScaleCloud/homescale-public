@@ -250,6 +250,6 @@ resource "helm_release" "kro" {
   name       = "kro"
   repository = "oci://registry.k8s.io/kro/charts"
   chart      = "kro"
-  version    = "0.4.1"
+  version    = "0.7.0"
   namespace  = "kro"
 }
