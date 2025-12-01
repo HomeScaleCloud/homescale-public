@@ -56,12 +56,12 @@ apps:
       ingress:
         host: "homescale.cloud"
 
-  librespeed:
+  speedtest:
     enabled: true
-    chart: librespeed
+    chart: speedtest
     repoURL: ghcr.io/homescalecloud/helm
     targetRevision: 0.1.0
-    namespace: librespeed
+    namespace: speedtest
     values: |
       global:
         cluster: {{ .Values.global.cluster }}
