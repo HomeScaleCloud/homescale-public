@@ -248,7 +248,8 @@ resource "helm_release" "kro" {
   count      = var.init_stage_1 ? 0 : 1
   depends_on = [helm_release.cilium]
   name       = "kro"
-  chart      = "oci://registry.k8s.io/kro/charts/kro"
+  repository = "oci://registry.k8s.io/kro/charts"
+  chart      = "kro"
   version    = "v0.7.0"
   namespace  = "kro"
 }
