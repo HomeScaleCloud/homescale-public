@@ -245,11 +245,12 @@ resource "kubernetes_secret" "argocd_homescale_helm" {
 }
 
 resource "helm_release" "kro" {
-  count      = var.init_stage_1 ? 0 : 1
-  depends_on = [helm_release.cilium]
-  name       = "kro"
-  repository = "oci://registry.k8s.io/kro/charts"
-  chart      = "kro"
-  version    = "0.7.0"
-  namespace  = "kro"
+  count            = var.init_stage_1 ? 0 : 1
+  depends_on       = [helm_release.cilium]
+  name             = "kro"
+  repository       = "oci://registry.k8s.io/kro/charts"
+  chart            = "kro"
+  version          = "0.7.0"
+  namespace        = "kro"
+  create_namespace = true
 }
