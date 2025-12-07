@@ -25,6 +25,15 @@ resource "cloudflare_dns_record" "google_verify" {
   type    = "TXT"
 }
 
+resource "cloudflare_dns_record" "openai_verify" {
+  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  name    = "homescale.cloud"
+  comment = "Domain ownership verification for OpenAI"
+  content = "openai-domain-verification=dv-QS7LzcNzQoWJE8kjIrtIP9q6" #pragma: allowlist secret
+  ttl     = 3600
+  type    = "TXT"
+}
+
 resource "cloudflare_dns_record" "exchange_autodiscover" {
   zone_id = data.onepassword_item.cloudflare_zone_id.credential
   name    = "autodiscover.homescale.cloud"
