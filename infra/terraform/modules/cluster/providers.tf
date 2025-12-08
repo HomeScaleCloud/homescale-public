@@ -9,8 +9,8 @@ terraform {
     tailscale = {
       source = "tailscale/tailscale"
     }
-    talos = {
-      source = "siderolabs/talos"
+    rancher2 = {
+      source = "rancher/rancher2"
     }
     kubernetes = {
       source = "hashicorp/kubernetes"
@@ -42,7 +42,7 @@ provider "onepassword" {
 }
 
 provider "tailscale" {
-  tailnet             = "homescale.cloud"
+  tailnet             = var.tailscale_tailnet
   oauth_client_id     = var.tailscale_oauth_client_id
   oauth_client_secret = var.tailscale_oauth_client_secret
 }
