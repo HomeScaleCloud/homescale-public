@@ -9,7 +9,12 @@ variable "region" {
 }
 
 variable "platform" {
-  description = "Cluster platform to be used (harvester, digitalocean, kubeconfig, etc)"
+  description = "Cluster platform to be used (harvester, digitalocean, kubeconfig, etc)."
+  type        = string
+}
+
+variable "version" {
+  description = "Kubernetes version to be used (options vary by platform)."
   type        = string
 }
 
