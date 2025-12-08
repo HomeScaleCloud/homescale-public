@@ -17,20 +17,6 @@ data "onepassword_item" "entra_tenant" {
   title = "entra-tenant"
 }
 
-resource "onepassword_item" "talosconfig" {
-  count    = var.store_talosconfig ? 1 : 0
-  vault    = data.onepassword_vault.cluster.uuid
-  title    = "talosconfig"
-  password = data.talos_client_configuration.controlplane.talos_config
-}
-
-resource "onepassword_item" "kubeconfig" {
-  count    = var.store_kubeconfig ? 1 : 0
-  vault    = data.onepassword_vault.cluster.uuid
-  title    = "kubeconfig"
-  password = talos_cluster_kubeconfig.cluster.kubeconfig_raw
-}
-
 resource "kubernetes_secret" "onepassword" {
   count      = (var.init_stage_1 || var.init_stage_2) ? 0 : 1
   depends_on = [kubernetes_namespace.onepassword]
