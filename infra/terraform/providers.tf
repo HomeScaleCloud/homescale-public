@@ -16,9 +16,9 @@ terraform {
       source  = "tailscale/tailscale"
       version = "0.24.0"
     }
-    talos = {
-      source  = "siderolabs/talos"
-      version = "0.9.0"
+    rancher2 = {
+      source  = "rancher/rancher2"
+      version = "8.3.1"
     }
     helm = {
       source  = "hashicorp/helm"
