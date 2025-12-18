@@ -66,7 +66,7 @@ resource "tailscale_acl" "acl" {
           "action": "accept",
           "src": [
             "group:team-infra-plat@homescale.cloud",
-            "popsbot@gmail.com"
+            "popsbot1@gmail.com"
           ],
           "dst": ["tag:lf-k8s-lab:*"]
         },
@@ -135,7 +135,7 @@ resource "tailscale_acl" "acl" {
           "action": "accept",
           "src": [
             "group:team-infra-plat@homescale.cloud",
-            "popsbot@gmail.com"
+            "popsbot1@gmail.com"
           ],
           "dst": ["tag:lf-k8s-lab"],
           "users": ["hs"],
