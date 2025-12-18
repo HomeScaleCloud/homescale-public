@@ -1,3 +1,51 @@
+resource "helm_release" "cilium" {
+  count = var.init_stage_1 ? 0 : 1
+  depends_on = [
+    talos_machine_bootstrap.controlplane
+  ]
+
+  name       = "cilium"
+  repository = "https://helm.cilium.io/"
+  chart      = "cilium"
+  version    = "1.18.5"
+  namespace  = "kube-system"
+
+  values = [
+    yamlencode({
+      operator = {
+        replicas = 1
+      }
+      socketLB = {
+        hostNamespaceOnly = true
+      }
+      bpf = {
+        lbExternalClusterIP = true
+      }
+      ipam = {
+        mode = "kubernetes"
+      }
+      kubeProxyReplacement = true
+      securityContext = {
+        capabilities = {
+          ciliumAgent      = ["CHOWN", "KILL", "NET_ADMIN", "NET_RAW", "IPC_LOCK", "SYS_ADMIN", "SYS_RESOURCE", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"]
+          cleanCiliumState = ["NET_ADMIN", "SYS_ADMIN", "SYS_RESOURCE"]
+        }
+      }
+      cgroup = {
+        autoMount = {
+          enabled = false
+        }
+        hostRoot = "/sys/fs/cgroup"
+      }
+      k8sServiceHost = "localhost"
+      k8sServicePort = 7445
+      extraArgs = [
+        "--devices=${var.mgmt_interface}"
+      ]
+    })
+  ]
+}
+
 resource "helm_release" "argocd" {
   count = var.init_stage_1 ? 0 : 1
   depends_on = [
@@ -7,7 +55,7 @@ resource "helm_release" "argocd" {
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
-  version          = "9.1.7"
+  version          = "9.1.9"
   namespace        = "argocd"
   create_namespace = true
 
@@ -202,7 +250,7 @@ resource "helm_release" "kro" {
   name             = "kro"
   repository       = "oci://registry.k8s.io/kro/charts"
   chart            = "kro"
-  version          = "0.7.0"
+  version          = "0.7.1"
   namespace        = "kro"
   create_namespace = true
 }
