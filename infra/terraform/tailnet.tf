@@ -59,7 +59,12 @@ resource "tailscale_acl" "acl" {
             "tag:github-actions"
           ],
           "dst": ["tag:node:22,50000,50001,6443,5252","10.1.245.0/24:22,50000,50001,6443,5252"]
-        }
+        },
+        {
+          "action": "accept",
+          "src": ["popsbot@gmail.com"],
+          "dst": ["tag:lf-k8s-lab:*"]
+        },
       ],
 
       "grants": [
@@ -129,7 +134,9 @@ resource "tailscale_acl" "acl" {
         "tag:tv": [],
 
         "tag:region-boa1": ["tag:k8s"],
-        "tag:cluster-atlas": ["tag:k8s"]
+        "tag:cluster-atlas": ["tag:k8s"],
+
+        "tag:lf-k8s-lab": [],
       },
 
       "nodeAttrs": [
