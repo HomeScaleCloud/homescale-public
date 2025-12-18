@@ -116,13 +116,13 @@ resource "tailscale_acl" "acl" {
           "checkPeriod": "2h",
           "src": ["group:sec-infra-plat-pim@homescale.cloud"],
           "dst": ["tag:node"],
-          "users": ["admin"],
+          "users": ["hs"],
         },
         {
           "action": "accept",
           "src": ["tag:github-actions"],
           "dst": ["tag:node"],
-          "users": ["admin"],
+          "users": ["hs"],
         },
 
         // LF K8s Lab
@@ -131,9 +131,9 @@ resource "tailscale_acl" "acl" {
           "src": [
             "group:team-infra-plat@homescale.cloud",
             "popsbot@gmail.com"
-          ],
+          ]
           "dst": ["tag:lf-k8s-lab"],
-          "users": ["admin"],
+          "users": ["hs"],
         },
       ],
 
