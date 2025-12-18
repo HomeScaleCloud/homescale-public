@@ -60,9 +60,14 @@ resource "tailscale_acl" "acl" {
           ],
           "dst": ["tag:node:22,50000,50001,6443,5252","10.1.245.0/24:22,50000,50001,6443,5252"]
         },
+
+        // LF K8s Lab
         {
           "action": "accept",
-          "src": ["popsbot@gmail.com"],
+          "src": [
+            "group:team-infra-plat@homescale.cloud",
+            "popsbot@gmail.com"
+          ],
           "dst": ["tag:lf-k8s-lab:*"]
         },
       ],
@@ -117,6 +122,17 @@ resource "tailscale_acl" "acl" {
           "action": "accept",
           "src": ["tag:github-actions"],
           "dst": ["tag:node"],
+          "users": ["admin"],
+        },
+
+        // LF K8s Lab
+        {
+          "action": "accept",
+          "src": [
+            "group:team-infra-plat@homescale.cloud",
+            "popsbot@gmail.com"
+          ],
+          "dst": ["tag:lf-k8s-lab"],
           "users": ["admin"],
         },
       ],
