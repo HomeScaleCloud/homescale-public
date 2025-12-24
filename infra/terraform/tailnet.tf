@@ -164,6 +164,10 @@ resource "tailscale_acl" "acl" {
         {
           "target": ["autogroup:member"],
           "attr": ["mullvad"]
+        },
+        {
+          "target": ["tag:tv"],
+          "attr": ["mullvad"]
         }
       ],
 
