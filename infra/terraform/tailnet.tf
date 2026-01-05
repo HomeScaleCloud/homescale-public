@@ -58,7 +58,7 @@ resource "tailscale_acl" "acl" {
             "group:sec-infra-plat-pim@homescale.cloud",
             "tag:github-actions"
           ],
-          "dst": ["tag:node:22,50000,50001,6443,5252","10.1.245.0/24:22,50000,50001,6443,5252"]
+          "dst": ["tag:node:22,50000,50001,8006,6443,5252","10.1.245.0/24:22,50000,50001,8006,6443,5252"]
         },
 
         // LF K8s Lab
