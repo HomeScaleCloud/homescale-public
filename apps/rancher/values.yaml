@@ -1,0 +1,11 @@
+rancher:
+  replicas: 2
+  tls: external
+  ingress:
+    enabled: false
+ingress:
+  enabled: true
+  className: "tailscale"
+  host: "rancher-{{ .Values.global.cluster }}-{{ .Values.global.region }}.tempel-carp.ts.net"
+  annotations:
+    "tailscale.com/hostname": "rancher-{{ .Values.global.cluster }}-{{ .Values.global.region }}"

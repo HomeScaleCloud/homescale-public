@@ -1,7 +1,7 @@
 resource "tailscale_oauth_client" "k8s_operator" {
   description = "k8s-${var.cluster}"
   scopes      = ["devices:core", "auth_keys", "services"]
-  tags        = ["tag:k8s", "tag:app", "tag:app-argocd", "tag:app-ha", "tag:app-metrics", "tag:cluster-${var.cluster}", "tag:region-${var.region}"]
+  tags        = ["tag:k8s", "tag:app", "tag:app-argocd", "tag:app-ha", "tag:app-metrics", "tag:env-${var.env}"]
 }
 
 resource "tailscale_tailnet_key" "node" {
@@ -10,5 +10,5 @@ resource "tailscale_tailnet_key" "node" {
   preauthorized = true
   expiry        = 2592000
   description   = "Node Key"
-  tags          = ["tag:node", "tag:cluster-${var.cluster}", "tag:region-${var.region}"]
+  tags          = ["tag:node", "tag:env-${var.env}"]
 }

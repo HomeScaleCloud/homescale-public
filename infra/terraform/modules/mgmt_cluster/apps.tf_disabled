@@ -5,7 +5,7 @@ resource "kubernetes_manifest" "argocd_app" {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
     metadata = {
-      name      = "homescale-apps-${var.cluster}"
+      name      = "homescale-apps-${var.cluster}-${var.region}"
       namespace = "argocd"
       labels = {
         "cluster.homescale.cloud/name"   = var.cluster
@@ -21,7 +21,7 @@ resource "kubernetes_manifest" "argocd_app" {
         helm = {
           valueFiles = [
             "values.yaml",
-            "values-${var.cluster}.yaml"
+            "values-${var.cluster}-${var.region}.yaml"
           ]
         }
       }
