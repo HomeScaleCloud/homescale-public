@@ -19,7 +19,7 @@ kube-prometheus-stack:
 
     grafana.ini:
       server:
-        root_url: "https://metrics-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+        root_url: "https://metrics-{{ .Values.global.cluster }}-{{ .Values.global.region }}.tempel-carp.ts.net"
       auth:
         disable_login_form: true
       auth.generic_oauth:
@@ -47,14 +47,14 @@ kube-prometheus-stack:
       enabled: true
       ingressClassName: tailscale
       annotations:
-        tailscale.com/hostname: "metrics-{{ .Values.global.cluster }}"
-        tailscale.com/tags: "tag:app-metrics,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
+        tailscale.com/hostname: "metrics-{{ .Values.global.cluster }}-{{ .Values.global.region }}"
+        tailscale.com/tags: "tag:app-metrics,tag:env-{{ .Values.global.env }}"
         tailscale.com/proxy-group: "ingress"
       hosts:
-        - "metrics-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+        - "metrics-{{ .Values.global.cluster }}-{{ .Values.global.region }}.tempel-carp.ts.net"
       tls:
         - hosts:
-            - "metrics-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+            - "metrics-{{ .Values.global.cluster }}-{{ .Values.global.region }}.tempel-carp.ts.net"
 
     assertNoLeakedSecrets: false
 
