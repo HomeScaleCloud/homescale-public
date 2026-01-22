@@ -1,6 +1,7 @@
 global:
   cluster: atlas
   region: boa1
+  env: prod
 
 apps:
   generic-device-plugin-zigbee:
