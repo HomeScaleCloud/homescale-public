@@ -7,14 +7,14 @@ openspeedtest:
   ingress:
     enabled: true
     hosts:
-      - host: "speedtest-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+      - host: "speedtest-{{ .Values.global.cluster }}-{{ .Values.global.region }}.tempel-carp.ts.net"
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - hosts:
-          - "speedtest-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+          - "speedtest-{{ .Values.global.cluster }}-{{ .Values.global.region }}.tempel-carp.ts.net"
     annotations:
-      "tailscale.com/hostname": "speedtest-{{ .Values.global.cluster }}"
-      "tailscale.com/tags": "tag:app,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
+      "tailscale.com/hostname": "speedtest-{{ .Values.global.cluster }}-{{ .Values.global.region }}"
+      "tailscale.com/tags": "tag:app,tag:env-{{ .Values.global.env }}"
     className: "tailscale"

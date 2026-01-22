@@ -1,0 +1,9 @@
+global:
+  cluster: mgmt
+  region: lon1
+
+apps:
+  metrics:
+    enabled: false
+  rancher:
+    enabled: true
