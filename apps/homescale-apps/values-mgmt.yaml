@@ -1,6 +1,7 @@
 global:
   cluster: mgmt
   region: lon1
+  env: prod
 
 apps:
   metrics:
