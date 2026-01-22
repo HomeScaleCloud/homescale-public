@@ -50,4 +50,4 @@ apps:
             - "speedtest-atlas.tempel-carp.ts.net"
       annotations:
         "tailscale.com/hostname": "speedtest-atlas"
-        "tailscale.com/tags": "tag:app,tag:cluster-atlas,tag:region-boa1"
+        "tailscale.com/tags": "tag:app,tag:env-prod"

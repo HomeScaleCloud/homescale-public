@@ -8,6 +8,12 @@ variable "region" {
   type        = string
 }
 
+variable "env" {
+  description = "Security environment of the cluster (prod, lab, etc)"
+  type        = string
+  default     = "lab"
+}
+
 variable "platform" {
   description = "Cluster platform to be used (harvester, digitalocean, kubeconfig, etc)."
   type        = string

@@ -4,10 +4,10 @@ image:
 ingress:
   enabled: true
   className: "tailscale"
-  host: "ha-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+  host: "ha-{{ .Values.global.cluster }}-{{ .Values.global.region }}.tempel-carp.ts.net"
   annotations:
-    "tailscale.com/hostname": "ha-{{ .Values.global.cluster }}"
-    "tailscale.com/tags": "tag:app-ha,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
+    "tailscale.com/hostname": "ha-{{ .Values.global.cluster }}-{{ .Values.global.region }}"
+    "tailscale.com/tags": "tag:app-ha,tag:env-{{ .Values.global.env }}"
 pvc:
   size: 25Gi
 zigbee:

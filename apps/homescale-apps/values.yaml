@@ -68,16 +68,16 @@ apps:
         region: {{ .Values.global.region }}
       openspeedtest:
         hosts:
-          - host: "speedtest-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+          - host: "speedtest-{{ .Values.global.cluster }}-{{ .Values.global.region }}.tempel-carp.ts.net"
             paths:
               - path: /
                 pathType: ImplementationSpecific
         tls:
           - hosts:
-              - "speedtest-{{ .Values.global.cluster }}.tempel-carp.ts.net"
+              - "speedtest-{{ .Values.global.cluster }}-{{ .Values.global.region }}.tempel-carp.ts.net"
         annotations:
-          "tailscale.com/hostname": "speedtest-{{ .Values.global.cluster }}"
-          "tailscale.com/tags": "tag:app,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
+          "tailscale.com/hostname": "speedtest-{{ .Values.global.cluster }}-{{ .Values.global.region }}"
+          "tailscale.com/tags": "tag:app,tag:env-{{ .Values.global.env }}"
 
   minecraft:
     enabled: false
@@ -130,6 +130,17 @@ apps:
     targetRevision: 0.1.0
     namespace: onepassword
 
+  rancher:
+    enabled: false
+    chart: rancher
+    repoURL: ghcr.io/homescalecloud/helm
+    targetRevision: 0.1.0
+    namespace: cattle-system
+    values: |
+      global:
+        cluster: {{ .Values.global.cluster }}
+        region: {{ .Values.global.region }}
+
   rbac:
     enabled: true
     chart: rbac
@@ -156,10 +167,9 @@ apps:
         region: {{ .Values.global.region }}
       tailscale-operator:
         proxyConfig:
-          defaultTags: "tag:app,tag:cluster-{{ .Values.global.cluster }},tag:region-{{ .Values.global.region }}"
+          defaultTags: "tag:app,tag:env-{{ .Values.global.env }}"
         operatorConfig:
-          hostname: "ts-operator-{{ .Values.global.cluster }}"
+          hostname: "ts-operator-{{ .Values.global.cluster }}-{{ .Values.global.region }}"
           defaultTags:
             - "tag:k8s"
-            - "tag:cluster-{{ .Values.global.cluster }}"
-            - "tag:region-{{ .Values.global.region }}"
+            - "tag:env-{{ .Values.global.env }}"
