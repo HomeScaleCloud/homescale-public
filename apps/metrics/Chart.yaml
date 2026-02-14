@@ -5,7 +5,7 @@ type: application
 version: 0.1.0
 dependencies:
   - name: kube-prometheus-stack
-    version: 61.9.0
+    version: 81.6.9
     repository: https://prometheus-community.github.io/helm-charts
   - name: metrics-server
     version: 3.13.0
