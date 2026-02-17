@@ -14,7 +14,7 @@ terraform {
     }
     tailscale = {
       source  = "tailscale/tailscale"
-      version = "0.25.0"
+      version = "0.27.0"
     }
     rancher2 = {
       source  = "rancher/rancher2"
