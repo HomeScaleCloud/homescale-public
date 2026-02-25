@@ -1,7 +1,7 @@
 module "mgmt_cluster" {
   source                        = "./modules/mgmt_cluster"
   platform                      = "digitalocean"
-  k8s_version                       = "1.34.1-do.4"
+  k8s_version                   = "1.34.1-do.4"
   region                        = "lon1"
   op_service_account_token      = var.op_service_account_token
   tailscale_tailnet             = data.onepassword_item.tailscale_tailnet.credential
