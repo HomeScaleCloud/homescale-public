@@ -1,3 +1,0 @@
-nfs-subdir-external-provisioner:
-  storageClass:
-    defaultClass: true
