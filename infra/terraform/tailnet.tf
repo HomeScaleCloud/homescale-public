@@ -16,15 +16,6 @@ resource "tailscale_acl" "acl" {
         },
 
         // Apps
-        // argocd
-        {
-          "action": "accept",
-          "src": [
-            "group:team-infra-plat@homescale.cloud",
-            "tag:github-actions"
-          ],
-          "dst": ["tag:app-argocd:443"]
-        },
         // ha
         {
           "action": "accept",
@@ -147,6 +138,7 @@ resource "tailscale_acl" "acl" {
         "tag:app": ["tag:k8s"],
 
         "tag:app-ha": ["tag:k8s"],
+        "tag:app-metrics": ["tag:k8s"],
 
         "tag:node": [],
         "tag:github-actions": [],
@@ -174,7 +166,6 @@ resource "tailscale_acl" "acl" {
           "services": {
               "tag:k8s": ["tag:k8s"],
               "tag:app": ["tag:app"],
-              "tag:app-argocd": ["tag:app"],
               "tag:app-ha": ["tag:app"],
               "tag:app-metrics": ["tag:app"],
           },
