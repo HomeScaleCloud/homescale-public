@@ -1,0 +1,5 @@
+defaultNamespace: kube-system
+name: rbac
+helm:
+  releaseName: rbac
+  chart: ./

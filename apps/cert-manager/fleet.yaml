@@ -1,0 +1,9 @@
+defaultNamespace: cert-manager
+name: cert-manager
+helm:
+  releaseName: cert-manager
+  chart: ./
+  values:
+    cert-manager:
+      crds:
+        enabled: true

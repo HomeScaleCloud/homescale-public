@@ -1,24 +1,18 @@
-data "onepassword_vault" "cluster" {
-  name = var.cluster
+data "onepassword_vault" "k8s" {
+  name = "k8s"
 }
 
 data "onepassword_item" "onepassword" {
-  vault = var.cluster
+  vault = "k8s"
   title = "onepassword"
 }
 
-data "onepassword_item" "argocd_oidc" {
-  vault = "common"
-  title = "argocd-oidc"
-}
-
 data "onepassword_item" "entra_tenant" {
-  vault = "common"
+  vault = "k8s"
   title = "entra-tenant"
 }
 
 resource "kubernetes_secret" "onepassword" {
-  count      = (var.init_stage_1 || var.init_stage_2) ? 0 : 1
   depends_on = [kubernetes_namespace.onepassword]
   metadata {
     name      = "onepassword"
@@ -31,7 +25,6 @@ resource "kubernetes_secret" "onepassword" {
 }
 
 resource "kubernetes_secret" "tailscale" {
-  count      = (var.init_stage_1 || var.init_stage_2) ? 0 : 1
   depends_on = [kubernetes_namespace.tailscale]
   metadata {
     name      = "operator-oauth"
