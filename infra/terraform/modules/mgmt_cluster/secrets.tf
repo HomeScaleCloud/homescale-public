@@ -13,7 +13,7 @@ data "onepassword_item" "entra_tenant" {
 }
 
 resource "kubernetes_secret" "onepassword" {
-  depends_on = [kubernetes_namespace.onepassword]
+  depends_on = [kubernetes_namespace_v1.onepassword]
   metadata {
     name      = "onepassword"
     namespace = "onepassword"
@@ -25,7 +25,7 @@ resource "kubernetes_secret" "onepassword" {
 }
 
 resource "kubernetes_secret" "tailscale" {
-  depends_on = [kubernetes_namespace.tailscale]
+  depends_on = [kubernetes_namespace_v1.tailscale]
   metadata {
     name      = "operator-oauth"
     namespace = "tailscale"
