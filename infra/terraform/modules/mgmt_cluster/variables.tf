@@ -35,4 +35,4 @@ variable "tailscale_oauth_client_secret" {
   description = "Tailscale OAuth Client Secret"
   type        = string
   sensitive   = true
-}     
+}
