@@ -1,12 +1,12 @@
 resource "kubernetes_namespace" "onepassword" {
-  count = (var.init_stage_1 || var.init_stage_2) ? 0 : 1
+  depends_on = [ digitalocean_kubernetes_cluster.mgmt ]
   metadata {
     name = "onepassword"
   }
 }
 
 resource "kubernetes_namespace" "tailscale" {
-  count = (var.init_stage_1 || var.init_stage_2) ? 0 : 1
+  depends_on = [ digitalocean_kubernetes_cluster.mgmt ]
   metadata {
     name = "tailscale"
   }

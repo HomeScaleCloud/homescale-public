@@ -1,0 +1,5 @@
+defaultNamespace: kube-system
+name: node-feature-discovery
+helm:
+  releaseName: node-feature-discovery
+  chart: ./

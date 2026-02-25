@@ -1,0 +1,21 @@
+defaultNamespace: home-assistant
+name: home-assistant
+helm:
+  releaseName: home-assistant
+  chart: ./
+  values:
+    image:
+      repository: ghcr.io/home-assistant/home-assistant
+      tag: "2025.12.5"
+    ingress:
+      enabled: true
+      className: "tailscale"
+      host: "ha-${ .ClusterName }-${ .ClusterLabels.cluster.homescale.cloud/region }.tempel-carp.ts.net"
+      annotations:
+        "tailscale.com/hostname": "ha-${ .ClusterName }-${ .ClusterLabels.cluster.homescale.cloud/region }"
+        "tailscale.com/tags": "tag:app-ha,tag:env-${ .ClusterLabels.cluster.homescale.cloud/env }"
+    pvc:
+      size: 25Gi
+    zigbee:
+      local: true
+      devicePath: "/dev/ttyUSB0"
