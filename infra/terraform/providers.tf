@@ -10,7 +10,7 @@ terraform {
     }
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = "2.76.0"
+      version = "2.77.0"
     }
     tailscale = {
       source  = "tailscale/tailscale"
@@ -23,6 +23,10 @@ terraform {
     helm = {
       source  = "hashicorp/helm"
       version = "3.1.1"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "3.0.1"
     }
   }
 }

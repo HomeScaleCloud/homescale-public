@@ -1,5 +1,8 @@
 terraform {
   required_providers {
+    digitalocean = {
+      source = "digitalocean/digitalocean"
+    }
     kubernetes = {
       source = "hashicorp/kubernetes"
     }
@@ -16,6 +19,10 @@ terraform {
       source = "rancher/rancher2"
     }
   }
+}
+
+provider "digitalocean" {
+  token = var.digitalocean_token
 }
 
 provider "kubernetes" {
