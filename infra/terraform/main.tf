@@ -1,6 +1,6 @@
 module "mgmt_cluster" {
   source                        = "./modules/mgmt_cluster"
-  platform                      = "digitalocean"
+  digitalocean_token            = data.onepassword_item.digitalocean.credential
   k8s_version                   = "1.34.1-do.4"
   region                        = "lon1"
   op_service_account_token      = var.op_service_account_token
