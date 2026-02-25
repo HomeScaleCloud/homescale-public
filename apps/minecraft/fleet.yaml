@@ -1,0 +1,18 @@
+defaultNamespace: minecraft
+name: minecraft
+helm:
+  releaseName: minecraft
+  chart: ./
+  values:
+    minecraft:
+      resources:
+        requests:
+          memory: 2Gi
+          cpu: 500m
+      minecraftServer:
+        eula: "TRUE"
+        memory: 2048M
+      persistence:
+        dataDir:
+          enabled: true
+          Size: "2Gi"

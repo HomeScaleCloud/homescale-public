@@ -1,8 +1,11 @@
 terraform {
   required_providers {
-    # kubernetes = {
-    #   source  = "hashicorp/kubernetes"
-    # }
+    kubernetes = {
+      source = "hashicorp/kubernetes"
+    }
+    helm = {
+      source = "hashicorp/helm"
+    }
     onepassword = {
       source = "1Password/onepassword"
     }
@@ -12,28 +15,20 @@ terraform {
     rancher2 = {
       source = "rancher/rancher2"
     }
-    kubernetes = {
-      source = "hashicorp/kubernetes"
-    }
-    helm = {
-      source = "hashicorp/helm"
-    }
   }
 }
 
 provider "kubernetes" {
-  host                   = data.talos_machine_configuration.controlplane.cluster_endpoint
-  cluster_ca_certificate = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.ca_certificate)
-  client_certificate     = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.client_certificate)
-  client_key             = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.client_key)
+  host                   = digitalocean_kubernetes_cluster.mgmt.endpoint
+  token                  = digitalocean_kubernetes_cluster.mgmt.kube_config.0.token
+  cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.mgmt.kube_config.0.cluster_ca_certificate)
 }
 
 provider "helm" {
   kubernetes = {
-    host                   = data.talos_machine_configuration.controlplane.cluster_endpoint
-    cluster_ca_certificate = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.ca_certificate)
-    client_certificate     = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.client_certificate)
-    client_key             = base64decode(talos_cluster_kubeconfig.cluster.kubernetes_client_configuration.client_key)
+    host                   = digitalocean_kubernetes_cluster.mgmt.endpoint
+    token                  = digitalocean_kubernetes_cluster.mgmt.kube_config.0.token
+    cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.mgmt.kube_config.0.cluster_ca_certificate)
   }
 }
 
