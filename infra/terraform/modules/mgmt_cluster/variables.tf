@@ -8,7 +8,7 @@ variable "platform" {
   type        = string
 }
 
-variable "version" {
+variable "k8s_version" {
   description = "Kubernetes version to be used (options vary by platform)."
   type        = string
 }

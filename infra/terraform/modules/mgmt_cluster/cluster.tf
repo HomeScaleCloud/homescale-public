@@ -1,7 +1,7 @@
 resource "digitalocean_kubernetes_cluster" "mgmt" {
   name    = "mgmt"
   region  = var.region
-  version = var.version
+  version = var.k8s_version
 
   maintenance_policy {
     start_time = "04:00"
