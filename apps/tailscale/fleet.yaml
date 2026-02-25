@@ -9,29 +9,29 @@ helm:
         allowImpersonation: "true"
 
 targetCustomizations:
-- name: prod
-  clusterGroup: prod
-  helm:
-    values:
-      kubeProxy:
-        replicas: 2
-      ingressProxy:
-        replicas: 3
+  - name: prod
+    clusterGroup: prod
+    helm:
+      values:
+        kubeProxy:
+          replicas: 2
+        ingressProxy:
+          replicas: 3
 
-- name: test
-  clusterGroup: test
-  helm:
-    values:
-      kubeProxy:
-        replicas: 1
-      ingressProxy:
-        replicas: 2
+  - name: test
+    clusterGroup: test
+    helm:
+      values:
+        kubeProxy:
+          replicas: 1
+        ingressProxy:
+          replicas: 2
 
-- name: lab
-  clusterGroup: lab
-  helm:
-    values:
-      kubeProxy:
-        replicas: 1
-      ingressProxy:
-        replicas: 1
+  - name: lab
+    clusterGroup: lab
+    helm:
+      values:
+        kubeProxy:
+          replicas: 1
+        ingressProxy:
+          replicas: 1
