@@ -1,8 +1,0 @@
-kubeProxy:
-  replicas: 2
-ingressProxy:
-  replicas: 3
-
-tailscale-operator:
-  apiServerProxyConfig:
-    allowImpersonation: "true"

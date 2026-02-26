@@ -7,31 +7,25 @@ helm:
     tailscale-operator:
       apiServerProxyConfig:
         allowImpersonation: "true"
+    kubeProxy:
+      replicas: 1
+    ingressProxy:
+      replicas: 2
 
 targetCustomizations:
-  - name: prod
-    clusterGroup: prod
+  - name: env-prod
+    clusterGroup: env-prod
     helm:
       values:
         kubeProxy:
           replicas: 2
         ingressProxy:
           replicas: 3
-
-  - name: test
-    clusterGroup: test
+  - name: env-mgmt
+    clusterGroup: env-mgmt
     helm:
       values:
         kubeProxy:
-          replicas: 1
-        ingressProxy:
           replicas: 2
-
-  - name: lab
-    clusterGroup: lab
-    helm:
-      values:
-        kubeProxy:
-          replicas: 1
         ingressProxy:
-          replicas: 1
+          replicas: 3
