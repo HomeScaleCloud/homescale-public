@@ -3,6 +3,7 @@ name: rancher
 description: Helm chart for deploying Rancher
 type: application
 version: 0.1.0
+
 dependencies:
   - name: rancher
     version: 2.13.2
