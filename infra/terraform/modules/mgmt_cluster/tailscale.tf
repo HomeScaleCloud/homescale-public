@@ -9,7 +9,7 @@ resource "tailscale_tailnet_key" "node_prod" {
   ephemeral     = false
   preauthorized = true
   expiry        = 7776000
-  description   = "Node Key (Prod)"
+  description   = "node-key-prod"
   tags          = ["tag:node", "tag:env-prod"]
 }
 
@@ -18,7 +18,7 @@ resource "tailscale_tailnet_key" "node_test" {
   ephemeral     = false
   preauthorized = true
   expiry        = 7776000
-  description   = "Node Key (test)"
+  description   = "node-key-test"
   tags          = ["tag:node", "tag:env-test"]
 }
 
@@ -27,6 +27,6 @@ resource "tailscale_tailnet_key" "node_lab" {
   ephemeral     = false
   preauthorized = true
   expiry        = 7776000
-  description   = "Node Key (lab)"
+  description   = "node-key-lab"
   tags          = ["tag:node", "tag:env-lab"]
 }
