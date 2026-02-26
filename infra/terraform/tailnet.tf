@@ -139,11 +139,13 @@ resource "tailscale_acl" "acl" {
 
         "tag:app-ha": ["tag:k8s"],
         "tag:app-metrics": ["tag:k8s"],
+        "tag:app-rancher": ["tag:k8s"],
 
         "tag:node": [],
         "tag:github-actions": [],
         "tag:tv": [],
 
+        "tag:env-mgmt": ["tag:k8s"],
         "tag:env-prod": ["tag:k8s"],
         "tag:env-test": ["tag:k8s"],
         "tag:env-lab": ["tag:k8s"],
