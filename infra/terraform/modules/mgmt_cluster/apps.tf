@@ -1,4 +1,11 @@
 resource "helm_release" "rancher" {
-  name  = "rancher"
-  chart = "../../../../apps/rancher"
+  name              = "rancher"
+  chart             = "../../apps/rancher"
+  dependency_update = true
+}
+
+resource "helm_release" "onepassword" {
+  name              = "onepassword"
+  chart             = "../../apps/onepassword"
+  dependency_update = true
 }
