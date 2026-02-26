@@ -9,7 +9,7 @@ metadata:
     {{- end }}
     {{- if eq .Values.ingress.className "tailscale" }}
     tailscale.com/proxy-group: ingress
-    tailscale.com/tags: "tag:app,tag:env-{{ .Values.global.env }}"
+    tailscale.com/tags: "tag:app-rancher,tag:env-mgmt"
     {{- end }}
 spec:
   {{- if .Values.ingress.className }}
