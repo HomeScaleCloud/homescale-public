@@ -6,7 +6,7 @@ helm:
   values:
     global:
       cluster: ${ .ClusterName }-${ get .ClusterLabels "REDACTED/region" }
-      env: ${ REDACTED/env }
+      env: ${ get .ClusterLabels "REDACTED/env" }
     tailscale-operator:
       apiServerProxyConfig:
         allowImpersonation: "true"
