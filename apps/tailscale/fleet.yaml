@@ -4,6 +4,9 @@ helm:
   releaseName: tailscale
   chart: ./
   values:
+    global:
+      cluster: ${ .ClusterName }-${ xxx/region }
+      env: ${ xxx/env }
     tailscale-operator:
       apiServerProxyConfig:
         allowImpersonation: "true"
