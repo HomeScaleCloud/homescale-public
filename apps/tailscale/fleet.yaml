@@ -5,7 +5,7 @@ helm:
   chart: ./
   values:
     global:
-      cluster: ${ .ClusterName }-${ get .ClusterLabels 'xxx/region' }
+      cluster: ${ .ClusterName }-${ get .ClusterLabels "xxx/region" }
       env: ${ xxx/env }
     tailscale-operator:
       apiServerProxyConfig:
