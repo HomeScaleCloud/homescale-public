@@ -4,6 +4,9 @@ helm:
   releaseName: tailscale
   chart: ./
   values:
+    global:
+      cluster: ${ .ClusterName }-${ .ClusterLabels.cluster.homescale.cloud/region }
+      env: ${ .ClusterLabels.cluster.homescale.cloud/env }
     tailscale-operator:
       apiServerProxyConfig:
         allowImpersonation: "true"
