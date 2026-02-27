@@ -5,7 +5,7 @@ helm:
   chart: ./
   values:
     global:
-      cluster: ${ .ClusterName }-${ .ClusterLabels.cluster.homescale.cloud/region }
+      cluster: ${ .ClusterName }-${ get .ClusterLabels 'cluster.homescale.cloud/region' }
       env: ${ .ClusterLabels.cluster.homescale.cloud/env }
     tailscale-operator:
       apiServerProxyConfig:
@@ -28,6 +28,8 @@ targetCustomizations:
     clusterGroup: env-mgmt
     helm:
       values:
+        global:
+          cluster: mgmt
         kubeProxy:
           replicas: 2
         ingressProxy:
