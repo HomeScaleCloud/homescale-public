@@ -6,7 +6,7 @@ helm:
   values:
     global:
       cluster: ${ .ClusterName }-${ get .ClusterLabels "cluster.homescale.cloud/region" }
-      env: ${ .ClusterLabels.cluster.homescale.cloud/env }
+      env: ${ get .ClusterLabels "cluster.homescale.cloud/env" }
     tailscale-operator:
       apiServerProxyConfig:
         allowImpersonation: "true"

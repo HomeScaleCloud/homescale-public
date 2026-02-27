@@ -10,10 +10,10 @@ helm:
     ingress:
       enabled: true
       className: "tailscale"
-      host: "ha-${ .ClusterName }-${ get .ClusterLabels 'cluster.homescale.cloud/region' }.tempel-carp.ts.net"
+      host: "ha-${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }.tempel-carp.ts.net"
       annotations:
-        "tailscale.com/hostname": "ha-${ .ClusterName }-${ get .ClusterLabels 'cluster.homescale.cloud/region' }"
-        "tailscale.com/tags": "tag:app-ha,tag:env-${ .ClusterLabels.cluster.homescale.cloud/env }"
+        "tailscale.com/hostname": "ha-${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
+        "tailscale.com/tags": "tag:app-ha,tag:env-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }"
     pvc:
       size: 25Gi
     zigbee:
