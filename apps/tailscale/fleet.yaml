@@ -5,5 +5,12 @@ helm:
   chart: ./
   values:
     tailscale-operator:
+      proxyConfig:
+        defaultTags: "tag:app,tag:env-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }"
+      operatorConfig:
+        hostname: "ts-${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
+        defaultTags:
+          - "tag:k8s"
+          - "tag:env-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }"
       apiServerProxyConfig:
         allowImpersonation: "true"
