@@ -1,0 +1,33 @@
+defaultNamespace: tailscale
+name: tailscale-crs
+helm:
+  releaseName: tailscale-crs
+  chart: ./
+  values:
+    global:
+      cluster: ${ .ClusterName }-${ get .ClusterLabels "cluster.homescale.cloud/region" }
+      env: ${ get .ClusterLabels "cluster.homescale.cloud/env" }
+    kubeProxy:
+      replicas: 1
+    ingressProxy:
+      replicas: 2
+
+targetCustomizations:
+  - name: env-prod
+    clusterGroup: env-prod
+    helm:
+      values:
+        kubeProxy:
+          replicas: 2
+        ingressProxy:
+          replicas: 3
+  - name: env-mgmt
+    clusterGroup: env-mgmt
+    helm:
+      values:
+        global:
+          cluster: mgmt
+        kubeProxy:
+          replicas: 2
+        ingressProxy:
+          replicas: 3
