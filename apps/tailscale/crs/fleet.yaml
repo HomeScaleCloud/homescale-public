@@ -4,9 +4,6 @@ helm:
   releaseName: tailscale-crs
   chart: ./
   values:
-    global:
-      cluster: ${ .ClusterName }-${ get .ClusterLabels "REDACTED/region" }
-      env: ${ get .ClusterLabels "REDACTED/env" }
     kubeProxy:
       replicas: 1
     ingressProxy:
