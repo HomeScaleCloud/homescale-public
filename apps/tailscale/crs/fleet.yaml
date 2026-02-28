@@ -4,6 +4,9 @@ helm:
   releaseName: tailscale-crs
   chart: ./
   values:
+    global:
+      cluster: ${ .ClusterName }-${ get .ClusterLabels "cluster.homescale.cloud/region" }
+      env: ${ get .ClusterLabels "cluster.homescale.cloud/env" }
     kubeProxy:
       replicas: 1
     ingressProxy:
