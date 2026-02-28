@@ -3,7 +3,7 @@ name: tailscale
 helm:
   releaseName: tailscale
   chart: ./
-  force: true
+  atomic: false
   values:
     global:
       cluster: ${ .ClusterName }-${ get .ClusterLabels "cluster.homescale.cloud/region" }
