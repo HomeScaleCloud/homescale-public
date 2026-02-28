@@ -12,6 +12,11 @@ helm:
     ingressProxy:
       replicas: 2
 
+dependsOn:
+  - name: tailscale
+    acceptedStates:
+      - Ready
+
 targetCustomizations:
   - name: env-prod
     clusterGroup: env-prod
