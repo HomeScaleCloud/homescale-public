@@ -1,0 +1,9 @@
+apiVersion: v2
+name: tailscale
+description: Helm chart for deploying Tailscale Operator
+type: application
+version: 0.1.0
+dependencies:
+  - name: tailscale-operator
+    version: 1.94.2
+    repository: https://pkgs.tailscale.com/helmcharts
