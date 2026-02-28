@@ -2,8 +2,7 @@ defaultNamespace: tailscale
 name: tailscale
 helm:
   releaseName: tailscale
-  chart: https://pkgs.tailscale.com/helmcharts/tailscale-operator
-  version: 1.94.2
+  chart: ./
   values:
     tailscale-operator:
       apiServerProxyConfig:
