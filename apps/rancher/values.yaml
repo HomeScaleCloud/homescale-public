@@ -6,6 +6,6 @@ rancher:
 ingress:
   enabled: true
   className: "tailscale"
-  host: "rancher-mgmt.tempel-carp.ts.net"
+  host: "mgmt.tempel-carp.ts.net"
   annotations:
-    "tailscale.com/hostname": "rancher-mgmt"
+    "tailscale.com/hostname": "mgmt"
