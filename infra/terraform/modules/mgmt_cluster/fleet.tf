@@ -1,4 +1,4 @@
-resource "kubernetes_manifest_v1" "gitrepo_apps_prod" {
+resource "kubernetes_manifest" "gitrepo_apps_prod" {
   depends_on = [kubernetes_namespace_v1.prod]
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
@@ -15,7 +15,7 @@ resource "kubernetes_manifest_v1" "gitrepo_apps_prod" {
   }
 }
 
-resource "kubernetes_manifest_v1" "gitrepo_apps_test" {
+resource "kubernetes_manifest" "gitrepo_apps_test" {
   depends_on = [kubernetes_namespace_v1.test]
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
@@ -32,7 +32,7 @@ resource "kubernetes_manifest_v1" "gitrepo_apps_test" {
   }
 }
 
-resource "kubernetes_manifest_v1" "gitrepo_apps_lab" {
+resource "kubernetes_manifest" "gitrepo_apps_lab" {
   depends_on = [kubernetes_namespace_v1.lab]
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
@@ -49,7 +49,7 @@ resource "kubernetes_manifest_v1" "gitrepo_apps_lab" {
   }
 }
 
-resource "kubernetes_manifest_v1" "gitrepo_apps_mgmt" {
+resource "kubernetes_manifest" "gitrepo_apps_mgmt" {
   depends_on = [kubernetes_namespace_v1.lab]
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
