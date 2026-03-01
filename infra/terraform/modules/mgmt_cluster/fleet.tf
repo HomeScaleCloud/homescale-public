@@ -1,5 +1,5 @@
 resource "kubernetes_manifest" "gitrepo_apps_prod" {
-  depends_on = [kubernetes_namespace_v1.prod]
+  depends_on = [digitalocean_kubernetes_cluster.mgmt, digikubernetes_namespace_v1.prod]
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
     kind       = "GitRepo"
@@ -17,7 +17,7 @@ resource "kubernetes_manifest" "gitrepo_apps_prod" {
 }
 
 resource "kubernetes_manifest" "gitrepo_apps_test" {
-  depends_on = [kubernetes_namespace_v1.test]
+  depends_on = [digitalocean_kubernetes_cluster.mgmt, kubernetes_namespace_v1.test]
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
     kind       = "GitRepo"
@@ -35,7 +35,7 @@ resource "kubernetes_manifest" "gitrepo_apps_test" {
 }
 
 resource "kubernetes_manifest" "gitrepo_apps_lab" {
-  depends_on = [kubernetes_namespace_v1.lab]
+  depends_on = [digitalocean_kubernetes_cluster.mgmt, kubernetes_namespace_v1.lab]
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
     kind       = "GitRepo"
@@ -53,7 +53,7 @@ resource "kubernetes_manifest" "gitrepo_apps_lab" {
 }
 
 resource "kubernetes_manifest" "gitrepo_apps_mgmt" {
-  depends_on = [kubernetes_namespace_v1.lab]
+  depends_on = [digitalocean_kubernetes_cluster.mgmt, kubernetes_namespace_v1.lab]
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
     kind       = "GitRepo"
