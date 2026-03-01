@@ -15,6 +15,9 @@ resource "kubernetes_manifest" "gitrepo_apps_prod" {
       pollingInterval = "3m"
     }
   }
+  field_manager {
+    force_conflicts = true
+  }
 }
 
 resource "kubernetes_manifest" "gitrepo_apps_test" {
@@ -33,6 +36,9 @@ resource "kubernetes_manifest" "gitrepo_apps_test" {
       paths           = ["apps/*"]
       pollingInterval = "3m"
     }
+  }
+  field_manager {
+    force_conflicts = true
   }
 }
 
@@ -53,6 +59,9 @@ resource "kubernetes_manifest" "gitrepo_apps_lab" {
       pollingInterval = "3m"
     }
   }
+  field_manager {
+    force_conflicts = true
+  }
 }
 
 resource "kubernetes_manifest" "gitrepo_apps_mgmt" {
@@ -71,5 +80,8 @@ resource "kubernetes_manifest" "gitrepo_apps_mgmt" {
       paths           = ["apps/*"]
       pollingInterval = "3m"
     }
+  }
+  field_manager {
+    force_conflicts = true
   }
 }
