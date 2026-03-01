@@ -10,3 +10,8 @@ helm:
     ingress:
       enabled: true
       className: "tailscale"
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        xxx/homepage: enabled

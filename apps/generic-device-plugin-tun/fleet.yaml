@@ -1,7 +1,7 @@
 defaultNamespace: kube-system
-name: generic-device-plugin
+name: generic-device-plugin-tun
 helm:
-  releaseName: generic-device-plugin
+  releaseName: generic-device-plugin-tun
   chart: ./
   values:
     image:

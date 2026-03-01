@@ -1,0 +1,5 @@
+apiVersion: v2
+name: cert-manager-crs
+description: Helm chart for cert-manager CRs
+type: application
+version: 0.1.0
