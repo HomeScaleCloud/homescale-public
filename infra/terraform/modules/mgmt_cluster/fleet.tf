@@ -8,9 +8,10 @@ resource "kubernetes_manifest" "gitrepo_apps_prod" {
       namespace = "prod"
     }
     spec = {
-      repo   = "https://github.com/HomeScaleCloud/homescale-public"
-      branch = "main"
-      paths  = ["apps/*"]
+      repo            = "https://github.com/HomeScaleCloud/homescale-public"
+      branch          = "main"
+      paths           = ["apps/*"]
+      pollingInterval = "3m"
     }
   }
 }
@@ -25,9 +26,10 @@ resource "kubernetes_manifest" "gitrepo_apps_test" {
       namespace = "test"
     }
     spec = {
-      repo   = "https://github.com/HomeScaleCloud/homescale-public"
-      branch = "main"
-      paths  = ["apps/*"]
+      repo            = "https://github.com/HomeScaleCloud/homescale-public"
+      branch          = "main"
+      paths           = ["apps/*"]
+      pollingInterval = "3m"
     }
   }
 }
@@ -42,9 +44,10 @@ resource "kubernetes_manifest" "gitrepo_apps_lab" {
       namespace = "lab"
     }
     spec = {
-      repo   = "https://github.com/HomeScaleCloud/homescale-public"
-      branch = "main"
-      paths  = ["apps/*"]
+      repo            = "https://github.com/HomeScaleCloud/homescale-public"
+      branch          = "main"
+      paths           = ["apps/*"]
+      pollingInterval = "3m"
     }
   }
 }
@@ -59,9 +62,10 @@ resource "kubernetes_manifest" "gitrepo_apps_mgmt" {
       namespace = "fleet-local"
     }
     spec = {
-      repo   = "https://github.com/HomeScaleCloud/homescale-public"
-      branch = "main"
-      paths  = ["apps/*"]
+      repo            = "https://github.com/HomeScaleCloud/homescale-public"
+      branch          = "main"
+      paths           = ["apps/*"]
+      pollingInterval = "3m"
     }
   }
 }
