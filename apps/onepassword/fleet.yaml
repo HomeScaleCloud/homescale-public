@@ -14,8 +14,3 @@ helm:
         token:
           name: onepassword
           key: password
-
-overrideTargets:
-  - clusterSelector:
-      matchLabels:
-        REDACTED/onepassword: enabled # pragma: allowlist secret
