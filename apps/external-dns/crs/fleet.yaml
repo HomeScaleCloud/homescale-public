@@ -8,3 +8,8 @@ overrideTargets:
   - clusterSelector:
       matchLabels:
         app.homescale.cloud/external-dns: enabled
+
+dependsOn:
+  - name: onepassword
+    acceptedStates:
+      - Ready

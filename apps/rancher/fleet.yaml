@@ -16,6 +16,11 @@ helm:
       annotations:
         "tailscale.com/hostname": "rancher-${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }.tempel-carp.ts.net"
 
+dependsOn:
+  - name: tailscale
+    acceptedStates:
+      - Ready
+
 overrideTargets:
   - clusterSelector:
       matchLabels:
