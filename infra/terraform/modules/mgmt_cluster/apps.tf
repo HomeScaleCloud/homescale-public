@@ -5,11 +5,3 @@ resource "helm_release" "rancher" {
   chart             = "../../apps/rancher"
   dependency_update = true
 }
-
-# resource "helm_release" "onepassword" {
-#   depends_on        = [digitalocean_kubernetes_cluster.mgmt, kubernetes_secret_v1.onepassword]
-#   name              = "onepassword"
-#   namespace         = "onepassword"
-#   chart             = "../../apps/onepassword"
-#   dependency_update = true
-# }
