@@ -16,7 +16,6 @@ resource "kubernetes_namespace_v1" "tailscale" {
 
 resource "kubernetes_namespace_v1" "rancher" {
   depends_on = [digitalocean_kubernetes_cluster.mgmt]
-  count      = var.bootstrapped ? 1 : 0
   metadata {
     name = "cattle-system"
   }
