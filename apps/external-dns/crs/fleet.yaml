@@ -8,3 +8,8 @@ overrideTargets:
   - clusterSelector:
       matchLabels:
         REDACTED/external-dns: enabled
+
+dependsOn:
+  - name: onepassword
+    acceptedStates:
+      - Ready

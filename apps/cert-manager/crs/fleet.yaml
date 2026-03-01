@@ -3,6 +3,12 @@ name: cert-manager-crs
 helm:
   releaseName: cert-manager-crs
   chart: ./
+
+dependsOn:
+  - name: onepassword
+    acceptedStates:
+      - Ready
+
 overrideTargets:
   - clusterSelector:
       matchLabels:

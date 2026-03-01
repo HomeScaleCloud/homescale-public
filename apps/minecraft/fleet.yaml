@@ -17,6 +17,11 @@ helm:
           enabled: true
           Size: "2Gi"
 
+dependsOn:
+  - name: tailscale
+    acceptedStates:
+      - Ready
+
 overrideTargets:
   - clusterSelector:
       matchLabels:
