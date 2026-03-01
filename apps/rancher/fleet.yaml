@@ -1,0 +1,22 @@
+defaultNamespace: cattle-system
+name: rancher
+helm:
+  releaseName: rancher
+  chart: ./
+  values:
+    rancher:
+      replicas: 2
+      tls: external
+      ingress:
+        enabled: false
+    ingress:
+      enabled: true
+      className: "tailscale"
+      host: "rancher-${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }.tempel-carp.ts.net"
+      annotations:
+        "tailscale.com/hostname": "rancher-${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }.tempel-carp.ts.net"
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        app.homescale.cloud/rancher: enabled

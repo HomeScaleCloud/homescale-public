@@ -1,0 +1,21 @@
+defaultNamespace: onepassword
+name: onepassword
+helm:
+  releaseName: onepassword
+  chart: ./
+  values:
+    connect:
+      connect:
+        serviceType: ClusterIP
+        credentialsName: onepassword
+        credentialsKey: credential
+      operator:
+        create: true
+        token:
+          name: onepassword
+          key: password
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        app.homescale.cloud/onepassword: enabled # pragma: allowlist secret
