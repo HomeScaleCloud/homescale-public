@@ -14,8 +14,3 @@ helm:
         token:
           name: onepassword
           key: password
-
-overrideTargets:
-  - clusterSelector:
-      matchLabels:
-        app.homescale.cloud/onepassword: enabled # pragma: allowlist secret
