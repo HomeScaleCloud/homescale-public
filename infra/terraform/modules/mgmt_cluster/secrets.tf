@@ -14,6 +14,7 @@ data "onepassword_item" "entra_tenant" {
 
 resource "kubernetes_secret_v1" "onepassword" {
   depends_on = [kubernetes_namespace_v1.onepassword]
+  count      = var.bootstrapped ? 1 : 0
   metadata {
     name      = "onepassword"
     namespace = "onepassword"
@@ -26,6 +27,7 @@ resource "kubernetes_secret_v1" "onepassword" {
 
 resource "kubernetes_secret_v1" "tailscale" {
   depends_on = [kubernetes_namespace_v1.tailscale]
+  count      = var.bootstrapped ? 1 : 0
   metadata {
     name      = "operator-oauth"
     namespace = "tailscale"
