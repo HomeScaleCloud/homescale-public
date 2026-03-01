@@ -8,6 +8,12 @@ variable "k8s_version" {
   type        = string
 }
 
+variable "bootstrapped" {
+  description = "Set to true after cluster is created (initial apply)"
+  type        = bool
+  default     = false
+}
+
 variable "digitalocean_token" {
   description = "DigitalOcean API Token"
   type        = string
