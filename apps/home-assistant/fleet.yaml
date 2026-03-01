@@ -20,6 +20,11 @@ helm:
       local: true
       devicePath: "/dev/ttyUSB0"
 
+dependsOn:
+  - name: tailscale
+    acceptedStates:
+      - Ready
+
 overrideTargets:
   - clusterSelector:
       matchLabels:
