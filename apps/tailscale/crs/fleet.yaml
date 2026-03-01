@@ -12,22 +12,26 @@ helm:
     ingressProxy:
       replicas: 2
 
-dependsOn:
-  - name: tailscale
-    acceptedStates:
-      - Ready
+# dependsOn:
+#   - name: tailscale
+#     acceptedStates:
+#       - Ready
 
 targetCustomizations:
-  - name: env-prod
-    clusterGroup: env-prod
+  - name: prod
+    clusterSelector:
+      matchLabels:
+        cluster.homescale.cloud/env: prod
     helm:
       values:
         kubeProxy:
           replicas: 2
         ingressProxy:
           replicas: 3
-  - name: env-mgmt
-    clusterGroup: env-mgmt
+  - name: mgmt
+    clusterSelector:
+      matchLabels:
+        cluster.homescale.cloud/env: mgmt
     helm:
       values:
         global:

@@ -1,0 +1,10 @@
+defaultNamespace: external-dns
+name: external-dns-crs
+helm:
+  releaseName: external-dns-crs
+  chart: ./
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        app.homescale.cloud/external-dns: enabled

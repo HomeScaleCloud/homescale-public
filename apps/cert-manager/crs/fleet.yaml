@@ -1,13 +1,8 @@
 defaultNamespace: cert-manager
-name: cert-manager
+name: cert-manager-crs
 helm:
-  releaseName: cert-manager
+  releaseName: cert-manager-crs
   chart: ./
-  values:
-    cert-manager:
-      crds:
-        enabled: true
-
 overrideTargets:
   - clusterSelector:
       matchLabels:

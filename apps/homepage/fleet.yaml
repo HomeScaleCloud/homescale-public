@@ -10,3 +10,8 @@ helm:
     ingress:
       enabled: true
       className: "tailscale"
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        app.homescale.cloud/homepage: enabled

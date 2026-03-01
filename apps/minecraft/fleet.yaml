@@ -16,3 +16,8 @@ helm:
         dataDir:
           enabled: true
           Size: "2Gi"
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        app.homescale.cloud/minecraft: enabled

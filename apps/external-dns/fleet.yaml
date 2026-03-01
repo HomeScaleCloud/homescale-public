@@ -14,3 +14,8 @@ helm:
               name: op-cloudflare
               key: credential
       domainFilters: ["homescale.cloud"]
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        app.homescale.cloud/external-dns: enabled

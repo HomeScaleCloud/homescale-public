@@ -19,3 +19,8 @@ helm:
     zigbee:
       local: true
       devicePath: "/dev/ttyUSB0"
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        app.homescale.cloud/home-assistant: enabled
