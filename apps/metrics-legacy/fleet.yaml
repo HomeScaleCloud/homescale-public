@@ -1,0 +1,10 @@
+defaultNamespace: metrics-legacy
+name: metrics-legacy
+helm:
+  releaseName: metrics-legacy
+  chart: ./
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        xxx/metrics-legacy: enabled
