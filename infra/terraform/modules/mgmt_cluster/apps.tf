@@ -1,6 +1,5 @@
 resource "helm_release" "rancher" {
   depends_on        = [digitalocean_kubernetes_cluster.mgmt, kubernetes_namespace_v1.rancher]
-  count             = var.bootstrapped ? 1 : 0
   name              = "rancher"
   namespace         = "cattle-system"
   chart             = "../../apps/rancher"
