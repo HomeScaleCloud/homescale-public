@@ -23,7 +23,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ .Release.Name }}-rancher
+                name: rancher
                 port:
                   number: 80
   tls:
