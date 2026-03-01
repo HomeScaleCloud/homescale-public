@@ -16,3 +16,8 @@ helm:
         dataDir:
           enabled: true
           Size: "2Gi"
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        REDACTED/minecraft: enabled

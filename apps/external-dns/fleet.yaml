@@ -14,3 +14,8 @@ helm:
               name: op-cloudflare
               key: credential
       domainFilters: ["REDACTED"]
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        REDACTED/external-dns: enabled
