@@ -1,0 +1,38 @@
+{
+  "grants": [
+    // ==========================================
+    // Node + IPMI Access
+    // ==========================================
+    {
+      "src": [
+        "group:sec-infra-plat-pim@homescale.cloud",
+        "tag:github-actions"
+      ],
+      "dst": ["tag:node", "10.1.245.0/24"],
+      "ip": ["tcp:22", "tcp:50000-50001", "tcp:8006", "tcp:6443", "tcp:5252"]
+    }
+  ],
+
+  "ssh": [
+    {
+      "action": "check",
+      "checkPeriod": "2h",
+      "src": ["group:sec-infra-plat-pim@homescale.cloud"],
+      "dst": ["tag:node"],
+      "users": ["hs"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:github-actions"],
+      "dst": ["tag:node"],
+      "users": ["hs"]
+    }
+  ],
+  "tagOwners": {
+    "tag:node":          [],
+    "tag:node-mgmt":          [],
+    "tag:node-prod":          [],
+    "tag:node-test":          [],
+    "tag:node-lab":          []
+  }
+}
