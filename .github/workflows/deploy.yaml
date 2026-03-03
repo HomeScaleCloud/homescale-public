@@ -70,8 +70,8 @@ jobs:
         uses: tailscale/gitops-acl-action@v1
         with:
           tailnet: tempel-carp.ts.net
-          oauth-client-id: $TS_ID
-          oauth-secret: $TS_SECRET
+          oauth-client-id: ${{ env.TS_ID }}
+          oauth-secret: ${{ env.TS_SECRET }}
           policy-file: ${{ env.ACL_COMBINED }}
           action: ${{ github.event_name == 'pull_request' && 'test' || 'apply' }}
 
