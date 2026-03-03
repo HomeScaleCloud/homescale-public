@@ -1,16 +1,18 @@
 {
-  // =========
-  // Tags
-  // =========
+  "grants": [
+    {
+      "src": ["autogroup:member"],
+      "dst": ["autogroup:self"],
+      "ip": ["*"]
+    }
+  ],
+
   "tagOwners": {
     "tag:node":          [],
     "tag:github-actions": [],
     "tag:tv":            []
   },
 
-  // ======================
-  // Node attributes
-  // ======================
   "nodeAttrs": [
     { "target": ["autogroup:member"], "attr": ["mullvad"] },
     { "target": ["tag:tv"], "attr": ["mullvad"] }
