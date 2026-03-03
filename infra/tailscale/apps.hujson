@@ -49,4 +49,12 @@
     "tag:app-ha-prod":      ["tag:env-prod"],
     "tag:app-metrics-prod":      ["tag:env-prod"]
   },
+  "autoApprovers": {
+    "services": {
+      "tag:app": ["tag:app"],
+      "tag:app-rancher-mgmt": ["tag:env-mgmt"],
+      "tag:app-ha-prod": ["tag:env-prod"],
+      "tag:app-metrics-prod": ["tag:env-prod"]
+    }
+  }
 }
