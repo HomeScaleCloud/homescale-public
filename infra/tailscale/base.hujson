@@ -7,8 +7,17 @@
     }
   ],
 
+  // ==========
+  "ssh": [
+    {
+      "action": "check",
+      "src": ["autogroup:member"],
+      "dst": ["autogroup:self"],
+      "users": ["autogroup:nonroot"]
+    }
+  ],
+
   "tagOwners": {
-    "tag:node":          [],
     "tag:github-actions": [],
     "tag:tv":            []
   },
