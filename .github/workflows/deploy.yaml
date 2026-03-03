@@ -49,6 +49,13 @@ jobs:
             -allow grants,tagOwners,ssh,autoApprovers,nodeAttrs \
             > "$ACL_COMBINED"
 
+      - name: Export ACL
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tailscale-acl
+          path: ${{ env.ACL_COMBINED }}
+          retention-days: 11
+
       - name: Import Secrets
         uses: 1password/load-secrets-action@dafbe7cb03502b260e2b2893c753c352eee545bf # v3.2.1
         with:
@@ -62,9 +69,9 @@ jobs:
       - name: Sync ACL
         uses: tailscale/gitops-acl-action@v1
         with:
-          tailnet: $TS_TAILNET
-          oauth-client-id: $TS_ID
-          oauth-secret: $TS_SECRET
+          tailnet: "$TS_TAILNET"
+          oauth-client-id: "$TS_ID"
+          oauth-secret: "$TS_SECRET"
           policy-file: ${{ env.ACL_COMBINED }}
           action: ${{ github.event_name == 'pull_request' && 'test' || 'apply' }}
 
