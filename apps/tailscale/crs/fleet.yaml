@@ -5,7 +5,7 @@ helm:
   chart: ./
   values:
     global:
-      cluster: ${ .ClusterName }-${ get .ClusterLabels "cluster.homescale.cloud/region" }
+      cluster: ${ .ClusterName }-${ get .ClusterLabels "cluster.homescale.cloud/env" }-${ get .ClusterLabels "cluster.homescale.cloud/region" }
       env: ${ get .ClusterLabels "cluster.homescale.cloud/env" }
     kubeProxy:
       replicas: 1
