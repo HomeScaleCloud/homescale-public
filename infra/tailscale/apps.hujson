@@ -31,7 +31,7 @@
         "group:team-sec-plat@homescale.cloud",
         "rainmitch.personal@outlook.com"
       ],
-      "dst": ["tag:app-metrics"],
+      "dst": ["tag:app-metrics-prod"],
       "ip": ["tcp:443"]
     },
 
