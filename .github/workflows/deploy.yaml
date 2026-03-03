@@ -17,11 +17,6 @@ jobs:
   tailscale:
     name: "Tailscale"
     runs-on: ubuntu-latest
-    env:
-      ACL_PARENT: infra/tailscale/base.hujson
-      ACL_CHILD_SRC: infra/tailscale
-      ACL_CHILD_DIR: .tmp/tailscale-acl-children
-      ACL_COMBINED: .tmp/tailscale-policy.hujson
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -33,19 +28,13 @@ jobs:
 
       - name: Setup ACL combiner
         run: |
-          set -euo pipefail
           go install github.com/tailscale-dev/tailscale-acl-combiner@latest
 
       - name: Build ACL
         run: |
-          set -euo pipefail
-          mkdir -p "$ACL_CHILD_DIR"
-          cp "$ACL_CHILD_SRC"/*.hujson "$ACL_CHILD_DIR"/
-          rm -f "$ACL_CHILD_DIR"/base.hujson
-
           tailscale-acl-combiner \
-            -f "$ACL_PARENT" \
-            -d "$ACL_CHILD_DIR" \
+            -f "infra/tailscale/base.hujson" \
+            -d "infra/tailscale" \
             -allow grants,tagOwners,ssh,autoApprovers,nodeAttrs \
             > "$ACL_COMBINED"
 
