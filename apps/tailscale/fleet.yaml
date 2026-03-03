@@ -24,8 +24,3 @@ targetCustomizations:
       values:
         operatorConfig:
           hostname: "ts-mgmt"
-
-overrideTargets:
-  - clusterSelector:
-      matchLabels:
-        app.homescale.cloud/rancher: enabled
