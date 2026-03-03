@@ -1,0 +1,57 @@
+{
+  "grants": [
+    // ==========================================
+    // Kubernetes Access
+    // ==========================================
+    // mgmt
+    {
+      "src": [
+        "group:team-infra-plat@homescale.cloud",
+        "group:sec-infra-plat-pim@homescale.cloud"
+      ],
+      "dst": ["tag:k8s-mgmt"],
+      "ip": ["tcp:443"],
+      "app": {
+        "tailscale.com/cap/kubernetes": [
+          { "impersonate": { "groups": ["team-infra-plat"] } }
+        ]
+      }
+    },
+    // prod
+    {
+      "src": [
+        "group:team-infra-plat@homescale.cloud",
+        "group:sec-infra-plat-pim@homescale.cloud"
+      ],
+      "dst": ["tag:k8s-prod"],
+      "ip": ["tcp:443"],
+      "app": {
+        "tailscale.com/cap/kubernetes": [
+          { "impersonate": { "groups": ["team-infra-plat"] } }
+        ]
+      }
+    },
+    // All Environments
+    {
+      "src": [
+        "group:sec-infra-plat-pim@homescale.cloud",
+        "tag:github-actions"
+      ],
+      "dst": ["tag:k8s"],
+      "ip": ["tcp:443"],
+      "app": {
+        "tailscale.com/cap/kubernetes": [
+          { "impersonate": { "groups": ["system:masters"] } }
+        ]
+      }
+    }
+  ],
+
+  "tagOwners": {
+    "tag:k8s": ["tag:k8s"],
+    "tag:k8s-mgmt": ["tag:k8s"],
+    "tag:k8s-prod": ["tag:k8s"],
+    "tag:k8s-test": ["tag:k8s"],
+    "tag:k8s-lab": ["tag:k8s"]
+  }
+}

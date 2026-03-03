@@ -1,0 +1,52 @@
+{
+  "grants": [
+    // ==========================================
+    // App Access
+    // ==========================================
+
+    // Rancher
+    // mgmt
+    {
+      "src": [
+        "group:team-infra-plat@homescale.cloud",
+        "group:team-sec-plat@homescale.cloud"
+      ],
+      "dst": ["tag:app-rancher-mgmt"],
+      "ip": ["tcp:443"]
+    },
+
+    // Home Assistant
+    // prod
+    {
+      "src": ["group:Owners@homescale.cloud"],
+      "dst": ["tag:app-ha-prod"],
+      "ip": ["tcp:443"]
+    },
+
+    // Metrics
+    // prod
+    {
+      "src": [
+        "group:team-infra-plat@homescale.cloud",
+        "group:team-sec-plat@homescale.cloud",
+        "rainmitch.personal@outlook.com"
+      ],
+      "dst": ["tag:app-metrics"],
+      "ip": ["tcp:443"]
+    },
+
+    // Untagged (low-risk) Apps
+    {
+      "src": ["autogroup:member"],
+      "dst": ["tag:app"],
+      "ip": ["tcp:443"]
+    }
+  ],
+  "tagOwners": {
+    "tag:app": ["tag:k8s"],
+
+    "tag:app-rancher-mgmt": ["tag:env-mgmt"],
+    "tag:app-ha-prod":      ["tag:env-prod"],
+    "tag:app-metrics-prod":      ["tag:env-prod"]
+  },
+}
