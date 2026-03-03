@@ -5,7 +5,7 @@ helm:
   chart: ./
   values:
     global:
-      cluster: ${ .ClusterName }-${ get .ClusterLabels "REDACTED/region" }
+      cluster: ${ .ClusterName }-${ get .ClusterLabels "REDACTED/env" }-${ get .ClusterLabels "REDACTED/region" }
       env: ${ get .ClusterLabels "REDACTED/env" }
     kubeProxy:
       replicas: 1
