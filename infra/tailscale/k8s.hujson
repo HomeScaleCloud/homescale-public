@@ -53,5 +53,14 @@
     "tag:k8s-prod": ["tag:k8s"],
     "tag:k8s-test": ["tag:k8s"],
     "tag:k8s-lab": ["tag:k8s"]
+  },
+  "autoApprovers": {
+    "services": {
+      "tag:k8s": ["tag:k8s"],
+      "tag:k8s-mgmt": ["tag:k8s"],
+      "tag:k8s-prod": ["tag:k8s"],
+      "tag:k8s-test": ["tag:k8s"],
+      "tag:k8s-lab": ["tag:k8s"]
+    }
   }
 }
