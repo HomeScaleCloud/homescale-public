@@ -2,83 +2,71 @@ resource "tailscale_acl" "acl" {
   acl = <<EOF
     // This tailnet's ACLs are maintained in https://github.com/HomeScaleCloud/homescale
     {
-      "acls": [
-        // Default ACLs
+      "grants": [
+        // =========================
+        // Defaults
+        // =========================
         {
-          "action": "accept",
           "src": ["autogroup:member"],
-          "dst": ["tag:app:*"]
+          "dst": ["tag:app"], // <-- Untagged Apps
+          "ip": ["*"]
         },
         {
-          "action": "accept",
           "src": ["autogroup:member"],
-          "dst": ["autogroup:self:*"]
+          "dst": ["tag:env-lab"],
+          "ip": ["*"]
+        },
+        {
+          "src": ["autogroup:member"],
+          "dst": ["autogroup:self"],
+          "ip": ["*"]
         },
 
+        // =========================
         // Apps
+        // =========================
+        // rancher
+        {
+          "src": [
+            "group:team-infra-plat@homescale.cloud",
+            "group:team-sec-plat@homescale.cloud"
+          ],
+          "dst": ["tag:app-rancher"],
+          "ip": ["tcp:443"]
+        },
+
         // ha
         {
-          "action": "accept",
           "src": ["group:Owners@homescale.cloud"],
-          "dst": ["tag:app-ha:443"]
-        },
-        // metrics
-        {
-          "action": "accept",
-          "src": ["group:team-infra-plat@homescale.cloud"],
-          "dst": ["tag:app-metrics:443"]
-        },
-        {
-          "action": "accept",
-          "src": ["rainmitch.personal@outlook.com"],
-          "dst": ["tag:app-metrics:443"]
+          "dst": ["tag:app-ha"],
+          "ip": ["tcp:443"]
         },
 
-        // Clusters + Nodes
+        // metrics
         {
-          "action": "accept",
+          "src": [
+            "group:team-infra-plat@homescale.cloud",
+            "group:team-sec-plat@homescale.cloud",
+            "rainmitch.personal@outlook.com"
+          ],
+          "dst": ["tag:app-metrics"],
+          "ip": ["tcp:443"]
+        },
+
+        // =========================
+        // Clusters + Nodes
+        // =========================
+        // Kubernetes
+        {
           "src": [
             "group:team-infra-plat@homescale.cloud",
             "group:sec-infra-plat-pim@homescale.cloud"
           ],
-          "dst": ["tag:k8s:443"]
-        },
-        {
-          "action": "accept",
-          "src": [
-            "group:sec-infra-plat-pim@homescale.cloud",
-            "tag:github-actions"
-          ],
-          "dst": ["tag:node:22,50000,50001,8006,6443,5252","10.1.245.0/24:22,50000,50001,8006,6443,5252"]
-        },
-
-        // LF K8s Lab
-        {
-          "action": "accept",
-          "src": [
-            "group:team-infra-plat@homescale.cloud",
-            "popsbot1@gmail.com"
-          ],
-          "dst": ["tag:lf-k8s-lab:*"]
-        },
-        {
-          "action": "accept",
-          "src": ["tag:lf-k8s-lab"],
-          "dst": ["tag:lf-k8s-lab:*"]
-        },
-      ],
-
-      "grants": [
-        {
-          "src": ["group:team-infra-plat@homescale.cloud"],
           "dst": ["tag:k8s"],
+          "ip": ["tcp:443"],
           "app": {
             "tailscale.com/cap/kubernetes": [
-              {
-                "impersonate": {
-                  "groups": ["team-infra-plat"]
-                }
-              }
+              { "impersonate": { "groups": ["team-infra-plat"] } }
             ]
           }
         },
@@ -88,89 +76,108 @@ resource "tailscale_acl" "acl" {
             "tag:github-actions"
           ],
           "dst": ["tag:k8s"],
+          "ip": ["tcp:443"],
           "app": {
             "tailscale.com/cap/kubernetes": [
-              {
-                "impersonate": {
-                  "groups": ["system:masters"]
-                }
-              }
+              { "impersonate": { "groups": ["system:masters"] } }
             ]
           }
         },
+        {
+          "src": ["autogroup:member"],
+          "dst": ["tag:env-lab"],
+          "ip": ["tcp:443"],
+          "app": {
+            "tailscale.com/cap/kubernetes": [
+              { "impersonate": { "groups": ["system:masters"] } }
+            ]
+          }
+        },
+
+        // Nodes
+        {
+          "src": [
+            "group:sec-infra-plat-pim@homescale.cloud",
+            "tag:github-actions"
+          ],
+          "dst": ["tag:node", "10.1.245.0/24"],
+          "ip": ["tcp:22", "tcp:50000-50001", "tcp:8006", "tcp:6443", "tcp:5252"]
+        }
       ],
 
+      // ==========
+      // SSH
+      // ==========
       "ssh": [
         {
           "action": "check",
-          "src":    ["autogroup:member"],
-          "dst":    ["autogroup:self"],
-          "users":  ["autogroup:nonroot"],
+          "src": ["autogroup:member"],
+          "dst": ["autogroup:self"],
+          "users": ["autogroup:nonroot"]
+        },
+        {
+          "action": "accept",
+          "src": ["autogroup:member"],
+          "dst": ["tag:env-lab"],
+          "users": ["autogroup:nonroot"]
         },
         {
           "action": "check",
           "checkPeriod": "2h",
           "src": ["group:sec-infra-plat-pim@homescale.cloud"],
           "dst": ["tag:node"],
-          "users": ["hs"],
+          "users": ["hs"]
         },
         {
           "action": "accept",
           "src": ["tag:github-actions"],
           "dst": ["tag:node"],
-          "users": ["hs"],
-        },
-
-        // LF K8s Lab
-        {
-          "action": "accept",
-          "src": [
-            "group:team-infra-plat@homescale.cloud",
-            "popsbot1@gmail.com"
-          ],
-          "dst": ["tag:lf-k8s-lab"],
-          "users": ["hs"],
-        },
+          "users": ["hs"]
+        }
       ],
 
+      // =========
+      // Tags
+      // =========
       "tagOwners": {
         "tag:k8s": ["tag:k8s"],
         "tag:app": ["tag:k8s"],
 
-        "tag:app-ha": ["tag:k8s"],
+        "tag:app-ha":      ["tag:k8s"],
         "tag:app-metrics": ["tag:k8s"],
         "tag:app-rancher": ["tag:k8s"],
 
-        "tag:node": [],
+        "tag:node":          [],
         "tag:github-actions": [],
-        "tag:tv": [],
+        "tag:tv":            [],
 
         "tag:env-mgmt": ["tag:k8s"],
         "tag:env-prod": ["tag:k8s"],
         "tag:env-test": ["tag:k8s"],
-        "tag:env-lab": ["tag:k8s"],
+        "tag:env-lab":  ["tag:k8s"],
 
-        "tag:lf-k8s-lab": [],
+        "tag:lf-k8s-lab": []
       },
 
+      // ======================
+      // Node attributes
+      // ======================
       "nodeAttrs": [
-        {
-          "target": ["autogroup:member"],
-          "attr": ["mullvad"]
-        },
-        {
-          "target": ["tag:tv"],
-          "attr": ["mullvad"]
-        }
+        { "target": ["autogroup:member"], "attr": ["mullvad"] },
+        { "target": ["tag:tv"], "attr": ["mullvad"] }
       ],
 
+      // ===========================
+      // Tailscale Approvals
+      // ===========================
       "autoApprovers": {
-          "services": {
-              "tag:k8s": ["tag:k8s"],
-              "tag:app": ["tag:app"],
-              "tag:app-ha": ["tag:app"],
-              "tag:app-metrics": ["tag:app"],
-          },
+        "services": {
+          "tag:k8s": ["tag:k8s"],
+          "tag:app": ["tag:app"],
+          "tag:app-ha": ["tag:app"],
+          "tag:app-metrics": ["tag:app"],
+          "tag:app-rancher": ["tag:app"]
+        }
       }
     }
   EOF

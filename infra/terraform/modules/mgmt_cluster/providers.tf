@@ -48,3 +48,8 @@ provider "tailscale" {
   oauth_client_id     = var.tailscale_oauth_client_id
   oauth_client_secret = var.tailscale_oauth_client_secret
 }
+
+provider "rancher2" {
+  api_url   = "https://mgmt.homescale.cloud"
+  bootstrap = true
+}
