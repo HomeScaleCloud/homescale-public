@@ -40,13 +40,13 @@ jobs:
             -f "infra/tailscale/base.hujson" \
             -d ".tmp/infra/tailscale" \
             -allow grants,tagOwners,ssh,autoApprovers,nodeAttrs \
-            > "$ACL_COMBINED"
+            > .tmp/infra/tailscale/combined.hujson
 
       - name: Export ACL
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: tailscale-acl
-          path: ${{ env.ACL_COMBINED }}
+          path: .tmp/infra/tailscale/combined.hujson
           retention-days: 11
 
       - name: Import Secrets
@@ -65,7 +65,7 @@ jobs:
           tailnet: tempel-carp.ts.net
           oauth-client-id: ${{ env.TS_ID }}
           oauth-secret: ${{ env.TS_SECRET }}
-          policy-file: ${{ env.ACL_COMBINED }}
+          policy-file: .tmp/infra/tailscale/combined.hujson
           action: ${{ github.event_name == 'pull_request' && 'test' || 'apply' }}
 
   terraform:
