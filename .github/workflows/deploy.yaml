@@ -65,7 +65,7 @@ jobs:
           tailnet: tempel-carp.ts.net
           oauth-client-id: ${{ env.TS_ID }}
           oauth-secret: ${{ env.TS_SECRET }}
-          policy-file: .tmp/infra/tailscale/combined.hujson
+          policy-file: infra/tailscale/combined.hujson
           action: ${{ github.event_name == 'pull_request' && 'test' || 'apply' }}
 
   terraform:
