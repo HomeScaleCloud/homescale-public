@@ -40,8 +40,3 @@ targetCustomizations:
           replicas: 2
         ingressProxy:
           replicas: 3
-
-overrideTargets:
-  - clusterSelector:
-      matchLabels:
-        REDACTED/rancher: enabled
