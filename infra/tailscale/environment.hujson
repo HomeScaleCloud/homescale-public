@@ -1,0 +1,39 @@
+{
+  "grants": [
+    // ==========================================
+    // Environment-wide Access
+    // ==========================================
+    {
+      "src": ["autogroup:member"],
+      "dst": ["tag:env-lab"],
+      "ip": ["*"],
+      "app": {
+        "tailscale.com/cap/kubernetes": [
+          { "impersonate": { "groups": ["system:masters"] } }
+        ]
+      }
+    }
+  ],
+  "ssh": [
+    {
+      "action": "accept",
+      "src": ["autogroup:member"],
+      "dst": ["tag:env-lab"],
+      "users": ["autogroup:nonroot"]
+    }
+  ],
+  "tagOwners": {
+    "tag:env-mgmt": ["tag:k8s"],
+    "tag:env-prod": ["tag:k8s"],
+    "tag:env-test": ["tag:k8s"],
+    "tag:env-lab":  ["tag:k8s"]
+  },
+  "autoApprovers": {
+    "services": {
+      "tag:env-mgmt": ["tag:env-mgmt"],
+      "tag:env-prod": ["tag:env-prod"],
+      "tag:env-test": ["tag:env-test"],
+      "tag:env-lab": ["tag:env-lab"]
+    }
+  }
+}

@@ -8,9 +8,19 @@ helm:
       proxyConfig:
         defaultTags: "tag:app,tag:env-${ get .ClusterLabels \"REDACTED/env\" }"
       operatorConfig:
-        hostname: "ts-${ .ClusterName }-${ get .ClusterLabels \"REDACTED/region\" }"
+        hostname: "ts-${ .ClusterName }-${ get .ClusterLabels \"REDACTED/env\" }-${ get .ClusterLabels \"REDACTED/region\" }"
         defaultTags:
           - "tag:k8s"
+          - "tag:k8s-${ get .ClusterLabels \"REDACTED/env\" }"
           - "tag:env-${ get .ClusterLabels \"REDACTED/env\" }"
       apiServerProxyConfig:
         allowImpersonation: "true"
+targetCustomizations:
+  - name: mgmt
+    clusterSelector:
+      matchLabels:
+        REDACTED/env: mgmt
+    helm:
+      values:
+        operatorConfig:
+          hostname: "ts-mgmt"
