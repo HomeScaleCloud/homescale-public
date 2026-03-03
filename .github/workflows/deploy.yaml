@@ -32,9 +32,13 @@ jobs:
 
       - name: Build ACL
         run: |
+          mkdir -p .tmp/infra/tailscale
+          cp infra/tailscale/*.hujson .tmp/infra/tailscale/
+          rm -f .tmp/infra/tailscale/base.hujson
+
           tailscale-acl-combiner \
-            -f "./infra/tailscale/base.hujson" \
-            -d "./infra/tailscale" \
+            -f "infra/tailscale/base.hujson" \
+            -d ".tmp/infra/tailscale" \
             -allow grants,tagOwners,ssh,autoApprovers,nodeAttrs \
             > "$ACL_COMBINED"
 
