@@ -155,8 +155,6 @@ resource "tailscale_acl" "acl" {
         "tag:env-prod": ["tag:k8s"],
         "tag:env-test": ["tag:k8s"],
         "tag:env-lab":  ["tag:k8s"],
-
-        "tag:lf-k8s-lab": []
       },
 
       // ======================
