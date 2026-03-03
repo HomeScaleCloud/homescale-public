@@ -5,7 +5,7 @@ metadata:
 spec:
   type: kube-apiserver
   replicas: {{ .Values.kubeProxy.replicas }}
-  tags: ["tag:k8s", "tag:env-{{ .Values.global.env }}"]
+  tags: ["tag:k8s", "tag:k8s-{{ .Values.global.env }}", "tag:env-{{ .Values.global.env }}"]
   kubeAPIServer:
     mode: auth
 ---
