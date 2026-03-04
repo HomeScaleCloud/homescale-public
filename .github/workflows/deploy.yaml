@@ -35,6 +35,11 @@ jobs:
           mkdir -p .tmp/infra/tailscale
           cp infra/tailscale/*.hujson .tmp/infra/tailscale/
           rm -f .tmp/infra/tailscale/base.hujson
+          find apps -type f -name tailscale.hujson -print0 | while IFS= read -r -d '' file; do
+            rel="${file#apps/}"
+            safe="${rel//\//__}"
+            cp "$file" ".tmp/infra/tailscale/apps__${safe%.hujson}.hujson"
+          done
 
           tailscale-acl-combiner \
             -f "infra/tailscale/base.hujson" \
