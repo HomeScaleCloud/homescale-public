@@ -4,10 +4,13 @@
       "src": ["autogroup:member"],
       "dst": ["autogroup:self"],
       "ip": ["*"]
+    },
+    {
+      "src": ["autogroup:member"],
+      "dst": ["tag:app"], // Untagged (low-risk) Apps
+      "ip": ["tcp:443"]
     }
   ],
-
-  // ==========
   "ssh": [
     {
       "action": "check",
@@ -18,8 +21,15 @@
   ],
 
   "tagOwners": {
+    "tag:app": ["tag:k8s"],
     "tag:github-actions": [],
     "tag:tv":            []
+  },
+
+  "autoApprovers": {
+    "services": {
+      "tag:app": ["tag:app"]
+    }
   },
 
   "nodeAttrs": [
