@@ -1,0 +1,19 @@
+{
+  "grants": [
+    // Home Assistant
+    // prod
+    {
+      "src": ["group:Owners@homescale.cloud"],
+      "dst": ["tag:app-ha-prod"],
+      "ip": ["tcp:443"]
+    }
+  ],
+  "tagOwners": {
+    "tag:app-ha-prod": ["tag:env-prod"]
+  },
+  "autoApprovers": {
+    "services": {
+      "tag:app-ha-prod": ["tag:env-prod"]
+    }
+  }
+}

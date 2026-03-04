@@ -1,0 +1,23 @@
+{
+  "grants": [
+    // Metrics
+    // prod
+    {
+      "src": [
+        "group:team-infra-plat@homescale.cloud",
+        "group:team-sec-plat@homescale.cloud",
+        "rainmitch.personal@outlook.com"
+      ],
+      "dst": ["tag:app-metrics-prod"],
+      "ip": ["tcp:443"]
+    }
+  ],
+  "tagOwners": {
+    "tag:app-metrics-prod": ["tag:env-prod"]
+  },
+  "autoApprovers": {
+    "services": {
+      "tag:app-metrics-prod": ["tag:env-prod"]
+    }
+  }
+}
