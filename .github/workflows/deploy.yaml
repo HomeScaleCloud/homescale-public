@@ -32,13 +32,12 @@ jobs:
 
       - name: Build ACL
         run: |
-          mkdir -p .tmp/infra/tailscale
-          cp infra/tailscale/*.hujson .tmp/infra/tailscale/
-          rm -f .tmp/infra/tailscale/base.hujson
-          find apps -type f -name tailscale.hujson -print0 | while IFS= read -r -d '' file; do
-            rel="${file#apps/}"
-            safe="${rel//\//__}"
-            cp "$file" ".tmp/infra/tailscale/apps_${safe%.hujson}.hujson"
+          mkdir -p ".tmp/infra/tailscale"
+          find infra/tailscale -maxdepth 1 -name "*.hujson" ! -name "base.hujson" -exec cp -t ".tmp/infra/tailscale/" {} +
+
+          find apps -type f -name "tailscale.hujson" -print0 | while IFS= read -r -d '' file; do
+            name=$(echo "${file#apps/}" | sed 's|/tailscale.hujson||; s|/|__|g')
+            cp "$file" ".tmp/infra/tailscale/apps_${name}.hujson"
           done
 
           tailscale-acl-combiner \
