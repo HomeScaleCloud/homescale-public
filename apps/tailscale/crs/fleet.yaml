@@ -40,3 +40,8 @@ targetCustomizations:
           replicas: 2
         ingressProxy:
           replicas: 3
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        app.homescale.cloud/gah: enabled

@@ -24,3 +24,8 @@ targetCustomizations:
         tailscale-operator:
           operatorConfig:
             hostname: "ts-mgmt"
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        app.homescale.cloud/gah: enabled
