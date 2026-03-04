@@ -38,7 +38,7 @@ jobs:
           find apps -type f -name tailscale.hujson -print0 | while IFS= read -r -d '' file; do
             rel="${file#apps/}"
             safe="${rel//\//__}"
-            cp "$file" ".tmp/infra/tailscale/apps__${safe%.hujson}.hujson"
+            cp "$file" ".tmp/infra/tailscale/apps_${safe%.hujson}.hujson"
           done
 
           tailscale-acl-combiner \
