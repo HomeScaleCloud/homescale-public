@@ -1,25 +1,25 @@
 resource "tailscale_oauth_client" "k8s_mgmt" {
   description = "k8s-mgmt"
   scopes      = ["devices:core", "auth_keys", "services"]
-  tags        = ["tag:k8s", "tag:k8s-mgmt"]
+  tags        = ["tag:k8s", "tag:k8s-mgmt", "tag:env-mgmt"]
 }
 
 resource "tailscale_oauth_client" "k8s_prod" {
   description = "k8s-prod"
   scopes      = ["devices:core", "auth_keys", "services"]
-  tags        = ["tag:k8s", "tag:k8s-prod"]
+  tags        = ["tag:k8s", "tag:k8s-prod", "tag:env-prod"]
 }
 
 resource "tailscale_oauth_client" "test" {
   description = "k8s-test"
   scopes      = ["devices:core", "auth_keys", "services"]
-  tags        = ["tag:k8s", "tag:k8s-test"]
+  tags        = ["tag:k8s", "tag:k8s-test", "tag:env-test"]
 }
 
 resource "tailscale_oauth_client" "k8s_lab" {
   description = "k8s-lab"
   scopes      = ["devices:core", "auth_keys", "services"]
-  tags        = ["tag:k8s", "tag:k8s-lab"]
+  tags        = ["tag:k8s", "tag:k8s-lab", "tag:env-lab"]
 }
 
 resource "tailscale_tailnet_key" "node_mgmt" {
