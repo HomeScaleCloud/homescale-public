@@ -22,5 +22,6 @@ targetCustomizations:
         cluster.homescale.cloud/env: mgmt
     helm:
       values:
-        operatorConfig:
-          hostname: "ts-mgmt"
+        tailscale-operator:
+          operatorConfig:
+            hostname: "ts-mgmt"
