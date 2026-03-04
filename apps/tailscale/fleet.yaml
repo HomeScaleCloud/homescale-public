@@ -11,7 +11,6 @@ helm:
         hostname: "ts-${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
         defaultTags:
           - "tag:k8s"
-          - "tag:k8s-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }"
           - "tag:env-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }"
       apiServerProxyConfig:
         allowImpersonation: "true"
