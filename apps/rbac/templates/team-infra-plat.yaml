@@ -68,7 +68,15 @@ rules:
       - pods
       - nodes
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["argoproj.io"]
+  - apiGroups: ["management.cattle.io"]
+    resources:
+      - "*"
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["fleet.cattle.io"]
+    resources:
+      - "*"
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["management.cattle.io"]
     resources:
       - "*"
     verbs: ["get", "list", "watch"]
