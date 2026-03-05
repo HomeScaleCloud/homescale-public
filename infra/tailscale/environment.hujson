@@ -4,7 +4,7 @@
     // Environment-wide Access
     // ==========================================
     {
-      "src": ["autogroup:member"],
+      "src": ["autogroup:member", "popsbot1@gmail.com"],
       "dst": ["tag:env-lab"],
       "ip": ["*"],
       "app": {
