@@ -17,7 +17,7 @@
   "ssh": [
     {
       "action": "accept",
-      "src": ["autogroup:member"],
+      "src": ["autogroup:member", "popsbot1@gmail.com"],
       "dst": ["tag:env-lab"],
       "users": ["autogroup:nonroot"]
     }
