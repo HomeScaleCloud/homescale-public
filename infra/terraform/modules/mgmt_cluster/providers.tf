@@ -50,6 +50,6 @@ provider "tailscale" {
 }
 
 provider "rancher2" {
-  api_url   = "https://xxx"
+  api_url   = "https://mgmt.tempel-carp.ts.net"
   bootstrap = true
 }
