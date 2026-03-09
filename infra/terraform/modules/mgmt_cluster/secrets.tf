@@ -38,7 +38,7 @@ resource "kubernetes_secret_v1" "tailscale" {
   }
 }
 
-data "kubernetes_secret" "rancher_bootstrap" {
+data "kubernetes_secret_v1" "rancher_bootstrap" {
   depends_on = [helm_release.rancher]
   metadata {
     name      = "bootstrap-secret"
