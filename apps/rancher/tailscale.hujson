@@ -5,7 +5,8 @@
     {
       "src": [
         "group:team-infra-plat@homescale.cloud",
-        "group:team-sec-plat@homescale.cloud"
+        "group:team-sec-plat@homescale.cloud",
+        "tag:github-actions"
       ],
       "dst": ["tag:app-rancher-mgmt"],
       "ip": ["tcp:443"]
