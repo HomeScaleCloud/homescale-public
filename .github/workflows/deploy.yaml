@@ -37,6 +37,7 @@ jobs:
           find infra/tailscale -maxdepth 1 -name "*.hujson" ! -name "base.hujson" -exec cp -t ".tmp/infra/tailscale/" {} +
 
           find apps -type f -name "tailscale.hujson" -print0 | while IFS= read -r -d '' file; do
+            echo "including app $file"
             name=$(echo "${file#apps/}" | sed 's|/tailscale.hujson||; s|/|__|g')
             cp "$file" ".tmp/infra/tailscale/apps_${name}.hujson"
           done
