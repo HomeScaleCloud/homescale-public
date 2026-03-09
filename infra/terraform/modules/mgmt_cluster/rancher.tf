@@ -5,3 +5,7 @@ resource "helm_release" "rancher" {
   chart             = "../../apps/rancher"
   dependency_update = true
 }
+
+resource "rancher2_bootstrap" "mgmt" {
+  initial_password = data.kubernetes_secret.rancher_bootstrap.data["bootstrapPassword"]
+}

@@ -37,3 +37,11 @@ resource "kubernetes_secret_v1" "tailscale" {
     client_secret = tailscale_oauth_client.k8s_mgmt.key
   }
 }
+
+data "kubernetes_secret" "rancher_bootstrap" {
+  depends_on = [helm_release.rancher]
+  metadata {
+    name      = "bootstrap-secret"
+    namespace = "cattle-system"
+  }
+}
