@@ -11,7 +11,8 @@ resource "rancher2_bootstrap" "mgmt" {
   initial_password = data.kubernetes_secret_v1.rancher_bootstrap.data["bootstrapPassword"]
 }
 
-resource "rancher2_auth_config_azuread" "azuread" {
+resource "rancher2_auth_config_azuread" "entraid" {
+  depends_on         = [rancher2_bootstrap.mgmt]
   application_id     = data.onepassword_item.rancher_oidc.username
   application_secret = data.onepassword_item.rancher_oidc.password
   auth_endpoint      = "https://login.microsoftonline.com/${data.onepassword_item.entra_tenant.credential}/oauth2/v2.0/authorize"
