@@ -50,6 +50,12 @@ provider "tailscale" {
 }
 
 provider "rancher2" {
+  alias     = "bootstrap"
   api_url   = "https://mgmt.tempel-carp.ts.net"
   bootstrap = true
+}
+
+provider "rancher2" {
+  api_url   = "https://mgmt.tempel-carp.ts.net"
+  token_key = rancher2_bootstrap.mgmt.token
 }
