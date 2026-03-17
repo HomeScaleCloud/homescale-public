@@ -8,7 +8,7 @@ resource "helm_release" "rancher" {
 
 resource "rancher2_bootstrap" "mgmt" {
   depends_on       = [data.kubernetes_secret_v1.rancher_bootstrap]
-  provider         = "rancher2.bootstrap"
+  provider         = rancher2.bootstrap
   count            = var.bootstrapped ? 1 : 0
   initial_password = data.kubernetes_secret_v1.rancher_bootstrap.data["bootstrapPassword"]
 }
