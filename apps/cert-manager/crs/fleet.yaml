@@ -8,8 +8,3 @@ dependsOn:
   - name: onepassword
     acceptedStates:
       - Ready
-
-overrideTargets:
-  - clusterSelector:
-      matchLabels:
-        app.homescale.cloud/cert-manager: enabled

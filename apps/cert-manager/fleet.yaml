@@ -7,8 +7,3 @@ helm:
     cert-manager:
       crds:
         enabled: true
-
-overrideTargets:
-  - clusterSelector:
-      matchLabels:
-        app.homescale.cloud/cert-manager: enabled
