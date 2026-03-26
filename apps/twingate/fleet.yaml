@@ -4,6 +4,8 @@ helm:
   releaseName: twingate
   chart: ./
   values:
+    global:
+      cluster: "${ .ClusterName }-${ get .ClusterLabels \"xxx/env\" }-${ get .ClusterLabels \"xxx/region\" }"
     twingate-operator:
       twingateOperator:
         existingAPIKeySecret:
@@ -27,6 +29,8 @@ targetCustomizations:
         xxx/env: mgmt
     helm:
       values:
+        global:
+          cluster: "mgmt"
         twingate-operator:
           twingateOperator:
             existingAPIKeySecret:
