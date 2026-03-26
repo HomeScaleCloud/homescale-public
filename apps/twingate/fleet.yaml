@@ -22,6 +22,7 @@ helm:
             extraAnnotations:
               resource.twingate.com/name: "k8s-${ .ClusterName }-${ get .ClusterLabels \"xxx/env\" }-${ get .ClusterLabels \"xxx/region\" }"
               resource.twingate.com/alias: "k8s.${ .ClusterName }.${ get .ClusterLabels \"xxx/env\" }.${ get .ClusterLabels \"xxx/region\" }.xxx"
+              resource.twingate.com/securityPolicyId: "U2VjdXJpdHlQb2xpY3k6MTA2MDEzMA=="
 
 targetCustomizations:
   - name: mgmt
