@@ -7,8 +7,3 @@ helm:
     cert-manager:
       crds:
         enabled: true
-
-overrideTargets:
-  - clusterSelector:
-      matchLabels:
-        REDACTED/cert-manager: enabled
