@@ -5,6 +5,7 @@ module "mgmt_cluster" {
   region                   = "lon1"
   bootstrapped             = true
   op_service_account_token = var.op_service_account_token
+  twingate_token           = data.onepassword_item.twingate.credential
 }
 
 module "region_boa1" {
