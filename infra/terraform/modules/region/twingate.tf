@@ -6,6 +6,7 @@ resource "twingate_remote_network" "mgmt" {
 resource "twingate_connector" "mgmt" {
   remote_network_id      = twingate_remote_network.mgmt.id
   status_updates_enabled = true
+  name                   = "${var.region}-mgmtr"
 }
 
 resource "twingate_connector_tokens" "mgmt" {
