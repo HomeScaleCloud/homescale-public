@@ -28,6 +28,10 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = "3.0.1"
     }
+    twingate = {
+      source  = "Twingate/twingate"
+      version = "4.0.2"
+    }
   }
 }
 
