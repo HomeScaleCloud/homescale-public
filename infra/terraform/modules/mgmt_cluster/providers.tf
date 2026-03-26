@@ -15,6 +15,9 @@ terraform {
     rancher2 = {
       source = "rancher/rancher2"
     }
+    twingate = {
+      source = "Twingate/twingate"
+    }
   }
 }
 
@@ -38,6 +41,11 @@ provider "helm" {
 
 provider "onepassword" {
   service_account_token = var.op_service_account_token
+}
+
+provider "twingate" {
+  api_token = var.twingate_token
+  network   = "homescale"
 }
 
 provider "rancher2" {
