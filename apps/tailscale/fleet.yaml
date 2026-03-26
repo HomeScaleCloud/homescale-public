@@ -14,6 +14,10 @@ helm:
           - "tag:env-${ get .ClusterLabels \"REDACTED/env\" }"
       apiServerProxyConfig:
         allowImpersonation: "true"
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        REDACTED/tailscale: enabled
 targetCustomizations:
   - name: mgmt
     clusterSelector:
