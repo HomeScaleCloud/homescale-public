@@ -12,9 +12,6 @@ terraform {
     onepassword = {
       source = "1Password/onepassword"
     }
-    tailscale = {
-      source = "tailscale/tailscale"
-    }
     rancher2 = {
       source = "rancher/rancher2"
     }
@@ -41,12 +38,6 @@ provider "helm" {
 
 provider "onepassword" {
   service_account_token = var.op_service_account_token
-}
-
-provider "tailscale" {
-  tailnet             = var.tailscale_tailnet
-  oauth_client_id     = var.tailscale_oauth_client_id
-  oauth_client_secret = var.tailscale_oauth_client_secret
 }
 
 provider "rancher2" {

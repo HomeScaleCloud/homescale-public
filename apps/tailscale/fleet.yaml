@@ -14,6 +14,10 @@ helm:
           - "tag:env-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }"
       apiServerProxyConfig:
         allowImpersonation: "true"
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        app.homescale.cloud/tailscale: enabled
 targetCustomizations:
   - name: mgmt
     clusterSelector:

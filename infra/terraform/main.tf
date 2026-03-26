@@ -14,4 +14,5 @@ module "region_boa1" {
   source                   = "./modules/region"
   region                   = "boa1"
   op_service_account_token = var.op_service_account_token
+  twingate_token           = data.onepassword_item.twingate.credential
 }

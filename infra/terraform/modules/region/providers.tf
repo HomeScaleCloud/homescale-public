@@ -14,6 +14,6 @@ provider "onepassword" {
 }
 
 provider "twingate" {
-  api_token = data.onepassword_item.twingate.credential
+  api_token = var.twingate_token
   network   = "homescale"
 }

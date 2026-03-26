@@ -1,0 +1,37 @@
+defaultNamespace: twingate
+name: twingate
+helm:
+  releaseName: twingate
+  chart: ./
+  values:
+    twingate-operator:
+      twingateOperator:
+        existingAPIKeySecret:
+          name: op-tg-k8s-operator
+          key: credential
+        network: "homescale"
+        remoteNetworkName: "${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
+      kubernetes-access-gateway:
+        enabled: true
+        twingate:
+          network: "homescale"
+          resource:
+            enabled: true
+            extraAnnotations:
+              resource.twingate.com/alias: "k8s.${ .ClusterName }.${ get .ClusterLabels \"cluster.homescale.cloud/env\" }.${ get .ClusterLabels \"cluster.homescale.cloud/region\" }.homescale.cloud"
+
+targetCustomizations:
+  - name: mgmt
+    clusterSelector:
+      matchLabels:
+        cluster.homescale.cloud/env: mgmt
+    helm:
+      values:
+        twingate-operator:
+          twingateOperator:
+            remoteNetworkName: "mgmt"
+          kubernetes-access-gateway:
+            twingate:
+              resource:
+                extraAnnotations:
+                  resource.twingate.com/alias: "k8s.${ .ClusterName }.${ get .ClusterLabels \"cluster.homescale.cloud/env\" }.${ get .ClusterLabels \"cluster.homescale.cloud/region\" }.homescale.cloud"

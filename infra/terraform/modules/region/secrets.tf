@@ -1,8 +1,3 @@
-data "onepassword_item" "twingate" {
-  vault = "github-actions"
-  title = "twingate"
-}
-
 data "onepassword_vault" "k8s" {
   name = "k8s"
 }

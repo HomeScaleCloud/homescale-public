@@ -1,0 +1,9 @@
+apiVersion: v2
+name: twingate
+description: Helm chart for deploying Twingate Kubernetes Operator
+type: application
+version: 0.1.0
+dependencies:
+  - name: twingate-operator
+    version: 0.30.0
+    repository: oci://ghcr.io/twingate/helmcharts
