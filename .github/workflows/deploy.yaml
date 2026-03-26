@@ -14,69 +14,8 @@ concurrency:
   group: deploy
 
 jobs:
-  tailscale:
-    name: "Tailscale"
-    runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'tailscale' || null }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
-        with:
-          go-version: 'stable'
-
-      - name: Setup ACL combiner
-        run: |
-          go install github.com/tailscale-dev/tailscale-acl-combiner@latest
-
-      - name: Build ACL
-        run: |
-          mkdir -p ".tmp/infra/tailscale"
-          find infra/tailscale -maxdepth 1 -name "*.hujson" ! -name "base.hujson" -exec cp -t ".tmp/infra/tailscale/" {} +
-
-          find apps -type f -name "tailscale.hujson" -print0 | while IFS= read -r -d '' file; do
-            echo "including app $file"
-            name=$(echo "${file#apps/}" | sed 's|/tailscale.hujson||; s|/|__|g')
-            cp "$file" ".tmp/infra/tailscale/apps_${name}.hujson"
-          done
-
-          tailscale-acl-combiner \
-            -f "infra/tailscale/base.hujson" \
-            -d ".tmp/infra/tailscale" \
-            -allow grants,tagOwners,ssh,autoApprovers,nodeAttrs \
-            > "infra/tailscale/combined.hujson"
-
-      - name: Export ACL
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: tailscale-acl
-          path: infra/tailscale/combined.hujson
-          retention-days: 11
-
-      - name: Import Secrets
-        uses: 1password/load-secrets-action@dafbe7cb03502b260e2b2893c753c352eee545bf # v3.2.1
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.op_service_account_token }}
-          TS_TAILNET: op://github-actions/tailscale-tailnet/username
-          TS_ID: op://github-actions/tailscale/username
-          TS_SECRET: op://github-actions/tailscale/password  # pragma: allowlist secret
-
-      - name: Sync ACL
-        uses: tailscale/gitops-acl-action@v1
-        with:
-          tailnet: tempel-carp.ts.net
-          oauth-client-id: ${{ env.TS_ID }}
-          oauth-secret: ${{ env.TS_SECRET }}
-          policy-file: infra/tailscale/combined.hujson
-          action: ${{ github.event_name == 'pull_request' && 'test' || 'apply' }}
-
   terraform:
     name: "Terraform"
-    needs: tailscale
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/main' && 'terraform' || null }}
     defaults:
@@ -119,3 +58,64 @@ jobs:
       - name: Apply
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve tfplan
+
+  # Deprecated with migration to Twingate
+  # tailscale:
+  #   name: "Tailscale"
+  #   runs-on: ubuntu-latest
+  #   environment: ${{ github.ref == 'refs/heads/main' && 'tailscale' || null }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+  #     - name: Setup Go
+  #       uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+  #       with:
+  #         go-version: 'stable'
+
+  #     - name: Setup ACL combiner
+  #       run: |
+  #         go install github.com/tailscale-dev/tailscale-acl-combiner@latest
+
+  #     - name: Build ACL
+  #       run: |
+  #         mkdir -p ".tmp/infra/tailscale"
+  #         find infra/tailscale -maxdepth 1 -name "*.hujson" ! -name "base.hujson" -exec cp -t ".tmp/infra/tailscale/" {} +
+
+  #         find apps -type f -name "tailscale.hujson" -print0 | while IFS= read -r -d '' file; do
+  #           echo "including app $file"
+  #           name=$(echo "${file#apps/}" | sed 's|/tailscale.hujson||; s|/|__|g')
+  #           cp "$file" ".tmp/infra/tailscale/apps_${name}.hujson"
+  #         done
+
+  #         tailscale-acl-combiner \
+  #           -f "infra/tailscale/base.hujson" \
+  #           -d ".tmp/infra/tailscale" \
+  #           -allow grants,tagOwners,ssh,autoApprovers,nodeAttrs \
+  #           > "infra/tailscale/combined.hujson"
+
+  #     - name: Export ACL
+  #       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+  #       with:
+  #         name: tailscale-acl
+  #         path: infra/tailscale/combined.hujson
+  #         retention-days: 11
+
+  #     - name: Import Secrets
+  #       uses: 1password/load-secrets-action@dafbe7cb03502b260e2b2893c753c352eee545bf # v3.2.1
+  #       with:
+  #         export-env: true
+  #       env:
+  #         OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.op_service_account_token }}
+  #         TS_TAILNET: op://github-actions/tailscale-tailnet/username
+  #         TS_ID: op://github-actions/tailscale/username
+  #         TS_SECRET: op://github-actions/tailscale/password  # pragma: allowlist secret
+
+  #     - name: Sync ACL
+  #       uses: tailscale/gitops-acl-action@v1
+  #       with:
+  #         tailnet: tempel-carp.ts.net
+  #         oauth-client-id: ${{ env.TS_ID }}
+  #         oauth-secret: ${{ env.TS_SECRET }}
+  #         policy-file: infra/tailscale/combined.hujson
+  #         action: ${{ github.event_name == 'pull_request' && 'test' || 'apply' }}
