@@ -8,8 +8,3 @@ dependsOn:
   - name: onepassword
     acceptedStates:
       - Ready
-
-overrideTargets:
-  - clusterSelector:
-      matchLabels:
-        REDACTED/cert-manager: enabled

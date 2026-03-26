@@ -2,7 +2,6 @@ apiVersion: twingate.com/v1beta
 kind: TwingateResource
 metadata:
   name: mgmt
-  namespace: cattle-system
 spec:
   name: mgmt
   address: rancher.cattle-system.svc.cluster.local
@@ -17,7 +16,7 @@ metadata:
 spec:
   resourceRef:
     name: mgmt
-    namespace: cattle-system
+    namespace: {{ .Release.Namespace }}
   principalExternalRef:
     type: group
     name: team-infra-plat
@@ -29,7 +28,7 @@ metadata:
 spec:
   resourceRef:
     name: mgmt
-    namespace: cattle-system
+    namespace: {{ .Release.Namespace }}
   principalExternalRef:
     type: group
     name: team-sec-plat
