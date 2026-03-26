@@ -7,3 +7,27 @@ spec:
   address: rancher.cattle-system.svc.cluster.local
   alias: mgmt.homescale.cloud
   securityPolicyId: U2VjdXJpdHlQb2xpY3k6MTA2MDEzMA==
+---
+apiVersion: twingate.com/v1beta
+kind: TwingateResourceAccess
+metadata:
+  name: mgmt-team-infra-plat
+spec:
+  resourceRef:
+    name: mgmt
+    namespace: {{ .Release.Namespace }}
+  principalExternalRef:
+    type: group
+    name: team-infra-plat
+---
+apiVersion: twingate.com/v1beta
+kind: TwingateResourceAccess
+metadata:
+  name: mgmt-team-sec-plat
+spec:
+  resourceRef:
+    name: mgmt
+    namespace: {{ .Release.Namespace }}
+  principalExternalRef:
+    type: group
+    name: team-sec-plat
