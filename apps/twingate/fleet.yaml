@@ -29,6 +29,8 @@ targetCustomizations:
       values:
         twingate-operator:
           twingateOperator:
+            existingAPIKeySecret:
+              name: tf-tg-k8s-operator
             remoteNetworkName: "mgmt"
           kubernetes-access-gateway:
             twingate:

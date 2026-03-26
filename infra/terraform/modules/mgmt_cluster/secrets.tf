@@ -7,6 +7,11 @@ data "onepassword_item" "onepassword" {
   title = "onepassword"
 }
 
+data "onepassword_item" "twingate" {
+  vault = "k8s"
+  title = "tg-k8s-operator"
+}
+
 data "onepassword_item" "entra_tenant" {
   vault = "k8s"
   title = "entra-tenant"
@@ -35,5 +40,17 @@ data "kubernetes_secret_v1" "rancher_bootstrap" {
   metadata {
     name      = "bootstrap-secret"
     namespace = "cattle-system"
+  }
+}
+
+resource "kubernetes_secret_v1" "twingate" {
+  depends_on = [kubernetes_namespace_v1.twingate]
+  count      = var.bootstrapped ? 1 : 0
+  metadata {
+    name      = "tf-tg-k8s-operator"
+    namespace = "twingate"
+  }
+  data = {
+    credential = data.onepassword_item.twingate.credential
   }
 }
