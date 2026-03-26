@@ -40,3 +40,8 @@ data "onepassword_item" "tailscale_slack" {
   vault = "github-actions"
   title = "tailscale-slack"
 }
+
+data "onepassword_item" "twingate" {
+  vault = "github-actions"
+  title = "twingate"
+}

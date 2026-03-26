@@ -30,19 +30,6 @@ resource "kubernetes_secret_v1" "onepassword" {
   }
 }
 
-resource "kubernetes_secret_v1" "tailscale" {
-  depends_on = [kubernetes_namespace_v1.tailscale]
-  count      = var.bootstrapped ? 1 : 0
-  metadata {
-    name      = "operator-oauth"
-    namespace = "tailscale"
-  }
-  data = {
-    client_id     = tailscale_oauth_client.k8s_mgmt.id
-    client_secret = tailscale_oauth_client.k8s_mgmt.key
-  }
-}
-
 data "kubernetes_secret_v1" "rancher_bootstrap" {
   depends_on = [helm_release.rancher]
   metadata {

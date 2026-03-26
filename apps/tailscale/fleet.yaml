@@ -14,6 +14,10 @@ helm:
           - "tag:env-${ get .ClusterLabels \"xxx/env\" }"
       apiServerProxyConfig:
         allowImpersonation: "true"
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        xxx/tailscale: enabled
 targetCustomizations:
   - name: mgmt
     clusterSelector:
