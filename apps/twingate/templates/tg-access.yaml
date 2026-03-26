@@ -1,0 +1,11 @@
+apiVersion: twingate.com/v1beta
+kind: TwingateResourceAccess
+metadata:
+  name: k8s-team-infra-plat
+spec:
+  resourceRef:
+    name: twingate-kubernetes-access-gateway-resource
+    namespace: twingate
+  principalExternalRef:
+    type: group
+    name: team-infra-plat
