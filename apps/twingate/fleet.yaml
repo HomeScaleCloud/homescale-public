@@ -22,6 +22,7 @@ helm:
             extraAnnotations:
               resource.twingate.com/name: "k8s-${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
               resource.twingate.com/alias: "k8s.${ .ClusterName }.${ get .ClusterLabels \"cluster.homescale.cloud/env\" }.${ get .ClusterLabels \"cluster.homescale.cloud/region\" }.homescale.cloud"
+              resource.twingate.com/securityPolicyId: "U2VjdXJpdHlQb2xpY3k6MTA2MDEzMA=="
 
 targetCustomizations:
   - name: mgmt
