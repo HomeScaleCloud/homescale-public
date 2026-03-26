@@ -80,6 +80,10 @@ rules:
     resources:
       - "*"
     verbs: ["get", "list", "watch"]
+  - apiGroups: ["twingate.com"]
+    resources:
+      - "*"
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["cert-manager.io"]
     resources:
       - "*"
