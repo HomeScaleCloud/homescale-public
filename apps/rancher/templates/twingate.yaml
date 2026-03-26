@@ -1,0 +1,8 @@
+apiVersion: twingate.com/v1beta
+kind: TwingateResource
+metadata:
+  name: mgmt
+spec:
+  name: mgmt
+  address: foo.default.svc.cluster.local
+  alias: mgmt.homescale.cloud

@@ -3,9 +3,3 @@ rancher:
   tls: external
   ingress:
     enabled: false
-ingress:
-  enabled: true
-  className: "tailscale"
-  host: "mgmt.tempel-carp.ts.net"
-  annotations:
-    "tailscale.com/hostname": "mgmt"

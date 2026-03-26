@@ -13,6 +13,13 @@ resource "kubernetes_namespace_v1" "rancher" {
   }
 }
 
+resource "kubernetes_namespace_v1" "twingate" {
+  depends_on = [digitalocean_kubernetes_cluster.mgmt]
+  metadata {
+    name = "twingate"
+  }
+}
+
 resource "kubernetes_namespace_v1" "prod" {
   depends_on = [digitalocean_kubernetes_cluster.mgmt]
   count      = var.bootstrapped ? 1 : 0
