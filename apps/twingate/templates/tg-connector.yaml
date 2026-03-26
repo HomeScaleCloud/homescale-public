@@ -3,6 +3,7 @@ kind: TwingateConnector
 metadata:
   name: {{ .Values.global.cluster }}
 spec:
+  name: {{ .Values.global.cluster }}
   imagePolicy:
     provider: dockerhub
     schedule: "0 0 * * *"
