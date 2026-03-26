@@ -9,3 +9,9 @@ module "mgmt_cluster" {
   tailscale_oauth_client_id     = data.onepassword_item.tailscale.username
   tailscale_oauth_client_secret = data.onepassword_item.tailscale.password
 }
+
+module "region_boa1" {
+  source                   = "./modules/region"
+  region                   = "boa1"
+  op_service_account_token = var.op_service_account_token
+}
