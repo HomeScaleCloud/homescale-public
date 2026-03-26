@@ -1,0 +1,15 @@
+defaultNamespace: rancher
+name: rancher
+helm:
+  releaseName: rancher
+  chart: ./
+  values:
+    rancher:
+      replicas: 2
+      tls: external
+      ingress:
+        enabled: false
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        app.homescale.cloud/rancher: enabled
