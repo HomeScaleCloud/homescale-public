@@ -13,6 +13,9 @@ resource "kubernetes_manifest" "gitrepo_apps_prod" {
       branch          = "main"
       paths           = ["apps/*"]
       pollingInterval = "3m"
+      correctDrift = {
+        enabled = true
+      }
     }
   }
   field_manager {
@@ -35,6 +38,9 @@ resource "kubernetes_manifest" "gitrepo_apps_lab" {
       branch          = "main"
       paths           = ["apps/*"]
       pollingInterval = "3m"
+      correctDrift = {
+        enabled = true
+      }
     }
   }
   field_manager {
@@ -57,6 +63,9 @@ resource "kubernetes_manifest" "gitrepo_apps_mgmt" {
       branch          = "main"
       paths           = ["apps/*"]
       pollingInterval = "3m"
+      correctDrift = {
+        enabled = true
+      }
     }
   }
   field_manager {
