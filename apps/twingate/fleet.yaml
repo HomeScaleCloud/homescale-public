@@ -4,6 +4,8 @@ helm:
   releaseName: twingate
   chart: ./
   values:
+    global:
+      cluster: "${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
     twingate-operator:
       twingateOperator:
         existingAPIKeySecret:
@@ -27,6 +29,8 @@ targetCustomizations:
         cluster.homescale.cloud/env: mgmt
     helm:
       values:
+        global:
+          cluster: "mgmt"
         twingate-operator:
           twingateOperator:
             existingAPIKeySecret:

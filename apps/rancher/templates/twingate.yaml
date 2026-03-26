@@ -4,5 +4,6 @@ metadata:
   name: mgmt
 spec:
   name: mgmt
-  address: foo.default.svc.cluster.local
+  address: rancher.cattle-system.svc.cluster.local
   alias: mgmt.homescale.cloud
+  securityPolicyId: U2VjdXJpdHlQb2xpY3k6MTA2MDEzMA
