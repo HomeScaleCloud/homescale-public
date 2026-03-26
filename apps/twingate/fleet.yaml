@@ -40,4 +40,4 @@ targetCustomizations:
             twingate:
               resource:
                 extraAnnotations:
-                  resource.twingate.com/alias: "k8s.${ .ClusterName }.${ get .ClusterLabels \"REDACTED/env\" }.${ get .ClusterLabels \"REDACTED/region\" }.REDACTED"
+                  resource.twingate.com/alias: "REDACTED"
