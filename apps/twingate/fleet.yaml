@@ -15,13 +15,12 @@ helm:
         remoteNetworkName: "${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
       kubernetes-access-gateway:
         enabled: true
-        gateway:
-          fullname: "k8s-${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
         twingate:
           network: "homescale"
           resource:
             enabled: true
             extraAnnotations:
+              resource.twingate.com/name: "k8s-${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
               resource.twingate.com/alias: "k8s.${ .ClusterName }.${ get .ClusterLabels \"cluster.homescale.cloud/env\" }.${ get .ClusterLabels \"cluster.homescale.cloud/region\" }.homescale.cloud"
 
 targetCustomizations:
@@ -39,9 +38,8 @@ targetCustomizations:
               name: tf-tg-k8s-operator
             remoteNetworkName: "mgmt"
           kubernetes-access-gateway:
-            gateway:
-              fullname: "k8s-mgmt"
             twingate:
               resource:
                 extraAnnotations:
+                  resource.twingate.com/name: "k8s-mgmt"
                   resource.twingate.com/alias: "k8s.mgmt.homescale.cloud"
