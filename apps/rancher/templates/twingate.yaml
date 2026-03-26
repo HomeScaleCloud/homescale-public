@@ -6,4 +6,4 @@ spec:
   name: mgmt
   address: rancher.cattle-system.svc.cluster.local
   alias: mgmt.homescale.cloud
-  securityPolicyId: U2VjdXJpdHlQb2xpY3k6MTA2MDEzMA
+  securityPolicyId: U2VjdXJpdHlQb2xpY3k6MTA2MDEzMA==

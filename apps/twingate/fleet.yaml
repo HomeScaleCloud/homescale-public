@@ -15,6 +15,8 @@ helm:
         remoteNetworkName: "${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
       kubernetes-access-gateway:
         enabled: true
+        gateway:
+          fullname: "k8s-${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
         twingate:
           network: "homescale"
           resource:
@@ -37,6 +39,8 @@ targetCustomizations:
               name: tf-tg-k8s-operator
             remoteNetworkName: "mgmt"
           kubernetes-access-gateway:
+            gateway:
+              fullname: "k8s-mgmt"
             twingate:
               resource:
                 extraAnnotations:
