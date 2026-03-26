@@ -57,5 +57,5 @@ provider "rancher2" {
 
 provider "rancher2" {
   api_url   = "https://mgmt.tempel-carp.ts.net"
-  token_key = rancher2_bootstrap.mgmt.token
+  token_key = rancher2_bootstrap.mgmt[0].token
 }
