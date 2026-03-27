@@ -3,12 +3,6 @@ name: rancher
 helm:
   releaseName: rancher
   chart: ./
-  values:
-    rancher:
-      replicas: 2
-      tls: external
-      ingress:
-        enabled: false
 overrideTargets:
   - clusterSelector:
       matchLabels:
