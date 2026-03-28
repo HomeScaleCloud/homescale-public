@@ -7,3 +7,5 @@ helm:
     traefik:
       deployment:
         replicas: 2
+      service:
+        type: ClusterIP
