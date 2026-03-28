@@ -1,5 +1,5 @@
 rancher:
+  hostname: mgmt.homescale.cloud
   replicas: 2
-  tls: external
   ingress:
-    enabled: false
+    enabled: true
