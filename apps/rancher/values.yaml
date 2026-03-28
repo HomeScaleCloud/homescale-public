@@ -3,3 +3,4 @@ rancher:
   replicas: 2
   ingress:
     enabled: true
+    source: secret
