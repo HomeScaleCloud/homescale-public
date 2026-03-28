@@ -1,0 +1,9 @@
+defaultNamespace: traefik
+name: traefik
+helm:
+  releaseName: traefik
+  chart: ./
+  values:
+    traefik:
+      deployment:
+        replicas: 2
