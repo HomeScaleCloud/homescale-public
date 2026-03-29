@@ -26,21 +26,6 @@ data "onepassword_item" "digitalocean" {
   title = "digitalocean"
 }
 
-data "onepassword_item" "tailscale" {
-  vault = "github-actions"
-  title = "tailscale"
-}
-
-data "onepassword_item" "tailscale_tailnet" {
-  vault = "github-actions"
-  title = "tailscale-tailnet"
-}
-
-data "onepassword_item" "tailscale_slack" {
-  vault = "github-actions"
-  title = "tailscale-slack"
-}
-
 data "onepassword_item" "twingate" {
   vault = "github-actions"
   title = "twingate"
