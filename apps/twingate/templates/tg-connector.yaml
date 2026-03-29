@@ -1,7 +1,17 @@
 apiVersion: twingate.com/v1beta
 kind: TwingateConnector
 metadata:
+  name: {{ .Values.global.cluster }}-1
+spec:
   name: {{ .Values.global.cluster }}
+  imagePolicy:
+    provider: dockerhub
+    schedule: "0 0 * * *"
+---
+apiVersion: twingate.com/v1beta
+kind: TwingateConnector
+metadata:
+  name: {{ .Values.global.cluster }}-2
 spec:
   name: {{ .Values.global.cluster }}
   imagePolicy:
