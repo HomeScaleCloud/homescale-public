@@ -12,10 +12,6 @@ terraform {
       source  = "digitalocean/digitalocean"
       version = "2.81.0"
     }
-    tailscale = {
-      source  = "tailscale/tailscale"
-      version = "0.27.0"
-    }
     rancher2 = {
       source  = "rancher/rancher2"
       version = "8.5.0"
@@ -48,8 +44,7 @@ provider "digitalocean" {
   token = data.onepassword_item.digitalocean.credential
 }
 
-provider "tailscale" {
-  tailnet             = data.onepassword_item.tailscale_tailnet.credential
-  oauth_client_id     = data.onepassword_item.tailscale.username
-  oauth_client_secret = data.onepassword_item.tailscale.password
+provider "twingate" {
+  api_token = data.onepassword_item.twingate.credential
+  network   = "homescale"
 }
