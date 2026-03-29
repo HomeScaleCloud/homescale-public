@@ -1,9 +1,9 @@
 apiVersion: twingate.com/v1beta
 kind: TwingateResource
 metadata:
-  name: mgmt
+  name: rancher
 spec:
-  name: mgmt
+  name: Rancher
   address: traefik.traefik.svc.cluster.local
   alias: mgmt.homescale.cloud
   securityPolicyId: U2VjdXJpdHlQb2xpY3k6MTA2MDEzMA==
@@ -12,10 +12,10 @@ spec:
 apiVersion: twingate.com/v1beta
 kind: TwingateResourceAccess
 metadata:
-  name: mgmt-team-infra-plat
+  name: rancher-team-infra-plat
 spec:
   resourceRef:
-    name: mgmt
+    name: rancher
     namespace: {{ .Release.Namespace }}
   principalExternalRef:
     type: group
@@ -24,10 +24,10 @@ spec:
 apiVersion: twingate.com/v1beta
 kind: TwingateResourceAccess
 metadata:
-  name: mgmt-team-sec-plat
+  name: rancher-team-sec-plat
 spec:
   resourceRef:
-    name: mgmt
+    name: rancher
     namespace: {{ .Release.Namespace }}
   principalExternalRef:
     type: group
