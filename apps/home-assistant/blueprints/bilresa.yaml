@@ -12,9 +12,9 @@ blueprint:
       selector:
         entity:
           domain: light
-    secondary_light:
-      name: Secondary Light Entity (Optional)
-      description: The secondary light to control (toggled by double click).
+    secondary_entity:
+      name: Secondary Entity (Optional)
+      description: The secondary light/entity to control (toggled by double click).
       default: []
       selector:
         entity:
@@ -76,8 +76,6 @@ action:
             value_template: >
               {{ trigger.payload_json.action in ['on_double', 'off_double'] }}
         sequence:
-          - action: light.toggle
+          - action: homeassistant.toggle
             target:
-              entity_id: !input secondary_light
-            data:
-              transition: 0.2
+              entity_id: !input secondary_entity
