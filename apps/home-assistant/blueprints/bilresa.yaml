@@ -5,8 +5,7 @@ blueprint:
   input:
     mqtt_topic:
       name: BILRESA MQTT Topic
-      description: The MQTT topic used by the BILRESA (found in Zigbee2MQTT).
-      example: z2m/Living Room BILRESA
+      description: "The MQTT topic used by the BILRESA (e.g., zigbee2mqtt/Living Room BILRESA)."
     main_light:
       name: Light Entity
       description: The light to control.
@@ -57,7 +56,7 @@ action:
               brightness: "{{ trigger.payload_json.action_level }}"
               transition: 0.2
 
-      # Rotation 100% (Full Brightness)
+      # Rotation 100% (Handling 'null' or max values)
       - conditions:
           - condition: template
             value_template: >
