@@ -17,8 +17,7 @@ blueprint:
       description: The secondary light/entity to control (toggled by double click).
       default: []
       selector:
-        entity:
-          domain: light
+        entity: {}
 
 mode: queued
 max: 10
