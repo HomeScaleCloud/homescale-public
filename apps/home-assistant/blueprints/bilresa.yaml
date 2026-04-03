@@ -55,11 +55,11 @@ action:
               brightness: "{{ trigger.payload_json.action_level }}"
               transition: 0.2
 
-      # Rotation 100% (Handling 'null' or max values)
+      # Rotation 100% (Full Brightness)
       - conditions:
           - condition: template
             value_template: >
-              {{ trigger.payload_json.action_level == 'null' }}
+              {{ trigger.payload_json.action_level == null }}
         sequence:
           - action: light.turn_on
             target:
