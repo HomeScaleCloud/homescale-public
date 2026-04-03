@@ -20,7 +20,8 @@ blueprint:
         entity: {}
 
 mode: queued
-max: 10
+max: 30
+max_exceeded: silent
 
 trigger:
   - platform: mqtt
