@@ -1,0 +1,84 @@
+blueprint:
+  name: IKEA BILRESA (Scroll) - Z2M
+  description: Control a light using the IKEA BILRESA (scroll wheel version) via Zigbee2MQTT.
+  domain: automation
+  input:
+    mqtt_topic:
+      name: BILRESA MQTT Topic
+      description: The MQTT topic used by the BILRESA (found in Zigbee2MQTT).
+      example: z2m/Living Room BILRESA
+    main_light:
+      name: Light Entity
+      description: The light to control.
+      selector:
+        entity:
+          domain: light
+    secondary_light:
+      name: Secondary Light Entity (Optional)
+      description: The secondary light to control (toggled by double click).
+      default: []
+      selector:
+        entity:
+          domain: light
+
+mode: queued
+max: 10
+
+trigger:
+  - platform: mqtt
+    topic: !input mqtt_topic
+
+action:
+  - choose:
+      # --- MAIN LIGHT ACTIONS ---
+      # Single Click (On/Off)
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.payload_json.action in ['on', 'off'] }}"
+        sequence:
+          - action: light.toggle
+            target:
+              entity_id: !input main_light
+            data:
+              transition: 0.2
+
+      # Rotation (Brightness Adjustment)
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ trigger.payload_json.action_level is number and
+                 trigger.payload_json.action_level > 0 and
+                 trigger.payload_json.action_level <= 255 }}
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input main_light
+            data:
+              brightness: "{{ trigger.payload_json.action_level }}"
+              transition: 0.2
+
+      # Rotation 100% (Full Brightness)
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ trigger.payload_json.action_level == 'null' }}
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input main_light
+            data:
+              brightness: 255
+              transition: 0.2
+
+      # --- SECONDARY LIGHT ACTIONS ---
+      # Double Click (On/Off)
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ trigger.payload_json.action in ['on_double', 'off_double'] }}
+        sequence:
+          - action: light.toggle
+            target:
+              entity_id: !input secondary_light
+            data:
+              transition: 0.2
