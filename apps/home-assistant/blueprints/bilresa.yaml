@@ -59,7 +59,7 @@ action:
       - conditions:
           - condition: template
             value_template: >
-              {{ trigger.payload_json.action_level == null }}
+              {{ trigger.payload_json.action_level is none  }}
         sequence:
           - action: light.turn_on
             target:
