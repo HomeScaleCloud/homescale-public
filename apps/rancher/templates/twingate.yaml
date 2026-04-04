@@ -6,7 +6,7 @@ spec:
   name: Rancher
   address: traefik.traefik.svc.cluster.local
   alias: mgmt.homescale.cloud
-  securityPolicyId: U2VjdXJpdHlQb2xpY3k6MTA2MDEzMA==
+  securityPolicyId: U2VjdXJpdHlQb2xpY3k6MTA3MDUwOA==
   isBrowserShortcutEnabled: true
 ---
 apiVersion: twingate.com/v1beta
