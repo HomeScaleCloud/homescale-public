@@ -1,0 +1,6 @@
+apiVersion: management.cattle.io/v3
+kind: GlobalRoleBinding
+metadata:
+  name: sg-k8s-admin
+globalRoleName: admin
+groupPrincipalName: azuread_group://4d4167e8-204c-4328-b5f4-4dae634d46a8
