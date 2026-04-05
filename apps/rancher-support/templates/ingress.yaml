@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rancher
+  namespace: cattle-system
+spec:
+  rules:
+    - host: mgmt.homescale.cloud
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: rancher
+                port:
+                number: 80
+  tls:
+    - hosts:
+        - "mgmt.homescale.cloud"

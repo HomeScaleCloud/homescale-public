@@ -10,7 +10,7 @@ resource "helm_release" "rancher" {
       hostname = "mgmt.homescale.cloud"
       replicas = 2
       ingress = {
-        enabled = true
+        enabled = false
         source  = "secret"
       }
       tls = "external"
