@@ -1,0 +1,5 @@
+apiVersion: v2
+name: rancher-support
+description: Helm chart for deploying Rancher supporting CRs
+type: application
+version: 0.1.0

@@ -1,7 +1,7 @@
-defaultNamespace: rancher
-name: rancher
+defaultNamespace: cattle-system
+name: rancher-support
 helm:
-  releaseName: rancher
+  releaseName: rancher-support
   chart: ./
 overrideTargets:
   - clusterSelector:
