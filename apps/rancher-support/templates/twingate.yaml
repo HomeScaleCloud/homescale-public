@@ -3,7 +3,7 @@ kind: TwingateResource
 metadata:
   name: rancher
 spec:
-  name: Rancher
+  name: rancher
   address: traefik.traefik.svc.cluster.local
   alias: mgmt.homescale.cloud
   securityPolicyId: U2VjdXJpdHlQb2xpY3k6MTA3MDUwOA==
