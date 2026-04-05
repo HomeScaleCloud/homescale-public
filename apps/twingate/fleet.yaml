@@ -25,6 +25,9 @@ helm:
               ttl: "24h"
             userCertificate:
               ttl: "5m"
+          upstreams:
+            - name: "Test"
+              address: "10.1.240.5:22"
         twingate:
           network: "homescale"
           resource:
