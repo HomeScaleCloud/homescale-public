@@ -18,3 +18,4 @@ spec:
   tls:
     - hosts:
         - "xxx"
+    secretName: tls-rancher-ingress
