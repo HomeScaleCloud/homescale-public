@@ -21,5 +21,5 @@ module "rancher" {
   k8s_token                = module.cluster.k8s_token
   k8s_ca                   = module.cluster.k8s_ca
   op_service_account_token = var.op_service_account_token
-  rancher_token            = module.bootstrap.rancher2_bootstrap.mgmt.token
+  rancher_token            = module.bootstrap.rancher_token
 }
