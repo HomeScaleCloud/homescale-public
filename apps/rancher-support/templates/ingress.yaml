@@ -18,3 +18,4 @@ spec:
   tls:
     - hosts:
         - "mgmt.homescale.cloud"
+    secretName: tls-rancher-ingress
