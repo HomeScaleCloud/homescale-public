@@ -25,7 +25,6 @@ resource "kubernetes_secret_v1" "onepassword" {
 }
 
 data "kubernetes_secret_v1" "rancher_bootstrap" {
-  depends_on = [helm_release.rancher]
   metadata {
     name      = "bootstrap-secret"
     namespace = "cattle-system"
