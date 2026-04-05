@@ -30,3 +30,9 @@ data "onepassword_item" "twingate" {
   vault = "github-actions"
   title = "twingate"
 }
+
+resource "onepassword_item" "twingate_github_actions_service_key" {
+  vault    = data.onepassword_vault.github_actions.uuid
+  title    = "twingate-service-key"
+  password = twingate_service_account_key.github_actions.token
+}
