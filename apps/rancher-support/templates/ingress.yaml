@@ -17,5 +17,5 @@ spec:
                   number: 80
   tls:
     - hosts:
-        - "REDACTED"
-    secretName: tls-rancher-ingress
+      - REDACTED
+      secretName: tls-rancher-ingress
