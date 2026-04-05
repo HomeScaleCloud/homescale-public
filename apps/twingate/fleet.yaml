@@ -15,6 +15,16 @@ helm:
         remoteNetworkName: "${ .ClusterName }-${ get .ClusterLabels \"cluster.homescale.cloud/env\" }-${ get .ClusterLabels \"cluster.homescale.cloud/region\" }"
       kubernetes-access-gateway:
         enabled: true
+        ssh:
+          enabled: true
+          gateway:
+            username: "hs"
+            key:
+              type: "ed25519"
+            hostCertificate:
+              ttl: "24h"
+            userCertificate:
+              ttl: "5m"
         twingate:
           network: "homescale"
           resource:
