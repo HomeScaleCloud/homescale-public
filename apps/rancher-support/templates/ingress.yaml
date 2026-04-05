@@ -14,7 +14,7 @@ spec:
               service:
                 name: rancher
                 port:
-                number: 80
+                  number: 80
   tls:
     - hosts:
         - "mgmt.homescale.cloud"
