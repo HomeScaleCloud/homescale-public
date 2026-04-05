@@ -1,6 +1,0 @@
-rancher:
-  hostname: REDACTED
-  replicas: 2
-  ingress:
-    enabled: true
-    source: secret

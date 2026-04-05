@@ -10,7 +10,7 @@ helm:
     ingress:
       enabled: true
       className: "tailscale"
-      host: "ha-${ .ClusterName }-${ get .ClusterLabels \"REDACTED/region\" }.tempel-carp.ts.net"
+      host: "ha-${ .ClusterName }-${ get .ClusterLabels \"REDACTED/region\" }.REDACTED"
       annotations:
         "tailscale.com/hostname": "ha-${ .ClusterName }-${ get .ClusterLabels \"REDACTED/region\" }"
         "tailscale.com/tags": "tag:app-ha,tag:env-${ get .ClusterLabels \"REDACTED/env\" }"
