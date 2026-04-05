@@ -3,6 +3,8 @@ kind: Ingress
 metadata:
   name: rancher
   namespace: cattle-system
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt"
 spec:
   rules:
     - host: mgmt.homescale.cloud
