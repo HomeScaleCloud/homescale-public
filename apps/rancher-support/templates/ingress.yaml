@@ -17,5 +17,5 @@ spec:
                   number: 80
   tls:
     - hosts:
-        - "mgmt.homescale.cloud"
-    secretName: tls-rancher-ingress
+      - mgmt.homescale.cloud
+      secretName: tls-rancher-ingress
