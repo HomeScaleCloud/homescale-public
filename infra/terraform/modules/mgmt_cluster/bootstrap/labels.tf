@@ -1,6 +1,6 @@
 resource "kubernetes_labels" "clusters_fleet_local" {
-  depends_on  = [helm_release.rancher]
-  count       = var.bootstrapped ? 1 : 0
+  depends_on = [helm_release.rancher]
+
   api_version = "fleet.cattle.io/v1alpha1"
   kind        = "Cluster"
   metadata {
@@ -9,5 +9,6 @@ resource "kubernetes_labels" "clusters_fleet_local" {
   }
   labels = {
     "cluster.homescale.cloud/env" = "mgmt"
+    "app.homescale.cloud/rancher" = "enabled"
   }
 }

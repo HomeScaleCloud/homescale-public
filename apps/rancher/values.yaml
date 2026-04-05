@@ -1,6 +1,0 @@
-rancher:
-  hostname: mgmt.homescale.cloud
-  replicas: 2
-  ingress:
-    enabled: true
-    source: secret
