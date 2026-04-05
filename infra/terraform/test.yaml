@@ -1,0 +1,11 @@
+apiVersion: twingate.com/v1beta
+kind: TwingateResourceAccess
+metadata:
+  name: rancher-github-actions
+spec:
+  resourceRef:
+    name: rancher
+    namespace: cattle-system
+  principalExternalRef:
+    type: serviceAccount
+    name: GitHub Actions
