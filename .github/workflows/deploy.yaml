@@ -48,7 +48,7 @@ jobs:
       - name: Connect to Twingate
         uses: twingate/github-action@f1e69fc5af67b737d8597b759e5c607f567e77f2 # v1.8
         with:
-          service-key: $TG_SERVICE_KEY
+          service-key: ${{ env.TG_SERVICE_KEY }}
       - name: Plan
         id: plan
         run: terraform plan -out=tfplan
