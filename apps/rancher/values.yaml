@@ -1,6 +1,0 @@
-rancher:
-  hostname: xxx
-  replicas: 2
-  ingress:
-    enabled: true
-    source: secret
