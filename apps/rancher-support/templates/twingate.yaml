@@ -8,6 +8,16 @@ spec:
   alias: mgmt.homescale.cloud
   securityPolicyId: U2VjdXJpdHlQb2xpY3k6MTA3MDUwOA==
   isBrowserShortcutEnabled: true
+  protocols:
+    allowIcmp: false
+    tcp:
+      policy: RESTRICTED
+      ports:
+        - end: 443
+          start: 443
+    udp:
+      policy: RESTRICTED
+      ports: []
 ---
 apiVersion: twingate.com/v1beta
 kind: TwingateResourceAccess
