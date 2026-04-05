@@ -1,5 +1,5 @@
-module "digitalocean_cluster" {
-  source             = "./digitalocean_cluster"
+module "cluster" {
+  source             = "./cluster"
   region             = "lon1"
   k8s_version        = "1.34."
   digitalocean_token = var.digitalocean_token
