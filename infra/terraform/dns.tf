@@ -90,3 +90,12 @@ resource "cloudflare_dns_record" "intune_enrollment" {
   ttl     = 1
   type    = "CNAME"
 }
+
+resource "cloudflare_dns_record" "cloudflare_sso_verify" {
+  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  name    = "homescale.cloud"
+  comment = "Domain ownership verification for Cloudflare (SSO)"
+  content = "cloudflare_dashboard_sso=1db9ce4dca346667d0b86d63403d14bf" #pragma: allowlist secret
+  ttl     = 1
+  type    = "TXT"
+}
