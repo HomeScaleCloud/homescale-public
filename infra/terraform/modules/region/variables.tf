@@ -19,3 +19,9 @@ variable "twingate_token" {
   type        = string
   sensitive   = true
 }
+
+variable "twingate_github_actions_service_account_id" {
+  description = "GitHub Actions' Twingate Service Account ID"
+  type        = string
+  sensitive   = true
+}
