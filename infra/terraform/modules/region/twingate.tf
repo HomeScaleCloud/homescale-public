@@ -41,7 +41,7 @@ resource "twingate_resource" "resource" {
   access_policy {
     mode          = "AUTO_LOCK"
     approval_mode = "MANUAL"
-    duration      = "8h"
+    duration      = "1d"
   }
 
   access_group {
@@ -50,7 +50,7 @@ resource "twingate_resource" "resource" {
     access_policy {
       mode          = "AUTO_LOCK"
       approval_mode = "MANUAL"
-      duration      = "8h"
+      duration      = "1d"
     }
   }
 
