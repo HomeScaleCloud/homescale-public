@@ -34,7 +34,7 @@ resource "twingate_resource" "resource" {
       ports  = ["80", "443", "10443", "22"]
     }
     udp = {
-      policy = "RESTRICTED"
+      policy = "DENY_ALL"
     }
   }
 
