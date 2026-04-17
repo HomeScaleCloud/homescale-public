@@ -39,18 +39,18 @@ resource "twingate_resource" "resource" {
   }
 
   access_policy {
-    mode          = "AUTO_LOCK"
+    mode          = "ACCESS_REQUEST"
     approval_mode = "MANUAL"
-    duration      = "1d"
+    duration      = "8h"
   }
 
   access_group {
     group_id           = data.twingate_group.team_infra_plat.id
     security_policy_id = data.twingate_security_policy.high_risk.id
     access_policy {
-      mode          = "AUTO_LOCK"
+      mode          = "ACCESS_REQUEST"
       approval_mode = "MANUAL"
-      duration      = "1d"
+      duration      = "8h"
     }
   }
 
