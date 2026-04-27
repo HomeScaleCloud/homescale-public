@@ -40,7 +40,7 @@ resource "twingate_resource" "resource" {
 
   access_policy {
     mode          = "ACCESS_REQUEST"
-    approval_mode = "MANUAL"
+    approval_mode = "AUTOMATIC"
     duration      = "8h"
   }
 
@@ -49,7 +49,7 @@ resource "twingate_resource" "resource" {
     security_policy_id = data.twingate_security_policy.high_risk.id
     access_policy {
       mode          = "ACCESS_REQUEST"
-      approval_mode = "MANUAL"
+      approval_mode = "AUTOMATIC"
       duration      = "8h"
     }
   }
