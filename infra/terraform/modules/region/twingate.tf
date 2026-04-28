@@ -31,7 +31,7 @@ resource "twingate_resource" "mgmt_network" {
     allow_icmp = true
     tcp = {
       policy = "RESTRICTED"
-      ports  = ["80", "443", "10443", "22"]
+      ports  = ["80", "443", "10443", "6443", "22"]
     }
     udp = {
       policy = "DENY_ALL"
