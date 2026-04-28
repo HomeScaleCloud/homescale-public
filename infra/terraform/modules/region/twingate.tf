@@ -21,9 +21,9 @@ data "twingate_security_policy" "high_risk" {
   name = "High Risk Policy"
 }
 
-resource "twingate_resource" "resource" {
-  name              = "boa1-mgmt"
-  address           = "10.1.245.0/24"
+resource "twingate_resource" "mgmt_network" {
+  name              = "${var.region}-mgmt"
+  address           = var.mgmt_cidr
   remote_network_id = twingate_remote_network.mgmt.id
 
   security_policy_id = data.twingate_security_policy.high_risk.id

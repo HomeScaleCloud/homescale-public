@@ -14,18 +14,6 @@ variable "op_service_account_token" {
   sensitive   = true
 }
 
-variable "twingate_token" {
-  description = "Twingate API Token"
-  type        = string
-  sensitive   = true
-}
-
-variable "twingate_github_actions_service_account_id" {
-  description = "GitHub Actions' Twingate Service Account ID"
-  type        = string
-  sensitive   = true
-}
-
 variable "mgmt_cidr" {
   description = "Region mgmt network CIDR"
   type        = string
