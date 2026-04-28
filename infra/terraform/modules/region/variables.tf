@@ -4,7 +4,7 @@ variable "region" {
 
   validation {
     condition     = can(regex("^[a-z]{3}[0-9]$", var.region))
-    error_message = "Region must be in format AAA1 (e.g., BOA1, LON1, BRS1)."
+    error_message = "Region must be in format aaa1 (e.g. lon1)."
   }
 }
 

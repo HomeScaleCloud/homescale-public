@@ -1,6 +1,6 @@
 module "harvester" {
-  source = "./harvester"
-  region = "BOA1"
+  source                   = "./harvester"
+  region                   = "boa1"
   op_service_account_token = var.op_service_account_token
-  mgmt_cidr = var.mgmt_cidr
+  mgmt_cidr                = var.mgmt_cidr
 }

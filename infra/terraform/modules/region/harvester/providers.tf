@@ -4,7 +4,7 @@ terraform {
       source = "1Password/onepassword"
     }
     harvester = {
-      source  = "harvester/harvester"
+      source = "harvester/harvester"
     }
   }
 }
