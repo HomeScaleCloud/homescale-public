@@ -28,6 +28,10 @@ terraform {
       source  = "Twingate/twingate"
       version = "4.1.1"
     }
+    harvester = {
+      source  = "harvester/harvester"
+      version = "1.6.0"
+    }
   }
 }
 
