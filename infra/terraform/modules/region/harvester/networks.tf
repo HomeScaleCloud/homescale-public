@@ -14,6 +14,13 @@ resource "harvester_network" "mgmt" {
 resource "harvester_vlanconfig" "mgmt" {
   name                 = "${var.region}-mgmt"
   cluster_network_name = harvester_clusternetwork.mgmt.name
+
+  lifecycle {
+    ignore_changes = [
+      uplink[0].bond_miimon,
+    ]
+  }
+
   uplink {
     nics = [
       "eno2"
