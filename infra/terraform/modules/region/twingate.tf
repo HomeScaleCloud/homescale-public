@@ -22,7 +22,7 @@ data "twingate_security_policy" "high_risk" {
 }
 
 resource "twingate_resource" "mgmt_network" {
-  name              = "${var.region}-mgmt"
+  name              = "net-${var.region}-mgmt"
   address           = var.mgmt_cidr
   remote_network_id = twingate_remote_network.mgmt.id
 
