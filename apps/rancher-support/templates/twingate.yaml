@@ -6,7 +6,7 @@ spec:
   name: Rancher
   address: traefik.traefik.svc.cluster.local
   alias: xxx
-  securityPolicyId: U2VjdXJpdHlQb2xpY3k6MTA3MDUwOA==
+  securityPolicyId: U2VjdXJpdHlQb2xpY3k6MTA3MDUxMA==
   isBrowserShortcutEnabled: true
   protocols:
     allowIcmp: false
