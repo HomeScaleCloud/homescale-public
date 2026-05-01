@@ -4,13 +4,14 @@ helm:
   releaseName: ziti-controller-init
   chart: ./
   values:
-    cluster:
-      mode: cluster-init
-      trustDomain: REDACTED
-      nodeName: controller-init
+    ziti-controller:
+      cluster:
+        mode: cluster-init
+        trustDomain: REDACTED
+        nodeName: controller-init
 
-    clientApi:
-      advertisedHost: REDACTED
+      clientApi:
+        advertisedHost: REDACTED
 
 overrideTargets:
   - clusterSelector:
