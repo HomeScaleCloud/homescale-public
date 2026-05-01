@@ -1,0 +1,48 @@
+defaultNamespace: ziti
+name: ziti-controller
+helm:
+  releaseName: ziti-controller
+  chart: ./
+  values:
+    ziti-controller:
+      cluster:
+        mode: cluster-join
+        trustDomain: REDACTED
+        nodeName: controller-${ .ClusterName }-${ get .ClusterLabels \"REDACTED/region\" }
+        endpoint: REDACTED:443
+
+      clientApi:
+        advertisedHost: ziti-controller.${ .ClusterName }.${ get .ClusterLabels \"REDACTED/region\" }.REDACTED
+        advertisedPort: 32175
+        service:
+          type: NodePort
+          annotations:
+            external-dns.alpha.kubernetes.io/hostname: ziti-controller.${ .ClusterName }.${ get .ClusterLabels \"REDACTED/region\" }.REDACTED
+            external-dns.alpha.kubernetes.io/ttl: "60"
+
+      edgeSignerPki:
+        alternativeIssuer:
+          name: ziti-controller-init-edge-root-issuer
+          kind: Issuer
+          group: cert-manager.io
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        REDACTED/ziti-controller: enabled
+
+targetCustomizations:
+  - name: mgmt
+    clusterSelector:
+      matchLabels:
+        REDACTED/env: mgmt
+    helm:
+      values:
+        ziti-controller:
+          cluster:
+            nodeName: controller-mgmt
+          clientApi:
+            advertisedHost: REDACTED
+            service:
+              annotations:
+                external-dns.alpha.kubernetes.io/hostname: REDACTED
