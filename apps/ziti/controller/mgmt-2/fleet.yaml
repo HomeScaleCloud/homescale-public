@@ -30,3 +30,8 @@ overrideTargets:
   - clusterSelector:
       matchLabels:
         xxx/env: mgmt
+
+dependsOn:
+  - name: ziti-controller-mgmt-1
+    acceptedStates:
+      - Ready
