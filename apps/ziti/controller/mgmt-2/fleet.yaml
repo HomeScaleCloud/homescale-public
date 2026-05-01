@@ -22,7 +22,7 @@ helm:
 
       edgeSignerPki:
         alternativeIssuer:
-          name: ziti-controller-init-edge-root-issuer
+          name: ziti-controller-mgmt-1-edge-root-issuer
           kind: Issuer
           group: cert-manager.io
 
