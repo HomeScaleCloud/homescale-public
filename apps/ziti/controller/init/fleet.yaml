@@ -1,0 +1,17 @@
+defaultNamespace: ziti
+name: ziti-controller-init
+helm:
+  releaseName: ziti-controller-init
+  chart: ./
+  values:
+    cluster:
+      mode: cluster-init
+      trustDomain: xxx
+      nodeName: controller-init
+
+    clientApi:
+      advertisedHost: xxx
+
+overrideTargets:
+  - clusterSelector:
+      name: mgmt
