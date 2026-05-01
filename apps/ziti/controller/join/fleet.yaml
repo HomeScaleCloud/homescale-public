@@ -13,7 +13,7 @@ helm:
 
       clientApi:
         advertisedHost: ziti-controller.${ .ClusterName }.${ get .ClusterLabels \"REDACTED/region\" }.REDACTED
-        advertisedPort: 32175
+        advertisedPort: 32176
         service:
           type: NodePort
           annotations:
