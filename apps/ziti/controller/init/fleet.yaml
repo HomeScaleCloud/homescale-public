@@ -9,7 +9,6 @@ helm:
         mode: cluster-init
         trustDomain: REDACTED
         nodeName: controller-init
-
       clientApi:
         advertisedHost: REDACTED
 
