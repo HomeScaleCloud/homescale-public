@@ -1,5 +1,4 @@
 resource "kubernetes_manifest" "gitrepo_apps_mgmt" {
-  depends_on = [helm_release.rancher]
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
     kind       = "GitRepo"
