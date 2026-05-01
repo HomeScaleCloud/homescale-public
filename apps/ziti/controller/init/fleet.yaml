@@ -9,7 +9,6 @@ helm:
         mode: cluster-init
         trustDomain: xxx
         nodeName: controller-init
-
       clientApi:
         advertisedHost: xxx
 
