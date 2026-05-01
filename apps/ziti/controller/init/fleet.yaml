@@ -11,12 +11,11 @@ helm:
         nodeName: controller-init
       clientApi:
         advertisedHost: xxx
-        advertisedPort: 32175
+        advertisedPort: 443
         service:
-          type: NodePort
+          type: LoadBalancer
           annotations:
             external-dns.alpha.kubernetes.io/hostname: xxx
-            external-dns.alpha.kubernetes.io/ttl: "60"
 
 overrideTargets:
   - clusterSelector:
