@@ -9,7 +9,7 @@ helm:
         mode: cluster-join
         trustDomain: xxx
         nodeName: controller-${ .ClusterName }-${ get .ClusterLabels \"xxx/region\" }
-        endpoint: xxx:443
+        endpoint: xxx:32175
 
       clientApi:
         advertisedHost: ziti-controller.${ .ClusterName }.${ get .ClusterLabels \"xxx/region\" }.xxx
