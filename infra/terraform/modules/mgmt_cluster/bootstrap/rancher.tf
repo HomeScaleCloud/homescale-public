@@ -8,7 +8,7 @@ resource "kubernetes_manifest" "gitrepo_apps_mgmt" {
     apiVersion = "fleet.cattle.io/v1alpha1"
     kind       = "GitRepo"
     metadata = {
-      name      = "apps"
+      name      = "apps-mgmt"
       namespace = "fleet-local"
     }
     spec = {

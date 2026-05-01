@@ -4,7 +4,7 @@ resource "kubernetes_manifest" "gitrepo_apps_prod" {
     apiVersion = "fleet.cattle.io/v1alpha1"
     kind       = "GitRepo"
     metadata = {
-      name      = "apps"
+      name      = "apps-prod"
       namespace = "prod"
     }
     spec = {
@@ -29,7 +29,7 @@ resource "kubernetes_manifest" "gitrepo_apps_lab" {
     apiVersion = "fleet.cattle.io/v1alpha1"
     kind       = "GitRepo"
     metadata = {
-      name      = "apps"
+      name      = "apps-lab"
       namespace = "lab"
     }
     spec = {
