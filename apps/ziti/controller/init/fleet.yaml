@@ -11,7 +11,14 @@ helm:
         nodeName: controller-init
       clientApi:
         advertisedHost: REDACTED
+        advertisedPort: 32175
+        service:
+          type: NodePort
+          annotations:
+            external-dns.alpha.kubernetes.io/hostname: REDACTED
+            external-dns.alpha.kubernetes.io/ttl: "60"
 
 overrideTargets:
   - clusterSelector:
-      name: mgmt
+      matchLabels:
+        REDACTED/env: mgmt
