@@ -1,6 +1,6 @@
 apiVersion: v2
-name: ziti-controller-join
-description: Helm chart for deploying an OpenZiti Controller to an existing network
+name: ziti-controller-mgmt-2
+description: Helm chart for deploying a second OpenZiti Controller (HA)
 type: application
 version: 0.1.0
 dependencies:
