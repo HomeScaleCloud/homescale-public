@@ -1,7 +1,7 @@
 defaultNamespace: ziti
-name: ziti-controller
+name: ziti-controller-join
 helm:
-  releaseName: ziti-controller
+  releaseName: ziti-controller-join
   chart: ./
   values:
     ziti-controller:
