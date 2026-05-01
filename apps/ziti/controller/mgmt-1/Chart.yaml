@@ -1,5 +1,5 @@
 apiVersion: v2
-name: ziti-controller-init
+name: ziti-controller-mgmt-1
 description: Helm chart for deploying the initial OpenZiti Controller for a network
 type: application
 version: 0.1.0

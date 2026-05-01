@@ -6,9 +6,8 @@ resource "kubernetes_labels" "clusters_fleet_local" {
     namespace = "fleet-local"
   }
   labels = {
-    "REDACTED/env"         = "mgmt"
-    "REDACTED/rancher"         = "enabled"
-    "REDACTED/ziti-controller" = "enabled"
-    "REDACTED/external-dns"    = "enabled"
+    "REDACTED/env"      = "mgmt"
+    "REDACTED/rancher"      = "enabled"
+    "REDACTED/external-dns" = "enabled"
   }
 }

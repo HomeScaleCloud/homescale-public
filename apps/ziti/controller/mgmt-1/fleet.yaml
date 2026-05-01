@@ -1,14 +1,14 @@
 defaultNamespace: ziti
-name: ziti-controller-init
+name: ziti-controller-mgmt-1
 helm:
-  releaseName: ziti-controller-init
+  releaseName: ziti-controller-mgmt-1
   chart: ./
   values:
     ziti-controller:
       cluster:
         mode: cluster-init
         trustDomain: REDACTED
-        nodeName: controller-init
+        nodeName: controller-mgmt-1
       clientApi:
         advertisedHost: REDACTED
         advertisedPort: 443
