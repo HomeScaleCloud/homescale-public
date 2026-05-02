@@ -3,6 +3,8 @@ name: traefik
 helm:
   releaseName: traefik
   chart: ./
+  takeOwnership: true
+  force: true
   values:
     traefik:
       deployment:
