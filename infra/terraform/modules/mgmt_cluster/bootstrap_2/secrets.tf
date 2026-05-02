@@ -46,7 +46,7 @@ resource "kubernetes_secret_v1" "homescale_k8s_deploy_key" {
   type = "kubernetes.io/ssh-auth"
 
   data = {
-    "ssh-privatekey" = tls_private_key.homescale_k8s_deploy_key.private_key_openssh
+    "ssh-privatekey" = tls_private_key.homescale_k8s_deploy_key.private_key_pem
   }
 
   depends_on = [
