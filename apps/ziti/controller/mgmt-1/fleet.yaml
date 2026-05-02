@@ -21,3 +21,8 @@ overrideTargets:
   - clusterSelector:
       matchLabels:
         REDACTED/env: mgmt
+
+dependsOn:
+  - name: trust-manager
+    acceptedStates:
+      - Ready

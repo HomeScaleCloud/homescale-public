@@ -1,0 +1,15 @@
+defaultNamespace: cert-manager
+name: trust-manager
+helm:
+  releaseName: trust-manager
+  chart: ./
+  values:
+    trust-manager:
+      app:
+        trust:
+          namespace: ziti
+
+dependsOn:
+  - name: cert-manager
+    acceptedStates:
+      - Ready
