@@ -24,10 +24,6 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = "3.1.0"
     }
-    twingate = {
-      source  = "Twingate/twingate"
-      version = "4.1.1"
-    }
     harvester = {
       source  = "harvester/harvester"
       version = "1.8.0"
@@ -46,9 +42,4 @@ provider "cloudflare" {
 
 provider "digitalocean" {
   token = data.onepassword_item.digitalocean.credential
-}
-
-provider "twingate" {
-  api_token = data.onepassword_item.twingate.credential
-  network   = "homescale"
 }
