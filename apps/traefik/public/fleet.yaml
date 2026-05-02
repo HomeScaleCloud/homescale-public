@@ -14,6 +14,7 @@ helm:
       ingressClass:
         enabled: true
         name: traefik-public
+        isDefaultClass: false
       providers:
         kubernetesIngress:
           enabled: true
