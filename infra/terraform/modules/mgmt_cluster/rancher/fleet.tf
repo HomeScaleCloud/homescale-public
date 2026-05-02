@@ -8,7 +8,7 @@ resource "kubernetes_manifest" "gitrepo_apps_prod" {
       namespace = "prod"
     }
     spec = {
-      repo             = "https://github.com/HomeScaleCloud/homescale-public"
+      repo             = "git@github.com:HomeScaleCloud/homescale.git"
       clientSecretName = "homescale-k8s-deploy-key" #pragma: allowlist secret
       branch           = "main"
       paths            = ["apps/*"]
@@ -34,7 +34,7 @@ resource "kubernetes_manifest" "gitrepo_apps_lab" {
       namespace = "lab"
     }
     spec = {
-      repo             = "https://github.com/HomeScaleCloud/homescale-public"
+      repo             = "git@github.com:HomeScaleCloud/homescale.git"
       clientSecretName = "homescale-k8s-deploy-key" #pragma: allowlist secret
       branch           = "main"
       paths            = ["apps/*"]

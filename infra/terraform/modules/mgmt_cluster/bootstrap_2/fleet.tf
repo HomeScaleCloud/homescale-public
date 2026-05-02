@@ -7,7 +7,7 @@ resource "kubernetes_manifest" "gitrepo_apps_mgmt" {
       namespace = "fleet-local"
     }
     spec = {
-      repo             = "https://github.com/HomeScaleCloud/homescale"
+      repo             = "git@github.com:HomeScaleCloud/homescale.git"
       clientSecretName = "homescale-k8s-deploy-key" #pragma: allowlist secret
       branch           = "main"
       paths            = ["apps/*"]
