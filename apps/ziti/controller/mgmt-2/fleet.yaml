@@ -20,6 +20,19 @@ helm:
             external-dns.alpha.kubernetes.io/hostname: xxx
             external-dns.alpha.kubernetes.io/ttl: "60"
 
+      webBindingPki:
+        enabled: true
+        altServerCerts:
+          - mode: certManager
+            secretName: tls-ziti-controller-mgmt-2
+            altDnsNames:
+              - "xxx"
+            issuerRef:
+              group: cert-manager.io
+              kind: ClusterIssuer
+              name: letsencrypt
+            mountPath: /etc/ziti/alt-server-cert
+
       edgeSignerPki:
         alternativeIssuer:
           name: ziti-controller-mgmt-1-edge-root-issuer
