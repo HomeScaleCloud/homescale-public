@@ -14,12 +14,10 @@ helm:
       clientApi:
         advertisedHost: REDACTED
         advertisedPort: 443
-        ingress:
+        traefikTcpRoute:
           enabled: true
-          ingressClassName: traefik-public
-          annotations:
-            kubernetes.io/ingress.allow-http: "false"
-            nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+          labels:
+            traefik-instance: public
         service:
           type: ClusterIP
 
