@@ -8,3 +8,11 @@ helm:
       app:
         trust:
           namespace: ziti
+
+diff:
+  comparePatches:
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: ValidatingWebhookConfiguration
+      name: trust-manager
+      jsonPointers:
+        - /webhooks
