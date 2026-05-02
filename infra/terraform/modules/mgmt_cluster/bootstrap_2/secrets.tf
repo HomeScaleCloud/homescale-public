@@ -46,7 +46,7 @@ resource "kubernetes_secret_v1" "homescale_k8s_deploy_key" {
   type = "kubernetes.io/ssh-auth"
 
   data = {
-    "ssh-privatekey" = tls_private_key.homescale_deploy_key.private_key_openssh
+    "ssh-privatekey" = tls_private_key.homescale_k8s_deploy_key.private_key_openssh
   }
 
   depends_on = [
@@ -58,5 +58,5 @@ resource "kubernetes_secret_v1" "homescale_k8s_deploy_key" {
 resource "onepassword_item" "homescale_k8s_deploy_key" {
   vault    = data.onepassword_vault.github_actions.uuid
   title    = "homescale-k8s-deploy-key"
-  password = tls_private_key.homescale_k8s_deploy_key.public_key_pem
+  password = tls_private_key.homescale_k8s_deploy_key.public_key_openssh
 }
