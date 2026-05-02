@@ -13,25 +13,15 @@ helm:
 
       clientApi:
         advertisedHost: xxx
-        advertisedPort: 32176
-        service:
-          type: NodePort
+        advertisedPort: 443
+        ingress:
+          enabled: true
+          ingressClassName: traefik
           annotations:
-            external-dns.alpha.kubernetes.io/hostname: xxx
-            external-dns.alpha.kubernetes.io/ttl: "60"
-
-      webBindingPki:
-        enabled: true
-        altServerCerts:
-          - mode: certManager
-            secretName: tls-ziti-controller-mgmt-2
-            altDnsNames:
-              - "xxx"
-            issuerRef:
-              group: cert-manager.io
-              kind: ClusterIssuer
-              name: letsencrypt
-            mountPath: /etc/ziti/alt-server-cert
+            kubernetes.io/ingress.allow-http: "false"
+            nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+        service:
+          type: ClusterIP
 
       edgeSignerPki:
         alternativeIssuer:
