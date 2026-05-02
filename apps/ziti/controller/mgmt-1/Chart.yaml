@@ -7,6 +7,3 @@ dependencies:
   - name: ziti-controller
     version: 3.1.1
     repository: https://docs.openziti.io/helm-charts/
-  - name: trust-manager
-    version: v0.22.1
-    repository: https://charts.jetstack.io
