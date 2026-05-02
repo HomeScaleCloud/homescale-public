@@ -39,7 +39,7 @@ resource "kubernetes_secret_v1" "homescale_k8s_deploy_key" {
   for_each = local.homescale_k8s_deploy_key_namespaces
 
   metadata {
-    name      = "homescale-github-deploy-key"
+    name      = "homescale-k8s-deploy-key"
     namespace = each.value
   }
 
