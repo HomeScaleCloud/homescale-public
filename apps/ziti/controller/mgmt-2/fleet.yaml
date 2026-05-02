@@ -20,7 +20,6 @@ helm:
           annotations:
             kubernetes.io/ingress.allow-http: "false"
             nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-            cert-manager.io/cluster-issuer: "letsencrypt"
         service:
           type: ClusterIP
 
