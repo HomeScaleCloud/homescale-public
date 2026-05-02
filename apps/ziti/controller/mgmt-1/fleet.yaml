@@ -16,6 +16,10 @@ helm:
           type: LoadBalancer
           annotations:
             external-dns.alpha.kubernetes.io/hostname: xxx
+    trust-manager:
+      app:
+        trust:
+          namespace: ziti
 
 overrideTargets:
   - clusterSelector:
@@ -23,6 +27,6 @@ overrideTargets:
         xxx/env: mgmt
 
 dependsOn:
-  - name: trust-manager
+  - name: cert-manager
     acceptedStates:
       - Ready
