@@ -12,15 +12,19 @@ helm:
       clientApi:
         advertisedHost: REDACTED
         advertisedPort: 443
-        service:
-          type: LoadBalancer
+        ingress:
+          enabled: true
+          ingressClassName: traefik
           annotations:
-            external-dns.alpha.kubernetes.io/hostname: REDACTED
+            kubernetes.io/ingress.allow-http: "false"
+            nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+        service:
+          type: ClusterIP
       webBindingPki:
         enabled: true
         altServerCerts:
           - mode: certManager
-            secretName: tls-ziti-controller-mgmt-1
+            secretName: tls-ziti
             altDnsNames:
               - "REDACTED"
             issuerRef:
