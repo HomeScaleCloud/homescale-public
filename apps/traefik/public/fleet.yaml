@@ -1,0 +1,33 @@
+defaultNamespace: traefik
+name: traefik-public
+helm:
+  releaseName: traefik-public
+  chart: ./
+  takeOwnership: true
+  force: true
+  values:
+    traefik:
+      deployment:
+        replicas: 2
+      service:
+        type: LoadBalancer
+      ingressClass:
+        enabled: true
+        name: traefik-public
+      providers:
+        kubernetesIngress:
+          enabled: true
+          ingressClass: traefik-public
+          publishedService:
+            enabled: true
+        kubernetesCRD:
+          enabled: true
+          ingressClass: traefik-public
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        xxx/traefik-public: enabled
+  - clusterSelector:
+      matchLabels:
+        xxx/env: mgmt
