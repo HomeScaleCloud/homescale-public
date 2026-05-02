@@ -19,9 +19,3 @@ variable "op_service_account_token" {
   type        = string
   sensitive   = true
 }
-
-variable "twingate_token" {
-  description = "Twingate API Token"
-  type        = string
-  sensitive   = true
-}
