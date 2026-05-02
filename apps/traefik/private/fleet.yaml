@@ -24,5 +24,6 @@ helm:
             enabled: true
         kubernetesCRD:
           enabled: true
-          ingressClass: traefik-private
-          labelSelector: traefik-instance=private
+          labelSelector: xxx/class=private
+      additionalArguments:
+        - "--providers.kubernetesingress.ingressclass=traefik-private"

@@ -17,7 +17,7 @@ helm:
         traefikTcpRoute:
           enabled: true
           labels:
-            traefik-instance: public
+            xxx/class: public
         service:
           type: ClusterIP
 
