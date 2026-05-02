@@ -14,7 +14,7 @@ helm:
         advertisedPort: 443
         ingress:
           enabled: true
-          ingressClassName: traefik
+          ingressClassName: traefik-public
           annotations:
             kubernetes.io/ingress.allow-http: "false"
             nginx.ingress.kubernetes.io/ssl-passthrough: "true"
