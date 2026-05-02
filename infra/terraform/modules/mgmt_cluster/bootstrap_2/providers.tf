@@ -3,6 +3,9 @@ terraform {
     kubernetes = {
       source = "hashicorp/kubernetes"
     }
+    tls = {
+      source = "hashicorp/tls"
+    }
     onepassword = {
       source = "1Password/onepassword"
     }

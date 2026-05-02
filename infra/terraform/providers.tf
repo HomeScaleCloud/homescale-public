@@ -24,6 +24,10 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = "3.1.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "4.1.0"
+    }
     harvester = {
       source  = "harvester/harvester"
       version = "1.8.0"
