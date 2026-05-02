@@ -7,10 +7,11 @@ resource "kubernetes_manifest" "gitrepo_apps_mgmt" {
       namespace = "fleet-local"
     }
     spec = {
-      repo            = "https://github.com/HomeScaleCloud/homescale"
-      branch          = "main"
-      paths           = ["apps/*"]
-      pollingInterval = "3m"
+      repo             = "https://github.com/HomeScaleCloud/homescale"
+      clientSecretName = "homescale-k8s-deploy-key" #pragma: allowlist secret
+      branch           = "main"
+      paths            = ["apps/*"]
+      pollingInterval  = "3m"
       correctDrift = {
         enabled = true
       }
