@@ -8,10 +8,11 @@ resource "kubernetes_manifest" "gitrepo_apps_prod" {
       namespace = "prod"
     }
     spec = {
-      repo            = "https://github.com/HomeScaleCloud/homescale-public"
-      branch          = "main"
-      paths           = ["apps/*"]
-      pollingInterval = "3m"
+      repo             = "https://github.com/HomeScaleCloud/homescale-public"
+      clientSecretName = "homescale-k8s-deploy-key" #pragma: allowlist secret
+      branch           = "main"
+      paths            = ["apps/*"]
+      pollingInterval  = "3m"
       correctDrift = {
         enabled = true
       }
@@ -33,10 +34,11 @@ resource "kubernetes_manifest" "gitrepo_apps_lab" {
       namespace = "lab"
     }
     spec = {
-      repo            = "https://github.com/HomeScaleCloud/homescale-public"
-      branch          = "main"
-      paths           = ["apps/*"]
-      pollingInterval = "3m"
+      repo             = "https://github.com/HomeScaleCloud/homescale-public"
+      clientSecretName = "homescale-k8s-deploy-key" #pragma: allowlist secret
+      branch           = "main"
+      paths            = ["apps/*"]
+      pollingInterval  = "3m"
       correctDrift = {
         enabled = true
       }
