@@ -20,6 +20,8 @@ helm:
             nginx.ingress.kubernetes.io/ssl-passthrough: "true"
         service:
           type: ClusterIP
+        altDnsNames:
+          - "REDACTED"
       webBindingPki:
         enabled: true
         altServerCerts:
