@@ -6,7 +6,7 @@ helm:
   values:
     ziti-controller:
       image:
-        tag: 1.8.0-pre5
+        tag: 2.0.0-pre12
       cluster:
         mode: cluster-join
         trustDomain: REDACTED
