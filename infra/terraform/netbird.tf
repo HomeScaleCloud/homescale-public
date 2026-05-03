@@ -8,5 +8,6 @@ resource "netbird_account_settings" "settings" {
   dns_domain                         = "REDACTED"
   auto_update_version                = "latest"
   peer_expose_enabled                = true
+  peer_expose_groups                 = ["All"]
   user_approval_required             = false
 }
