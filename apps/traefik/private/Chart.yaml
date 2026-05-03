@@ -1,6 +1,6 @@
 apiVersion: v2
 name: traefik-private
-description: Helm chart for deploying Traefik (private services via ClusterIP/OpenZiti)
+description: Helm chart for deploying Traefik (private services via ClusterIP/NetBird)
 type: application
 version: 0.1.0
 dependencies:
