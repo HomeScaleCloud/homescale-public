@@ -32,6 +32,10 @@ terraform {
       source  = "harvester/harvester"
       version = "1.8.0"
     }
+    netbird = {
+      source  = "netbirdio/netbird"
+      version = "0.0.9"
+    }
   }
 }
 
@@ -46,4 +50,8 @@ provider "cloudflare" {
 
 provider "digitalocean" {
   token = data.onepassword_item.digitalocean.credential
+}
+
+provider "netbird" {
+  token = data.onepassword_item.netbird.credential
 }
