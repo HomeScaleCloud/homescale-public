@@ -2,6 +2,8 @@ data "netbird_group" "all" {
   name = "All"
 }
 
+data "netbird_reverse_proxy_clusters" "all" {}
+
 resource "netbird_account_settings" "settings" {
   peer_login_expiration              = 86400
   peer_inactivity_expiration         = 7200
@@ -14,4 +16,9 @@ resource "netbird_account_settings" "settings" {
   peer_expose_enabled                = true
   peer_expose_groups                 = [data.netbird_group.all.id]
   user_approval_required             = false
+}
+
+resource "netbird_reverse_proxy_domain" "ext" {
+  domain         = "xxx"
+  target_cluster = data.netbird_reverse_proxy_clusters.all.clusters[0].address
 }

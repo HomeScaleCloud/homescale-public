@@ -99,3 +99,11 @@ resource "cloudflare_dns_record" "cloudflare_sso_verify" {
   ttl     = 1
   type    = "TXT"
 }
+
+resource "cloudflare_dns_record" "netbird_ext" {
+  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  name    = "xxx"
+  content = data.netbird_reverse_proxy_clusters.all.clusters[0].address
+  ttl     = 1
+  type    = "CNAME"
+}
