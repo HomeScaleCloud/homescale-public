@@ -1,3 +1,7 @@
+data "netbird_group" "all" {
+  name = "All"
+}
+
 resource "netbird_account_settings" "settings" {
   peer_login_expiration              = 86400
   peer_inactivity_expiration         = 7200
@@ -8,6 +12,6 @@ resource "netbird_account_settings" "settings" {
   dns_domain                         = "xxx"
   auto_update_version                = "latest"
   peer_expose_enabled                = true
-  peer_expose_groups                 = ["All"]
+  peer_expose_groups                 = [data.netbird_group.all.id]
   user_approval_required             = false
 }
