@@ -5,6 +5,8 @@ helm:
   chart: ./
   values:
     ziti-controller:
+      image:
+        tag: 1.8.0-pre5
       cluster:
         mode: cluster-init
         trustDomain: xxx
