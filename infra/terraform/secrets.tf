@@ -25,3 +25,8 @@ data "onepassword_item" "digitalocean" {
   vault = "github-actions"
   title = "digitalocean"
 }
+
+data "onepassword_item" "netbird" {
+  vault = "github-actions"
+  title = "netbird"
+}
