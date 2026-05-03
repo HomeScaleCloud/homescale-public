@@ -1,9 +1,0 @@
-apiVersion: v2
-name: ziti-controller-mgmt-1
-description: Helm chart for deploying the initial OpenZiti Controller for a network
-type: application
-version: 0.1.0
-dependencies:
-  - name: ziti-controller
-    version: 3.1.1
-    repository: https://docs.openziti.io/helm-charts/
