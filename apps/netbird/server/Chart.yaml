@@ -1,0 +1,9 @@
+apiVersion: v2
+name: netbird-server
+description: Helm chart for deploying a NetBird network
+type: application
+version: 0.1.0
+dependencies:
+  - name: netbird
+    version: 1.9.0
+    repository: https://netbirdio.github.io/helms
