@@ -154,7 +154,7 @@ helm:
           metadata:
             name: netbird
             annotations:
-              external-dns.alpha.kubernetes.io/hostname: xxx
+              external-dns.alpha.kubernetes.io/target: xxx
               kubernetes.io/ingress.class: traefik-public
           spec:
             entryPoints:
