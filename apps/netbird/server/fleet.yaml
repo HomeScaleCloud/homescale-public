@@ -18,27 +18,6 @@ helm:
             - --dns-domain=xxx
         configmap: |-
           {
-            "Stuns": [
-              {
-                "Proto": "udp",
-                "URI": "{{ .STUN_SERVER }}",
-                "Username": "",
-                "Password": ""
-              }
-            ],
-            "TURNConfig": {
-              "TimeBasedCredentials": false,
-              "CredentialsTTL": "12h0m0s",
-              "Secret": "secret",
-              "Turns": [
-                {
-                  "Proto": "udp",
-                  "URI": "{{ .TURN_SERVER }}",
-                  "Username": "{{ .TURN_SERVER_USER }}",
-                  "Password": "{{ .TURN_SERVER_PASSWORD }}"
-                }
-              ]
-            },
             "Relay": {
               "Addresses": ["rels://xxx:443/relay"],
               "CredentialsTTL": "24h",
@@ -123,10 +102,6 @@ helm:
           enabled: false
         envFromSecret:
           NETBIRD_STORE_ENGINE_POSTGRES_DSN: op-netbird/postgresDSN
-          STUN_SERVER: op-netbird/stunServer
-          TURN_SERVER: op-netbird/turnServer
-          TURN_SERVER_USER: op-netbird/turnServerUser
-          TURN_SERVER_PASSWORD: op-netbird/turnServerPassword #pragma: allowlist secret
           RELAY_PASSWORD: op-netbird/relayPassword #pragma: allowlist secret
           IDP_TENANT_ID: op-netbird/idpTenantID
           IDP_CLIENT_ID: op-netbird/idpClientID
@@ -158,8 +133,8 @@ helm:
         envFromSecret:
           AUTH_CLIENT_ID: op-netbird/idpClientID
           AUTH_AUDIENCE: op-netbird/idpClientID
-          AUTH_AUTHORITY: op-netbird/authAuthority
-          AUTH_SUPPORTED_SCOPES: op-netbird/authSupportedScopes
+          # AUTH_AUTHORITY: op-netbird/authAuthority
+          # AUTH_SUPPORTED_SCOPES: op-netbird/authSupportedScopes
 
       extraManifests:
         - apiVersion: cert-manager.io/v1
