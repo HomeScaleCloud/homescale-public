@@ -156,8 +156,6 @@ helm:
             annotations:
               external-dns.alpha.kubernetes.io/hostname: REDACTED
               kubernetes.io/ingress.class: traefik-public
-            labels:
-              REDACTED/class: public
           spec:
             entryPoints:
               - websecure
