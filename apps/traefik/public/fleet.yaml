@@ -7,13 +7,12 @@ helm:
   force: true
   values:
     traefik:
-      logs:
-        general:
-          level: DEBUG
       deployment:
         replicas: 2
       service:
         type: LoadBalancer
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: ingress.${ .ClusterName }.${ get .ClusterLabels \"xxx/region\" }.xxx
       ingressClass:
         enabled: true
         name: traefik-public
@@ -37,3 +36,15 @@ overrideTargets:
   - clusterSelector:
       matchLabels:
         xxx/env: mgmt
+
+targetCustomizations:
+  - name: mgmt
+    clusterSelector:
+      matchLabels:
+        xxx/env: mgmt
+    helm:
+      values:
+        traefik:
+          service:
+            annotations:
+              external-dns.alpha.kubernetes.io/hostname: xxx
