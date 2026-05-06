@@ -155,6 +155,7 @@ helm:
             name: netbird
             annotations:
               external-dns.alpha.kubernetes.io/hostname: xxx
+              kubernetes.io/ingress.class: traefik-public
             labels:
               xxx/class: public
           spec:
