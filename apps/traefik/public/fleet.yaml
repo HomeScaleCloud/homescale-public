@@ -7,6 +7,9 @@ helm:
   force: true
   values:
     traefik:
+      logs:
+        general:
+          level: DEBUG
       deployment:
         replicas: 2
       service:
@@ -19,13 +22,11 @@ helm:
         kubernetesIngress:
           enabled: true
           ingressClass: traefik-public
-          labelSelector: REDACTED/class=public
           publishedService:
             enabled: true
         kubernetesCRD:
           enabled: true
           ingressClass: traefik-public
-          labelSelector: REDACTED/class=public
       additionalArguments:
         - "--providers.kubernetesingress.ingressclass=traefik-public"
 
