@@ -90,7 +90,7 @@ helm:
               }
             },
             "StoreConfig": {
-              "Engine": "postgres"
+              "Engine": "sqlite"
             },
             "ReverseProxy": {
               "TrustedHTTPProxies": null,
@@ -101,7 +101,7 @@ helm:
         persistentVolume:
           enabled: false
         envFromSecret:
-          NETBIRD_STORE_ENGINE_POSTGRES_DSN: op-netbird/postgresDSN
+          # NETBIRD_STORE_ENGINE_POSTGRES_DSN: op-netbird/postgresDSN
           RELAY_PASSWORD: op-netbird/relayPassword #pragma: allowlist secret
           IDP_TENANT_ID: op-netbird/idpTenantID
           IDP_CLIENT_ID: op-netbird/idpClientID
