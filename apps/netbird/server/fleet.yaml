@@ -133,8 +133,8 @@ helm:
         envFromSecret:
           AUTH_CLIENT_ID: op-netbird/idpClientID
           AUTH_AUDIENCE: op-netbird/idpClientID
-          # AUTH_AUTHORITY: op-netbird/authAuthority
-          # AUTH_SUPPORTED_SCOPES: op-netbird/authSupportedScopes
+          AUTH_AUTHORITY: op-netbird/authAuthority
+          AUTH_SUPPORTED_SCOPES: op-netbird/authSupportedScopes
 
       extraManifests:
         - apiVersion: cert-manager.io/v1
