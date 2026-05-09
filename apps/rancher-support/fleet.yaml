@@ -7,6 +7,17 @@ helm:
     cluster:
       name: "${ .ClusterName }"
       region: "${ get .ClusterLabels \"xxx/region\" }"
+
+targetCustomizations:
+  - name: mgmt
+    clusterSelector:
+      matchLabels:
+        xxx/env: mgmt
+    helm:
+      values:
+        cluster:
+          name: mgmt
+
 overrideTargets:
   - clusterSelector:
       matchLabels:
