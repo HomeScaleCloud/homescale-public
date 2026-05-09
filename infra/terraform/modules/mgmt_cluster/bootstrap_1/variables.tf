@@ -13,3 +13,9 @@ variable "digitalocean_token" {
   type        = string
   sensitive   = true
 }
+
+variable "netbird_token" {
+  description = "NetBird Service Account Token"
+  type        = string
+  sensitive   = true
+}

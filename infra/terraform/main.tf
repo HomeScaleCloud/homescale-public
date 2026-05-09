@@ -4,6 +4,7 @@ module "mgmt_cluster" {
   k8s_version              = "1.34."
   region                   = "lon1"
   op_service_account_token = var.op_service_account_token
+  netbird_token            = data.onepassword_item.netbird.credential
 }
 
 # module "region_boa1" {
