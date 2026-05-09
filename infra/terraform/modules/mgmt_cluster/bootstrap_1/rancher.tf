@@ -12,7 +12,7 @@ resource "helm_release" "rancher" {
       ingress = {
         enabled    = false
         source     = "secret"
-        secretName = "tls-rancher" #pragma: allowlist secret
+        secretName = "tls-rancher-mgmt" #pragma: allowlist secret
       }
       tls = "ingress"
     })
