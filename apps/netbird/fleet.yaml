@@ -6,7 +6,7 @@ helm:
   values:
     kubernetes-operator:
       cluster:
-        name: ${ .ClusterName }-${ get .ClusterLabels \"REDACTED/region\" }
+        name: "${ .ClusterName }-${ get .ClusterLabels \"REDACTED/region\" }"
       netbirdAPI:
         keyFromSecret:
           name: op-netbird
