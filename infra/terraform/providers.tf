@@ -10,7 +10,7 @@ terraform {
     }
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = "2.85.0"
+      version = "2.85.1"
     }
     rancher2 = {
       source  = "rancher/rancher2"
