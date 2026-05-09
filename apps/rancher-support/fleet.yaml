@@ -3,6 +3,10 @@ name: rancher-support
 helm:
   releaseName: rancher-support
   chart: ./
+  values:
+    cluster:
+      name: ${ .ClusterName }
+      region: ${ get .ClusterLabels \"REDACTED/region\" }
 overrideTargets:
   - clusterSelector:
       matchLabels:

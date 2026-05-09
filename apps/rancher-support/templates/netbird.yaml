@@ -1,0 +1,13 @@
+apiVersion: netbird.io/v1alpha1
+kind: NetworkResource
+metadata:
+  name: rancher
+  namespace: cattle-system
+spec:
+  networkRouterRef:
+    name: "{{- if eq .Values.cluster.name "mgmt" -}}{{ .Values.cluster.name }}{{- else -}}{{ .Values.cluster.name }}-{{ required "cluster.region is required unless cluster.name is mgmt" .Values.cluster.region }}{{- end }}"
+    namespace: netbird
+  serviceRef:
+    name: rancher
+  groups:
+    - name: All
