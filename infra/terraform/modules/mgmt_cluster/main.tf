@@ -4,6 +4,7 @@ module "bootstrap_1" {
   region             = "lon1"
   k8s_version        = "1.34."
   digitalocean_token = var.digitalocean_token
+  netbird_token      = var.netbird_token
 }
 
 module "bootstrap_2" {

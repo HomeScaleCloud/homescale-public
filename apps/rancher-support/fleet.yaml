@@ -18,6 +18,11 @@ targetCustomizations:
         cluster:
           name: mgmt
 
+dependsOn:
+  - name: netbird-crs
+    acceptedStates:
+      - Ready
+
 overrideTargets:
   - clusterSelector:
       matchLabels:
