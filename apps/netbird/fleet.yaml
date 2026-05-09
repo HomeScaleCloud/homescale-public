@@ -3,15 +3,14 @@ name: netbird
 helm:
   releaseName: netbird
   chart: ./
-  helm:
-    values:
-      kubernetes-operator:
-        cluster:
-          name: ${ .ClusterName }-${ get .ClusterLabels \"xxx/region\" }
-        netbirdAPI:
-          keyFromSecret:
-            name: op-netbird
-            key: password
+  values:
+    kubernetes-operator:
+      cluster:
+        name: ${ .ClusterName }-${ get .ClusterLabels \"xxx/region\" }
+      netbirdAPI:
+        keyFromSecret:
+          name: op-netbird
+          key: password
 
 targetCustomizations:
   - name: mgmt
