@@ -6,6 +6,6 @@ resource "netbird_dns_zone" "mgmt" {
   name                 = "mgmt"
   domain               = "REDACTED"
   enabled              = true
-  enable_search_domain = true
+  enable_search_domain = false
   distribution_groups  = [data.netbird_group.all.id]
 }
