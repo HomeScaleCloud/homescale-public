@@ -10,10 +10,11 @@ resource "helm_release" "rancher" {
       hostname = "REDACTED"
       replicas = 2
       ingress = {
-        enabled = false
-        source  = "secret"
+        enabled    = false
+        source     = "secret"
+        secretName = "tls-rancher" #pragma: allowlist secret
       }
-      tls = "external"
+      tls = "ingress"
     })
   ]
 }
