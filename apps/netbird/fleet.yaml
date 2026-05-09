@@ -30,3 +30,12 @@ dependsOn:
   - name: onepassword
     acceptedStates:
       - Ready
+
+diff:
+  comparePatches:
+    - apiVersion: admissionregistration.k8s.io/v1
+      kind: MutatingWebhookConfiguration
+      name: netbird-kubernetes-operator-mpod-webhook
+      operations:
+        - op: remove
+          path: /webhooks
