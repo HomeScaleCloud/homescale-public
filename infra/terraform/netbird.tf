@@ -21,3 +21,16 @@ resource "netbird_reverse_proxy_domain" "ext" {
   domain         = "xxx"
   target_cluster = data.netbird_reverse_proxy_clusters.all.clusters[0].address
 }
+
+resource "netbird_user" "k8s_operator" {
+  is_service_user = true
+  name            = "Kubernetes Operator"
+  is_blocked      = false
+  role            = "network_admin"
+}
+
+resource "netbird_token" "k8s_operator" {
+  user_id         = netbird_user.k8s_operator.id
+  name            = "Kubernetes Operator"
+  expiration_days = 30
+}

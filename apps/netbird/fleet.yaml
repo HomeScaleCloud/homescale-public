@@ -1,0 +1,33 @@
+defaultNamespace: netbird
+name: netbird
+helm:
+  releaseName: netbird
+  chart: ./
+  helm:
+    values:
+      netbird:
+        cluster:
+          name: ${ .ClusterName }-${ get .ClusterLabels \"xxx/region\" }
+        netbirdAPI:
+          keyFromSecret:
+            name: op-netbird
+            key: password
+
+targetCustomizations:
+  - name: mgmt
+    clusterSelector:
+      matchLabels:
+        xxx/env: mgmt
+    helm:
+      values:
+        netbird:
+          cluster:
+            name: mgmt
+
+dependsOn:
+  - name: cert-manager
+    acceptedStates:
+      - Ready
+  - name: onepassword
+    acceptedStates:
+      - Ready
