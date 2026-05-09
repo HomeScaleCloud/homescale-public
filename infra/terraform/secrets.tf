@@ -30,3 +30,9 @@ data "onepassword_item" "netbird" {
   vault = "github-actions"
   title = "netbird"
 }
+
+resource "onepassword_item" "netbird" {
+  vault    = data.onepassword_vault.k8s.uuid
+  title    = "netbird"
+  password = netbird_token.k8s_operator.token
+}
