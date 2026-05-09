@@ -3,7 +3,7 @@ data "netbird_group" "all" {
 }
 
 resource "netbird_dns_zone" "mgmt" {
-  name                 = "mgmt"
+  name                 = "xxx"
   domain               = "xxx"
   enabled              = true
   enable_search_domain = false
