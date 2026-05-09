@@ -5,7 +5,7 @@ helm:
   chart: ./
   helm:
     values:
-      netbird:
+      kubernetes-operator:
         cluster:
           name: ${ .ClusterName }-${ get .ClusterLabels \"xxx/region\" }
         netbirdAPI:
@@ -20,7 +20,7 @@ targetCustomizations:
         xxx/env: mgmt
     helm:
       values:
-        netbird:
+        kubernetes-operator:
           cluster:
             name: mgmt
 
