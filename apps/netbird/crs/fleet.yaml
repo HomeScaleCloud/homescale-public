@@ -1,0 +1,14 @@
+defaultNamespace: netbird
+name: netbird-crs
+helm:
+  releaseName: netbird-crs
+  chart: ./
+  values:
+    cluster:
+      name: ${ .ClusterName }
+      region: ${ get .ClusterLabels \"xxx/region\" }
+
+dependsOn:
+  - name: netbird
+    acceptedStates:
+      - Ready
