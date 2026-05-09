@@ -5,8 +5,8 @@ helm:
   chart: ./
   values:
     cluster:
-      name: ${ .ClusterName }
-      region: ${ get .ClusterLabels \"REDACTED/region\" }
+      name: "${ .ClusterName }"
+      region: "${ get .ClusterLabels \"REDACTED/region\" }"
 
 dependsOn:
   - name: netbird
