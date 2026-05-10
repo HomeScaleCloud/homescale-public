@@ -13,8 +13,8 @@ metadata:
 spec:
   gatewayClassName: netbird-private
   listeners:
-  - protocol: gateway.netbird.io/NBRoutingPeer
-    name: netbird
+  - protocol: gateway.netbird.io/NetworkRouter
+    name: mgmt
     port: 1
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -25,6 +25,6 @@ metadata:
 spec:
   gatewayClassName: netbird-public
   listeners:
-  - protocol: gateway.netbird.io/NBRoutingPeer
-    name: netbird
+  - protocol: gateway.netbird.io/NetworkRouter
+    name: mgmt
     port: 1
