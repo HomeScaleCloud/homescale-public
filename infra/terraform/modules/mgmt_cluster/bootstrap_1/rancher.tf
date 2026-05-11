@@ -9,6 +9,9 @@ resource "helm_release" "rancher" {
     yamlencode({
       hostname = "xxx"
       replicas = 2
+      networkExposure = {
+        type = "gateway"
+      }
       gateway = {
         gatewayClass = {
           name = "netbird-private"
