@@ -10,6 +10,4 @@ spec:
   serviceRef:
     name: rancher-proxy
   groups:
-    - name: GitHub Actions
-    - name: team-infra-plat
-    - name: team-sec-plat
+    - name: app-rancher

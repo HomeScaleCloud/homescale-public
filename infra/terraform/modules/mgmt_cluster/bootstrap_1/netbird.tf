@@ -2,6 +2,10 @@ data "netbird_group" "all" {
   name = "All"
 }
 
+resource "netbird_group" "app_rancher" {
+  name = "app-rancher"
+}
+
 resource "netbird_dns_zone" "mgmt" {
   name                 = "xxx"
   domain               = "xxx"
