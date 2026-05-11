@@ -51,6 +51,18 @@ resource "netbird_group" "app" {
   name = "app-${each.key}"
 }
 
+resource "netbird_group" "env_mgmt" {
+  name = "env-mgmt"
+}
+
+resource "netbird_group" "env_prod" {
+  name = "env-prod"
+}
+
+resource "netbird_group" "env_lab" {
+  name = "env-lab"
+}
+
 resource "netbird_setup_key" "github_actions" {
   name                   = "GitHub Actions"
   expiry_seconds         = 86400

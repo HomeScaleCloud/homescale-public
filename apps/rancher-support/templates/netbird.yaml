@@ -11,3 +11,5 @@ spec:
     name: rancher-proxy
   groups:
     - name: app-rancher
+    - name: cluster-mgmt
+    - name: env-mgmt

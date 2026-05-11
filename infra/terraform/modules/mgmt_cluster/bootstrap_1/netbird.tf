@@ -2,6 +2,10 @@ data "netbird_group" "all" {
   name = "All"
 }
 
+resource "netbird_group" "cluster_mgmt" {
+  name = "cluster-mgmt"
+}
+
 resource "netbird_group" "app_rancher" {
   name = "app-rancher"
 }
