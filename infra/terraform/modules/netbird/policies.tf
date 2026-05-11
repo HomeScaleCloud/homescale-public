@@ -51,7 +51,7 @@ resource "netbird_policy" "region_router_ssh" {
     enabled       = true
     protocol      = "netbird-ssh"
     name          = "Region Router SSH"
-    sources       = [netbird_group.github_actions.id, data.netbird_group.sg_k8s_admin.id, data.netbird_group.team_infra_plat.id]
+    sources       = [netbird_group.github_actions.id, data.netbird_group.sg_k8s_admin.id]
     destinations  = [netbird_group.region_routers.id]
   }
 }
