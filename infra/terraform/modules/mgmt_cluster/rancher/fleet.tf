@@ -1,5 +1,4 @@
 resource "kubernetes_manifest" "gitrepo_apps_prod" {
-  depends_on = [kubernetes_namespace_v1.prod]
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
     kind       = "GitRepo"
@@ -24,8 +23,6 @@ resource "kubernetes_manifest" "gitrepo_apps_prod" {
 }
 
 resource "kubernetes_manifest" "gitrepo_apps_lab" {
-  depends_on = [kubernetes_namespace_v1.lab]
-
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
     kind       = "GitRepo"
