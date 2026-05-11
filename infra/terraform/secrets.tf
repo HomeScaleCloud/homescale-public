@@ -39,6 +39,6 @@ resource "onepassword_item" "netbird_k8s_operator" {
 
 resource "onepassword_item" "netbird_setup_key" {
   vault    = data.onepassword_vault.github_actions.uuid
-  title    = "netbird-setu-key"
+  title    = "netbird-setup-key"
   password = netbird_setup_key.github_actions.key
 }
