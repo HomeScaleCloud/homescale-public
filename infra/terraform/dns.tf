@@ -103,7 +103,7 @@ resource "cloudflare_dns_record" "cloudflare_sso_verify" {
 resource "cloudflare_dns_record" "netbird_ext" {
   zone_id = data.onepassword_item.cloudflare_zone_id.credential
   name    = "REDACTED"
-  content = data.netbird_reverse_proxy_clusters.all.clusters[0].address
+  content = module.netbird.netbird_reverse_proxy_clusters_all
   ttl     = 1
   type    = "CNAME"
 }
