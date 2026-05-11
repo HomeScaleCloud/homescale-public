@@ -13,9 +13,11 @@ module "mgmt_cluster" {
   netbird_token            = data.onepassword_item.netbird.credential
 }
 
-# module "region_boa1" {
-#   source                                     = "./modules/region"
-#   region                                     = "boa1"
-#   op_service_account_token                   = var.op_service_account_token
-#   mgmt_cidr                                  = "10.1.245.0/24"
-# }
+module "region_boa1" {
+  source                   = "./modules/region"
+  region                   = "boa1"
+  op_service_account_token = var.op_service_account_token
+  netbird_token            = data.onepassword_item.netbird.credential
+  mgmt_cidr                = "10.1.245.0/24"
+  bmc_cidr                 = "10.1.246.0/24"
+}

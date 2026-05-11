@@ -23,3 +23,19 @@ variable "mgmt_cidr" {
     error_message = "mgmt_cidr must be a valid IPv4 CIDR block, e.g. 10.1.254.0/24."
   }
 }
+
+variable "bmc_cidr" {
+  description = "Region bmc network CIDR"
+  type        = string
+
+  validation {
+    condition     = can(cidrnetmask(var.bmc_cidr))
+    error_message = "bmc_cidr must be a valid IPv4 CIDR block, e.g. 10.1.254.0/24."
+  }
+}
+
+variable "netbird_token" {
+  description = "NetBird Service Account Token"
+  type        = string
+  sensitive   = true
+}

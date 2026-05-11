@@ -30,6 +30,14 @@ resource "netbird_group" "app_rancher" {
   name = "app-rancher"
 }
 
+resource "netbird_group" "net_region_mgmt" {
+  name = "net-region-mgmt"
+}
+
+resource "netbird_group" "net_region_bmc" {
+  name = "net-region-bmc"
+}
+
 locals {
   app_names = sort(distinct([
     for app_file in fileset("${path.module}/../../../../apps", "*/**") : split("/", app_file)[0]
