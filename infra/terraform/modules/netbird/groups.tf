@@ -22,6 +22,10 @@ data "netbird_group" "net_region_bmc" {
   name = "net-region-bmc"
 }
 
+resource "netbird_group" "region_routers" {
+  name = "region-routers"
+}
+
 resource "netbird_group" "github_actions" {
   name = "GitHub Actions"
 }
