@@ -20,7 +20,7 @@ resource "netbird_group" "env_lab" {
 
 locals {
   app_names = sort(distinct([
-    for app_file in fileset("${path.module}/../../../apps", "*/**") : split("/", app_file)[0]
+    for app_file in fileset("${path.module}/../../../../apps", "*/**") : split("/", app_file)[0]
   ]))
 }
 
