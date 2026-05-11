@@ -3,7 +3,7 @@ data "netbird_group" "all" {
 }
 
 resource "netbird_group" "cluster_mgmt" {
-  name = "REDACTED/name=mgmt"
+  name = "cluster-mgmt"
 }
 
 resource "netbird_group" "app_rancher" {
