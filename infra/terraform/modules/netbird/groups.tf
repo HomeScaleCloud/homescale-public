@@ -7,15 +7,15 @@ resource "netbird_group" "github_actions" {
 }
 
 resource "netbird_group" "env_mgmt" {
-  name = "xxx/mgmt"
+  name = "env-mgmt"
 }
 
 resource "netbird_group" "env_prod" {
-  name = "xxx/mgmt"
+  name = "env-prod"
 }
 
 resource "netbird_group" "env_lab" {
-  name = "xxx/lab"
+  name = "env-lab"
 }
 
 locals {
@@ -27,5 +27,5 @@ locals {
 resource "netbird_group" "app" {
   for_each = toset(local.app_names)
 
-  name = "xxx/name=${each.key}"
+  name = "app-${each.key}"
 }
