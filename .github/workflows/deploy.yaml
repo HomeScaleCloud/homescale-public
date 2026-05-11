@@ -49,10 +49,7 @@ jobs:
         run: |
           curl -fsSL https://pkgs.netbird.io/install.sh | sh
       - name: Connect to NetBird
-        run: |
-          HOSTNAME="github-actions-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          HOSTNAME="${HOSTNAME//[^a-zA-Z0-9-]/-}"
-          netbird up
+        run: netbird up
       - name: Plan
         id: plan
         run: terraform plan -out=tfplan
