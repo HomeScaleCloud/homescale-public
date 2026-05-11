@@ -42,6 +42,20 @@ resource "netbird_policy" "region_bmc" {
   }
 }
 
+resource "netbird_policy" "region_router_ssh" {
+  name    = "Region Router SSH"
+  enabled = true
+  rule {
+    action        = "accept"
+    bidirectional = false
+    enabled       = true
+    protocol      = "netbird-ssh"
+    name          = "Region Router SSH"
+    sources       = [netbird_group.github_actions.id, data.netbird_group.sg_k8s_admin.id, data.netbird_group.team_infra_plat.id]
+    destinations  = [netbird_group.region_routers.id]
+  }
+}
+
 resource "netbird_policy" "rancher" {
   name    = "Rancher"
   enabled = true
