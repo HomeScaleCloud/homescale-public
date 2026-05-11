@@ -25,7 +25,7 @@ variable "mgmt_cidr" {
 }
 
 variable "bmc_cidr" {
-  description = "Region bmc network CIDR"
+  description = "Region BMC network CIDR"
   type        = string
 
   validation {

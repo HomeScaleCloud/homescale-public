@@ -10,6 +10,18 @@ data "netbird_group" "team_sec_plat" {
   name = "team-sec-plat"
 }
 
+data "netbird_group" "sg_k8s_admin" {
+  name = "sg-k8s-admin"
+}
+
+data "netbird_group" "net_region_mgmt" {
+  name = "net-region-mgmt"
+}
+
+data "netbird_group" "net_region_bmc" {
+  name = "net-region-bmc"
+}
+
 resource "netbird_group" "github_actions" {
   name = "GitHub Actions"
 }
