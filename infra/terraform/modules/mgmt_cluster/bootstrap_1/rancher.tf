@@ -9,12 +9,18 @@ resource "helm_release" "rancher" {
     yamlencode({
       hostname = "REDACTED"
       replicas = 2
-      ingress = {
-        enabled    = false
-        source     = "secret"
-        secretName = "tls-rancher-ingress" #pragma: allowlist secret
+      gateway = {
+        gatewayClass = {
+          name = "netbird-private"
+          tls = {
+            source     = "secret"
+            secretName = "tls-rancher-ingress" #pragma: allowlist secret
+          }
+        }
       }
-      tls = "ingress"
+      ingress = {
+        enabled = false
+      }
     })
   ]
 }
