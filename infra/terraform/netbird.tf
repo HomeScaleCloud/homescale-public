@@ -4,6 +4,12 @@ data "netbird_group" "all" {
 
 data "netbird_reverse_proxy_clusters" "all" {}
 
+locals {
+  app_names = sort(distinct([
+    for app_file in fileset("${path.module}/../../apps", "*/**") : split("/", app_file)[0]
+  ]))
+}
+
 resource "netbird_account_settings" "settings" {
   peer_login_expiration              = 86400
   peer_login_expiration_enabled      = true
@@ -37,6 +43,12 @@ resource "netbird_token" "k8s_operator" {
 
 resource "netbird_group" "github_actions" {
   name = "GitHub Actions"
+}
+
+resource "netbird_group" "app" {
+  for_each = toset(local.app_names)
+
+  name = "app-${each.key}"
 }
 
 resource "netbird_setup_key" "github_actions" {
