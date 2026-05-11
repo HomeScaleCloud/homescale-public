@@ -6,10 +6,6 @@ resource "netbird_group" "cluster_mgmt" {
   name = "cluster-mgmt"
 }
 
-resource "netbird_group" "app_rancher" {
-  name = "app-rancher"
-}
-
 resource "netbird_dns_zone" "mgmt" {
   name                 = "REDACTED"
   domain               = "REDACTED"

@@ -2,6 +2,14 @@ data "netbird_group" "all" {
   name = "All"
 }
 
+data "netbird_group" "team_infra_plat" {
+  name = "team-infra-plat"
+}
+
+data "netbird_group" "team_sec_plat" {
+  name = "team-sec-plat"
+}
+
 resource "netbird_group" "github_actions" {
   name = "GitHub Actions"
 }
@@ -16,6 +24,10 @@ resource "netbird_group" "env_prod" {
 
 resource "netbird_group" "env_lab" {
   name = "env-lab"
+}
+
+resource "netbird_group" "app_rancher" {
+  name = "app-rancher"
 }
 
 locals {
