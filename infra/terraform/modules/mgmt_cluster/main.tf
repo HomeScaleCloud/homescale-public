@@ -29,5 +29,5 @@ module "rancher" {
   k8s_token                = module.bootstrap_1.k8s_token
   k8s_ca                   = module.bootstrap_1.k8s_ca
   op_service_account_token = var.op_service_account_token
-  rancher_token            = module.bootstrap.rancher_token
+  rancher_token            = module.bootstrap_3.rancher_token
 }
