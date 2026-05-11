@@ -36,7 +36,7 @@ jobs:
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.op_service_account_token }}
           TF_TOKEN_app_terraform_io: op://github-actions/terraform-cloud/credential
-          TG_SERVICE_KEY: op://github-actions/twingate-service-key/password  # pragma: allowlist secret
+          NB_SETUP_KEY: op://github-actions/netbird-setup-key/password  # pragma: allowlist secret
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4
       - name: Initialize Terraform
@@ -45,11 +45,11 @@ jobs:
       - name: Validate
         id: validate
         run: terraform validate
-      - name: Connect to Twingate
-        uses: twingate/github-action@f1e69fc5af67b737d8597b759e5c607f567e77f2 # v1.8
-        with:
-          service-key: ${{ env.TG_SERVICE_KEY }}
-          cache: true
+      - name: Setup NetBird
+        run: |
+          curl -fsSL https://pkgs.netbird.io/install.sh | sh
+      - name: Connect to NetBird
+        run: netbird up
       - name: Plan
         id: plan
         run: terraform plan -out=tfplan
