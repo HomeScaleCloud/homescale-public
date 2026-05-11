@@ -20,7 +20,7 @@ resource "netbird_policy" "region_mgmt" {
     bidirectional = false
     enabled       = true
     protocol      = "tcp"
-    ports         = ["80", "443", "8443", "22"]
+    ports         = ["80", "443", "8443", "6443", "22"]
     name          = "Region Mgmt Networks"
     sources       = [netbird_group.github_actions.id, data.netbird_group.sg_k8s_admin.id]
     destinations  = [data.netbird_group.net_region_mgmt.id]
