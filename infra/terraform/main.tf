@@ -1,3 +1,9 @@
+module "netbird" {
+  source                   = "./modules/netbird"
+  netbird_token            = data.onepassword_item.netbird.credential
+  op_service_account_token = var.op_service_account_token
+}
+
 module "mgmt_cluster" {
   source                   = "./modules/mgmt_cluster"
   digitalocean_token       = data.onepassword_item.digitalocean.credential
