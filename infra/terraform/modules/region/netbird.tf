@@ -55,7 +55,7 @@ resource "netbird_network_resource" "bmc" {
 resource "netbird_setup_key" "region_router" {
   name                   = "${var.region}-router"
   expiry_seconds         = 86400
-  type                   = "one-off"
+  type                   = "reusable"
   allow_extra_dns_labels = true
   auto_groups            = [netbird_group.region_mgmt.id, netbird_group.region_bmc.id]
   ephemeral              = false
