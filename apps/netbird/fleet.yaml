@@ -5,6 +5,8 @@ helm:
   chart: ./
   values:
     kubernetes-operator:
+      operator:
+        replicaCount: 2
       cluster:
         name: "${ .ClusterName }-${ get .ClusterLabels \"xxx/region\" }"
       netbirdAPI:
