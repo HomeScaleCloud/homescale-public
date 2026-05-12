@@ -27,6 +27,7 @@ locals {
   homescale_k8s_deploy_key_namespaces = toset([
     "fleet-local",
     "prod",
+    "metal",
     "lab",
   ])
 }

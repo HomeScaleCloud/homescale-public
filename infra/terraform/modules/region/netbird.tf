@@ -2,6 +2,10 @@ data "netbird_group" "env_mgmt" {
   name = "env-mgmt"
 }
 
+data "netbird_group" "env_metal" {
+  name = "env-metal"
+}
+
 data "netbird_group" "net_region_mgmt" {
   name = "net-region-mgmt"
 }
@@ -71,7 +75,7 @@ resource "netbird_setup_key" "metal" {
   expiry_seconds         = 86400
   type                   = "reusable"
   allow_extra_dns_labels = true
-  auto_groups            = [netbird_group.region_mgmt.id, data.netbird_group.env_mgmt.id, data.netbird_group.node_metal.id]
+  auto_groups            = [netbird_group.region_mgmt.id, data.netbird_group.env_metal.id, data.netbird_group.node_metal.id]
   ephemeral              = false
   usage_limit            = 0
 }
