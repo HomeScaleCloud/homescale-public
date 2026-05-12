@@ -1,6 +1,7 @@
 extends: default
 ignore: |
   apps/**/templates/**
+  apps/netbird/crds/tcproutes.yaml
 rules:
   truthy: disable
   document-start: disable
