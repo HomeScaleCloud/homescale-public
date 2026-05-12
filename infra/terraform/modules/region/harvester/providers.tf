@@ -9,6 +9,9 @@ terraform {
     kubernetes = {
       source = "hashicorp/kubernetes"
     }
+    rancher2 = {
+      source = "rancher/rancher2"
+    }
   }
 }
 
@@ -31,4 +34,9 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(local.cluster["certificate-authority-data"])
   client_certificate     = base64decode(local.user["client-certificate-data"])
   client_key             = base64decode(local.user["client-key-data"])
+}
+
+provider "rancher2" {
+  api_url   = "https://REDACTED"
+  token_key = data.onepassword_item.rancher.password
 }
