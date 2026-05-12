@@ -1,4 +1,5 @@
 resource "kubernetes_manifest" "gitrepo_apps_mgmt" {
+  depends_on = [kubernetes_secret_v1.homescale_k8s_deploy_key]
   manifest = {
     apiVersion = "fleet.cattle.io/v1alpha1"
     kind       = "GitRepo"
