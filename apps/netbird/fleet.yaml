@@ -14,7 +14,7 @@ helm:
           name: op-netbird
           key: password
       gatewayAPI:
-        enabled: true
+        enabled: false
 
 targetCustomizations:
   - name: mgmt
