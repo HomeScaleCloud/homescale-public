@@ -1,5 +1,0 @@
-deployments:
-  environmentMapping:
-    production:
-      - "terraform"
-      - "argocd"
