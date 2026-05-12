@@ -52,7 +52,7 @@ resource "netbird_policy" "rancher" {
     protocol      = "tcp"
     ports         = ["80", "443"]
     name          = "Rancher"
-    sources       = [data.netbird_group.team_infra_plat.id, data.netbird_group.team_sec_plat.id, netbird_group.github_actions.id]
+    sources       = [data.netbird_group.team_infra_plat.id, data.netbird_group.team_sec_plat.id, netbird_group.github_actions.id, netbird_group.node_metal.id]
     destinations  = [netbird_group.app_rancher.id]
   }
 }
