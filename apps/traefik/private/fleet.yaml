@@ -26,3 +26,9 @@ helm:
           ingressClass: traefik-private
       additionalArguments:
         - "--providers.kubernetesingress.ingressclass=traefik-private"
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        REDACTED/env: metal
+    doNotDeploy: true
