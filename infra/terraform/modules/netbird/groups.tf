@@ -30,6 +30,10 @@ resource "netbird_group" "region_routers" {
   name = "region-routers"
 }
 
+resource "netbird_group" "k8s" {
+  name = "k8s"
+}
+
 resource "netbird_group" "github_actions" {
   name = "GitHub Actions"
 }
