@@ -8,6 +8,12 @@ helm:
       crds:
         enabled: true
 
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        REDACTED/env: metal
+    doNotDeploy: true
+
 diff:
   comparePatches:
     - apiVersion: admissionregistration.k8s.io/v1
