@@ -14,6 +14,10 @@ data "netbird_group" "sg_k8s_admin" {
   name = "sg-k8s-admin"
 }
 
+data "netbird_group" "sg_ssh_admin" {
+  name = "sg-ssh-admin"
+}
+
 data "netbird_group" "net_region_mgmt" {
   name = "net-region-mgmt"
 }
