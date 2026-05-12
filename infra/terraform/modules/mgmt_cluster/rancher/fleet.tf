@@ -28,7 +28,7 @@ resource "kubernetes_manifest" "gitrepo_apps_metal" {
     kind       = "GitRepo"
     metadata = {
       name      = "apps-metal"
-      namespace = "metal"
+      namespace = "fleet-default"
     }
     spec = {
       repo             = "git@github.com:HomeScaleCloud/homescale.git"
