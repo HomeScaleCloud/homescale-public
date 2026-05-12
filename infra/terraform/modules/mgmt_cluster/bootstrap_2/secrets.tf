@@ -26,8 +26,8 @@ resource "kubernetes_secret_v1" "onepassword" {
 locals {
   homescale_k8s_deploy_key_namespaces = toset([
     "fleet-local",
+    "fleet-default",
     "prod",
-    "metal",
     "lab",
   ])
 }
