@@ -10,3 +10,9 @@ helm:
     device:
       name: tun
       path: /dev/net/tun
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        xxx/env: metal
+    doNotDeploy: true

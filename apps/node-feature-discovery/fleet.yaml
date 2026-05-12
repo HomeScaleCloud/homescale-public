@@ -3,3 +3,9 @@ name: node-feature-discovery
 helm:
   releaseName: node-feature-discovery
   chart: ./
+
+overrideTargets:
+  - clusterSelector:
+      matchLabels:
+        xxx/env: metal
+    doNotDeploy: true
