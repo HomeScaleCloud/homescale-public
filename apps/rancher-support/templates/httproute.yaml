@@ -1,0 +1,13 @@
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: rancher-proxy
+  namespace: cattle-system
+spec:
+  parentRefs:
+    - name: netbird-public
+      namespace: netbird
+  rules:
+    - backendRefs:
+        - name: rancher
+          port: 80
