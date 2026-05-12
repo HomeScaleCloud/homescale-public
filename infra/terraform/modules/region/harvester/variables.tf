@@ -23,3 +23,9 @@ variable "mgmt_cidr" {
     error_message = "mgmt_cidr must be a valid IPv4 CIDR block, e.g. 10.1.254.0/24."
   }
 }
+
+variable "netbird_setup_key" {
+  description = "NetBird Setup Key"
+  type        = string
+  sensitive   = true
+}
