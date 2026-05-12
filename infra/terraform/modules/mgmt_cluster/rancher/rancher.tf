@@ -7,3 +7,8 @@ resource "rancher2_auth_config_azuread" "entraid" {
   tenant_id          = data.onepassword_item.entra_tenant.credential
   token_endpoint     = "https://login.microsoftonline.com/${data.onepassword_item.entra_tenant.credential}/oauth2/v2.0/token"
 }
+
+resource "rancher2_setting" "agent_tls_mode" {
+  name  = "agent-tls-mode"
+  value = "system-store"
+}
