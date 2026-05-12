@@ -42,6 +42,10 @@ resource "netbird_group" "env_prod" {
   name = "env-prod"
 }
 
+resource "netbird_group" "env_metal" {
+  name = "env-metal"
+}
+
 resource "netbird_group" "env_lab" {
   name = "env-lab"
 }
