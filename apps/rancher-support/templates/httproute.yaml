@@ -12,5 +12,5 @@ spec:
       sectionName: rancher-tls
   rules:
     - backendRefs:
-        - name: rancher
+        - name: rancher-proxy
           port: 443
