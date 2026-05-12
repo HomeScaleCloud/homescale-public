@@ -7,6 +7,7 @@ helm:
     cluster:
       name: "${ .ClusterName }"
       region: "${ get .ClusterLabels \"REDACTED/region\" }"
+      env: "${ get .ClusterLabels \"REDACTED/env\" }"
 
 targetCustomizations:
   - name: mgmt
