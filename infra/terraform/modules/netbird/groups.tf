@@ -54,10 +54,6 @@ resource "netbird_group" "env_lab" {
   name = "env-lab"
 }
 
-resource "netbird_group" "app_rancher" {
-  name = "app-rancher"
-}
-
 resource "netbird_group" "net_region_mgmt" {
   name = "net-region-mgmt"
 }

@@ -12,10 +12,6 @@ terraform {
       source  = "digitalocean/digitalocean"
       version = "2.85.1"
     }
-    rancher2 = {
-      source  = "rancher/rancher2"
-      version = "14.1.0"
-    }
     helm = {
       source  = "hashicorp/helm"
       version = "3.1.1"
@@ -27,10 +23,6 @@ terraform {
     tls = {
       source  = "hashicorp/tls"
       version = "4.2.1"
-    }
-    harvester = {
-      source  = "harvester/harvester"
-      version = "1.8.0"
     }
     netbird = {
       source  = "netbirdio/netbird"

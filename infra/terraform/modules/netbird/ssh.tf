@@ -15,20 +15,3 @@ resource "netbird_policy" "region_router_ssh" {
     }
   }
 }
-
-resource "netbird_policy" "node_metal_ssh" {
-  name    = "Metal Node SSH"
-  enabled = true
-  rule {
-    action        = "accept"
-    bidirectional = false
-    enabled       = true
-    protocol      = "netbird-ssh"
-    name          = "Metal Node SSH"
-    sources       = [data.netbird_group.sg_ssh_admin.id]
-    destinations  = [netbird_group.node_metal.id]
-    authorized_groups = {
-      (data.netbird_group.sg_ssh_admin.id) = ["rancher"]
-    }
-  }
-}
