@@ -41,18 +41,3 @@ resource "netbird_policy" "region_bmc" {
     destinations  = [data.netbird_group.net_region_bmc.id]
   }
 }
-
-resource "netbird_policy" "rancher" {
-  name    = "Rancher"
-  enabled = true
-  rule {
-    action        = "accept"
-    bidirectional = false
-    enabled       = true
-    protocol      = "tcp"
-    ports         = ["80", "443"]
-    name          = "Rancher"
-    sources       = [data.netbird_group.team_infra_plat.id, data.netbird_group.team_sec_plat.id, netbird_group.github_actions.id, netbird_group.node_metal.id]
-    destinations  = [netbird_group.app_rancher.id]
-  }
-}
