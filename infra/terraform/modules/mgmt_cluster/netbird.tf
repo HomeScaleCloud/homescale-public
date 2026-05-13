@@ -13,11 +13,3 @@ resource "netbird_dns_zone" "mgmt" {
   enable_search_domain = false
   distribution_groups  = [data.netbird_group.all.id]
 }
-
-resource "netbird_dns_record" "rancher" {
-  zone_id = netbird_dns_zone.mgmt.id
-  name    = "xxx"
-  type    = "CNAME"
-  content = "xxx"
-  ttl     = 300
-}
