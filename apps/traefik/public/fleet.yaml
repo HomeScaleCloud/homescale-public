@@ -33,9 +33,6 @@ overrideTargets:
   - clusterSelector:
       matchLabels:
         xxx/traefik-public: enabled
-  - clusterSelector:
-      matchLabels:
-        xxx/env: mgmt
 
 targetCustomizations:
   - name: mgmt
