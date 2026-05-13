@@ -30,5 +30,4 @@ helm:
 overrideTargets:
   - clusterSelector:
       matchLabels:
-        REDACTED/env: metal
-    doNotDeploy: true
+        REDACTED/traefik-private: enabled
