@@ -1,0 +1,27 @@
+argocd:
+  namespace: argocd
+
+project: default
+repoURL: ""
+targetRevision: main
+applicationNamePrefix: ""
+revisionHistoryLimit: 10
+
+cluster:
+  name: ""
+  region: ""
+  env: ""
+
+destination:
+  name: ""
+  server: ""
+
+syncPolicy:
+  automated:
+    prune: true
+    selfHeal: true
+
+syncOptions:
+  - CreateNamespace=true
+
+apps: {}
