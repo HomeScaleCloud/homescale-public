@@ -1,0 +1,9 @@
+kubernetes-operator:
+  operator:
+    replicaCount: 2
+  netbirdAPI:
+    keyFromSecret:
+      name: op-netbird
+      key: password
+  gatewayAPI:
+    enabled: true

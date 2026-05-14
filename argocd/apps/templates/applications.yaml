@@ -1,0 +1,75 @@
+{{- $root := . -}}
+{{- range $appName, $app := .Values.apps }}
+{{- if $app.enabled }}
+{{- $clusterName := required "cluster.name is required when any app is enabled" $root.Values.cluster.name -}}
+{{- $clusterRegion := required "cluster.region is required when any app is enabled" $root.Values.cluster.region -}}
+{{- $clusterEnv := required "cluster.env is required when any app is enabled" $root.Values.cluster.env -}}
+{{- $appPath := required (printf "apps.%s.path is required" $appName) $app.path -}}
+{{- $appNamespace := required (printf "apps.%s.namespace is required" $appName) $app.namespace -}}
+{{- $repoURL := required (printf "repoURL or apps.%s.repoURL is required" $appName) (default $root.Values.repoURL $app.repoURL) -}}
+{{- $targetRevision := default $root.Values.targetRevision $app.targetRevision -}}
+{{- $project := default $root.Values.project $app.project -}}
+{{- $destination := default (dict) $app.destination -}}
+{{- $destinationServer := default $root.Values.destination.server $destination.server -}}
+{{- $destinationName := default (default $clusterName $root.Values.destination.name) $destination.name -}}
+{{- $releaseName := default $appName $app.releaseName -}}
+{{- $globalValues := dict "global" (dict "cluster" $clusterName "name" $clusterName "region" $clusterRegion "env" $clusterEnv) -}}
+{{- $valuesObject := mergeOverwrite $globalValues (default (dict) $app.values) -}}
+{{- $syncPolicy := mergeOverwrite (deepCopy (default (dict) $root.Values.syncPolicy)) (default (dict) $app.syncPolicy) -}}
+{{- $syncOptions := concat (default (list) $root.Values.syncOptions) (default (list) $app.syncOptions) | uniq -}}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ include "homescale-apps.applicationName" (dict "root" $root "appName" $appName) | quote }}
+  namespace: {{ default "argocd" $root.Values.argocd.namespace | quote }}
+  labels:
+    app.kubernetes.io/name: {{ $appName | quote }}
+    app.kubernetes.io/part-of: homescale
+    REDACTED/cluster: {{ $clusterName | quote }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ default 0 $app.syncWave | quote }}
+{{- with $app.annotations }}
+{{ tpl (toYaml .) $root | nindent 4 }}
+{{- end }}
+spec:
+  project: {{ $project | quote }}
+  source:
+    repoURL: {{ $repoURL | quote }}
+    targetRevision: {{ $targetRevision | quote }}
+    path: {{ $appPath | quote }}
+    helm:
+      releaseName: {{ $releaseName | quote }}
+{{- with $app.valueFiles }}
+      valueFiles:
+{{ toYaml . | nindent 8 }}
+{{- end }}
+      valuesObject:{{ tpl (toYaml $valuesObject) $root | nindent 8 }}
+  destination:
+{{- if $destinationServer }}
+    server: {{ $destinationServer | quote }}
+{{- else }}
+    name: {{ $destinationName | quote }}
+{{- end }}
+    namespace: {{ $appNamespace | quote }}
+{{- with $app.ignoreDifferences }}
+  ignoreDifferences:{{ tpl (toYaml .) $root | nindent 4 }}
+{{- end }}
+{{- if or $syncPolicy $syncOptions }}
+{{- if $syncPolicy }}
+  syncPolicy:{{ toYaml $syncPolicy | nindent 4 }}
+{{- else }}
+  syncPolicy:
+{{- end }}
+{{- if $syncOptions }}
+    syncOptions:
+{{- range $syncOptions }}
+      - {{ . | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- with $root.Values.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ . }}
+{{ end }}
+{{ end }}
+{{ end }}
