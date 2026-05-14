@@ -1,6 +1,7 @@
 extends: default
 ignore: |
   apps/**/templates/**
+  argocd/**/templates/**
   apps/netbird/crds/tcproutes.yaml
 rules:
   truthy: disable

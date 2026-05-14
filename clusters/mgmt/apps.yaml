@@ -1,0 +1,156 @@
+repoURL: https://github.com/HomeScaleCloud/homescale.git
+targetRevision: main
+
+cluster:
+  name: mgmt
+  region: lon1
+  env: mgmt
+
+destination:
+  server: https://kubernetes.default.svc
+
+apps:
+  cert-manager:
+    enabled: true
+    path: apps/cert-manager
+    namespace: cert-manager
+    releaseName: cert-manager
+    syncWave: -30
+    ignoreDifferences:
+      - group: admissionregistration.k8s.io
+        kind: MutatingWebhookConfiguration
+        name: cert-manager-webhook
+        jsonPointers:
+          - /webhooks
+      - group: admissionregistration.k8s.io
+        kind: ValidatingWebhookConfiguration
+        name: cert-manager-webhook
+        jsonPointers:
+          - /webhooks
+
+  onepassword:
+    enabled: true
+    path: apps/onepassword
+    namespace: onepassword
+    releaseName: onepassword
+    syncWave: -30
+
+  rbac:
+    enabled: true
+    path: apps/rbac
+    namespace: kube-system
+    releaseName: rbac
+    syncWave: -30
+
+  cert-manager-crs:
+    enabled: true
+    path: apps/cert-manager/crs
+    namespace: cert-manager
+    releaseName: cert-manager-crs
+    syncWave: -20
+
+  netbird:
+    enabled: true
+    path: apps/netbird
+    namespace: netbird
+    releaseName: netbird
+    syncWave: -20
+    syncOptions:
+      - ServerSideApply=true
+    values:
+      kubernetes-operator:
+        cluster:
+          name: '{{ if eq .Values.cluster.env "mgmt" }}mgmt{{ else }}{{ .Values.cluster.name }}-{{ .Values.cluster.region }}{{ end }}'
+    ignoreDifferences:
+      - group: admissionregistration.k8s.io
+        kind: MutatingWebhookConfiguration
+        name: netbird-kubernetes-operator-mpod-webhook
+        jsonPointers:
+          - /webhooks
+
+  netbird-crs:
+    enabled: true
+    path: apps/netbird/crs
+    namespace: netbird
+    releaseName: netbird-crs
+    syncWave: -10
+    values:
+      cluster:
+        name: "{{ .Values.cluster.name }}"
+        region: "{{ .Values.cluster.region }}"
+        env: "{{ .Values.cluster.env }}"
+
+  external-dns:
+    enabled: false
+    path: apps/external-dns
+    namespace: external-dns
+    releaseName: external-dns
+    syncWave: -10
+
+  external-dns-crs:
+    enabled: false
+    path: apps/external-dns/crs
+    namespace: external-dns
+    releaseName: external-dns-crs
+    syncWave: 0
+
+  generic-device-plugin-tun:
+    enabled: false
+    path: apps/generic-device-plugin
+    namespace: kube-system
+    releaseName: generic-device-plugin-tun
+    syncWave: 0
+
+  home-assistant:
+    enabled: false
+    path: apps/home-assistant
+    namespace: home-assistant
+    releaseName: home-assistant
+    syncWave: 0
+
+  homepage:
+    enabled: false
+    path: apps/homepage
+    namespace: homepage
+    releaseName: homepage
+    syncWave: 0
+
+  metrics-legacy:
+    enabled: false
+    path: apps/metrics-legacy
+    namespace: metrics-legacy
+    releaseName: metrics-legacy
+    syncWave: 0
+
+  minecraft:
+    enabled: false
+    path: apps/minecraft
+    namespace: minecraft
+    releaseName: minecraft
+    syncWave: 0
+
+  node-feature-discovery:
+    enabled: false
+    path: apps/node-feature-discovery
+    namespace: kube-system
+    releaseName: node-feature-discovery
+    syncWave: 0
+
+  traefik-private:
+    enabled: false
+    path: apps/traefik/private
+    namespace: traefik
+    releaseName: traefik-private
+    syncWave: 0
+
+  traefik-public:
+    enabled: false
+    path: apps/traefik/public
+    namespace: traefik
+    releaseName: traefik-public
+    syncWave: 0
+    values:
+      traefik:
+        service:
+          annotations:
+            external-dns.alpha.kubernetes.io/hostname: '{{ if eq .Values.cluster.env "mgmt" }}xxx{{ else }}ingress.{{ .Values.cluster.name }}.{{ .Values.cluster.region }}.xxx{{ end }}'
