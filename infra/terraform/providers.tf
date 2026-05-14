@@ -10,7 +10,7 @@ terraform {
     }
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = "2.85.1"
+      version = "2.86.0"
     }
     helm = {
       source  = "hashicorp/helm"
