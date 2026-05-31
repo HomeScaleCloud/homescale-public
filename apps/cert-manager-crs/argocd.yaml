@@ -1,0 +1,4 @@
+path: apps/cert-manager-crs
+namespace: cert-manager
+releaseName: cert-manager-crs
+syncWave: -20

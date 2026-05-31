@@ -1,0 +1,16 @@
+path: apps/netbird
+namespace: netbird
+releaseName: netbird
+syncWave: -20
+syncOptions:
+  - ServerSideApply=true
+values:
+  kubernetes-operator:
+    cluster:
+      name: '{{ if eq .Values.cluster.env "mgmt" }}mgmt{{ else }}{{ .Values.cluster.name }}-{{ .Values.cluster.region }}{{ end }}'
+ignoreDifferences:
+  - group: admissionregistration.k8s.io
+    kind: MutatingWebhookConfiguration
+    name: netbird-kubernetes-operator-mpod-webhook
+    jsonPointers:
+      - /webhooks

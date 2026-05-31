@@ -1,0 +1,9 @@
+path: apps/netbird-crs
+namespace: netbird
+releaseName: netbird-crs
+syncWave: -10
+values:
+  cluster:
+    name: "{{ .Values.cluster.name }}"
+    region: "{{ .Values.cluster.region }}"
+    env: "{{ .Values.cluster.env }}"
