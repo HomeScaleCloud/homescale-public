@@ -1,11 +1,16 @@
 {{- $root := . -}}
-{{- range $appName, $app := .Values.apps }}
+{{- range $appName, $override := .Values.apps }}
+{{- $defaults := dict }}
+{{- with $root.Files.Get (printf "%s/argocd.yaml" $appName) }}
+{{- $defaults = . | fromYaml }}
+{{- end }}
+{{- $app := mergeOverwrite (deepCopy $defaults) $override }}
 {{- if $app.enabled }}
 {{- $clusterName := required "cluster.name is required when any app is enabled" $root.Values.cluster.name -}}
 {{- $clusterRegion := required "cluster.region is required when any app is enabled" $root.Values.cluster.region -}}
 {{- $clusterEnv := required "cluster.env is required when any app is enabled" $root.Values.cluster.env -}}
-{{- $appPath := required (printf "apps.%s.path is required" $appName) $app.path -}}
-{{- $appNamespace := required (printf "apps.%s.namespace is required" $appName) $app.namespace -}}
+{{- $appPath := required (printf "apps.%s: path is required (set in apps/%s.yaml)" $appName $appName) $app.path -}}
+{{- $appNamespace := required (printf "apps.%s: namespace is required (set in apps/%s.yaml)" $appName $appName) $app.namespace -}}
 {{- $repoURL := required (printf "repoURL or apps.%s.repoURL is required" $appName) (default $root.Values.repoURL $app.repoURL) -}}
 {{- $targetRevision := default $root.Values.targetRevision $app.targetRevision -}}
 {{- $project := default $root.Values.project $app.project -}}
@@ -21,7 +26,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ include "homescale-apps.applicationName" (dict "root" $root "appName" $appName) | quote }}
+  name: {{ include "homescale-catalog.applicationName" (dict "root" $root "appName" $appName) | quote }}
   namespace: {{ default "argocd" $root.Values.argocd.namespace | quote }}
   labels:
     app.kubernetes.io/name: {{ $appName | quote }}
