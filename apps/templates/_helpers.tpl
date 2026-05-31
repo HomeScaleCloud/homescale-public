@@ -1,7 +1,7 @@
 {{/*
-Build an Application name that stays unique in a single Argo CD instance.
+Build an Application name unique within a single ArgoCD instance.
 */}}
-{{- define "homescale-apps.applicationName" -}}
+{{- define "homescale-catalog.applicationName" -}}
 {{- $root := index . "root" -}}
 {{- $appName := index . "appName" -}}
 {{- $prefix := default $root.Values.cluster.name $root.Values.applicationNamePrefix -}}

@@ -1,0 +1,12 @@
+path: apps/argocd
+namespace: argocd
+releaseName: argocd
+syncWave: -30
+syncOptions:
+  - ServerSideApply=true
+ignoreDifferences:
+  - group: ""
+    kind: Secret
+    name: argocd-secret
+    jsonPointers:
+      - /data

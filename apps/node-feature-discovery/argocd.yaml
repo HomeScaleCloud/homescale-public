@@ -1,0 +1,4 @@
+path: apps/node-feature-discovery
+namespace: kube-system
+releaseName: node-feature-discovery
+syncWave: 0

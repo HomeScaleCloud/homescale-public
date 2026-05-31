@@ -1,0 +1,15 @@
+path: apps/cert-manager
+namespace: cert-manager
+releaseName: cert-manager
+syncWave: -30
+ignoreDifferences:
+  - group: admissionregistration.k8s.io
+    kind: MutatingWebhookConfiguration
+    name: cert-manager-webhook
+    jsonPointers:
+      - /webhooks
+  - group: admissionregistration.k8s.io
+    kind: ValidatingWebhookConfiguration
+    name: cert-manager-webhook
+    jsonPointers:
+      - /webhooks

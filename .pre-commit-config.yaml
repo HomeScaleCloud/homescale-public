@@ -22,7 +22,13 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        args: ["--exclude-lines", "secretName:\\s+\\S+"]
+        args:
+          - "--exclude-lines"
+          - "secretName:\\s+\\S+"
+          - "--exclude-lines"
+          - "values:\\s+\\|"
+          - "--exclude-lines"
+          - "onepassword:"
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.99.5
     hooks:

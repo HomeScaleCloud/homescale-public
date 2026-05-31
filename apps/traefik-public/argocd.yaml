@@ -1,0 +1,9 @@
+path: apps/traefik-public
+namespace: traefik
+releaseName: traefik-public
+syncWave: 0
+values:
+  traefik:
+    service:
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: '{{ if eq .Values.cluster.env "mgmt" }}REDACTED{{ else }}ingress.{{ .Values.cluster.name }}.{{ .Values.cluster.region }}.REDACTED{{ end }}'
