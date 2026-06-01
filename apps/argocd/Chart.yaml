@@ -1,6 +1,6 @@
 apiVersion: v2
 name: argocd
-description: ArgoCD self-managed via Helm — installed initially by the cluster provisioner, then managed here
+description: Helm chart for ArgoCD
 version: 0.1.0
 dependencies:
   - name: argo-cd

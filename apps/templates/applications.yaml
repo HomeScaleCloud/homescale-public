@@ -18,8 +18,7 @@
 {{- $destinationServer := default $root.Values.destination.server $destination.server -}}
 {{- $destinationName := default (default $clusterName $root.Values.destination.name) $destination.name -}}
 {{- $releaseName := default $appName $app.releaseName -}}
-{{- $globalValues := dict "global" (dict "cluster" $clusterName "name" $clusterName "region" $clusterRegion "env" $clusterEnv) -}}
-{{- $valuesObject := mergeOverwrite $globalValues (default (dict) $app.values) -}}
+{{- $valuesObject := default (dict) $app.values -}}
 {{- $syncPolicy := mergeOverwrite (deepCopy (default (dict) $root.Values.syncPolicy)) (default (dict) $app.syncPolicy) -}}
 {{- $syncOptions := concat (default (list) $root.Values.syncOptions) (default (list) $app.syncOptions) | uniq -}}
 ---
