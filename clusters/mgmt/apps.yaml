@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: mgmt-apps
+  name: apps-mgmt
   namespace: argocd
 spec:
   project: default
@@ -10,17 +10,12 @@ spec:
     targetRevision: main
     path: apps
     helm:
-      releaseName: mgmt-apps
+      releaseName: apps-mgmt
       values: |
-        repoURL: git@github.com:HomeScaleCloud/homescale.git
-
         cluster:
           name: mgmt
           region: lon1
           env: mgmt
-
-        destination:
-          server: https://kubernetes.default.svc
 
         apps:
           argocd:

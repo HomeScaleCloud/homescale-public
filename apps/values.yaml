@@ -2,7 +2,7 @@ argocd:
   namespace: argocd
 
 project: default
-repoURL: ""
+repoURL: git@github.com:HomeScaleCloud/homescale.git
 targetRevision: main
 applicationNamePrefix: ""
 revisionHistoryLimit: 10
@@ -14,7 +14,7 @@ cluster:
 
 destination:
   name: ""
-  server: ""
+  server: https://kubernetes.default.svc
 
 syncPolicy:
   automated:
