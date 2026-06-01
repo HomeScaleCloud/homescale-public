@@ -1,8 +1,5 @@
 apiVersion: v2
-name: homescale-catalog
-description: |
-  Application catalog — each app in apps/ ships an argocd.yaml alongside its Helm chart
-  with its ArgoCD defaults (namespace, syncWave, etc.). This chart reads those defaults
-  and generates ArgoCD Applications for every app listed in the cluster's values.
+name: homescale-apps
+description: HomeScale cluster application catalog
 type: application
 version: 0.1.0
