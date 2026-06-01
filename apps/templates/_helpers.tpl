@@ -4,7 +4,7 @@ Build an Application name unique within a single ArgoCD instance.
 {{- define "homescale-catalog.applicationName" -}}
 {{- $root := index . "root" -}}
 {{- $appName := index . "appName" -}}
-{{- $prefix := default $root.Values.cluster.name $root.Values.applicationNamePrefix -}}
+{{- $prefix := $root.Values.applicationNamePrefix -}}
 {{- if $prefix -}}
 {{- printf "%s-%s" $prefix $appName | trunc 63 | trimSuffix "-" -}}
 {{- else -}}

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: atlas-apps
+  name: apps-atlas
   namespace: argocd
 spec:
   project: default
@@ -10,17 +10,12 @@ spec:
     targetRevision: main
     path: apps
     helm:
-      releaseName: atlas-apps
+      releaseName: apps-atlas
       values: |
-        repoURL: git@github.com:HomeScaleCloud/homescale.git
-
         cluster:
           name: atlas
           region: boa1
           env: metal
-
-        destination:
-          server: https://kubernetes.default.svc
 
         apps:
           argocd:
@@ -32,26 +27,6 @@ spec:
           onepassword:
             enabled: true
           rbac:
-            enabled: true
-          netbird:
-            enabled: true
-          netbird-crs:
-            enabled: true
-          external-dns:
-            enabled: true
-          external-dns-crs:
-            enabled: true
-          home-assistant:
-            enabled: true
-          # homepage:
-          #   enabled: true
-          metrics-legacy:
-            enabled: true
-          minecraft:
-            enabled: true
-          traefik-private:
-            enabled: true
-          traefik-public:
             enabled: true
   destination:
     server: https://kubernetes.default.svc
