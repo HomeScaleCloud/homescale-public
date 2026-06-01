@@ -6,13 +6,13 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/HomeScaleCloud/homescale.git
+    repoURL: git@github.com:HomeScaleCloud/homescale.git
     targetRevision: main
     path: apps
     helm:
       releaseName: mgmt-apps
       values: |
-        repoURL: https://github.com/HomeScaleCloud/homescale.git
+        repoURL: git@github.com:HomeScaleCloud/homescale.git
 
         cluster:
           name: mgmt
