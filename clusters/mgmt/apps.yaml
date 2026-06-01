@@ -5,33 +5,36 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source:
-    repoURL: git@github.com:HomeScaleCloud/homescale.git
-    targetRevision: main
-    path: apps
-    helm:
-      releaseName: apps-mgmt
-      values: |
-        cluster:
-          name: mgmt
-          region: lon1
-          env: mgmt
+  sources:
+    - repoURL: git@github.com:HomeScaleCloud/homescale.git
+      targetRevision: main
+      path: clusters/mgmt
+    - repoURL: git@github.com:HomeScaleCloud/homescale.git
+      targetRevision: main
+      path: apps
+      helm:
+        releaseName: apps-mgmt
+        values: |
+          cluster:
+            name: mgmt
+            region: lon1
+            env: mgmt
 
-        apps:
-          argocd:
-            enabled: true
-          cert-manager:
-            enabled: true
-          cert-manager-crs:
-            enabled: true
-          onepassword:
-            enabled: true
-          rbac:
-            enabled: true
-          netbird:
-            enabled: true
-          netbird-crs:
-            enabled: true
+          apps:
+            argocd:
+              enabled: true
+            cert-manager:
+              enabled: true
+            cert-manager-crs:
+              enabled: true
+            onepassword:
+              enabled: true
+            rbac:
+              enabled: true
+            netbird:
+              enabled: true
+            netbird-crs:
+              enabled: true
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
