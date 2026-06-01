@@ -22,8 +22,6 @@ spec:
             enabled: true
           cert-manager:
             enabled: true
-          cert-manager-crs:
-            enabled: true
           onepassword:
             enabled: true
           rbac:
