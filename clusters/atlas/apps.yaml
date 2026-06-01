@@ -43,8 +43,8 @@ spec:
             enabled: true
           home-assistant:
             enabled: true
-          homepage:
-            enabled: true
+          # homepage:
+          #   enabled: true
           metrics-legacy:
             enabled: true
           minecraft:
