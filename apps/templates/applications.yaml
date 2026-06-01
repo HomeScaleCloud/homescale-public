@@ -32,6 +32,8 @@ metadata:
     app.kubernetes.io/name: {{ $appName | quote }}
     app.kubernetes.io/part-of: homescale
     REDACTED/cluster: {{ $clusterName | quote }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
   annotations:
     argocd.argoproj.io/sync-wave: {{ default 0 $app.syncWave | quote }}
 {{- with $app.annotations }}
