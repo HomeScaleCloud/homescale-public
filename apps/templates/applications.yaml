@@ -1,4 +1,6 @@
 {{- $root := . -}}
+{{- $namespaces := dict -}}
+{{- $systemNamespaces := list "argocd" "kube-system" "kube-public" "kube-node-lease" "default" -}}
 {{- range $appName, $override := .Values.apps }}
 {{- $defaults := dict }}
 {{- with $root.Files.Get (printf "%s/argocd.yaml" $appName) }}
@@ -21,6 +23,20 @@
 {{- $valuesObject := default (dict) $app.values -}}
 {{- $syncPolicy := mergeOverwrite (deepCopy (default (dict) $root.Values.syncPolicy)) (default (dict) $app.syncPolicy) -}}
 {{- $syncOptions := concat (default (list) $root.Values.syncOptions) (default (list) $app.syncOptions) | uniq -}}
+{{- if and (not (hasKey $namespaces $appNamespace)) (not (has $appNamespace $systemNamespaces)) }}
+{{- $_ := set $namespaces $appNamespace true }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $appNamespace | quote }}
+  labels:
+    app.kubernetes.io/part-of: homescale
+    xxx/name: {{ $clusterName | quote }}
+    xxx/region: {{ $clusterRegion | quote }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-35"
+{{- end }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -30,7 +46,9 @@ metadata:
   labels:
     app.kubernetes.io/name: {{ $appName | quote }}
     app.kubernetes.io/part-of: homescale
-    xxx/cluster: {{ $clusterName | quote }}
+    xxx/name: {{ $appName | quote }}
+    xxx/name: {{ $clusterName | quote }}
+    xxx/region: {{ $clusterRegion | quote }}
   finalizers:
     - resources-finalizer.argocd.argoproj.io
   annotations:
