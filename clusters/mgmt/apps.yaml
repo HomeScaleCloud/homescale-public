@@ -9,6 +9,8 @@ spec:
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
       path: clusters/mgmt
+      directory:
+        recurse: true
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
       path: apps
