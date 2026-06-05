@@ -35,7 +35,6 @@ provider "onepassword" {
   service_account_token = var.op_service_account_token
 }
 
-
 provider "cloudflare" {
   api_token = data.onepassword_item.cloudflare.credential
 }
