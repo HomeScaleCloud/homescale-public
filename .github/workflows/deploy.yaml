@@ -55,6 +55,11 @@ jobs:
             https://api.netbird.io/api/groups \
             | jq -r '.[] | select(.name == "GitHub Actions") | .id')
 
+          if [ -z "$NB_GROUP_ID" ] || [ "$NB_GROUP_ID" = "null" ]; then
+            echo "Failed to find GitHub Actions group" && exit 1
+          fi
+          echo "Found GitHub Actions group"
+
           NB_SETUP_KEY=$(curl -fsSL -X POST \
             -H "Authorization: Token $NB_SA_TOKEN" \
             -H "Content-Type: application/json" \
@@ -66,6 +71,7 @@ jobs:
             echo "Failed to generate NetBird setup key" && exit 1
           fi
           echo "::add-mask::$NB_SETUP_KEY"
+          echo "Setup key generated"
           echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
       - name: Connect to NetBird
         run: netbird up --setup-key "$NB_SETUP_KEY"
