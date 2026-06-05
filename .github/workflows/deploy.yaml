@@ -64,7 +64,7 @@ jobs:
             -H "Authorization: Token $NB_SA_TOKEN" \
             -H "Content-Type: application/json" \
             https://api.netbird.io/api/setup-keys \
-            -d "{\"name\":\"github-actions-${GITHUB_RUN_ID}\",\"type\":\"one-off\",\"expires_in\":3600,\"revokable\":true,\"auto_groups\":[\"$NB_GROUP_ID\"]}" \
+            -d "{\"name\":\"github-actions-${GITHUB_RUN_ID}\",\"type\":\"one-off\",\"expires_in\":900,\"revokable\":true,\"auto_groups\":[\"$NB_GROUP_ID\"]}" \
             | jq -r '.key')
 
           if [ -z "$NB_SETUP_KEY" ] || [ "$NB_SETUP_KEY" = "null" ]; then
