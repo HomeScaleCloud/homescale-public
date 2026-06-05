@@ -36,7 +36,7 @@ jobs:
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.op_service_account_token }}
           TF_TOKEN_app_terraform_io: op://github-actions/terraform-cloud/credential
-          NB_SETUP_KEY: op://github-actions/netbird-setup-key/password  # pragma: allowlist secret
+          NB_SA_TOKEN: op://github-actions/netbird/credential  # pragma: allowlist secret
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
       - name: Initialize Terraform
@@ -48,8 +48,27 @@ jobs:
       - name: Setup NetBird
         run: |
           curl -fsSL https://pkgs.netbird.io/install.sh | sh
+      - name: Generate NetBird Setup Key
+        run: |
+          NB_GROUP_ID=$(curl -fsSL \
+            -H "Authorization: Token $NB_SA_TOKEN" \
+            https://api.netbird.io/api/groups \
+            | jq -r '.[] | select(.name == "GitHub Actions") | .id')
+
+          NB_SETUP_KEY=$(curl -fsSL -X POST \
+            -H "Authorization: Token $NB_SA_TOKEN" \
+            -H "Content-Type: application/json" \
+            https://api.netbird.io/api/setup-keys \
+            -d "{\"name\":\"github-actions-${GITHUB_RUN_ID}\",\"type\":\"one-off\",\"expires_in\":3600,\"revokable\":true,\"auto_groups\":[\"$NB_GROUP_ID\"]}" \
+            | jq -r '.key')
+
+          if [ -z "$NB_SETUP_KEY" ] || [ "$NB_SETUP_KEY" = "null" ]; then
+            echo "Failed to generate NetBird setup key" && exit 1
+          fi
+          echo "::add-mask::$NB_SETUP_KEY"
+          echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
       - name: Connect to NetBird
-        run: netbird up
+        run: netbird up --setup-key "$NB_SETUP_KEY"
       - name: Plan
         id: plan
         run: terraform plan -out=tfplan
