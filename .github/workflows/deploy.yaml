@@ -77,7 +77,7 @@ jobs:
           echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
           echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
       - name: Connect to NetBird
-        run: netbird up --setup-key "$NB_SETUP_KEY"
+        run: netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
       - name: Revoke NetBird Setup Key
         if: always()
         run: |
