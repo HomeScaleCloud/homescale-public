@@ -19,7 +19,6 @@ spec:
         values: |
           cluster:
             name: mgmt
-            region: lon1
 
           apps:
             argocd:
