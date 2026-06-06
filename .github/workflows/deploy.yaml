@@ -60,12 +60,14 @@ jobs:
           fi
           echo "Found GitHub Actions group"
 
-          NB_SETUP_KEY=$(curl -fsSL -X POST \
+          NB_KEY_RESPONSE=$(curl -fsSL -X POST \
             -H "Authorization: Token $NB_SA_TOKEN" \
             -H "Content-Type: application/json" \
             https://api.netbird.io/api/setup-keys \
-            -d "{\"name\":\"github-actions-${GITHUB_RUN_ID}\",\"type\":\"one-off\",\"expires_in\":900,\"revokable\":true,\"auto_groups\":[\"$NB_GROUP_ID\"]}" \
-            | jq -r '.key')
+            -d "{\"name\":\"github-actions-${GITHUB_RUN_ID}\",\"type\":\"one-off\",\"expires_in\":900,\"revokable\":true,\"auto_groups\":[\"$NB_GROUP_ID\"]}")
+
+          NB_SETUP_KEY=$(echo "$NB_KEY_RESPONSE" | jq -r '.key')
+          NB_SETUP_KEY_ID=$(echo "$NB_KEY_RESPONSE" | jq -r '.id')
 
           if [ -z "$NB_SETUP_KEY" ] || [ "$NB_SETUP_KEY" = "null" ]; then
             echo "Failed to generate NetBird setup key" && exit 1
@@ -73,6 +75,7 @@ jobs:
           echo "::add-mask::$NB_SETUP_KEY"
           echo "Setup key generated"
           echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
+          echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
       - name: Connect to NetBird
         run: netbird up --setup-key "$NB_SETUP_KEY"
       - name: Plan
@@ -81,6 +84,17 @@ jobs:
       - name: Apply
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve tfplan
+      - name: Revoke NetBird Setup Key
+        if: always()
+        run: |
+          if [ -z "$NB_SETUP_KEY_ID" ] || [ "$NB_SETUP_KEY_ID" = "null" ]; then
+            echo "No setup key to revoke"
+            exit 0
+          fi
+          curl -fsSL -X DELETE \
+            -H "Authorization: Token $NB_SA_TOKEN" \
+            "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
+          echo "Setup key revoked"
 
   # Deprecated with migration to Twingate
   # tailscale:
