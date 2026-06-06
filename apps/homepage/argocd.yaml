@@ -4,4 +4,4 @@ releaseName: homepage
 syncWave: 0
 values:
   ingress:
-    host: "homepage-{{ .Values.cluster.name }}-{{ .Values.cluster.region }}.REDACTED"
+    host: "homepage-{{ .Values.cluster.name }}.REDACTED"

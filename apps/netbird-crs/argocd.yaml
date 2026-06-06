@@ -5,4 +5,3 @@ syncWave: -10
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
-    region: "{{ .Values.cluster.region }}"

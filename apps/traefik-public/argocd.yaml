@@ -6,4 +6,4 @@ values:
   traefik:
     service:
       annotations:
-        external-dns.alpha.kubernetes.io/hostname: '{{ if eq .Values.cluster.name "mgmt" }}REDACTED{{ else }}ingress.{{ .Values.cluster.name }}.{{ .Values.cluster.region }}.REDACTED{{ end }}'
+        external-dns.alpha.kubernetes.io/hostname: 'ingress.{{ .Values.cluster.name }}REDACTED'
