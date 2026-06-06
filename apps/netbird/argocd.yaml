@@ -7,7 +7,7 @@ syncOptions:
 values:
   kubernetes-operator:
     cluster:
-      name: '{{ if eq .Values.cluster.env "mgmt" }}mgmt{{ else }}{{ .Values.cluster.name }}-{{ .Values.cluster.region }}{{ end }}'
+      name: '{{ if eq .Values.cluster.name "mgmt" }}mgmt{{ else }}{{ .Values.cluster.name }}-{{ .Values.cluster.region }}{{ end }}'
 ignoreDifferences:
   - group: admissionregistration.k8s.io
     kind: MutatingWebhookConfiguration

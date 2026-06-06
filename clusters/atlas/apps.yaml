@@ -20,7 +20,6 @@ spec:
           cluster:
             name: atlas
             region: boa1
-            env: metal
 
           apps:
             argocd:

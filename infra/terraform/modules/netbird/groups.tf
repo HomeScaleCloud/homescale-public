@@ -38,20 +38,16 @@ resource "netbird_group" "github_actions" {
   name = "GitHub Actions"
 }
 
-resource "netbird_group" "env_mgmt" {
-  name = "env-mgmt"
+resource "netbird_group" "cluster_mgmt" {
+  name = "cluster-mgmt"
 }
 
-resource "netbird_group" "env_prod" {
-  name = "env-prod"
+resource "netbird_group" "cluster_prod" {
+  name = "cluster-prod"
 }
 
-resource "netbird_group" "env_metal" {
-  name = "env-metal"
-}
-
-resource "netbird_group" "env_lab" {
-  name = "env-lab"
+resource "netbird_group" "cluster_lab" {
+  name = "cluster-lab"
 }
 
 resource "netbird_group" "net_region_mgmt" {
