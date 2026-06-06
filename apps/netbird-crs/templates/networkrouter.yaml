@@ -1,8 +1,8 @@
 apiVersion: netbird.io/v1alpha1
 kind: NetworkRouter
 metadata:
-  name: '{{- if eq .Values.cluster.name "mgmt" -}}{{ .Values.cluster.name }}{{- else -}}{{ required "cluster.name is required" .Values.cluster.name }}-{{ required "cluster.region is required unless cluster.name is mgmt" .Values.cluster.region }}{{- end }}'
+  name: '{{ required "cluster.name is required" .Values.cluster.name }}'
   namespace: netbird
 spec:
   dnsZoneRef:
-    name: '{{- if eq .Values.cluster.name "mgmt" -}}{{ .Values.cluster.name }}xxx{{- else -}}{{ required "cluster.name is required" .Values.cluster.name }}.{{ required "cluster.region is required unless cluster.name is mgmt" .Values.cluster.region }}xxx{{- end }}'
+    name: '{{ required "cluster.name is required" .Values.cluster.name }}xxx'

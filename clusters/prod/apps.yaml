@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: apps-atlas
+  name: apps-prod
   namespace: argocd
 spec:
   project: default
@@ -19,7 +19,6 @@ spec:
         values: |
           cluster:
             name: atlas
-            region: boa1
 
           apps:
             argocd:
