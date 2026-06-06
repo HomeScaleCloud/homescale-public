@@ -10,7 +10,6 @@
 {{- if $app.enabled }}
 {{- $clusterName := required "cluster.name is required when any app is enabled" $root.Values.cluster.name -}}
 {{- $clusterRegion := required "cluster.region is required when any app is enabled" $root.Values.cluster.region -}}
-{{- $clusterEnv := required "cluster.env is required when any app is enabled" $root.Values.cluster.env -}}
 {{- $appPath := required (printf "apps.%s: path is required (set in apps/%s.yaml)" $appName $appName) $app.path -}}
 {{- $appNamespace := required (printf "apps.%s: namespace is required (set in apps/%s.yaml)" $appName $appName) $app.namespace -}}
 {{- $repoURL := required (printf "repoURL or apps.%s.repoURL is required" $appName) (default $root.Values.repoURL $app.repoURL) -}}

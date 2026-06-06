@@ -6,4 +6,3 @@ values:
   cluster:
     name: "{{ .Values.cluster.name }}"
     region: "{{ .Values.cluster.region }}"
-    env: "{{ .Values.cluster.env }}"

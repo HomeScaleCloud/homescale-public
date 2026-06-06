@@ -10,7 +10,6 @@ revisionHistoryLimit: 10
 cluster:
   name: ""
   region: ""
-  env: ""
 
 destination:
   name: ""
