@@ -78,12 +78,6 @@ jobs:
           echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
       - name: Connect to NetBird
         run: netbird up --setup-key "$NB_SETUP_KEY"
-      - name: Plan
-        id: plan
-        run: terraform plan -out=tfplan
-      - name: Apply
-        if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve tfplan
       - name: Revoke NetBird Setup Key
         if: always()
         run: |
@@ -95,6 +89,12 @@ jobs:
             -H "Authorization: Token $NB_SA_TOKEN" \
             "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
           echo "Setup key revoked"
+      - name: Plan
+        id: plan
+        run: terraform plan -out=tfplan
+      - name: Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
 
   # Deprecated with migration to Twingate
   # tailscale:
