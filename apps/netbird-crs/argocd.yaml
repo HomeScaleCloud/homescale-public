@@ -1,3 +1,5 @@
+defaultDeploy: true
+
 path: apps/netbird-crs
 namespace: netbird
 releaseName: netbird-crs

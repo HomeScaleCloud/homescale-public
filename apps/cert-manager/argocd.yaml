@@ -1,3 +1,5 @@
+defaultDeploy: true
+
 path: apps/cert-manager
 namespace: cert-manager
 releaseName: cert-manager
