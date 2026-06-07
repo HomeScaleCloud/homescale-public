@@ -13,23 +13,12 @@ spec:
         recurse: true
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
-      path: apps
+      path: apps/catalog
       helm:
         releaseName: apps-lab
         values: |
           cluster:
             name: lab
-          apps:
-            argocd:
-              enabled: true
-            cert-manager:
-              enabled: true
-            cert-manager-crs:
-              enabled: true
-            onepassword:
-              enabled: true
-            rbac:
-              enabled: true
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
