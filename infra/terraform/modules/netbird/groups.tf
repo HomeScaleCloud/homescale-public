@@ -38,18 +38,6 @@ resource "netbird_group" "github_actions" {
   name = "GitHub Actions"
 }
 
-resource "netbird_group" "cluster_mgmt" {
-  name = "cluster-mgmt"
-}
-
-resource "netbird_group" "cluster_prod" {
-  name = "cluster-prod"
-}
-
-resource "netbird_group" "cluster_lab" {
-  name = "cluster-lab"
-}
-
 resource "netbird_group" "net_region_mgmt" {
   name = "net-region-mgmt"
 }
@@ -66,10 +54,20 @@ locals {
   app_names = sort(distinct([
     for app_file in fileset("${path.module}/../../../../apps", "*/**") : split("/", app_file)[0]
   ]))
+
+  cluster_names = sort(distinct([
+    for cluster_file in fileset("${path.module}/../../../../clusters", "*/**") : split("/", cluster_file)[0]
+  ]))
 }
 
 resource "netbird_group" "app" {
   for_each = toset(local.app_names)
 
   name = "app-${each.key}"
+}
+
+resource "netbird_group" "cluster" {
+  for_each = toset(local.cluster_names)
+
+  name = "cluster-${each.key}"
 }
