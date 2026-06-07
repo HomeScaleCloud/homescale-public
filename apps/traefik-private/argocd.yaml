@@ -1,4 +1,0 @@
-path: apps/traefik-private
-namespace: traefik
-releaseName: traefik-private
-syncWave: 0

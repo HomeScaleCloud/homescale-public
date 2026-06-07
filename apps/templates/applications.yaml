@@ -3,14 +3,14 @@
 {{- $systemNamespaces := list "argocd" "kube-system" "kube-public" "kube-node-lease" "default" -}}
 {{- range $appName, $override := .Values.apps }}
 {{- $defaults := dict }}
-{{- with $root.Files.Get (printf "%s/argocd.yaml" $appName) }}
+{{- with $root.Files.Get (printf "%s/app.yaml" $appName) }}
 {{- $defaults = . | fromYaml }}
 {{- end }}
 {{- $app := mergeOverwrite (deepCopy $defaults) $override }}
 {{- if $app.enabled }}
 {{- $clusterName := required "cluster.name is required when any app is enabled" $root.Values.cluster.name -}}
-{{- $appPath := required (printf "apps.%s: path is required (set in apps/%s.yaml)" $appName $appName) $app.path -}}
-{{- $appNamespace := required (printf "apps.%s: namespace is required (set in apps/%s.yaml)" $appName $appName) $app.namespace -}}
+{{- $appPath := required (printf "apps.%s: path is required (set in apps/%s/app.yaml)" $appName $appName) $app.path -}}
+{{- $appNamespace := required (printf "apps.%s: namespace is required (set in apps/%s/app.yaml)" $appName $appName) $app.namespace -}}
 {{- $repoURL := required (printf "repoURL or apps.%s.repoURL is required" $appName) (default $root.Values.repoURL $app.repoURL) -}}
 {{- $targetRevision := default $root.Values.targetRevision $app.targetRevision -}}
 {{- $project := default $root.Values.project $app.project -}}
@@ -65,13 +65,6 @@ spec:
 {{ toYaml . | nindent 8 }}
 {{- end }}
       valuesObject:{{ tpl (toYaml $valuesObject) $root | nindent 8 }}
-{{- with $app.parameters }}
-      parameters:
-{{- range . }}
-        - name: {{ .name | quote }}
-          value: {{ tpl .value $root | quote }}
-{{- end }}
-{{- end }}
   destination:
 {{- if $destinationServer }}
     server: {{ $destinationServer | quote }}
