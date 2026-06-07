@@ -1,0 +1,48 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: workloads-admin
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/log
+      - pods/exec
+      - pods/portforward
+      - configmaps
+      - replicationcontrollers
+      - namespaces
+      - resourcequotas
+      - limitranges
+      - events
+      - secrets
+      - serviceaccounts
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - daemonsets
+      - replicasets
+      - statefulsets
+    verbs: ["*"]
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["*"]
+  - apiGroups: ["policy"]
+    resources:
+      - poddisruptionbudgets
+    verbs: ["*"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources:
+      - leases
+    verbs: ["*"]
+  - apiGroups: ["cert-manager.io"]
+    resources:
+      - "*"
+    verbs: ["*"]
+  - apiGroups: ["onepassword.com"]
+    resources:
+      - "*"
+    verbs: ["*"]
