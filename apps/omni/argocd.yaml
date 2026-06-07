@@ -65,6 +65,16 @@ values:
         mountPath: /tls
         readOnly: true
 
+    readinessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /healthz
+        port: omni
+        scheme: HTTPS
+      periodSeconds: 5
+      successThreshold: 1
+      timeoutSeconds: 3
+
     persistence:
       enabled: true
       size: 16Gi
