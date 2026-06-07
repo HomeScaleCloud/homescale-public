@@ -1,3 +1,8 @@
 argo-cd:
   crds:
     install: true
+  configs:
+    cm:
+      timeout.reconciliation: "30s"
+    params:
+      application.operations.selfHealTimeout: "5"
