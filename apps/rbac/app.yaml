@@ -2,3 +2,6 @@ path: apps/rbac
 namespace: kube-system
 releaseName: rbac
 syncWave: -30
+values:
+  cluster:
+    name: "{{ .Values.cluster.name }}"

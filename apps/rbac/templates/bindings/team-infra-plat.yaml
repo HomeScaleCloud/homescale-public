@@ -1,0 +1,77 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: team-infra-plat:workloads-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: workloads-viewer
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: team-infra-plat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: team-infra-plat:node-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: node-viewer
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: team-infra-plat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: team-infra-plat:networking-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: networking-viewer
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: team-infra-plat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: team-infra-plat:storage-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: storage-viewer
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: team-infra-plat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: team-infra-plat:pod-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pod-operator
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: team-infra-plat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: team-infra-plat:rbac-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rbac-viewer
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: team-infra-plat
