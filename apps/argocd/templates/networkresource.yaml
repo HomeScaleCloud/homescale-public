@@ -1,14 +1,14 @@
 apiVersion: netbird.io/v1alpha1
 kind: NetworkResource
 metadata:
-  name: k8s
-  namespace: default
+  name: argocd
+  namespace: argocd
 spec:
   networkRouterRef:
     name: '{{ required "cluster.name is required" .Values.cluster.name }}'
     namespace: netbird
   serviceRef:
-    name: kubernetes
+    name: argocd-server
   groups:
-    - name: k8s
+    - name: app-argocd
     - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
