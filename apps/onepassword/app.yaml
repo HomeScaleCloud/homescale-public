@@ -1,7 +1,7 @@
 path: apps/onepassword
 namespace: onepassword
 releaseName: onepassword
-syncWave: -30
+syncWave: -35
 values:
   connect:
     connect:
