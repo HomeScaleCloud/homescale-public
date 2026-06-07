@@ -13,7 +13,7 @@ spec:
         recurse: true
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
-      path: apps/catalog
+      path: apps
       helm:
         releaseName: apps-prod
         values: |
