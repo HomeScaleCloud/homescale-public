@@ -11,6 +11,8 @@ ignoreDifferences:
     jsonPointers:
       - /data
 values:
+  cluster:
+    name: "{{ .Values.cluster.name }}"
   argo-cd:
     crds:
       install: true
