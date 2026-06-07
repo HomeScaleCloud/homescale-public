@@ -60,7 +60,7 @@
         kubeconfig: /tmp/mgmt-kubeconfig
       register: _bootstrap_key
       no_log: true
-      failed_when: _bootstrap_key.return_code != 0 or _bootstrap_key.stdout | trim | length == 0
+      failed_when: (_bootstrap_key.return_code | default(1)) != 0 or (_bootstrap_key.stdout | default('')) | trim | length == 0
 
     - name: Install omnictl
       ansible.builtin.get_url:
