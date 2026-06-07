@@ -1,16 +1,18 @@
 {{- $root := . -}}
+{{- $clusterName := required "cluster.name is required" $root.Values.cluster.name -}}
 {{- $namespaces := dict -}}
 {{- $systemNamespaces := list "argocd" "kube-system" "kube-public" "kube-node-lease" "default" -}}
-{{- range $appName, $override := .Values.apps }}
-{{- $defaults := dict }}
-{{- with $root.Files.Get (printf "%s/app.yaml" $appName) }}
-{{- $defaults = . | fromYaml }}
-{{- end }}
-{{- $app := mergeOverwrite (deepCopy $defaults) $override }}
-{{- if $app.enabled }}
-{{- $clusterName := required "cluster.name is required when any app is enabled" $root.Values.cluster.name -}}
-{{- $appPath := required (printf "apps.%s: path is required (set in apps/%s/app.yaml)" $appName $appName) $app.path -}}
-{{- $appNamespace := required (printf "apps.%s: namespace is required (set in apps/%s/app.yaml)" $appName $appName) $app.namespace -}}
+{{- range $path, $_ := $root.Files.Glob "*/argocd.yaml" }}
+{{- $appName := $path | dir }}
+{{- $appBase := $root.Files.Get $path | fromYaml }}
+{{- $clusterOverride := default (dict) (get (default (dict) $appBase.clusters) $clusterName) }}
+{{- $enabled := true }}
+{{- if hasKey $appBase "defaultDeploy" }}{{- $enabled = $appBase.defaultDeploy }}{{- end }}
+{{- if hasKey $clusterOverride "deploy" }}{{- $enabled = $clusterOverride.deploy }}{{- end }}
+{{- if $enabled }}
+{{- $app := mergeOverwrite (deepCopy $appBase) (omit $clusterOverride "deploy") }}
+{{- $appPath := required (printf "path is required (set in apps/%s/argocd.yaml)" $appName) $app.path -}}
+{{- $appNamespace := required (printf "namespace is required (set in apps/%s/argocd.yaml)" $appName) $app.namespace -}}
 {{- $repoURL := required (printf "repoURL or apps.%s.repoURL is required" $appName) (default $root.Values.repoURL $app.repoURL) -}}
 {{- $targetRevision := default $root.Values.targetRevision $app.targetRevision -}}
 {{- $project := default $root.Values.project $app.project -}}

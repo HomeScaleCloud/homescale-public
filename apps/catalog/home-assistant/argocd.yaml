@@ -1,3 +1,5 @@
+defaultDeploy: false
+
 path: apps/home-assistant
 namespace: home-assistant
 releaseName: home-assistant
