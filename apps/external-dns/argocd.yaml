@@ -13,7 +13,6 @@ values:
     sources:
       - service
       - ingress
-      - traefik-proxy
     provider:
       name: cloudflare
     env:
