@@ -1,4 +1,0 @@
-path: apps/external-dns
-namespace: external-dns
-releaseName: external-dns
-syncWave: -10

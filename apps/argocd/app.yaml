@@ -1,0 +1,34 @@
+path: apps/argocd
+namespace: argocd
+releaseName: argocd
+syncWave: -30
+syncOptions:
+  - ServerSideApply=true
+ignoreDifferences:
+  - group: ""
+    kind: Secret
+    name: argocd-secret
+    jsonPointers:
+      - /data
+values:
+  argo-cd:
+    crds:
+      install: true
+    configs:
+      cm:
+        timeout.reconciliation: "30s"
+        url: "https://argocd.{{ .Values.cluster.name }}xxx"
+        oidc.config: |
+          name: Entra ID
+          issuer: $op-argocd:issuer
+          clientID: $op-argocd:clientID
+          clientSecret: $op-argocd:clientSecret
+          requestedScopes:
+            - openid
+            - profile
+            - email
+          requestedIDTokenClaims:
+            groups:
+              essential: true
+      params:
+        application.operations.selfHealTimeout: "5"
