@@ -41,3 +41,18 @@ resource "netbird_policy" "region_bmc" {
     destinations  = [data.netbird_group.net_region_bmc.id]
   }
 }
+
+resource "netbird_policy" "argocd" {
+  name    = "ArgoCD"
+  enabled = true
+  rule {
+    action        = "accept"
+    bidirectional = false
+    enabled       = true
+    protocol      = "tcp"
+    ports         = ["80", "443"]
+    name          = "ArgoCD"
+    sources       = [data.netbird_group.team_infra_plat.id]
+    destinations  = [netbird_group.app["argocd"].id]
+  }
+}

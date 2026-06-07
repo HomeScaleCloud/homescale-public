@@ -1,7 +1,7 @@
 path: apps/generic-device-plugin-tun
 namespace: kube-system
 releaseName: generic-device-plugin-tun
-syncWave: 0
+syncWave: -25
 values:
   image:
     repository: ghcr.io/squat/generic-device-plugin
