@@ -1,3 +1,5 @@
+defaultDeploy: true
+
 path: apps/node-feature-discovery
 namespace: kube-system
 releaseName: node-feature-discovery

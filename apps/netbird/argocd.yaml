@@ -1,3 +1,5 @@
+defaultDeploy: true
+
 path: apps/netbird
 namespace: netbird
 releaseName: netbird
@@ -11,7 +13,7 @@ ignoreDifferences:
     jsonPointers:
       - /webhooks
 values:
-  kubernetes-operator:
+  netbird-operator:
     cluster:
       name: '{{ .Values.cluster.name }}'
     operator:

@@ -4,6 +4,6 @@ description: Helm chart for NetBird Operator
 type: application
 version: 0.1.0
 dependencies:
-  - name: kubernetes-operator
-    version: 0.3.1
-    repository: https://netbirdio.github.io/helms
+  - name: netbird-operator
+    version: 0.6.0
+    repository: oci://ghcr.io/netbirdio/helm-charts

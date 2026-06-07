@@ -1,3 +1,5 @@
+defaultDeploy: true
+
 path: apps/rbac
 namespace: kube-system
 releaseName: rbac
