@@ -1,0 +1,106 @@
+---
+- name: Bootstrap Omni service accounts
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Check if SA already exists
+      block:
+        - name: Look up existing SA key
+          ansible.builtin.set_fact:
+            _existing_sa_key: "{{ lookup('community.general.onepassword', 'omni', field='credential', vault='github-actions') }}"
+          no_log: true
+      rescue:
+        - name: SA key not found — will bootstrap
+          ansible.builtin.set_fact:
+            _existing_sa_key: ""
+
+    - name: Exit — Omni already bootstrapped
+      ansible.builtin.meta: end_play
+      when: _existing_sa_key | length > 0
+
+    - name: Fetch mgmt kubeconfig from 1Password
+      ansible.builtin.set_fact:
+        _kubeconfig: "{{ lookup('community.general.onepassword', 'mgmt-kubeconfig', field='kubeconfig', vault='github-actions') }}"
+      no_log: true
+
+    - name: Write kubeconfig to temp file
+      ansible.builtin.copy:
+        content: "{{ _kubeconfig }}"
+        dest: /tmp/mgmt-kubeconfig
+        mode: "0600"
+      no_log: true
+
+    - name: Get Omni pod name
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: omni
+        label_selectors:
+          - "app.kubernetes.io/name=omni"
+        kubeconfig: /tmp/mgmt-kubeconfig
+      register: omni_pods
+
+    - name: Fail if no Omni pod found
+      ansible.builtin.fail:
+        msg: "No Omni pod found in namespace omni"
+      when: omni_pods.resources | length == 0
+
+    - name: Read bootstrap SA key from pod
+      kubernetes.core.k8s_exec:
+        namespace: omni
+        pod: "{{ omni_pods.resources[0].metadata.name }}"
+        command: cat /data/initial-sa-key
+        kubeconfig: /tmp/mgmt-kubeconfig
+      register: _bootstrap_key
+      no_log: true
+      failed_when: _bootstrap_key.rc != 0 or _bootstrap_key.stdout | trim | length == 0
+
+    - name: Install omnictl
+      ansible.builtin.get_url:
+        url: https://github.com/siderolabs/omni/releases/download/v1.8.2/omnictl-linux-amd64
+        dest: /usr/local/bin/omnictl
+        mode: "0755"
+      become: true
+
+    - name: Generate temporary omniconfig
+      ansible.builtin.command:
+        cmd: omnictl config new /tmp/omniconfig-bootstrap --url https://REDACTED
+      changed_when: true
+
+    - name: Create github-actions service account
+      ansible.builtin.command:
+        cmd: >
+          omnictl serviceaccount create github-actions
+          --use-user-role=false
+          --role Admin
+          --ttl 8760h
+          --omniconfig /tmp/omniconfig-bootstrap
+      environment:
+        OMNI_SERVICE_ACCOUNT_KEY: "{{ _bootstrap_key.stdout | trim }}"
+      register: _new_sa_key
+      no_log: true
+      changed_when: true
+
+    - name: Store github-actions SA key in 1Password
+      ansible.builtin.command:
+        argv:
+          - op
+          - item
+          - create
+          - --vault
+          - github-actions
+          - --title
+          - omni
+          - --category
+          - login
+          - "credential={{ _new_sa_key.stdout | trim }}"
+      no_log: true
+      changed_when: true
+
+    - name: Clean up temp files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/mgmt-kubeconfig
+        - /tmp/omniconfig-bootstrap

@@ -104,6 +104,7 @@ jobs:
     defaults:
       run:
         shell: bash
+        working-directory: infra/ansible
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -115,8 +116,7 @@ jobs:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.op_service_account_token }}
           NB_SA_TOKEN: op://github-actions/netbird/credential # pragma: allowlist secret
       - name: Setup NetBird
-        run: |
-          curl -fsSL https://pkgs.netbird.io/install.sh | sh
+        run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
       - name: Generate NetBird Setup Key
         run: |
           NB_GROUP_ID=$(curl -fsSL \
@@ -156,17 +156,12 @@ jobs:
             -H "Authorization: Token $NB_SA_TOKEN" \
             "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
           echo "Setup key revoked"
-      - name: Install omnictl
-        run: |
-          curl -fsSL -o /usr/local/bin/omnictl \
-            https://github.com/siderolabs/omni/releases/download/v1.8.2/omnictl-linux-amd64
-          chmod +x /usr/local/bin/omnictl
-      - name: Install Ansible and dependencies
-        run: |
-          pip install --quiet ansible
-          ansible-galaxy collection install kubernetes.core
-      - name: Run bootstrap playbook
-        run: ansible-playbook infra/ansible/bootstrap-omni.yml
+      - name: Install Ansible
+        run: pip install --quiet ansible
+      - name: Install collections
+        run: ansible-galaxy collection install -r collections/requirements.yml
+      - name: Run playbook
+        run: ansible-playbook playbooks/omni-bootstrap.yml
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.op_service_account_token }}
 
