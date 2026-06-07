@@ -6,6 +6,9 @@ terraform {
     helm = {
       source = "hashicorp/helm"
     }
+    onepassword = {
+      source = "1Password/onepassword"
+    }
   }
 }
 
@@ -19,4 +22,8 @@ provider "helm" {
     token                  = digitalocean_kubernetes_cluster.mgmt.kube_config.0.token
     cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.mgmt.kube_config.0.cluster_ca_certificate)
   }
+}
+
+provider "onepassword" {
+  service_account_token = var.op_service_account_token
 }
