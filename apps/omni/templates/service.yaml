@@ -8,10 +8,12 @@ spec:
     app.kubernetes.io/instance: omni
     app.kubernetes.io/name: omni
   ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 8080
       protocol: TCP
-    - port: 443
+    - name: https
+      port: 443
       targetPort: 8080
       protocol: TCP
 ---
@@ -25,6 +27,7 @@ spec:
     app.kubernetes.io/instance: omni
     app.kubernetes.io/name: omni
   ports:
-    - port: 443
+    - name: https
+      port: 443
       targetPort: 8095
       protocol: TCP
