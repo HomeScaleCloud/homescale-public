@@ -19,7 +19,6 @@ spec:
         values: |
           cluster:
             name: mgmt
-
           apps:
             argocd:
               enabled: true

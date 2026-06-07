@@ -8,7 +8,7 @@ resource "netbird_policy" "lab" {
     protocol      = "all"
     name          = "Lab Policy"
     sources       = [data.netbird_group.all.id]
-    destinations  = [netbird_group.cluster_lab.id]
+    destinations  = [netbird_group.cluster["lab"].id]
   }
 }
 
