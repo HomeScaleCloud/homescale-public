@@ -7,15 +7,31 @@
     omni_endpoint: "https://xxx"
     omni_namespace: omni
     bootstrap_key_path: /data/initial-sa-key
+    kubeconfig_path: /tmp/mgmt-kubeconfig
     omniconfig_path: /tmp/omniconfig-bootstrap
 
   tasks:
+    - name: Fetch mgmt kubeconfig from 1Password
+      ansible.builtin.command:
+        cmd: op read op://github-actions/mgmt-kubeconfig/kubeconfig
+      register: kubeconfig_result
+      no_log: true
+      changed_when: false
+
+    - name: Write kubeconfig to temp file
+      ansible.builtin.copy:
+        content: "{{ kubeconfig_result.stdout }}"
+        dest: "{{ kubeconfig_path }}"
+        mode: "0600"
+      no_log: true
+
     - name: Get Omni pod name
       kubernetes.core.k8s_info:
         kind: Pod
         namespace: "{{ omni_namespace }}"
         label_selectors:
           - "app.kubernetes.io/name=omni"
+        kubeconfig: "{{ kubeconfig_path }}"
       register: omni_pods
 
     - name: Fail if no Omni pod found
@@ -28,7 +44,9 @@
         namespace: "{{ omni_namespace }}"
         pod: "{{ omni_pods.resources[0].metadata.name }}"
         command: cat {{ bootstrap_key_path }}
+        kubeconfig: "{{ kubeconfig_path }}"
       register: bootstrap_key_result
+      no_log: true
       failed_when: bootstrap_key_result.rc != 0 or bootstrap_key_result.stdout | trim | length == 0
 
     - name: Generate temporary omniconfig
@@ -55,9 +73,12 @@
           === github-actions service account key ===
           {{ create_sa_result.stdout }}
           ==========================================
-          Store this in 1Password (vaults/k8s/items/omni) as 'github-actions-sa-key'
+          Store this in 1Password (vaults/github-actions/items/omni-sa) as 'github-actions-sa-key'
 
-    - name: Clean up temporary omniconfig
+    - name: Clean up temp files
       ansible.builtin.file:
-        path: "{{ omniconfig_path }}"
+        path: "{{ item }}"
         state: absent
+      loop:
+        - "{{ kubeconfig_path }}"
+        - "{{ omniconfig_path }}"
