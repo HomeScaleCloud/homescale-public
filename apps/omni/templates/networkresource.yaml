@@ -1,0 +1,29 @@
+apiVersion: netbird.io/v1alpha1
+kind: NetworkResource
+metadata:
+  name: omni
+  namespace: omni
+spec:
+  networkRouterRef:
+    name: '{{ required "cluster.name is required" .Values.cluster.name }}'
+    namespace: netbird
+  serviceRef:
+    name: omni
+  groups:
+    - name: app-omni
+    - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
+---
+apiVersion: netbird.io/v1alpha1
+kind: NetworkResource
+metadata:
+  name: k8s
+  namespace: omni
+spec:
+  networkRouterRef:
+    name: '{{ required "cluster.name is required" .Values.cluster.name }}'
+    namespace: netbird
+  serviceRef:
+    name: k8s
+  groups:
+    - name: app-omni
+    - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
