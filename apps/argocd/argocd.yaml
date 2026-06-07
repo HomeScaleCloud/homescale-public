@@ -10,8 +10,6 @@ ignoreDifferences:
     name: argocd-secret
     jsonPointers:
       - /data
-values:
-  argo-cd:
-    configs:
-      cm:
-        url: "https://argocd.{{ .Values.cluster.name }}xxx"
+parameters:
+  - name: "argo-cd.configs.cm.url"
+    value: "https://argocd.{{ .Values.cluster.name }}xxx"
