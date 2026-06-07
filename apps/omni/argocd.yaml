@@ -27,10 +27,16 @@ values:
       services:
         api:
           advertisedURL: "https://xxx"
+          certFile: /tls/tls.crt
+          keyFile: /tls/tls.key
         kubernetesProxy:
           advertisedURL: "https://xxx"
+          certFile: /tls/tls.crt
+          keyFile: /tls/tls.key
         machineAPI:
           advertisedURL: "https://xxx"
+          certFile: /tls/tls.crt
+          keyFile: /tls/tls.key
         siderolink:
           wireGuard:
             advertisedEndpoint: "xxx:50180"
@@ -43,17 +49,21 @@ values:
 
     ingress:
       main:
-        enabled: true
-        className: traefik-private
-        host: xxx
+        enabled: false
       kubernetesProxy:
-        enabled: true
-        className: traefik-private
-        host: xxx
+        enabled: false
       siderolinkApi:
-        enabled: true
-        className: traefik-private
-        host: xxx
+        enabled: false
+
+    extraVolumes:
+      - name: omni-tls
+        secret:
+          secretName: omni-tls
+
+    extraVolumeMounts:
+      - name: omni-tls
+        mountPath: /tls
+        readOnly: true
 
     persistence:
       enabled: true
