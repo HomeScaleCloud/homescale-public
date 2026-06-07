@@ -6,9 +6,6 @@ terraform {
     helm = {
       source = "hashicorp/helm"
     }
-    netbird = {
-      source = "netbirdio/netbird"
-    }
   }
 }
 
@@ -22,8 +19,4 @@ provider "helm" {
     token                  = digitalocean_kubernetes_cluster.mgmt.kube_config.0.token
     cluster_ca_certificate = base64decode(digitalocean_kubernetes_cluster.mgmt.kube_config.0.cluster_ca_certificate)
   }
-}
-
-provider "netbird" {
-  token = var.netbird_token
 }
