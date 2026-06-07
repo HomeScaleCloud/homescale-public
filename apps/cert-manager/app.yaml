@@ -13,3 +13,7 @@ ignoreDifferences:
     name: cert-manager-webhook
     jsonPointers:
       - /webhooks
+values:
+  cert-manager:
+    crds:
+      enabled: true

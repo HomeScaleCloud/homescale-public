@@ -4,13 +4,23 @@ releaseName: netbird
 syncWave: -20
 syncOptions:
   - ServerSideApply=true
-values:
-  kubernetes-operator:
-    cluster:
-      name: '{{ .Values.cluster.name }}'
 ignoreDifferences:
   - group: admissionregistration.k8s.io
     kind: MutatingWebhookConfiguration
     name: netbird-kubernetes-operator-mpod-webhook
     jsonPointers:
       - /webhooks
+values:
+  kubernetes-operator:
+    cluster:
+      name: '{{ .Values.cluster.name }}'
+    operator:
+      replicaCount: 2
+    webhook:
+      failurePolicy: Ignore
+    netbirdAPI:
+      keyFromSecret:
+        name: op-netbird
+        key: password
+    gatewayAPI:
+      enabled: true

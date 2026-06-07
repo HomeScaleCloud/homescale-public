@@ -1,0 +1,27 @@
+path: apps/traefik-public
+namespace: traefik
+releaseName: traefik-public
+syncWave: 0
+values:
+  traefik:
+    deployment:
+      replicas: 2
+    service:
+      type: LoadBalancer
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: 'ingress.{{ .Values.cluster.name }}REDACTED'
+    ingressClass:
+      enabled: true
+      name: traefik-public
+      isDefaultClass: false
+    providers:
+      kubernetesIngress:
+        enabled: true
+        ingressClass: traefik-public
+        publishedService:
+          enabled: true
+      kubernetesCRD:
+        enabled: true
+        ingressClass: traefik-public
+    additionalArguments:
+      - "--providers.kubernetesingress.ingressclass=traefik-public"

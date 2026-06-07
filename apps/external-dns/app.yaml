@@ -1,0 +1,19 @@
+path: apps/external-dns
+namespace: external-dns
+releaseName: external-dns
+syncWave: -10
+values:
+  external-dns:
+    sources:
+      - service
+      - ingress
+      - traefik-proxy
+    provider:
+      name: cloudflare
+    env:
+      - name: CF_API_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: op-cloudflare
+            key: credential
+    domainFilters: ["REDACTED"]

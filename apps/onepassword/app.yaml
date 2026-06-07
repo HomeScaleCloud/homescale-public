@@ -1,0 +1,15 @@
+path: apps/onepassword
+namespace: onepassword
+releaseName: onepassword
+syncWave: -30
+values:
+  connect:
+    connect:
+      serviceType: ClusterIP
+      credentialsName: onepassword
+      credentialsKey: credential
+    operator:
+      create: true
+      token:
+        name: onepassword
+        key: password

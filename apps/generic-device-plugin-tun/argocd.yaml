@@ -1,4 +1,0 @@
-path: apps/generic-device-plugin-tun
-namespace: kube-system
-releaseName: generic-device-plugin-tun
-syncWave: 0

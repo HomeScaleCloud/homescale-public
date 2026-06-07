@@ -1,0 +1,25 @@
+path: apps/traefik-private
+namespace: traefik
+releaseName: traefik-private
+syncWave: 0
+values:
+  traefik:
+    deployment:
+      replicas: 2
+    service:
+      type: ClusterIP
+    ingressClass:
+      enabled: true
+      name: traefik-private
+      isDefaultClass: true
+    providers:
+      kubernetesIngress:
+        enabled: true
+        ingressClass: traefik-private
+        publishedService:
+          enabled: true
+      kubernetesCRD:
+        enabled: true
+        ingressClass: traefik-private
+    additionalArguments:
+      - "--providers.kubernetesingress.ingressclass=traefik-private"
