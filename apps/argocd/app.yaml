@@ -18,6 +18,7 @@ values:
       install: true
     configs:
       cm:
+        admin.enabled: "false"
         timeout.reconciliation: "30s"
         url: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED"
         oidc.config: |
