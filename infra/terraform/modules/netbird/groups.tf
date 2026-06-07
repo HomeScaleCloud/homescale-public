@@ -46,10 +46,6 @@ resource "netbird_group" "net_region_bmc" {
   name = "net-region-bmc"
 }
 
-resource "netbird_group" "node_metal" {
-  name = "node-metal"
-}
-
 locals {
   app_names = sort(distinct([
     for app_file in fileset("${path.module}/../../../../apps", "*/**") : split("/", app_file)[0]

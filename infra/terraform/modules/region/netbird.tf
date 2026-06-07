@@ -10,10 +10,6 @@ data "netbird_group" "net_region_mgmt" {
   name = "net-region-mgmt"
 }
 
-data "netbird_group" "node_metal" {
-  name = "node-metal"
-}
-
 resource "netbird_group" "region" {
   name = "region-${var.region}"
 }
