@@ -33,5 +33,11 @@ values:
           requestedIDTokenClaims:
             groups:
               essential: true
+      rbac:
+        scopes: "[groups]"
+        policy.default: '{{ if eq .Values.cluster.name "lab" }}role:admin{{ end }}'
+        policy.csv: |
+          g, sg-k8s-admin, role:admin
+          g, team-infra-plat, role:readonly
       params:
         application.operations.selfHealTimeout: "5"
