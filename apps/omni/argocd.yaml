@@ -27,6 +27,12 @@ values:
         saml:
           enabled: true
       services:
+        initialServiceAccount:
+          enabled: true
+          name: bootstrap
+          role: Admin
+          keyPath: /data/initial-sa-key
+          lifetime: 24h
         api:
           advertisedURL: "https://REDACTED"
           certFile: /tls/tls.crt
