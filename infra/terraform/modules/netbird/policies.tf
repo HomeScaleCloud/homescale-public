@@ -56,3 +56,18 @@ resource "netbird_policy" "argocd" {
     destinations  = [netbird_group.app["argocd"].id]
   }
 }
+
+resource "netbird_policy" "omni" {
+  name    = "Omni"
+  enabled = true
+  rule {
+    action        = "accept"
+    bidirectional = false
+    enabled       = true
+    protocol      = "tcp"
+    ports         = ["80", "443"]
+    name          = "Omni"
+    sources       = [data.netbird_group.team_infra_plat.id]
+    destinations  = [netbird_group.app["omni"].id]
+  }
+}
