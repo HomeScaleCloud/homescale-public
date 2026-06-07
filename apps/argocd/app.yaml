@@ -19,7 +19,7 @@ values:
     configs:
       cm:
         timeout.reconciliation: "30s"
-        url: "https://argocd.{{ .Values.cluster.name }}REDACTED"
+        url: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED"
         oidc.config: |
           name: Entra ID
           issuer: $op-argocd:issuer
