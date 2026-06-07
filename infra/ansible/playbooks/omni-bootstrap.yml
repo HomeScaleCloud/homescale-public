@@ -4,6 +4,13 @@
   gather_facts: false
 
   tasks:
+    - name: Install Python dependencies
+      ansible.builtin.pip:
+        name:
+          - kubernetes
+          - jmespath
+        state: present
+
     - name: Check if SA already exists
       block:
         - name: Look up existing SA key
