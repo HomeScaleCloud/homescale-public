@@ -41,5 +41,6 @@ values:
         policy.csv: |
           g, 4d4167e8-204c-4328-b5f4-4dae634d46a8, role:admin
           g, 3a65b126-4dbe-4013-88dd-08fb8f45f6f7, role:readonly
+          p, 3a65b126-4dbe-4013-88dd-08fb8f45f6f7, applications, delete/*/Pod/*/*, */*, allow
       params:
         application.operations.selfHealTimeout: "5"
