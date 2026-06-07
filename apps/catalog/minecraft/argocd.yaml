@@ -1,3 +1,5 @@
+defaultDeploy: false
+
 path: apps/minecraft
 namespace: minecraft
 releaseName: minecraft

@@ -21,5 +21,3 @@ syncPolicy:
 
 syncOptions:
   - CreateNamespace=true
-
-apps: {}

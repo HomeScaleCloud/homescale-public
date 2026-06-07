@@ -1,3 +1,5 @@
+defaultDeploy: false
+
 path: apps/external-dns-crs
 namespace: external-dns
 releaseName: external-dns-crs

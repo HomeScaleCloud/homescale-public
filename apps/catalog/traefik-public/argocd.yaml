@@ -1,3 +1,5 @@
+defaultDeploy: false
+
 path: apps/traefik-public
 namespace: traefik
 releaseName: traefik-public
