@@ -28,7 +28,7 @@
 
     - name: Fetch mgmt kubeconfig from 1Password
       ansible.builtin.set_fact:
-        _kubeconfig: "{{ lookup('community.general.onepassword', 'mgmt-kubeconfig', field='kubeconfig', vault='github-actions') }}"
+        _kubeconfig: "{{ lookup('community.general.onepassword', 'mgmt-kubeconfig', field='password', vault='github-actions') }}"
       no_log: true
 
     - name: Write kubeconfig to temp file
