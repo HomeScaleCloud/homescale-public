@@ -1,0 +1,60 @@
+clusters:
+  mgmt:
+    deploy: true
+
+path: apps/omni
+namespace: omni
+releaseName: omni
+syncWave: 0
+values:
+  omni:
+    etcdEncryptionKey:
+      existingSecret: op-omni # pragma: allowlist secret
+
+    additionalConfigSources:
+      - existingSecret: op-omni  # pragma: allowlist secret
+        key: config.yaml
+
+    config:
+      account:
+        id: 7848e298-4d35-4c33-a4c8-6659160b6afb
+        name: homescale
+      auth:
+        auth0:
+          enabled: false
+        saml:
+          enabled: true
+      services:
+        api:
+          advertisedURL: "https://xxx"
+        kubernetesProxy:
+          advertisedURL: "https://xxx"
+        machineAPI:
+          advertisedURL: "https://xxx"
+        siderolink:
+          wireGuard:
+            advertisedEndpoint: "xxx:50180"
+
+    service:
+      wireguard:
+        type: LoadBalancer
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: xxx
+
+    ingress:
+      main:
+        enabled: true
+        className: traefik-private
+        host: xxx
+      kubernetesProxy:
+        enabled: true
+        className: traefik-private
+        host: xxx
+      siderolinkApi:
+        enabled: true
+        className: traefik-private
+        host: xxx
+
+    persistence:
+      enabled: true
+      size: 16Gi

@@ -1,5 +1,9 @@
 defaultDeploy: false
 
+clusters:
+  mgmt:
+    deploy: true
+
 path: apps/external-dns
 namespace: external-dns
 releaseName: external-dns

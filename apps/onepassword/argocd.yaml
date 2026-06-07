@@ -1,3 +1,5 @@
+defaultDeploy: true
+
 path: apps/onepassword
 namespace: onepassword
 releaseName: onepassword

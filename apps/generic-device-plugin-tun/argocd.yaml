@@ -1,3 +1,5 @@
+defaultDeploy: true
+
 path: apps/generic-device-plugin-tun
 namespace: kube-system
 releaseName: generic-device-plugin-tun

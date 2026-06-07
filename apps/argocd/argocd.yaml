@@ -1,3 +1,5 @@
+defaultDeploy: true
+
 path: apps/argocd
 namespace: argocd
 releaseName: argocd
