@@ -1,14 +1,14 @@
 apiVersion: netbird.io/v1alpha1
 kind: NetworkResource
 metadata:
-  name: omni
+  name: api
   namespace: omni
 spec:
   networkRouterRef:
     name: '{{ required "cluster.name is required" .Values.cluster.name }}'
     namespace: netbird
   serviceRef:
-    name: omni
+    name: api
   groups:
     - name: app-omni
     - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
