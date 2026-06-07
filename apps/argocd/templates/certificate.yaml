@@ -9,4 +9,4 @@ spec:
     name: letsencrypt
     kind: ClusterIssuer
   dnsNames:
-    - argocd.{{ required "cluster.name is required" .Values.cluster.name }}xxx
+    - argocd-server.argocd.{{ required "cluster.name is required" .Values.cluster.name }}xxx
