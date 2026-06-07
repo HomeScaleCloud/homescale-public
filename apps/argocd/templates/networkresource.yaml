@@ -1,7 +1,7 @@
 apiVersion: netbird.io/v1alpha1
 kind: NetworkResource
 metadata:
-  name: argocd
+  name: argocd-{{ required "cluster.name is required" .Values.cluster.name }}
   namespace: argocd
 spec:
   networkRouterRef:
