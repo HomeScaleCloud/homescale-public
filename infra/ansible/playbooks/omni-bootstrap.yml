@@ -122,7 +122,7 @@
         body_format: json
         body:
           workspaceId: "{{ lookup('env', 'INFISICAL_WORKSPACE_ID') }}"
-          environment: "production"
+          environment: "prod"
           secretPath: "/github-actions"
           secretValue: "{{ _new_sa_key.stdout | trim | regex_search('OMNI_SERVICE_ACCOUNT_KEY=(.+)', '\\1') | first }}"
         status_code: 200

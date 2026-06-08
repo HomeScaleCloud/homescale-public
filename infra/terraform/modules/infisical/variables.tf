@@ -5,5 +5,5 @@ variable "org_id" {
 
 variable "environment" {
   type    = string
-  default = "production"
+  default = "prod"
 }

@@ -1,6 +1,6 @@
 output "project_id" {
   description = "Infisical project ID — passed to other modules as infisical_workspace_id"
-  value       = infisical_project.homescale.id
+  value       = data.infisical_projects.homescale.id
 }
 
 output "k8s_mgmt_operator_client_id" {

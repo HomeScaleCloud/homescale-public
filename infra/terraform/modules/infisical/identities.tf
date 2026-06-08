@@ -19,7 +19,7 @@ resource "infisical_identity_universal_auth_client_secret" "k8s_mgmt_operator" {
 }
 
 resource "infisical_project_identity" "k8s_mgmt_operator" {
-  project_id  = infisical_project.homescale.id
+  project_id  = data.infisical_projects.homescale.id
   identity_id = infisical_identity.k8s_mgmt_operator.id
   roles = [{
     role_slug    = "viewer"
