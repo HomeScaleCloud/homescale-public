@@ -26,7 +26,6 @@ values:
           enabled: false
         saml:
           enabled: true
-      services:
         initialServiceAccount:
           enabled: true
           name: bootstrap
