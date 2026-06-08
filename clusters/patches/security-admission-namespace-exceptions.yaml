@@ -1,0 +1,13 @@
+cluster:
+  apiServer:
+    admissionControl:
+      - name: PodSecurity
+        configuration:
+          apiVersion: pod-security.admission.config.k8s.io/v1beta1
+          kind: AdmissionConfiguration
+          exemptions:
+            namespaces:
+              - kube-system
+              - argocd
+              - netbird
+              - rook-ceph
