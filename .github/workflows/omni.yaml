@@ -102,16 +102,21 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch --no-tags origin "${{ github.base_ref }}" --depth=1
             range="origin/${{ github.base_ref }}...${{ github.sha }}"
+            clusters=$(
+              git diff --name-only "$range" \
+                | { grep -E '^clusters/[^/]+/cluster\.yaml$' || true; } \
+                | cut -d/ -f2 \
+                | sort -u \
+                | jq -Rsc 'split("\n") | map(select(length > 0))'
+            )
           else
-            range="HEAD~1..HEAD"
+            clusters=$(
+              find clusters -mindepth 2 -maxdepth 2 -name 'cluster.yaml' \
+                | cut -d/ -f2 \
+                | sort -u \
+                | jq -Rsc 'split("\n") | map(select(length > 0))'
+            )
           fi
-          clusters=$(
-            git diff --name-only "$range" \
-              | { grep -E '^clusters/[^/]+/cluster\.yaml$' || true; } \
-              | cut -d/ -f2 \
-              | sort -u \
-              | jq -Rsc 'split("\n") | map(select(length > 0))'
-          )
           echo "clusters=${clusters}" >> "$GITHUB_OUTPUT"
           echo "CLUSTERS=${clusters}" >> "$GITHUB_ENV"
           echo "Clusters detected: ${clusters}"
@@ -182,6 +187,7 @@ jobs:
           chmod +x /usr/local/bin/omnictl
 
       - name: Verify Omni reachable
+        if: steps.detect.outputs.clusters != '[]'
         run: curl -fsSk https://xxx/healthz
 
       - name: Plan
