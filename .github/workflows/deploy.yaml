@@ -224,7 +224,7 @@ jobs:
               fi
               printf '%s\n' "$output"
               if [ $n -ge 3 ]; then return 1; fi
-              if ! printf '%s\n' "$output" | grep -q "Error: rpc error"; then return 1; fi
+              if ! printf '%s\n' "$output" | grep -q "rpc error"; then return 1; fi
               echo "Attempt $n/3 failed with RPC error, retrying in 5s..."
               n=$((n+1))
               sleep 5
@@ -269,7 +269,7 @@ jobs:
               fi
               printf '%s\n' "$output"
               if [ $n -ge 3 ]; then return 1; fi
-              if ! printf '%s\n' "$output" | grep -q "Error: rpc error"; then return 1; fi
+              if ! printf '%s\n' "$output" | grep -q "rpc error"; then return 1; fi
               echo "Attempt $n/3 failed with RPC error, retrying in 5s..."
               n=$((n+1))
               sleep 5
