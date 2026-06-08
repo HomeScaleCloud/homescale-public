@@ -107,7 +107,7 @@ jobs:
           fi
           clusters=$(
             git diff --name-only "$range" \
-              | grep -E '^clusters/[^/]+/cluster\.yaml$' \
+              | { grep -E '^clusters/[^/]+/cluster\.yaml$' || true; } \
               | cut -d/ -f2 \
               | sort -u \
               | jq -Rsc 'split("\n") | map(select(length > 0))'
