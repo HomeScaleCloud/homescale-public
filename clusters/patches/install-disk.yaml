@@ -1,4 +1,0 @@
-machine:
-  install:
-    diskSelector:
-      size: '>= 100GB <= 600GB'
