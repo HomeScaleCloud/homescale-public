@@ -4,13 +4,12 @@
   gather_facts: false
 
   tasks:
-    - name: Install Python dependencies
-      ansible.builtin.pip:
-        name:
-          - kubernetes
-          - jmespath
-        state: present
-
+    # - name: Install Python dependencies
+    #   ansible.builtin.pip:
+    #     name:
+    #       - kubernetes
+    #       - jmespath
+    #     state: present
     - name: Check if SA already exists
       block:
         - name: Look up existing SA key
@@ -52,35 +51,43 @@
         msg: "No Omni pod found in namespace omni"
       when: omni_pods.resources | length == 0
 
-    - name: Read bootstrap SA key from pod
-      kubernetes.core.k8s_exec:
+    - name: Wait for Omni pod to be ready
+      kubernetes.core.k8s_info:
+        kind: Pod
         namespace: omni
-        pod: "{{ omni_pods.resources[0].metadata.name }}"
-        command: cat /data/initial-sa-key
+        label_selectors:
+          - "app.kubernetes.io/name=omni"
         kubeconfig: /tmp/mgmt-kubeconfig
-      register: _bootstrap_key
-      ignore_errors: true
+      register: omni_pod_status
+      until: >
+        omni_pod_status.resources | length > 0 and
+        omni_pod_status.resources[0].status.phase == 'Running' and
+        (omni_pod_status.resources[0].status.containerStatuses | default([]) |
+        selectattr('ready', 'equalto', true) | list | length > 0)
+      retries: 30
+      delay: 10
 
-    - name: Fail if bootstrap key not found
-      ansible.builtin.fail:
-        msg: "Failed to read /data/initial-sa-key — has Omni started and written the key? stderr: {{ _bootstrap_key.stderr | default('') }}"
-      when: (_bootstrap_key.return_code | default(1)) != 0 or (_bootstrap_key.stdout | default('')) | trim | length == 0
-
-    - name: Store bootstrap key
-      ansible.builtin.set_fact:
-        _bootstrap_key_value: "{{ _bootstrap_key.stdout | trim }}"
-      no_log: true
-
-    - name: Install omnictl
-      ansible.builtin.get_url:
-        url: https://github.com/siderolabs/omni/releases/download/v1.8.2/omnictl-linux-amd64
-        dest: /usr/local/bin/omnictl
-        mode: "0755"
-      become: true
-
-    - name: Generate temporary omniconfig
+    - name: Start port-forward to Omni local resource service
       ansible.builtin.command:
-        cmd: omnictl config new /tmp/omniconfig-bootstrap --url https://REDACTED
+        cmd: >
+          kubectl port-forward
+          pod/{{ omni_pods.resources[0].metadata.name }}
+          18081:8081
+          -n omni
+          --kubeconfig /tmp/mgmt-kubeconfig
+      async: 300
+      poll: 0
+      register: _port_forward
+
+    - name: Wait for local resource service to be reachable
+      ansible.builtin.wait_for:
+        host: localhost
+        port: 18081
+        timeout: 30
+
+    - name: Generate omniconfig for local resource service
+      ansible.builtin.command:
+        cmd: omnictl config new /tmp/omniconfig-bootstrap --url grpc://localhost:18081
       changed_when: true
 
     - name: Create github-actions service account
@@ -91,8 +98,6 @@
           --role Admin
           --ttl 8760h
           --omniconfig /tmp/omniconfig-bootstrap
-      environment:
-        OMNI_SERVICE_ACCOUNT_KEY: "{{ _bootstrap_key_value }}"
       register: _new_sa_key
       no_log: true
       changed_when: true
