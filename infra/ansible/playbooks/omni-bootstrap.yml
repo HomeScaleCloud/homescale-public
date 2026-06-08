@@ -59,8 +59,17 @@
         command: cat /data/initial-sa-key
         kubeconfig: /tmp/mgmt-kubeconfig
       register: _bootstrap_key
+      ignore_errors: true
+
+    - name: Fail if bootstrap key not found
+      ansible.builtin.fail:
+        msg: "Failed to read /data/initial-sa-key — has Omni started and written the key? stderr: {{ _bootstrap_key.stderr | default('') }}"
+      when: (_bootstrap_key.return_code | default(1)) != 0 or (_bootstrap_key.stdout | default('')) | trim | length == 0
+
+    - name: Store bootstrap key
+      ansible.builtin.set_fact:
+        _bootstrap_key_value: "{{ _bootstrap_key.stdout | trim }}"
       no_log: true
-      failed_when: (_bootstrap_key.return_code | default(1)) != 0 or (_bootstrap_key.stdout | default('')) | trim | length == 0
 
     - name: Install omnictl
       ansible.builtin.get_url:
@@ -83,7 +92,7 @@
           --ttl 8760h
           --omniconfig /tmp/omniconfig-bootstrap
       environment:
-        OMNI_SERVICE_ACCOUNT_KEY: "{{ _bootstrap_key.stdout | trim }}"
+        OMNI_SERVICE_ACCOUNT_KEY: "{{ _bootstrap_key_value }}"
       register: _new_sa_key
       no_log: true
       changed_when: true
