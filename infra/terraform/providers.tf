@@ -42,3 +42,7 @@ provider "infisical" {
 provider "cloudflare" {}
 
 provider "digitalocean" {}
+
+provider "netbird" {
+  token = var.netbird_token
+}

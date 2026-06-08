@@ -31,7 +31,7 @@ jobs:
       - name: Generate NetBird Setup Key
         run: |
           NB_GROUP_ID=$(curl -fsSL \
-            -H "Authorization: Token $NB_PAT" \
+            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
             https://api.netbird.io/api/groups \
             | jq -r '.[] | select(.name == "GitHub Actions") | .id')
 
@@ -40,7 +40,7 @@ jobs:
           fi
 
           NB_KEY_RESPONSE=$(curl -fsSL -X POST \
-            -H "Authorization: Token $NB_PAT" \
+            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
             -H "Content-Type: application/json" \
             https://api.netbird.io/api/setup-keys \
             -d "{\"name\":\"github-actions-${GITHUB_RUN_ID}\",\"type\":\"one-off\",\"expires_in\":900,\"revokable\":true,\"ephemeral\":true,\"auto_groups\":[\"$NB_GROUP_ID\"]}")
@@ -97,6 +97,6 @@ jobs:
             exit 0
           fi
           curl -fsSL -X DELETE \
-            -H "Authorization: Token $NB_PAT" \
+            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
             "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
           echo "Setup key revoked"
