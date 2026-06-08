@@ -29,11 +29,6 @@ jobs:
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.op_service_account_token }}
           NB_SA_TOKEN: op://github-actions/netbird/credential  # pragma: allowlist secret
-      - name: Disable IPv6
-        run: |
-          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
-          sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
-          sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1
       - name: Setup NetBird
         run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
       - name: Generate NetBird Setup Key
@@ -136,12 +131,6 @@ jobs:
           NB_SA_TOKEN: op://github-actions/netbird/credential  # pragma: allowlist secret
           OMNI_SERVICE_ACCOUNT_KEY: op://github-actions/omni/credential  # pragma: allowlist secret
 
-      - name: Disable IPv6
-        if: steps.detect.outputs.clusters != '[]'
-        run: |
-          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
-          sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
-          sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1
       - name: Setup NetBird
         if: steps.detect.outputs.clusters != '[]'
         run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
@@ -177,9 +166,6 @@ jobs:
       - name: Connect to NetBird
         if: steps.detect.outputs.clusters != '[]'
         run: netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
-
-      - name: Wait for NetBird
-        run: sleep 5
 
       - name: Install omnictl
         if: steps.detect.outputs.clusters != '[]'
