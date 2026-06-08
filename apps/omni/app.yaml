@@ -26,13 +26,9 @@ values:
           enabled: false
         saml:
           enabled: true
-        initialServiceAccount:
-          enabled: true
-          name: bootstrap
-          role: Admin
-          keyPath: /data/initial-sa-key
-          lifetime: 24h
       services:
+        localResourceService:
+          enabled: true
         api:
           advertisedURL: "https://xxx"
           certFile: /tls/tls.crt
