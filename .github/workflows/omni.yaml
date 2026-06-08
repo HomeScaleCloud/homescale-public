@@ -167,17 +167,17 @@ jobs:
         if: steps.detect.outputs.clusters != '[]'
         run: netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
 
-      - name: Revoke NetBird Setup Key
-        if: always()
-        run: |
-          if [ -z "${NB_SETUP_KEY_ID:-}" ] || [ "${NB_SETUP_KEY_ID}" = "null" ]; then
-            echo "No setup key to revoke"
-            exit 0
-          fi
-          curl -fsSL -X DELETE \
-            -H "Authorization: Token $NB_SA_TOKEN" \
-            "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
-          echo "Setup key revoked"
+      # - name: Revoke NetBird Setup Key
+      #   if: always()
+      #   run: |
+      #     if [ -z "${NB_SETUP_KEY_ID:-}" ] || [ "${NB_SETUP_KEY_ID}" = "null" ]; then
+      #       echo "No setup key to revoke"
+      #       exit 0
+      #     fi
+      #     curl -fsSL -X DELETE \
+      #       -H "Authorization: Token $NB_SA_TOKEN" \
+      #       "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
+      #     echo "Setup key revoked"
 
       - name: Install omnictl
         if: steps.detect.outputs.clusters != '[]'
