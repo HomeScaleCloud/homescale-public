@@ -5,7 +5,7 @@ namespace: infisical
 releaseName: infisical
 syncWave: -35
 values:
-  infisical-secrets-operator:
+  secrets-operator:
     controllerManager:
       manager:
         image:
