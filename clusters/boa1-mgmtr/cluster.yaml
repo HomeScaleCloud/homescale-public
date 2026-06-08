@@ -10,8 +10,8 @@ machines:
   - 11a9fe00-3f45-11ed-8000-3cecefaab010
 patches:
   - name: install-disk
-    file: ../patches/install-disk.yaml
+    file: patches/install-disk.yaml
   - name: allow-scheduling-on-control-plane
-    file: ../patches/allow-scheduling-on-control-plane.yaml
+    file: patches/allow-scheduling-on-control-plane.yaml
   - name: node-cluster-label
-    file: ../patches/node-cluster-label.yaml
+    file: patches/node-cluster-label.yaml
