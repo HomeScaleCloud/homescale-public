@@ -186,10 +186,6 @@ jobs:
             https://github.com/siderolabs/omni/releases/download/v1.8.2/omnictl-linux-amd64
           chmod +x /usr/local/bin/omnictl
 
-      - name: Verify Omni reachable
-        if: steps.detect.outputs.clusters != '[]'
-        run: curl -fsSk https://xxx/healthz
-
       - name: Plan
         if: steps.detect.outputs.clusters != '[]' && github.event_name == 'pull_request'
         id: plan
