@@ -20,7 +20,7 @@ values:
     config:
       account:
         id: 7848e298-4d35-4c33-a4c8-6659160b6afb
-        name: homescale
+        name: HomeScale
       auth:
         auth0:
           enabled: false
