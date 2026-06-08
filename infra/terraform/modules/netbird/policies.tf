@@ -67,7 +67,7 @@ resource "netbird_policy" "omni" {
     protocol      = "tcp"
     ports         = ["80", "443"]
     name          = "Omni"
-    sources       = [data.netbird_group.team_infra_plat.id]
+    sources       = [netbird_group.github_actions.id, data.netbird_group.team_infra_plat.id]
     destinations  = [netbird_group.app["omni"].id]
   }
 }
