@@ -90,11 +90,6 @@
       register: _bootstrap_key
       no_log: true
 
-    - name: Generate omniconfig for Omni endpoint
-      ansible.builtin.command:
-        cmd: omnictl config new /tmp/omniconfig-bootstrap --url https://REDACTED
-      changed_when: true
-
     - name: Create github-actions service account
       ansible.builtin.command:
         cmd: >
@@ -102,25 +97,25 @@
           --use-user-role=false
           --role Admin
           --ttl 8760h
-          --omniconfig /tmp/omniconfig-bootstrap
       environment:
         OMNI_SERVICE_ACCOUNT_KEY: "{{ _bootstrap_key.stdout | trim }}"
+        OMNI_ENDPOINT: https://REDACTED
       register: _new_sa_key
       changed_when: true
 
     - name: Store github-actions SA key in 1Password
-      ansible.builtin.command:
-        argv:
-          - op
-          - item
-          - create
-          - --vault
-          - github-actions
-          - --title
-          - omni
-          - --category
-          - login
-          - "credential={{ _new_sa_key.stdout | trim }}"
+      vars:
+        _sa_item:
+          title: omni
+          category: LOGIN
+          fields:
+            - id: credential
+              label: credential
+              type: STRING
+              value: "{{ _new_sa_key.stdout | trim | regex_search('OMNI_SERVICE_ACCOUNT_KEY=(.+)', '\\1') | first }}"
+      ansible.builtin.shell:
+        cmd: op item create --vault github-actions
+        stdin: "{{ _sa_item | to_json }}"
       no_log: true
       changed_when: true
 
