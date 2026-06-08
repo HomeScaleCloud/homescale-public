@@ -99,5 +99,6 @@ jobs:
   omni:
     name: "Omni"
     uses: ./.github/workflows/omni.yaml
+    needs: terraform
     secrets:
       op_service_account_token: ${{ secrets.op_service_account_token }}
