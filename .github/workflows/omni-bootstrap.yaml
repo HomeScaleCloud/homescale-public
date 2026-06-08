@@ -22,7 +22,7 @@ jobs:
         with:
           method: "oidc"
           identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          env-slug: "production"
+          env-slug: "prod"
           project-slug: "homescale"
           secret-path: "/github-actions"
           export-type: env
