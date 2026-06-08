@@ -95,3 +95,9 @@ jobs:
       - name: Apply
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve tfplan
+
+  omni:
+    name: "Omni"
+    uses: ./.github/workflows/omni-sync.yaml
+    secrets:
+      op_service_account_token: ${{ secrets.op_service_account_token }}
