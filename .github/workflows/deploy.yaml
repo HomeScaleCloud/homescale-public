@@ -48,8 +48,6 @@ jobs:
       - name: Initialize Terraform
         id: init
         run: terraform init
-        env:
-          TF_TOKEN_app_terraform_io: ${{ env.TERRAFORM_CLOUD_TOKEN }}
       - name: Validate
         id: validate
         run: terraform validate
