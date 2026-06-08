@@ -190,13 +190,10 @@ jobs:
           for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
             echo "Planning cluster: $cluster"
             tmpdir=$(mktemp -d)
-            while IFS= read -r -d '' f; do
-              outf="$tmpdir/$f"
-              mkdir -p "$(dirname "$outf")"
-              CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "$f" > "$outf"
-            done < <(find clusters -name "*.yaml" -print0)
+            CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "clusters/$cluster/cluster.yaml" > "$tmpdir/cluster.yaml"
+            cp -r clusters/patches "$tmpdir/patches"
             if omnictl cluster template sync \
-                -f "$tmpdir/clusters/$cluster/cluster.yaml" \
+                -f "$tmpdir/cluster.yaml" \
                 --dry-run \
                 > "/tmp/omni-$cluster.txt" 2>&1; then
               echo "PLAN_${cluster}=success" >> "$GITHUB_ENV"
@@ -218,12 +215,9 @@ jobs:
           for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
             echo "Syncing cluster: $cluster"
             tmpdir=$(mktemp -d)
-            while IFS= read -r -d '' f; do
-              outf="$tmpdir/$f"
-              mkdir -p "$(dirname "$outf")"
-              CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "$f" > "$outf"
-            done < <(find clusters -name "*.yaml" -print0)
-            omnictl cluster template sync -f "$tmpdir/clusters/$cluster/cluster.yaml"
+            CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "clusters/$cluster/cluster.yaml" > "$tmpdir/cluster.yaml"
+            cp -r clusters/patches "$tmpdir/patches"
+            omnictl cluster template sync -f "$tmpdir/cluster.yaml"
             rm -rf "$tmpdir"
           done
 
