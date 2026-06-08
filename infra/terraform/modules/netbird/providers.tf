@@ -8,7 +8,3 @@ terraform {
     }
   }
 }
-
-provider "netbird" {
-  token = var.netbird_token
-}
