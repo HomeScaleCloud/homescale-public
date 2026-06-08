@@ -1,6 +1,6 @@
 clusters:
   mgmt:
-    deploy: true
+    deploy: false
 
 path: apps/omni
 namespace: omni
