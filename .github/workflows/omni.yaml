@@ -183,13 +183,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          retry() {
+            local n=1
+            until "$@"; do
+              [ $n -ge 3 ] && return 1
+              echo "Attempt $n/3 failed, retrying in 5s..."
+              n=$((n+1))
+              sleep 5
+            done
+          }
           failed=false
           for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
             echo "Planning cluster: $cluster"
             tmpdir=$(mktemp -d)
             CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "clusters/$cluster/cluster.yaml" > "$tmpdir/cluster.yaml"
             cp -r clusters/patches "$tmpdir/patches"
-            if omnictl cluster template sync \
+            if retry omnictl cluster template sync \
                 -f "$tmpdir/cluster.yaml" \
                 --dry-run \
                 > "/tmp/omni-$cluster.txt" 2>&1; then
@@ -209,12 +218,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          retry() {
+            local n=1
+            until "$@"; do
+              [ $n -ge 3 ] && return 1
+              echo "Attempt $n/3 failed, retrying in 5s..."
+              n=$((n+1))
+              sleep 5
+            done
+          }
           for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
             echo "Syncing cluster: $cluster"
             tmpdir=$(mktemp -d)
             CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "clusters/$cluster/cluster.yaml" > "$tmpdir/cluster.yaml"
             cp -r clusters/patches "$tmpdir/patches"
-            omnictl cluster template sync -f "$tmpdir/cluster.yaml"
+            retry omnictl cluster template sync -f "$tmpdir/cluster.yaml"
             rm -rf "$tmpdir"
           done
 
