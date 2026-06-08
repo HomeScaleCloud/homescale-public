@@ -184,10 +184,14 @@ jobs:
         run: |
           set -euo pipefail
           retry() {
-            local n=1
-            until "$@"; do
+            local n=1 output exit_code
+            while true; do
+              output=$("$@" 2>&1); exit_code=$?
+              printf '%s\n' "$output"
+              [ $exit_code -eq 0 ] && return 0
               [ $n -ge 3 ] && return 1
-              echo "Attempt $n/3 failed, retrying in 5s..."
+              printf '%s\n' "$output" | grep -q "Error: rpc error" || return 1
+              echo "Attempt $n/3 failed with RPC error, retrying in 5s..."
               n=$((n+1))
               sleep 5
             done
@@ -219,10 +223,14 @@ jobs:
         run: |
           set -euo pipefail
           retry() {
-            local n=1
-            until "$@"; do
+            local n=1 output exit_code
+            while true; do
+              output=$("$@" 2>&1); exit_code=$?
+              printf '%s\n' "$output"
+              [ $exit_code -eq 0 ] && return 0
               [ $n -ge 3 ] && return 1
-              echo "Attempt $n/3 failed, retrying in 5s..."
+              printf '%s\n' "$output" | grep -q "Error: rpc error" || return 1
+              echo "Attempt $n/3 failed with RPC error, retrying in 5s..."
               n=$((n+1))
               sleep 5
             done
