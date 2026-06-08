@@ -14,8 +14,8 @@ module "mgmt_cluster" {
   k8s_version                          = "1.34."
   region                               = "lon1"
   infisical_workspace_id               = module.infisical.project_id
-  infisical_k8s_operator_client_id     = module.infisical.k8s_mgmt_operator_client_id
-  infisical_k8s_operator_client_secret = module.infisical.k8s_mgmt_operator_client_secret
+  infisical_k8s_operator_client_id     = module.infisical.k8s_operator_client_id
+  infisical_k8s_operator_client_secret = module.infisical.k8s_operator_client_secret
   argocd_deploy_key                    = data.infisical_secrets.github_actions.secrets["ARGOCD_DEPLOY_KEY"].value
 }
 
