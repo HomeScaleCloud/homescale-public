@@ -107,3 +107,12 @@ resource "cloudflare_dns_record" "netbird_ext" {
   ttl     = 1
   type    = "CNAME"
 }
+
+resource "cloudflare_dns_record" "infisical_verify" {
+  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  name    = "xxx"
+  comment = "Domain ownership verification for Infisical"
+  content = "infisical-domain-verification=8a80b98c25b921c4f9a0e0f2ffaec4948574984d05aa4756dd43909b8f1ddbbe" #pragma: allowlist secret
+  ttl     = 1
+  type    = "TXT"
+}
