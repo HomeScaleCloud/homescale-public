@@ -6,6 +6,11 @@ permissions:
 
 on:
   workflow_call:
+    secrets:
+      INFISICAL_GH_IDENTITY_ID:
+        required: true
+      INFISICAL_ORG_ID:
+        required: true
   workflow_dispatch:
 
 concurrency:
