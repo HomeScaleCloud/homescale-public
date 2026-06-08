@@ -51,9 +51,7 @@ values:
 
     service:
       wireguard:
-        type: LoadBalancer
-        annotations:
-          external-dns.alpha.kubernetes.io/hostname: REDACTED
+        type: ClusterIP
 
     ingress:
       main:
