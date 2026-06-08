@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apps-boa1-mgmtr
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: git@github.com:HomeScaleCloud/homescale.git
+      targetRevision: main
+      path: clusters/boa1-mgmtr
+      directory:
+        recurse: true
+    - repoURL: git@github.com:HomeScaleCloud/homescale.git
+      targetRevision: main
+      path: apps
+      helm:
+        releaseName: apps-boa1-mgmtr
+        values: |
+          cluster:
+            name: boa1-mgmtr
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
