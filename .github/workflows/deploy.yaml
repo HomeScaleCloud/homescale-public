@@ -59,7 +59,7 @@ jobs:
       - name: Validate
         id: validate
         run: terraform validate
-      - name: Setup NetBird
+      - name: Setup NetBird client
         run: |
           curl -fsSL https://pkgs.netbird.io/install.sh | sh
       - name: Generate NetBird Setup Key
@@ -162,7 +162,7 @@ jobs:
           secret-path: "/github-actions"
           export-type: env
 
-      - name: Setup NetBird
+      - name: Setup NetBird client
         if: steps.detect.outputs.clusters != '[]'
         run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
 
