@@ -10,8 +10,8 @@ resource "infisical_project_environment" "production" {
   slug       = "production"
 }
 
-resource "infisical_project_environment" "lab" {
+resource "infisical_project_environment" "development" {
   project_id = infisical_project.homescale.id
-  name       = "lab"
-  slug       = "lab"
+  name       = "development"
+  slug       = "development"
 }
