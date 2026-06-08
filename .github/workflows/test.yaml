@@ -74,6 +74,11 @@ jobs:
             -H "Authorization: Token $NB_SA_TOKEN" \
             "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
           echo "Setup key revoked"
+      - name: Install omnictl
+        run: |
+          curl -fsSL -o /usr/local/bin/omnictl \
+            https://github.com/siderolabs/omni/releases/download/v1.8.2/omnictl-linux-amd64
+          chmod +x /usr/local/bin/omnictl
       - name: Install Ansible
         run: pip install --quiet ansible
       - name: Install collections
