@@ -201,7 +201,10 @@ jobs:
             echo "Planning cluster: $cluster"
             tmpdir=$(mktemp -d)
             CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "clusters/$cluster/cluster.yaml" > "$tmpdir/cluster.yaml"
-            cp -r clusters/patches "$tmpdir/patches"
+            mkdir -p "$tmpdir/patches"
+            for pf in clusters/patches/*.yaml; do
+              CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "$pf" > "$tmpdir/patches/$(basename "$pf")"
+            done
             if retry omnictl cluster template sync \
                 -f "$tmpdir/cluster.yaml" \
                 --dry-run \
@@ -239,7 +242,10 @@ jobs:
             echo "Syncing cluster: $cluster"
             tmpdir=$(mktemp -d)
             CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "clusters/$cluster/cluster.yaml" > "$tmpdir/cluster.yaml"
-            cp -r clusters/patches "$tmpdir/patches"
+            mkdir -p "$tmpdir/patches"
+            for pf in clusters/patches/*.yaml; do
+              CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "$pf" > "$tmpdir/patches/$(basename "$pf")"
+            done
             retry omnictl cluster template sync -f "$tmpdir/cluster.yaml"
             rm -rf "$tmpdir"
           done
