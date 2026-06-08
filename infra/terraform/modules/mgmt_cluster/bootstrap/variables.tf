@@ -16,8 +16,19 @@ variable "k8s_ca" {
   sensitive   = true
 }
 
-variable "op_service_account_token" {
-  description = "1Password Service Account Token"
+variable "infisical_k8s_operator_client_id" {
+  description = "Client ID for the k8s-mgmt-operator Infisical identity"
+  type        = string
+}
+
+variable "infisical_k8s_operator_client_secret" {
+  description = "Client secret for the k8s-mgmt-operator Infisical identity"
+  type        = string
+  sensitive   = true
+}
+
+variable "argocd_deploy_key" {
+  description = "Base64-encoded SSH private key for ArgoCD to pull from GitHub"
   type        = string
   sensitive   = true
 }

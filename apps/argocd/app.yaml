@@ -25,9 +25,9 @@ values:
         url: "https://argocd-server.argocd.{{ .Values.cluster.name }}xxx"
         oidc.config: |
           name: Entra ID
-          issuer: $op-argocd:issuer
-          clientID: $op-argocd:clientID
-          clientSecret: $op-argocd:clientSecret
+          issuer: $argocd-oidc:issuer
+          clientID: $argocd-oidc:clientID
+          clientSecret: $argocd-oidc:clientSecret
           requestedScopes:
             - openid
             - profile

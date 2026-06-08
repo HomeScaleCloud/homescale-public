@@ -19,6 +19,6 @@ values:
       - name: CF_API_TOKEN
         valueFrom:
           secretKeyRef:
-            name: op-cloudflare
+            name: cloudflare
             key: credential
     domainFilters: ["xxx"]

@@ -42,7 +42,7 @@ rules:
     resources:
       - "*"
     verbs: ["*"]
-  - apiGroups: ["onepassword.com"]
+  - apiGroups: ["secrets.infisical.com"]
     resources:
       - "*"
     verbs: ["*"]

@@ -1,5 +1,5 @@
 resource "cloudflare_dns_record" "github_verify" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   comment = "Domain ownership verification for GitHub"
   content = "064743fb98" #pragma: allowlist secret
@@ -8,7 +8,7 @@ resource "cloudflare_dns_record" "github_verify" {
 }
 
 resource "cloudflare_dns_record" "azure_verify" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   comment = "Domain ownership verification for Azure"
   content = "MS=ms57084443" #pragma: allowlist secret
@@ -17,7 +17,7 @@ resource "cloudflare_dns_record" "azure_verify" {
 }
 
 resource "cloudflare_dns_record" "google_verify" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   comment = "Domain ownership verification for Google"
   content = "google-site-verification=u5Dge7wb90l5g-f6d09B6_8oPM2di4qmri5ZurpcXjY" #pragma: allowlist secret
@@ -26,7 +26,7 @@ resource "cloudflare_dns_record" "google_verify" {
 }
 
 resource "cloudflare_dns_record" "openai_verify" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   comment = "Domain ownership verification for OpenAI"
   content = "openai-domain-verification=dv-QS7LzcNzQoWJE8kjIrtIP9q6" #pragma: allowlist secret
@@ -35,7 +35,7 @@ resource "cloudflare_dns_record" "openai_verify" {
 }
 
 resource "cloudflare_dns_record" "exchange_autodiscover" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   content = "autodiscover.outlook.com"
   ttl     = 1
@@ -43,7 +43,7 @@ resource "cloudflare_dns_record" "exchange_autodiscover" {
 }
 
 resource "cloudflare_dns_record" "exchange_mx" {
-  zone_id  = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id  = var.cloudflare_zone_id
   name     = "xxx"
   content  = "homescale-cloud.mail.protection.outlook.com"
   priority = 1
@@ -52,7 +52,7 @@ resource "cloudflare_dns_record" "exchange_mx" {
 }
 
 resource "cloudflare_dns_record" "exchange_spf" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   content = "v=spf1 include:spf.protection.outlook.com -all"
   ttl     = 1
@@ -60,7 +60,7 @@ resource "cloudflare_dns_record" "exchange_spf" {
 }
 
 resource "cloudflare_dns_record" "exchange_dkim_1" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   content = "selector1-homescale-cloud._domainkey.nanni237gmail.onmicrosoft.com"
   ttl     = 1
@@ -68,7 +68,7 @@ resource "cloudflare_dns_record" "exchange_dkim_1" {
 }
 
 resource "cloudflare_dns_record" "exchange_dkim_2" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   content = "selector2-homescale-cloud._domainkey.nanni237gmail.onmicrosoft.com"
   ttl     = 1
@@ -76,7 +76,7 @@ resource "cloudflare_dns_record" "exchange_dkim_2" {
 }
 
 resource "cloudflare_dns_record" "intune_registration" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   content = "enterpriseregistration.windows.net"
   ttl     = 1
@@ -84,7 +84,7 @@ resource "cloudflare_dns_record" "intune_registration" {
 }
 
 resource "cloudflare_dns_record" "intune_enrollment" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   content = "enterpriseenrollment-s.manage.microsoft.com"
   ttl     = 1
@@ -92,7 +92,7 @@ resource "cloudflare_dns_record" "intune_enrollment" {
 }
 
 resource "cloudflare_dns_record" "cloudflare_sso_verify" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   comment = "Domain ownership verification for Cloudflare (SSO)"
   content = "cloudflare_dashboard_sso=1db9ce4dca346667d0b86d63403d14bf" #pragma: allowlist secret
@@ -101,7 +101,7 @@ resource "cloudflare_dns_record" "cloudflare_sso_verify" {
 }
 
 resource "cloudflare_dns_record" "netbird_ext" {
-  zone_id = data.onepassword_item.cloudflare_zone_id.credential
+  zone_id = var.cloudflare_zone_id
   name    = "xxx"
   content = module.netbird.netbird_reverse_proxy_clusters_all
   ttl     = 1
