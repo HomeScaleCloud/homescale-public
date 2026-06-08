@@ -31,3 +31,25 @@ spec:
       port: 443
       targetPort: 8095
       protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: REDACTED
+  name: siderolink
+  namespace: omni
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/instance: omni
+    app.kubernetes.io/name: omni
+  ports:
+    - name: wireguard
+      port: 50180
+      protocol: UDP
+      targetPort: wireguard
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 8090
