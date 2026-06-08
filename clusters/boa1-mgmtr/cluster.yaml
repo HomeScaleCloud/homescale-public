@@ -1,0 +1,15 @@
+kind: Cluster
+name: boa1-mgmtr
+kubernetes:
+  version: v1.36.1
+talos:
+  version: v1.13.3
+---
+kind: ControlPlane
+machines:
+  - 00000000-0000-0000-0000-000000000000
+patches:
+  - name: allow-scheduling-on-control-plane
+    inline:
+      cluster:
+        allowSchedulingOnControlPlanes: true
