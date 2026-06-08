@@ -41,7 +41,7 @@ rules:
     resources:
       - "*"
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["onepassword.com"]
+  - apiGroups: ["secrets.infisical.com"]
     resources:
       - "*"
     verbs: ["get", "list", "watch"]

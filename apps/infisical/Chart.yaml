@@ -1,0 +1,9 @@
+apiVersion: v2
+name: infisical
+description: Helm chart for deploying the Infisical Secrets Operator
+type: application
+version: 0.1.0
+dependencies:
+  - name: infisical-secrets-operator
+    version: 0.8.0
+    repository: https://dl.cloudsmith.io/public/infisical/helm-charts/helm/charts/

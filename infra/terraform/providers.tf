@@ -1,8 +1,8 @@
 terraform {
   required_providers {
-    onepassword = {
-      source  = "1Password/onepassword"
-      version = "2.2.1"
+    infisical = {
+      source  = "infisical/infisical"
+      version = "0.16.28"
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
@@ -31,18 +31,22 @@ terraform {
   }
 }
 
-provider "onepassword" {
-  service_account_token = var.op_service_account_token
+provider "infisical" {
+  auth = {
+    oidc = {
+      identity_id = var.infisical_github_actions
+    }
+  }
 }
 
 provider "cloudflare" {
-  api_token = data.onepassword_item.cloudflare.credential
+  api_token = var.cloudflare_api_token
 }
 
 provider "digitalocean" {
-  token = data.onepassword_item.digitalocean.credential
+  token = var.digitalocean_token
 }
 
 provider "netbird" {
-  token = data.onepassword_item.netbird.credential
+  token = var.netbird_token
 }

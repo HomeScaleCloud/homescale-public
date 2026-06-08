@@ -22,5 +22,5 @@ values:
       failurePolicy: Ignore
     netbirdAPI:
       keyFromSecret:
-        name: op-netbird
-        key: password
+        name: netbird
+        key: NETBIRD_OPERATOR_TOKEN
