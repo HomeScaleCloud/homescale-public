@@ -32,6 +32,7 @@ values:
           role: Admin
           keyPath: /data/initial-sa-key
           lifetime: 24h
+      services:
         api:
           advertisedURL: "https://REDACTED"
           certFile: /tls/tls.crt
