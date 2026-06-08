@@ -1,6 +1,6 @@
-clusters:
-  mgmt:
-    deploy: true
+# clusters:
+#   mgmt:
+#     deploy: true
 
 path: apps/omni
 namespace: omni
@@ -26,9 +26,13 @@ values:
           enabled: false
         saml:
           enabled: true
-      services:
-        localResourceService:
+        initialServiceAccount:
           enabled: true
+          name: bootstrap
+          keyPath: /data/initial-sa-key
+          role: Admin
+          lifetime: 24h0m0s
+      services:
         api:
           advertisedURL: "https://xxx"
           certFile: /tls/tls.crt
@@ -68,6 +72,14 @@ values:
       - name: omni-tls
         mountPath: /tls
         readOnly: true
+
+    extraContainers:
+      - name: toolbox
+        image: alpine:latest
+        command: ["sleep", "infinity"]
+        volumeMounts:
+          - name: data
+            mountPath: /data
 
     readinessProbe:
       failureThreshold: 3

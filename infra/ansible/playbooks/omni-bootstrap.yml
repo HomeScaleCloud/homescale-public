@@ -4,12 +4,6 @@
   gather_facts: false
 
   tasks:
-    # - name: Install Python dependencies
-    #   ansible.builtin.pip:
-    #     name:
-    #       - kubernetes
-    #       - jmespath
-    #     state: present
     - name: Check if SA already exists
       block:
         - name: Look up existing SA key
@@ -67,27 +61,32 @@
       retries: 30
       delay: 10
 
-    - name: Start port-forward to Omni local resource service
-      ansible.builtin.command:
-        cmd: >
-          kubectl port-forward
-          pod/{{ omni_pods.resources[0].metadata.name }}
-          18081:8081
-          -n omni
-          --kubeconfig /tmp/mgmt-kubeconfig
-      async: 300
-      poll: 0
-      register: _port_forward
+    - name: Wait for bootstrap SA key file to appear
+      kubernetes.core.k8s_exec:
+        namespace: omni
+        pod: "{{ omni_pods.resources[0].metadata.name }}"
+        container: toolbox
+        command: test -s /data/initial-sa-key
+        kubeconfig: /tmp/mgmt-kubeconfig
+      register: _key_check
+      until: (_key_check.return_code | default(1)) == 0
+      retries: 12
+      delay: 10
+      failed_when: (_key_check.return_code | default(1)) != 0
 
-    - name: Wait for local resource service to be reachable
-      ansible.builtin.wait_for:
-        host: localhost
-        port: 18081
-        timeout: 30
+    - name: Read bootstrap SA key from toolbox sidecar
+      kubernetes.core.k8s_exec:
+        namespace: omni
+        pod: "{{ omni_pods.resources[0].metadata.name }}"
+        container: toolbox
+        command: cat /data/initial-sa-key
+        kubeconfig: /tmp/mgmt-kubeconfig
+      register: _bootstrap_key
+      no_log: true
 
-    - name: Generate omniconfig for local resource service
+    - name: Generate omniconfig for Omni endpoint
       ansible.builtin.command:
-        cmd: omnictl config new /tmp/omniconfig-bootstrap --url grpc://localhost:18081
+        cmd: omnictl config new /tmp/omniconfig-bootstrap --url https://xxx
       changed_when: true
 
     - name: Create github-actions service account
@@ -98,8 +97,9 @@
           --role Admin
           --ttl 8760h
           --omniconfig /tmp/omniconfig-bootstrap
+      environment:
+        OMNI_SERVICE_ACCOUNT_KEY: "{{ _bootstrap_key.stdout | trim }}"
       register: _new_sa_key
-      no_log: true
       changed_when: true
 
     - name: Store github-actions SA key in 1Password
