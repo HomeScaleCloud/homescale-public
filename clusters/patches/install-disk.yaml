@@ -1,4 +1,4 @@
 machine:
   install:
     diskSelector:
-      match: 'disk.size >= 100u * GB && disk.size <= 600u * GB'
+      size: '>= 100GB <= 600GB'
