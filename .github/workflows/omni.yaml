@@ -168,7 +168,7 @@ jobs:
         run: netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
 
       - name: Wait for NetBird
-        run: sleep 3
+        run: sleep 5
 
       - name: Install omnictl
         if: steps.detect.outputs.clusters != '[]'
