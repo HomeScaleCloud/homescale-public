@@ -10,29 +10,38 @@
           - kubernetes
           - jmespath
         state: present
-    - name: Check if SA already exists
-      block:
-        - name: Look up existing SA key
-          ansible.builtin.set_fact:
-            _existing_sa_key: "{{ lookup('community.general.onepassword', 'omni', field='credential', vault='github-actions') }}"
-          no_log: true
-      rescue:
-        - name: SA key not found — will bootstrap
-          ansible.builtin.set_fact:
-            _existing_sa_key: ""
+
+    - name: Check if Omni SA key already exists in Infisical
+      ansible.builtin.uri:
+        url: "https://app.infisical.com/api/v3/secrets/raw/OMNI_SERVICE_ACCOUNT_KEY\
+              ?workspaceId={{ lookup('env', 'INFISICAL_WORKSPACE_ID') }}\
+              &environment=production\
+              &secretPath=/github-actions"
+        headers:
+          Authorization: "Bearer {{ lookup('env', 'INFISICAL_ACCESS_TOKEN') }}"
+        status_code: [200, 404]
+      register: _existing_sa_check
+      no_log: true
 
     - name: Exit — Omni already bootstrapped
       ansible.builtin.meta: end_play
-      when: _existing_sa_key | length > 0
+      when: _existing_sa_check.status == 200 and (_existing_sa_check.json.secret.secretValue | default('')) | length > 0
 
-    - name: Fetch mgmt kubeconfig from 1Password
-      ansible.builtin.set_fact:
-        _kubeconfig: "{{ lookup('community.general.onepassword', 'mgmt-kubeconfig', field='password', vault='github-actions') }}"
+    - name: Fetch mgmt kubeconfig from Infisical
+      ansible.builtin.uri:
+        url: "https://app.infisical.com/api/v3/secrets/raw/MGMT_KUBECONFIG\
+              ?workspaceId={{ lookup('env', 'INFISICAL_WORKSPACE_ID') }}\
+              &environment=production\
+              &secretPath=/github-actions"
+        headers:
+          Authorization: "Bearer {{ lookup('env', 'INFISICAL_ACCESS_TOKEN') }}"
+        status_code: 200
+      register: _kubeconfig_resp
       no_log: true
 
     - name: Write kubeconfig to temp file
       ansible.builtin.copy:
-        content: "{{ _kubeconfig }}"
+        content: "{{ _kubeconfig_resp.json.secret.secretValue }}"
         dest: /tmp/mgmt-kubeconfig
         mode: "0600"
       no_log: true
@@ -103,19 +112,20 @@
       register: _new_sa_key
       changed_when: true
 
-    - name: Store github-actions SA key in 1Password
-      vars:
-        _sa_item:
-          title: omni
-          category: LOGIN
-          fields:
-            - id: credential
-              label: credential
-              type: STRING
-              value: "{{ _new_sa_key.stdout | trim | regex_search('OMNI_SERVICE_ACCOUNT_KEY=(.+)', '\\1') | first }}"
-      ansible.builtin.shell:
-        cmd: op item create --vault github-actions
-        stdin: "{{ _sa_item | to_json }}"
+    - name: Store github-actions SA key in Infisical
+      ansible.builtin.uri:
+        url: "https://app.infisical.com/api/v3/secrets/raw/OMNI_SERVICE_ACCOUNT_KEY"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ lookup('env', 'INFISICAL_ACCESS_TOKEN') }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          workspaceId: "{{ lookup('env', 'INFISICAL_WORKSPACE_ID') }}"
+          environment: "production"
+          secretPath: "/github-actions"
+          secretValue: "{{ _new_sa_key.stdout | trim | regex_search('OMNI_SERVICE_ACCOUNT_KEY=(.+)', '\\1') | first }}"
+        status_code: 200
       no_log: true
       changed_when: true
 

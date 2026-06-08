@@ -4,8 +4,7 @@ variable "netbird_token" {
   sensitive   = true
 }
 
-variable "op_service_account_token" {
-  description = "1Password Service Account Token"
+variable "infisical_workspace_id" {
+  description = "Infisical project/workspace UUID"
   type        = string
-  sensitive   = true
 }

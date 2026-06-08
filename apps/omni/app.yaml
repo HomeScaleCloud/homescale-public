@@ -11,10 +11,10 @@ values:
     name: "{{ .Values.cluster.name }}"
   omni:
     etcdEncryptionKey:
-      existingSecret: op-omni # pragma: allowlist secret
+      existingSecret: omni # pragma: allowlist secret
 
     additionalConfigSources:
-      - existingSecret: op-omni  # pragma: allowlist secret
+      - existingSecret: omni  # pragma: allowlist secret
         key: config.yaml
 
     config:

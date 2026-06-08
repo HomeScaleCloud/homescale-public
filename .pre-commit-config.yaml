@@ -26,9 +26,9 @@ repos:
           - "--exclude-lines"
           - "secretName:\\s+\\S+"
           - "--exclude-lines"
-          - "values:\\s+\\|"
+          - "secretNamespace:\\s+\\S+"
           - "--exclude-lines"
-          - "onepassword:"
+          - "values:\\s+\\|"
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.99.5
     hooks:

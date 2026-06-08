@@ -1,34 +1,36 @@
-data "onepassword_item" "k8s_deploy_key" {
-  vault = "k8s"
-  title = "homescale-k8s-deploy-key"
+resource "kubernetes_namespace_v1" "argocd" {
+  metadata {
+    name = "argocd"
+  }
 }
 
-data "onepassword_item" "onepassword" {
-  vault = "k8s"
-  title = "onepassword"
+resource "kubernetes_namespace_v1" "infisical" {
+  metadata {
+    name = "infisical"
+  }
 }
 
-resource "kubernetes_secret_v1" "k8s_deploy_key" {
+resource "kubernetes_secret_v1" "argocd_deploy_key" {
   metadata {
     name      = "homescale-k8s-deploy-key"
-    namespace = "argocd"
+    namespace = kubernetes_namespace_v1.argocd.metadata[0].name
     labels = {
       "argocd.argoproj.io/secret-type" = "repository"
     }
   }
   data = {
     url           = "git@github.com:HomeScaleCloud/homescale.git"
-    sshPrivateKey = base64decode(data.onepassword_item.k8s_deploy_key.password)
+    sshPrivateKey = base64decode(var.argocd_deploy_key)
   }
 }
 
-resource "kubernetes_secret_v1" "onepassword" {
+resource "kubernetes_secret_v1" "infisical_operator" {
   metadata {
-    name      = "onepassword"
-    namespace = "onepassword"
+    name      = "infisical-operator-auth"
+    namespace = kubernetes_namespace_v1.infisical.metadata[0].name
   }
   data = {
-    credential = data.onepassword_item.onepassword.credential
-    password   = data.onepassword_item.onepassword.password
+    clientId     = var.infisical_k8s_operator_client_id
+    clientSecret = var.infisical_k8s_operator_client_secret
   }
 }

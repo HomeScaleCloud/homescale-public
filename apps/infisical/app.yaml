@@ -1,0 +1,12 @@
+defaultDeploy: true
+
+path: apps/infisical
+namespace: infisical
+releaseName: infisical
+syncWave: -35
+values:
+  infisical-secrets-operator:
+    controllerManager:
+      manager:
+        image:
+          pullPolicy: IfNotPresent

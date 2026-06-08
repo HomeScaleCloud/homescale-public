@@ -24,5 +24,3 @@ jobs:
   deploy:
     uses: ./.github/workflows/deploy.yaml
     needs: [build, scan]
-    secrets:
-      op_service_account_token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}

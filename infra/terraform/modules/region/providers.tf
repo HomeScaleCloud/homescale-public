@@ -1,16 +1,12 @@
 terraform {
   required_providers {
-    onepassword = {
-      source = "1Password/onepassword"
+    infisical = {
+      source = "infisical/infisical"
     }
     netbird = {
       source = "netbirdio/netbird"
     }
   }
-}
-
-provider "onepassword" {
-  service_account_token = var.op_service_account_token
 }
 
 provider "netbird" {

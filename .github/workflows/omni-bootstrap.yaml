@@ -18,12 +18,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
       - name: Import Secrets
-        uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259  # v4
+        uses: Infisical/secrets-action@v1
         with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.op_service_account_token }}
-          NB_SA_TOKEN: op://github-actions/netbird/credential  # pragma: allowlist secret
+          method: "oidc"
+          machine-identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          env-slug: "production"
+          project-slug: "homescale"
+          secret-path: "/github-actions"
+          export-type: env
       - name: Setup NetBird
         run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
       - name: Generate NetBird Setup Key
@@ -63,10 +65,30 @@ jobs:
         run: pip install --quiet ansible
       - name: Install collections
         run: ansible-galaxy collection install -r collections/requirements.yml
+      - name: Get Infisical write token via OIDC
+        id: infisical_token
+        run: |
+          OIDC_TOKEN=$(curl -fsSL \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https%3A%2F%2Fapp.infisical.com" \
+            | jq -r '.value')
+          INFISICAL_ACCESS_TOKEN=$(curl -fsSL -X POST \
+            "https://app.infisical.com/api/v1/auth/oidc-auth/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"identityId\": \"${{ secrets.INFISICAL_GH_IDENTITY_ID }}\", \"jwt\": \"$OIDC_TOKEN\"}" \
+            | jq -r '.accessToken')
+          echo "::add-mask::$INFISICAL_ACCESS_TOKEN"
+          echo "INFISICAL_ACCESS_TOKEN=$INFISICAL_ACCESS_TOKEN" >> "$GITHUB_ENV"
+          INFISICAL_PROJECT_ID=$(curl -fsSL \
+            -H "Authorization: Bearer $INFISICAL_ACCESS_TOKEN" \
+            "https://app.infisical.com/api/v1/workspaces" \
+            | jq -r '.workspaces[] | select(.slug == "homescale") | .id')
+          echo "project_id=$INFISICAL_PROJECT_ID" >> "$GITHUB_OUTPUT"
       - name: Run playbook
         run: ansible-playbook playbooks/omni-bootstrap.yml
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.op_service_account_token }}
+          INFISICAL_WORKSPACE_ID: ${{ steps.infisical_token.outputs.project_id }}
+          INFISICAL_ACCESS_TOKEN: ${{ env.INFISICAL_ACCESS_TOKEN }}
       - name: Revoke NetBird Setup Key
         if: always()
         run: |

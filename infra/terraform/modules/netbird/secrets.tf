@@ -1,13 +1,7 @@
-data "onepassword_vault" "github_actions" {
-  name = "github-actions"
-}
-
-data "onepassword_vault" "k8s" {
-  name = "k8s"
-}
-
-resource "onepassword_item" "netbird_k8s_operator" {
-  vault    = data.onepassword_vault.k8s.uuid
-  title    = "netbird"
-  password = netbird_token.k8s_operator.token
+resource "infisical_secret" "netbird_k8s_operator" {
+  name         = "NETBIRD_OPERATOR_TOKEN"
+  value        = netbird_token.k8s_operator.token
+  env_slug     = "production"
+  workspace_id = var.infisical_workspace_id
+  folder_path  = "/k8s/netbird"
 }
