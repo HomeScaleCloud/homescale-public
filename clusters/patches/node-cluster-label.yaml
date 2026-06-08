@@ -1,0 +1,3 @@
+machine:
+  nodeLabels:
+    xxx/name: ${CLUSTER_NAME}

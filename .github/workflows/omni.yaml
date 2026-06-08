@@ -189,8 +189,14 @@ jobs:
           failed=false
           for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
             echo "Planning cluster: $cluster"
+            tmpdir=$(mktemp -d)
+            while IFS= read -r -d '' f; do
+              outf="$tmpdir/$f"
+              mkdir -p "$(dirname "$outf")"
+              CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "$f" > "$outf"
+            done < <(find clusters -name "*.yaml" -print0)
             if omnictl cluster template sync \
-                -f "clusters/$cluster/cluster.yaml" \
+                -f "$tmpdir/clusters/$cluster/cluster.yaml" \
                 --dry-run \
                 > "/tmp/omni-$cluster.txt" 2>&1; then
               echo "PLAN_${cluster}=success" >> "$GITHUB_ENV"
@@ -198,6 +204,7 @@ jobs:
               echo "PLAN_${cluster}=failed" >> "$GITHUB_ENV"
               failed=true
             fi
+            rm -rf "$tmpdir"
           done
           [ "$failed" = "false" ]
 
@@ -210,7 +217,14 @@ jobs:
           set -euo pipefail
           for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
             echo "Syncing cluster: $cluster"
-            omnictl cluster template sync -f "clusters/$cluster/cluster.yaml"
+            tmpdir=$(mktemp -d)
+            while IFS= read -r -d '' f; do
+              outf="$tmpdir/$f"
+              mkdir -p "$(dirname "$outf")"
+              CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "$f" > "$outf"
+            done < <(find clusters -name "*.yaml" -print0)
+            omnictl cluster template sync -f "$tmpdir/clusters/$cluster/cluster.yaml"
+            rm -rf "$tmpdir"
           done
 
       - name: Post plan results as PR comments
