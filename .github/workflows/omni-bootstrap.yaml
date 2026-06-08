@@ -21,7 +21,7 @@ jobs:
         uses: Infisical/secrets-action@v1.0.16
         with:
           method: "oidc"
-          machine-identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
           env-slug: "production"
           project-slug: "homescale"
           secret-path: "/github-actions"
