@@ -111,10 +111,7 @@ values:
     replicaCount: 3
     auth:
       rbac:
-        create: false
         allowNoneAuthentication: true
-      token:
-        enabled: false
       client:
         secureTransport: true
         useAutoTLS: false
