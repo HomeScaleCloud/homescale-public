@@ -1,10 +1,10 @@
 clusters:
   mgmt:
     deploy: true
-    values:
-      volsync:
-        restore:
-          enabled: true
+    # values:
+    #   volsync:
+    #     restore:
+    #       enabled: true
 
 path: apps/omni
 namespace: omni
