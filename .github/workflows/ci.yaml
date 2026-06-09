@@ -17,6 +17,8 @@ on:
 jobs:
   scan:
     uses: ./.github/workflows/scan.yaml
+    with:
+      pr_title: ${{ github.event.pull_request.title }}
 
   build:
     uses: ./.github/workflows/build.yaml
