@@ -5,6 +5,9 @@
   "baseBranches": [
     "main"
   ],
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
   "packageRules": [
     {
       "matchUpdateTypes": [
@@ -20,6 +23,18 @@
         "major"
       ],
       "automerge": false
+    },
+    {
+      "matchManagers": ["terraform"],
+      "semanticCommitScope": "infra"
+    },
+    {
+      "matchManagers": ["argocd", "kubernetes", "dockerfile"],
+      "semanticCommitScope": "apps"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "semanticCommitScope": "deps"
     }
   ],
   "argocd": {
