@@ -1,6 +1,10 @@
 clusters:
   mgmt:
     deploy: true
+    # values:
+    #   volsync:
+    #     restore:
+    #       enabled: true
 
 path: apps/omni
 namespace: omni
@@ -92,3 +96,4 @@ values:
     persistence:
       enabled: true
       size: 16Gi
+      existingClaim: omni

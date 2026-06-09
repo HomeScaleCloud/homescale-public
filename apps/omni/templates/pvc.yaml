@@ -1,0 +1,16 @@
+{{- if not ((.Values.volsync).restore).enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: omni
+  namespace: omni
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.omni.persistence.size | default "16Gi" }}
+  {{- if .Values.omni.persistence.storageClassName }}
+  storageClassName: {{ .Values.omni.persistence.storageClassName }}
+  {{- end }}
+{{- end }}
