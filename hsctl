@@ -3,6 +3,8 @@ set -euo pipefail
 
 HSCTL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export HSCTL_ROOT
+HSCTL_REPO_ROOT="${HSCTL_REPO_ROOT:-$HOME/Repos/homescale}"
+export HSCTL_REPO_ROOT
 
 usage() {
     echo "Usage: hsctl <command> [subcommand] [args...]"
