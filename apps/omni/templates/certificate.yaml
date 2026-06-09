@@ -6,7 +6,7 @@ metadata:
 spec:
   secretName: omni-tls
   issuerRef:
-    name: letsencrypt
+    name: {{ .Values.certIssuer | default "letsencrypt" }}
     kind: ClusterIssuer
   dnsNames:
     - xxx
