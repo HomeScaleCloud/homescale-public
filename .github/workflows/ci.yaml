@@ -19,6 +19,8 @@ jobs:
     uses: ./.github/workflows/scan.yaml
     with:
       pr_title: ${{ github.event.pull_request.title }}
+    secrets:
+      INFISICAL_GH_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
 
   build:
     uses: ./.github/workflows/build.yaml
