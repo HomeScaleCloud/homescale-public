@@ -109,6 +109,8 @@ values:
 
   etcd:
     replicaCount: 3
+    preUpgradeJob:
+      enabled: false
     auth:
       rbac:
         allowNoneAuthentication: true
