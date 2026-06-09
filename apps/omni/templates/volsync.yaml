@@ -1,3 +1,4 @@
+{{- if not ((.Values.volsync).restore).enabled }}
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationSource
 metadata:
@@ -15,6 +16,7 @@ spec:
       weekly: 4
       monthly: 3
     pruneIntervalDays: 7
+{{- end }}
 {{- if ((.Values.volsync).restore).enabled }}
 ---
 apiVersion: volsync.backube/v1alpha1
