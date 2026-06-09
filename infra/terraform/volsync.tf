@@ -26,6 +26,28 @@ locals {
   }
 }
 
+# /k8s/volsync/<cluster>
+resource "infisical_secret_folder" "volsync_cluster" {
+  for_each = local.volsync_cluster_names
+
+  name             = each.value
+  environment_slug = "prod"
+  project_id       = module.infisical.project_id
+  folder_path      = "/k8s/volsync"
+}
+
+# /k8s/volsync/<cluster>/<app>
+resource "infisical_secret_folder" "volsync_app" {
+  for_each = local.volsync_deployments
+
+  name             = each.value.app
+  environment_slug = "prod"
+  project_id       = module.infisical.project_id
+  folder_path      = "/k8s/volsync/${each.value.cluster}"
+
+  depends_on = [infisical_secret_folder.volsync_cluster]
+}
+
 resource "infisical_secret" "volsync_repository" {
   for_each = local.volsync_deployments
 
@@ -34,4 +56,6 @@ resource "infisical_secret" "volsync_repository" {
   env_slug     = "prod"
   workspace_id = module.infisical.project_id
   folder_path  = "/k8s/volsync/${each.value.cluster}/${each.value.app}"
+
+  depends_on = [infisical_secret_folder.volsync_app]
 }
