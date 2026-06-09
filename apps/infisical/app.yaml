@@ -7,6 +7,4 @@ syncWave: -35
 values:
   secrets-operator:
     controllerManager:
-      manager:
-        image:
-          pullPolicy: IfNotPresent
+      replicas: 2
