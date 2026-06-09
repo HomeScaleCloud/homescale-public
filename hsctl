@@ -16,23 +16,21 @@ usage() {
 
 hsctl_update() {
     local repo="HomeScaleCloud/homescale"
-    local branch="main"
-    local raw="https://raw.githubusercontent.com/$repo/$branch"
-    local api="https://api.github.com/repos/$repo/contents/hsctl.d"
+    local raw_header="Accept: application/vnd.github.raw+json"
     local install_dir="$HOME/.local/bin"
     local modules_dir="$install_dir/hsctl.d"
 
     mkdir -p "$modules_dir"
 
     echo "Fetching hsctl..."
-    curl -fsSL "$raw/hsctl" -o "$install_dir/hsctl"
+    gh api "repos/$repo/contents/hsctl" --header "$raw_header" > "$install_dir/hsctl"
     chmod +x "$install_dir/hsctl"
 
     echo "Fetching modules..."
     local modules
-    modules=$(curl -fsSL "$api" | grep -o '"name":"[^"]*\.sh"' | cut -d'"' -f4)
+    modules=$(gh api "repos/$repo/contents/hsctl.d" | grep -o '"name":"[^"]*\.sh"' | cut -d'"' -f4)
     for module in $modules; do
-        curl -fsSL "$raw/hsctl.d/$module" -o "$modules_dir/$module"
+        gh api "repos/$repo/contents/hsctl.d/$module" --header "$raw_header" > "$modules_dir/$module"
         echo "  $module"
     done
 
