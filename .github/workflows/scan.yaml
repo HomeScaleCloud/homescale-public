@@ -14,6 +14,9 @@ on:
       pr_title:
         type: string
         default: ''
+    secrets:
+      INFISICAL_GH_IDENTITY_ID:
+        required: false
   workflow_dispatch:
 
 jobs:
@@ -90,3 +93,30 @@ jobs:
         uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
         with:
           sarif_file: 'trivy-results.sarif'
+
+  claude-review:
+    name: "Claude PR Review"
+    if: inputs.pr_title != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 1
+      - name: Import Secrets
+        uses: Infisical/secrets-action@v1.0.16
+        with:
+          method: "oidc"
+          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          env-slug: "prod"
+          project-slug: "homescale"
+          secret-path: "/github-actions"
+          export-type: env
+      - name: Claude PR Review
+        uses: anthropics/claude-code-action@593d7a5c4e0073569f74772c2b7b64c30ec14707 # v1.0.141
+        with:
+          anthropic_api_key: ${{ env.ANTHROPIC_API_KEY }}
+          prompt: |
+            Review this pull request. Use CLAUDE.md for repo context and conventions.
+            Focus on correctness, security, and adherence to the patterns described there.
+            Post concise, actionable feedback as a PR comment.
