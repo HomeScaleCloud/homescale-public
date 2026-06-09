@@ -11,6 +11,7 @@ metadata:
 spec:
   serviceName: etcd-headless
   replicas: 3
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app.kubernetes.io/name: etcd
@@ -61,7 +62,8 @@ spec:
                 - --cacert=/certs/ca.crt
                 - --cert=/certs/tls.crt
                 - --key=/certs/tls.key
-                - endpoint health
+                - endpoint
+                - health
             initialDelaySeconds: 30
             periodSeconds: 20
             failureThreshold: 3
@@ -73,7 +75,8 @@ spec:
                 - --cacert=/certs/ca.crt
                 - --cert=/certs/tls.crt
                 - --key=/certs/tls.key
-                - endpoint health
+                - endpoint
+                - health
             initialDelaySeconds: 15
             periodSeconds: 10
             failureThreshold: 3
