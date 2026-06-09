@@ -13,9 +13,9 @@ volsync_snapshot_list() {
     local app="${1:-}"
     [[ -z "$app" ]] && { echo "Usage: hsctl volsync snapshot list <app>"; exit 1; }
 
-    local app_yaml="$HSCTL_ROOT/apps/$app/app.yaml"
+    local app_yaml="$HSCTL_REPO_ROOT/apps/$app/app.yaml"
     if [[ ! -f "$app_yaml" ]]; then
-        echo "hsctl: app '$app' not found (expected $app_yaml)" >&2
+        echo "hsctl: app '$app' not found (expected $app_yaml; override with HSCTL_REPO_ROOT)" >&2
         exit 1
     fi
 
