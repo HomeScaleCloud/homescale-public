@@ -1,0 +1,9 @@
+apiVersion: v2
+name: volsync
+description: Helm chart for VolSync PVC backup operator
+type: application
+version: 0.1.0
+dependencies:
+  - name: volsync
+    version: 0.15.0
+    repository: https://backube.github.io/helm-charts/

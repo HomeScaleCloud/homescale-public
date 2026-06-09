@@ -1,0 +1,6 @@
+defaultDeploy: true
+
+path: apps/volsync
+namespace: volsync-system
+releaseName: volsync
+syncWave: -5
