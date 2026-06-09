@@ -6,7 +6,7 @@ metadata:
 spec:
   sourcePVC: omni
   trigger:
-    schedule: "0 2 * * *"
+    schedule: "0 */2 * * *"
   restic:
     repository: omni-volsync-repo # pragma: allowlist secret
     copyMethod: Snapshot
@@ -20,7 +20,7 @@ spec:
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationDestination
 metadata:
-  name: omni-restore
+  name: omni
   namespace: omni
 spec:
   trigger:
