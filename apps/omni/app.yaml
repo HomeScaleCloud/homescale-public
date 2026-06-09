@@ -106,30 +106,3 @@ values:
     persistence:
       enabled: true
       size: 16Gi
-
-  etcd:
-    replicaCount: 3
-    preUpgradeJob:
-      enabled: false
-    auth:
-      rbac:
-        allowNoneAuthentication: true
-      client:
-        secureTransport: true
-        useAutoTLS: false
-        enableAuthentication: true
-        existingSecret: etcd-tls # pragma: allowlist secret
-        certFilename: tls.crt
-        certKeyFilename: tls.key
-        caFilename: ca.crt
-      peer:
-        secureTransport: true
-        useAutoTLS: false
-        enableAuthentication: true
-        existingSecret: etcd-tls # pragma: allowlist secret
-        certFilename: tls.crt
-        certKeyFilename: tls.key
-        caFilename: ca.crt
-    persistence:
-      enabled: true
-      size: 8Gi
