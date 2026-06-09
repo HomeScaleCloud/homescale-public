@@ -15,7 +15,5 @@ patches:
         install:
           diskSelector:
             model: 'INTEL SSDPEKNW512G8H'
-  - name: allow-scheduling-on-control-plane
-    file: patches/allow-scheduling-on-control-plane.yaml
-  - name: node-cluster-label
-    file: patches/node-cluster-label.yaml
+  - file: patches/allow-scheduling-on-control-plane.yaml
+  - file: patches/node-cluster-label.yaml
