@@ -10,6 +10,8 @@ values:
   cluster:
     name: "{{ .Values.cluster.name }}"
   omni:
+    replicaCount: 3
+
     etcdEncryptionKey:
       existingSecret: omni # pragma: allowlist secret
 
@@ -106,5 +108,4 @@ values:
       timeoutSeconds: 3
 
     persistence:
-      enabled: true
-      size: 16Gi
+      enabled: false
