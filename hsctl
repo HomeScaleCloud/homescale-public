@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HSCTL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export HSCTL_ROOT
+
+usage() {
+    echo "Usage: hsctl <command> [subcommand] [args...]"
+    echo ""
+    echo "Commands:"
+    for f in "$HSCTL_ROOT/hsctl.d/"*.sh; do
+        echo "  $(basename "$f" .sh)"
+    done
+    exit 1
+}
+
+hsctl_update() {
+    local repo="HomeScaleCloud/homescale"
+    local branch="main"
+    local raw="https://raw.githubusercontent.com/$repo/$branch"
+    local api="https://api.github.com/repos/$repo/contents/hsctl.d"
+    local install_dir="$HOME/.local/bin"
+    local modules_dir="$install_dir/hsctl.d"
+
+    mkdir -p "$modules_dir"
+
+    echo "Fetching hsctl..."
+    curl -fsSL "$raw/hsctl" -o "$install_dir/hsctl"
+    chmod +x "$install_dir/hsctl"
+
+    echo "Fetching modules..."
+    local modules
+    modules=$(curl -fsSL "$api" | grep -o '"name":"[^"]*\.sh"' | cut -d'"' -f4)
+    for module in $modules; do
+        curl -fsSL "$raw/hsctl.d/$module" -o "$modules_dir/$module"
+        echo "  $module"
+    done
+
+    echo "Installed to $install_dir"
+}
+
+[[ $# -eq 0 ]] && usage
+
+cmd="$1"; shift
+
+[[ "$cmd" == "--update" ]] && { hsctl_update; exit 0; }
+
+module="$HSCTL_ROOT/hsctl.d/${cmd}.sh"
+
+if [[ ! -f "$module" ]]; then
+    echo "hsctl: unknown command '$cmd'" >&2
+    usage
+fi
+
+# shellcheck source=/dev/null
+source "$module"
+"${cmd}_main" "$@"
