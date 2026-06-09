@@ -31,4 +31,10 @@ spec:
     repository: omni-volsync-repo # pragma: allowlist secret
     copyMethod: Direct
     destinationPVC: omni
+    {{- if ((.Values.volsync).restore).restoreAsOf }}
+    restoreAsOf: {{ .Values.volsync.restore.restoreAsOf | quote }}
+    {{- end }}
+    {{- if ((.Values.volsync).restore).previous }}
+    previous: {{ .Values.volsync.restore.previous }}
+    {{- end }}
 {{- end }}
