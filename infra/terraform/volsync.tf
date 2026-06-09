@@ -48,11 +48,40 @@ resource "infisical_secret_folder" "volsync_app" {
   depends_on = [infisical_secret_folder.volsync_cluster]
 }
 
+locals {
+  volsync_shared_keys = toset(["RESTIC_PASSWORD", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"])
+
+  volsync_shared_secrets = {
+    for pair in flatten([
+      for key in local.volsync_shared_keys : [
+        for dep_key, dep in local.volsync_deployments : {
+          key        = "${dep_key}/${key}"
+          secret_key = key
+          cluster    = dep.cluster
+          app        = dep.app
+        }
+      ]
+    ]) : pair.key => pair
+  }
+}
+
 resource "infisical_secret" "volsync_repository" {
   for_each = local.volsync_deployments
 
   name         = "RESTIC_REPOSITORY"
   value        = "$${prod.k8s.volsync.RESTIC_REPOSITORY}/${each.value.cluster}/${each.value.app}"
+  env_slug     = "prod"
+  workspace_id = module.infisical.project_id
+  folder_path  = "/k8s/volsync/${each.value.cluster}/${each.value.app}"
+
+  depends_on = [infisical_secret_folder.volsync_app]
+}
+
+resource "infisical_secret" "volsync_shared" {
+  for_each = local.volsync_shared_secrets
+
+  name         = each.value.secret_key
+  value        = "$${prod.k8s.volsync.${each.value.secret_key}}"
   env_slug     = "prod"
   workspace_id = module.infisical.project_id
   folder_path  = "/k8s/volsync/${each.value.cluster}/${each.value.app}"
