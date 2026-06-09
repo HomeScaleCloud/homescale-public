@@ -85,6 +85,7 @@ jobs:
   docker:
     name: "Docker - ${{ matrix.name }}"
     needs: [discover]
+    if: needs.discover.outputs.docker != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
