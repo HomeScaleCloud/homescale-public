@@ -5,6 +5,8 @@ clusters:
       volsync:
         restore:
           enabled: true
+      omni:
+        replicaCount: 0
 
 path: apps/omni
 namespace: omni
