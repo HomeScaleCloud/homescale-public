@@ -6,7 +6,7 @@ metadata:
 spec:
   secretName: argocd-server-tls
   issuerRef:
-    name: letsencrypt
+    name: {{ .Values.certIssuer | default "letsencrypt" }}
     kind: ClusterIssuer
   dnsNames:
     - argocd-server.argocd.{{ required "cluster.name is required" .Values.cluster.name }}REDACTED
