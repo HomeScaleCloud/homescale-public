@@ -94,3 +94,43 @@ CI jobs connect to internal infrastructure (Omni, Terraform providers) by joinin
 **External service exposure** — a two-step pattern managed entirely in Terraform:
 1. A NetBird reverse proxy resource is created pointing at the internal `REDACTED` FQDN. This gives the service an address under `REDACTED` (the reverse proxy domain registered in `netbird.tf`).
 2. A Cloudflare `REDACTED` wildcard CNAME (in `dns.tf`) resolves to the NetBird reverse proxy cluster. Optionally a second Cloudflare CNAME is added for a friendlier public URL.
+
+## VolSync Backups
+
+VolSync (`apps/volsync/`, syncWave -5) provides PVC-level backup and restore via restic repositories.
+
+### How backups work
+
+Each app that needs backups has a `volsync.yaml` template with two halves gated by a Helm value. Under normal operation the `ReplicationSource` is active and runs on a schedule (omni runs every 2 hours). When restore mode is enabled the `ReplicationSource` is suppressed and replaced by a one-shot `ReplicationDestination`.
+
+The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a secret named `<app>-volsync-repo` in the app's namespace, synced from Infisical at `/k8s/volsync/<cluster-name>/<app>` via an `InfisicalSecret` CR in the app's `templates/secret.yaml`.
+
+### Restore procedure
+
+1. **Find the snapshot you want** (optional):
+   ```bash
+   hsctl volsync snapshot list <app>
+   ```
+
+2. **Scale down and enable restore** in `apps/<app>/app.yaml` For example, for omni:
+   ```yaml
+   clusters:
+     mgmt:
+       values:
+         omni:
+           replicaCount: 0
+         volsync:
+           restore:
+             enabled: true
+             # optional — omit to restore the latest snapshot
+             restoreAsOf: "2024-01-15T00:00:00Z"  # latest snapshot at or before this RFC3339 time
+             previous: 3                            # or: Nth-most-recent (1=latest, 2=second-latest, …)
+   ```
+
+4. **Wait for the restore to complete**:
+   ```bash
+   kubectl -n <namespace> get replicationdestination <app>-restore -w
+   ```
+   Done when `.status.lastSyncTime` is set and conditions show `Reconciled=True`.
+
+5. **Scale back up and disable restore** — remove both the scale down and `volsync.restore` override from `app.yaml` in one commit, push. ArgoCD syncs, deletes the `ReplicationDestination`, creates/recreates the `ReplicationSource`, and scales the deployment back up.
