@@ -15,14 +15,6 @@ spec:
       weekly: 4
       monthly: 3
     pruneIntervalDays: 7
-    moverEnv:
-      - name: RESTIC_REPO_BASE
-        valueFrom:
-          secretKeyRef:
-            name: omni-volsync-repo # pragma: allowlist secret
-            key: RESTIC_REPOSITORY
-      - name: RESTIC_REPOSITORY
-        value: "$(RESTIC_REPO_BASE)/{{ .Values.cluster.name }}/omni"
 {{- if ((.Values.volsync).restore).enabled }}
 ---
 apiVersion: volsync.backube/v1alpha1
@@ -42,12 +34,4 @@ spec:
     {{- if .Values.volsync.restore.storageClassName }}
     storageClassName: {{ .Values.volsync.restore.storageClassName }}
     {{- end }}
-    moverEnv:
-      - name: RESTIC_REPO_BASE
-        valueFrom:
-          secretKeyRef:
-            name: omni-volsync-repo # pragma: allowlist secret
-            key: RESTIC_REPOSITORY
-      - name: RESTIC_REPOSITORY
-        value: "$(RESTIC_REPO_BASE)/{{ .Values.cluster.name }}/omni"
 {{- end }}
