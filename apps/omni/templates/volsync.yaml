@@ -20,7 +20,7 @@ spec:
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationDestination
 metadata:
-  name: omni
+  name: omni-restore
   namespace: omni
 spec:
   trigger:
@@ -28,10 +28,5 @@ spec:
   restic:
     repository: omni-volsync-repo # pragma: allowlist secret
     copyMethod: Direct
-    capacity: {{ .Values.volsync.restore.capacity | default "16Gi" }}
-    accessModes:
-      - ReadWriteOnce
-    {{- if .Values.volsync.restore.storageClassName }}
-    storageClassName: {{ .Values.volsync.restore.storageClassName }}
-    {{- end }}
+    destinationPVC: omni
 {{- end }}
