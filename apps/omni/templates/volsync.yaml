@@ -1,0 +1,53 @@
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: omni
+  namespace: omni
+spec:
+  sourcePVC: omni
+  trigger:
+    schedule: "0 2 * * *"
+  restic:
+    repository: omni-volsync-repo # pragma: allowlist secret
+    copyMethod: Snapshot
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 3
+    pruneIntervalDays: 7
+    moverEnv:
+      - name: RESTIC_BUCKET
+        valueFrom:
+          secretKeyRef:
+            name: omni-volsync-repo # pragma: allowlist secret
+            key: RESTIC_BUCKET
+      - name: RESTIC_REPOSITORY
+        value: "$(RESTIC_BUCKET)/{{ .Values.cluster.name }}/omni"
+{{- if .Values.volsync.restore.enabled }}
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: omni-restore
+  namespace: omni
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: omni-volsync-repo # pragma: allowlist secret
+    copyMethod: Direct
+    capacity: {{ .Values.volsync.restore.capacity | default "16Gi" }}
+    accessModes:
+      - ReadWriteOnce
+    {{- if .Values.volsync.restore.storageClassName }}
+    storageClassName: {{ .Values.volsync.restore.storageClassName }}
+    {{- end }}
+    moverEnv:
+      - name: RESTIC_BUCKET
+        valueFrom:
+          secretKeyRef:
+            name: omni-volsync-repo # pragma: allowlist secret
+            key: RESTIC_BUCKET
+      - name: RESTIC_REPOSITORY
+        value: "$(RESTIC_BUCKET)/{{ .Values.cluster.name }}/omni"
+{{- end }}
