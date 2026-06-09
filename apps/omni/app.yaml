@@ -10,8 +10,6 @@ values:
   cluster:
     name: "{{ .Values.cluster.name }}"
   omni:
-    replicaCount: 3
-
     etcdEncryptionKey:
       existingSecret: omni # pragma: allowlist secret
 
@@ -34,16 +32,6 @@ values:
           keyPath: /data/initial-sa-key
           role: Admin
           lifetime: 24h0m0s
-      storage:
-        default:
-          kind: etcd
-          etcd:
-            embedded: false
-            endpoints:
-              - https://etcd.omni.svc.cluster.local:2379
-            caFile: /etcd-tls/ca.crt
-            certFile: /etcd-tls/tls.crt
-            keyFile: /etcd-tls/tls.key
       services:
         api:
           advertisedURL: "https://xxx"
@@ -77,16 +65,10 @@ values:
       - name: omni-tls
         secret:
           secretName: omni-tls
-      - name: omni-etcd-client
-        secret:
-          secretName: omni-etcd-client # pragma: allowlist secret
 
     extraVolumeMounts:
       - name: omni-tls
         mountPath: /tls
-        readOnly: true
-      - name: omni-etcd-client
-        mountPath: /etcd-tls
         readOnly: true
 
     extraContainers:
@@ -108,4 +90,5 @@ values:
       timeoutSeconds: 3
 
     persistence:
-      enabled: false
+      enabled: true
+      size: 16Gi
