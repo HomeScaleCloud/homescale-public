@@ -23,7 +23,7 @@ spec:
             key: RESTIC_BUCKET
       - name: RESTIC_REPOSITORY
         value: "$(RESTIC_BUCKET)/{{ .Values.cluster.name }}/omni"
-{{- if .Values.volsync.restore.enabled }}
+{{- if ((.Values.volsync).restore).enabled }}
 ---
 apiVersion: volsync.backube/v1alpha1
 kind: ReplicationDestination
