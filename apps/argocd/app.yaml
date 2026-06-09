@@ -49,6 +49,7 @@ values:
       enabled: true
       secret:
         create: false
+      argocdUrl: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED"
       notifiers:
         service.slack: |
           token: $slack-token
@@ -68,7 +69,7 @@ values:
       templates:
         template.app-sync-failed: |
           message: |
-            App {{ "{{" }}.app.metadata.name{{ "}}" }} sync {{ "{{" }}.app.status.operationState.phase{{ "}}" }} on {{ "{{" }}.app.spec.destination.name{{ "}}" }}
+            App {{ "{{" }}.app.metadata.name{{ "}}" }} sync {{ "{{" }}.app.status.operationState.phase{{ "}}" }} on {{ "{{" }} index .app.metadata.labels "REDACTED/name" {{ "}}" }}
           slack:
             attachments: |
               [{
@@ -77,13 +78,13 @@ values:
                 "color": "#E96D76",
                 "fields": [
                   {"title": "Phase", "value": "{{ "{{" }}.app.status.operationState.phase{{ "}}" }}", "short": true},
-                  {"title": "Cluster", "value": "{{ "{{" }}.app.spec.destination.name{{ "}}" }}", "short": true},
+                  {"title": "Cluster", "value": "{{ "{{" }} index .app.metadata.labels "REDACTED/name" {{ "}}" }}", "short": true},
                   {"title": "Message", "value": "{{ "{{" }}.app.status.operationState.message{{ "}}" }}", "short": false}
                 ]
               }]
         template.app-health-degraded: |
           message: |
-            App {{ "{{" }}.app.metadata.name{{ "}}" }} is Degraded on {{ "{{" }}.app.spec.destination.name{{ "}}" }}
+            App {{ "{{" }}.app.metadata.name{{ "}}" }} is Degraded on {{ "{{" }} index .app.metadata.labels "REDACTED/name" {{ "}}" }}
           slack:
             attachments: |
               [{
@@ -92,6 +93,6 @@ values:
                 "color": "#E96D76",
                 "fields": [
                   {"title": "Health", "value": "{{ "{{" }}.app.status.health.status{{ "}}" }}", "short": true},
-                  {"title": "Cluster", "value": "{{ "{{" }}.app.spec.destination.name{{ "}}" }}", "short": true}
+                  {"title": "Cluster", "value": "{{ "{{" }} index .app.metadata.labels "REDACTED/name" {{ "}}" }}", "short": true}
                 ]
               }]
