@@ -53,12 +53,21 @@ values:
       notifiers:
         service.slack: |
           token: $slack-token
+        service.github: |
+          appID: $github-status-app-id
+          installationID: $github-status-app-installation-id
+          privateKey: $github-status-app-private-key
       subscriptions:
         - recipients:
             - slack:alerts-infra-plat
           triggers:
             - on-sync-failed
             - on-health-degraded
+        - recipients:
+            - github
+          triggers:
+            - on-sync-succeeded
+            - on-sync-errored
       triggers:
         trigger.on-sync-failed: |
           - when: app.status.operationState.phase in ['Error', 'Failed']
@@ -66,6 +75,14 @@ values:
         trigger.on-health-degraded: |
           - when: app.status.health.status == 'Degraded'
             send: [app-health-degraded]
+        trigger.on-sync-succeeded: |
+          - when: app.status.operationState.phase == 'Succeeded'
+            send: [app-github-status-success]
+            oncePer: app.status.operationState.startedAt
+        trigger.on-sync-errored: |
+          - when: app.status.operationState.phase in ['Error', 'Failed']
+            send: [app-github-status-failure]
+            oncePer: app.status.operationState.startedAt
       templates:
         template.app-sync-failed: |
           message: |
@@ -96,3 +113,19 @@ values:
                   {"title": "Cluster", "value": "{{ "{{" }} index .app.metadata.labels "REDACTED/name" {{ "}}" }}", "short": true}
                 ]
               }]
+        template.app-github-status-success: |
+          github:
+            repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
+            revisionPath: "{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}"
+            status:
+              state: success
+              label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+        template.app-github-status-failure: |
+          github:
+            repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
+            revisionPath: "{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}"
+            status:
+              state: failure
+              label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
