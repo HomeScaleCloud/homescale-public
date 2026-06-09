@@ -1,0 +1,17 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: omni-etcd-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: omni-etcd-ca
+  secretName: omni-etcd-ca # pragma: allowlist secret
+  duration: 87600h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: omni-etcd-selfsigned
+    kind: Issuer
+    group: cert-manager.io

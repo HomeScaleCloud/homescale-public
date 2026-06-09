@@ -32,6 +32,14 @@ values:
           keyPath: /data/initial-sa-key
           role: Admin
           lifetime: 24h0m0s
+      storage:
+        etcd:
+          embedded: false
+          endpoints:
+            - https://etcd.omni.svc.cluster.local:2379
+          caFile: /etcd-tls/ca.crt
+          certFile: /etcd-tls/tls.crt
+          keyFile: /etcd-tls/tls.key
       services:
         api:
           advertisedURL: "https://xxx"
@@ -65,10 +73,16 @@ values:
       - name: omni-tls
         secret:
           secretName: omni-tls
+      - name: omni-etcd-client
+        secret:
+          secretName: omni-etcd-client # pragma: allowlist secret
 
     extraVolumeMounts:
       - name: omni-tls
         mountPath: /tls
+        readOnly: true
+      - name: omni-etcd-client
+        mountPath: /etcd-tls
         readOnly: true
 
     extraContainers:
@@ -92,3 +106,31 @@ values:
     persistence:
       enabled: true
       size: 16Gi
+
+  etcd:
+    replicaCount: 3
+    auth:
+      rbac:
+        create: false
+        allowNoneAuthentication: true
+      token:
+        enabled: false
+      client:
+        secureTransport: true
+        useAutoTLS: false
+        enableAuthentication: true
+        existingSecret: etcd-tls # pragma: allowlist secret
+        certFilename: tls.crt
+        certKeyFilename: tls.key
+        caFilename: ca.crt
+      peer:
+        secureTransport: true
+        useAutoTLS: false
+        enableAuthentication: true
+        existingSecret: etcd-tls # pragma: allowlist secret
+        certFilename: tls.crt
+        certKeyFilename: tls.key
+        caFilename: ca.crt
+    persistence:
+      enabled: true
+      size: 8Gi
