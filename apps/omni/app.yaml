@@ -33,13 +33,15 @@ values:
           role: Admin
           lifetime: 24h0m0s
       storage:
-        etcd:
-          embedded: false
-          endpoints:
-            - https://etcd.omni.svc.cluster.local:2379
-          caFile: /etcd-tls/ca.crt
-          certFile: /etcd-tls/tls.crt
-          keyFile: /etcd-tls/tls.key
+        default:
+          kind: etcd
+          etcd:
+            embedded: false
+            endpoints:
+              - https://etcd.omni.svc.cluster.local:2379
+            caFile: /etcd-tls/ca.crt
+            certFile: /etcd-tls/tls.crt
+            keyFile: /etcd-tls/tls.key
       services:
         api:
           advertisedURL: "https://xxx"
