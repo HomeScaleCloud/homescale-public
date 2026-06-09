@@ -1,4 +1,3 @@
-{{- if not ((.Values.volsync).restore).enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -13,4 +12,3 @@ spec:
   {{- if .Values.omni.persistence.storageClassName }}
   storageClassName: {{ .Values.omni.persistence.storageClassName }}
   {{- end }}
-{{- end }}
