@@ -6,6 +6,7 @@ talos:
   version: v1.13.4
 ---
 kind: ControlPlane
+region: boa1
 machines:
   - 11a9fe00-3f45-11ed-8000-3cecefaab010
 patches:
