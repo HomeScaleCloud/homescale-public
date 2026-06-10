@@ -10,6 +10,12 @@ jobs:
   bootstrap:
     name: "Bootstrap"
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/homescalecloud/actions-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --cap-add NET_ADMIN --device /dev/net/tun
     defaults:
       run:
         shell: bash
@@ -26,8 +32,6 @@ jobs:
           project-slug: "homescale"
           secret-path: "/github-actions"
           export-type: env
-      - name: Setup NetBird client
-        run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
       - name: Generate NetBird Setup Key
         run: |
           NB_GROUP_ID=$(curl -fsSL \
@@ -56,11 +60,6 @@ jobs:
           echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
       - name: Connect to NetBird
         run: netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
-      - name: Install omnictl
-        run: |
-          curl -fsSL -o /usr/local/bin/omnictl \
-            https://github.com/siderolabs/omni/releases/download/v1.8.2/omnictl-linux-amd64
-          chmod +x /usr/local/bin/omnictl
       - name: Install Ansible
         run: pip install --quiet ansible
       - name: Install collections
