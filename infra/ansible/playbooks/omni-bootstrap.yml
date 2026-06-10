@@ -106,6 +106,7 @@
           --use-user-role=false
           --role Admin
           --ttl 8760h
+          --insecure-skip-tls-verify
       environment:
         OMNI_SERVICE_ACCOUNT_KEY: "{{ _bootstrap_key.stdout | trim }}"
         OMNI_ENDPOINT: https://xxx
