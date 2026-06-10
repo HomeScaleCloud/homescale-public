@@ -7,9 +7,6 @@ permissions:
 
 on:
   workflow_call:
-    secrets:
-      INFISICAL_GH_IDENTITY_ID:
-        required: false
   workflow_dispatch:
 
 jobs:
@@ -98,49 +95,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 
-      - name: Import Secrets
-        uses: Infisical/secrets-action@v1.0.16
-        with:
-          method: "oidc"
-          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          env-slug: "prod"
-          project-slug: "homescale"
-          secret-path: "/github-actions"
-          export-type: env
-
-      - name: Setup NetBird client
-        run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
-
-      - name: Generate NetBird Setup Key
-        run: |
-          NB_GROUP_ID=$(curl -fsSL \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            https://api.netbird.io/api/groups \
-            | jq -r '.[] | select(.name == "GitHub Actions") | .id')
-
-          if [ -z "$NB_GROUP_ID" ] || [ "$NB_GROUP_ID" = "null" ]; then
-            echo "Failed to find GitHub Actions group" && exit 1
-          fi
-
-          NB_KEY_RESPONSE=$(curl -fsSL -X POST \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            -H "Content-Type: application/json" \
-            https://api.netbird.io/api/setup-keys \
-            -d "{\"name\":\"github-actions-${GITHUB_RUN_ID}\",\"type\":\"one-off\",\"expires_in\":900,\"revokable\":true,\"ephemeral\":true,\"auto_groups\":[\"$NB_GROUP_ID\"]}")
-
-          NB_SETUP_KEY=$(echo "$NB_KEY_RESPONSE" | jq -r '.key')
-          NB_SETUP_KEY_ID=$(echo "$NB_KEY_RESPONSE" | jq -r '.id')
-
-          if [ -z "$NB_SETUP_KEY" ] || [ "$NB_SETUP_KEY" = "null" ]; then
-            echo "Failed to generate NetBird setup key" && exit 1
-          fi
-          echo "::add-mask::$NB_SETUP_KEY"
-          echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
-          echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
-
-      - name: Connect to NetBird
-        run: netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
-
       - name: Login to ghcr (Docker)
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
         with:
@@ -165,7 +119,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
-          network: host
 
       - name: Run Trivy scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
@@ -176,16 +129,3 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
-          trivyignores: .trivyignore
-
-      - name: Revoke NetBird Setup Key
-        if: always()
-        run: |
-          if [ -z "${NB_SETUP_KEY_ID:-}" ] || [ "${NB_SETUP_KEY_ID}" = "null" ]; then
-            echo "No setup key to revoke"
-            exit 0
-          fi
-          curl -fsSL -X DELETE \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
-          echo "Setup key revoked"
