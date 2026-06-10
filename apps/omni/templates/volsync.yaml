@@ -7,7 +7,7 @@ metadata:
 spec:
   sourcePVC: omni
   trigger:
-    schedule: "0 */2 * * *"
+    schedule: {{ (.Values.volsync).backupSchedule | default "0 */2 * * *" | quote }}
   restic:
     repository: omni-volsync-repo # pragma: allowlist secret
     copyMethod: Snapshot

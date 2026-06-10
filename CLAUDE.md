@@ -101,7 +101,14 @@ VolSync (`apps/volsync/`, syncWave -5) provides PVC-level backup and restore via
 
 ### How backups work
 
-Each app that needs backups has a `volsync.yaml` template with two halves gated by a Helm value. Under normal operation the `ReplicationSource` is active and runs on a schedule (omni runs every 2 hours). When restore mode is enabled the `ReplicationSource` is suppressed and replaced by a one-shot `ReplicationDestination`.
+Each app that needs backups has a `volsync.yaml` template with two halves gated by a Helm value. Under normal operation the `ReplicationSource` is active and runs on a schedule. When restore mode is enabled the `ReplicationSource` is suppressed and replaced by a one-shot `ReplicationDestination`.
+
+To override the backup interval for a specific app, set `volsync.backupSchedule` in `app.yaml`:
+```yaml
+values:
+  volsync:
+    backupSchedule: "0 */2 * * *"  # every 2 hours
+```
 
 The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a secret named `<app>-volsync-repo` in the app's namespace, synced from Infisical at `/k8s/volsync/<cluster-name>/<app>` via an `InfisicalSecret` CR in the app's `templates/secret.yaml`.
 
