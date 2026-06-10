@@ -204,7 +204,7 @@ jobs:
       - name: Install omnictl
         if: steps.detect.outputs.clusters != '[]'
         run: |
-          curl -fsSLk -o /usr/local/bin/omnictl \
+          curl -fsSL -o /usr/local/bin/omnictl \
             https://REDACTED/omnictl/omnictl-linux-amd64
           chmod +x /usr/local/bin/omnictl
           sudo apt-get install -y yq
@@ -232,7 +232,6 @@ jobs:
             done
             if omnictl cluster template sync \
                 -f "$tmpdir/cluster.yaml" \
-                --insecure-skip-tls-verify \
                 --dry-run \
                 > "/tmp/omni-$cluster.txt" 2>&1; then
               echo "PLAN_${cluster}=success" >> "$GITHUB_ENV"
@@ -262,7 +261,7 @@ jobs:
             for pf in clusters/patches/*.yaml; do
               CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "$pf" > "$tmpdir/patches/$(basename "$pf")"
             done
-            omnictl cluster template sync -f "$tmpdir/cluster.yaml" --insecure-skip-tls-verify
+            omnictl cluster template sync -f "$tmpdir/cluster.yaml"
             rm -rf "$tmpdir"
           done
 
