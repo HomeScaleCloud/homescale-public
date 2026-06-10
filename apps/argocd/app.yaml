@@ -67,11 +67,21 @@ values:
         - recipients:
             - github
           triggers:
+            - on-sync-running
+            - on-out-of-sync
             - on-sync-succeeded
             - on-sync-errored
             - on-health-degraded
             - on-app-errored
       triggers:
+        trigger.on-sync-running: |
+          - when: app.status.operationState.phase == 'Running'
+            send: [app-github-status-syncing]
+            oncePer: app.status.operationState.startedAt
+        trigger.on-out-of-sync: |
+          - when: app.status.sync.status == 'OutOfSync'
+            send: [app-github-status-pending]
+            oncePer: app.status.sync.revision
         trigger.on-sync-failed: |
           - when: app.status.operationState.phase in ['Error', 'Failed']
             send: [app-sync-failed]
@@ -137,6 +147,24 @@ values:
                   {"title": "Conditions", "value": "{{ "{{" }}range .app.status.conditions{{ "}}" }}{{ "{{" }}.type{{ "}}" }}: {{ "{{" }}.message{{ "}}" }} {{ "{{" }}end{{ "}}" }}", "short": false}
                 ]
               }]
+        template.app-github-status-syncing: |
+          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is syncing on cluster {{ .Values.cluster.name }}"
+          github:
+            repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
+            revisionPath: "{{ "{{" }}.app.status.sync.revision{{ "}}" }}"
+            status:
+              state: pending
+              label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+        template.app-github-status-pending: |
+          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is out of sync on cluster {{ .Values.cluster.name }}"
+          github:
+            repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
+            revisionPath: "{{ "{{" }}.app.status.sync.revision{{ "}}" }}"
+            status:
+              state: pending
+              label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
         template.app-github-status-success: |
           github:
             repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
