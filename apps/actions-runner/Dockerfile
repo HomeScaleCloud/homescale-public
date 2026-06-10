@@ -20,7 +20,9 @@ RUN curl -fsSL https://apt.releases.hashicorp.com/gpg \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://pkgs.netbird.io/install.sh | sh \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /var/lib/netbird/
+
+RUN pip3 install --no-cache-dir ansible
 
 RUN curl -fsSLk -o /usr/local/bin/omnictl \
     https://REDACTED/omnictl/omnictl-linux-amd64 \
