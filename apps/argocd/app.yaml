@@ -68,13 +68,14 @@ values:
           triggers:
             - on-sync-succeeded
             - on-sync-errored
+            - on-health-degraded
       triggers:
         trigger.on-sync-failed: |
           - when: app.status.operationState.phase in ['Error', 'Failed']
             send: [app-sync-failed]
         trigger.on-health-degraded: |
           - when: app.status.health.status == 'Degraded'
-            send: [app-health-degraded]
+            send: [app-health-degraded, app-github-status-degraded]
         trigger.on-sync-succeeded: |
           - when: app.status.operationState.phase == 'Succeeded'
             send: [app-github-status-success]
@@ -125,6 +126,14 @@ values:
           github:
             repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
             revisionPath: "{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}"
+            status:
+              state: failure
+              label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+        template.app-github-status-degraded: |
+          github:
+            repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
+            revisionPath: "{{ "{{" }}.app.status.sync.revision{{ "}}" }}"
             status:
               state: failure
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
