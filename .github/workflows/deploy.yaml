@@ -2,6 +2,7 @@ name: "Deploy"
 permissions:
   contents: read
   id-token: write
+  packages: read
   pull-requests: write
 
 on:
