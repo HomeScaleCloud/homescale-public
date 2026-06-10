@@ -26,6 +26,8 @@ jobs:
           project-slug: "homescale"
           secret-path: "/github-actions"
           export-type: env
+      - name: Setup NetBird client
+        run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
       - name: Generate NetBird Setup Key
         run: |
           NB_GROUP_ID=$(curl -fsSL \
