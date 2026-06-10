@@ -224,7 +224,7 @@ jobs:
             echo "Planning cluster: $cluster"
             tmpdir=$(mktemp -d)
             CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "clusters/$cluster/cluster.yaml" \
-              | yq eval 'if (.kind == "ControlPlane" or .kind == "Workers") and has("region") then .region as $r | del(.region) | .patches += [{"name":"region-label","inline":{"machine":{"nodeLabels":{"topology.kubernetes.io/region":$r,"xxx/region":$r}}}}] else . end' - \
+              | yq -sY '[.[] | if (.kind == "ControlPlane" or .kind == "Workers") and has("region") then .region as $r | del(.region) | .patches += [{"name":"region-label","inline":{"machine":{"nodeLabels":{"topology.kubernetes.io/region":$r,"xxx/region":$r}}}}] else . end] | .[]' \
               > "$tmpdir/cluster.yaml"
             mkdir -p "$tmpdir/patches"
             for pf in clusters/patches/*.yaml; do
@@ -256,7 +256,7 @@ jobs:
             echo "Syncing cluster: $cluster"
             tmpdir=$(mktemp -d)
             CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "clusters/$cluster/cluster.yaml" \
-              | yq eval 'if (.kind == "ControlPlane" or .kind == "Workers") and has("region") then .region as $r | del(.region) | .patches += [{"name":"region-label","inline":{"machine":{"nodeLabels":{"topology.kubernetes.io/region":$r,"xxx/region":$r}}}}] else . end' - \
+              | yq -sY '[.[] | if (.kind == "ControlPlane" or .kind == "Workers") and has("region") then .region as $r | del(.region) | .patches += [{"name":"region-label","inline":{"machine":{"nodeLabels":{"topology.kubernetes.io/region":$r,"xxx/region":$r}}}}] else . end] | .[]' \
               > "$tmpdir/cluster.yaml"
             mkdir -p "$tmpdir/patches"
             for pf in clusters/patches/*.yaml; do
