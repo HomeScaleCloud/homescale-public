@@ -4,6 +4,10 @@ kubernetes:
   version: v1.36.1
 talos:
   version: v1.13.4
+features:
+  useEmbeddedDiscoveryService: true
+  backupConfiguration:
+    interval: 1h
 patches:
   - file: patches/base.yaml
   - file: patches/allow-scheduling-on-control-plane.yaml
