@@ -95,7 +95,7 @@ values:
       templates:
         template.app-sync-failed: |
           message: |
-            App {{ "{{" }}.app.metadata.name{{ "}}" }} sync {{ "{{" }}.app.status.operationState.phase{{ "}}" }} on {{ "{{" }} index .app.metadata.labels "xxx/name" {{ "}}" }}
+            App {{ "{{" }}.app.metadata.name{{ "}}" }} failed to sync on cluster {{ "{{" }} index .app.metadata.labels "xxx/name" {{ "}}" }}
           slack:
             attachments: |
               [{
@@ -110,7 +110,7 @@ values:
               }]
         template.app-health-degraded: |
           message: |
-            App {{ "{{" }}.app.metadata.name{{ "}}" }} is Degraded on {{ "{{" }} index .app.metadata.labels "xxx/name" {{ "}}" }}
+            App {{ "{{" }}.app.metadata.name{{ "}}" }} is in a degraded state on cluster {{ "{{" }} index .app.metadata.labels "xxx/name" {{ "}}" }}
           slack:
             attachments: |
               [{
@@ -124,7 +124,7 @@ values:
               }]
         template.app-errored: |
           message: |
-            App {{ "{{" }}.app.metadata.name{{ "}}" }} has an error condition on {{ "{{" }} index .app.metadata.labels "xxx/name" {{ "}}" }}
+            App {{ "{{" }}.app.metadata.name{{ "}}" }} has an error condition on cluster {{ "{{" }} index .app.metadata.labels "xxx/name" {{ "}}" }}
           slack:
             attachments: |
               [{
@@ -156,7 +156,7 @@ values:
         template.app-github-status-degraded: |
           github:
             repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
-            revisionPath: "{{ "{{" }}.app.status.sync.revision{{ "}}" }}"
+            revisionPath: "{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}"
             status:
               state: failure
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
