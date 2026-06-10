@@ -23,18 +23,20 @@ values:
         admin.enabled: "false"
         timeout.reconciliation: "30s"
         url: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED"
-        oidc.config: |
-          name: Entra ID
-          issuer: $argocd-oidc:issuer
-          clientID: $argocd-oidc:clientID
-          clientSecret: $argocd-oidc:clientSecret
-          requestedScopes:
-            - openid
-            - profile
-            - email
-          requestedIDTokenClaims:
-            groups:
-              essential: true
+        dex.config: |
+          connectors:
+            - type: saml
+              id: saml
+              name: Entra ID
+              config:
+                ssoURL: "https://login.microsoftonline.com/$argocd-saml:entra-tenant-id/saml2"
+                caData: "$argocd-saml:saml-ca"
+                redirectURI: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED/api/dex/callback"
+                entityIssuer: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED/api/dex/callback"
+                usernameAttr: email
+                emailAttr: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+                groupsAttr: "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups"
+                nameIDPolicyFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
       rbac:
         scopes: "[groups]"
         policy.default: '{{ if eq .Values.cluster.name "lab" }}role:admin{{ end }}'
