@@ -92,6 +92,11 @@ jobs:
           echo "Setup key generated"
           echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
           echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
+      - name: Start NetBird
+        run: |
+          netbird service install
+          netbird service start &
+          timeout 15 bash -c 'until [ -S /var/run/netbird.sock ]; do sleep 1; done'
       - name: Connect to NetBird
         run: netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
       - name: Plan
@@ -198,6 +203,12 @@ jobs:
           echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
           echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
 
+      - name: Start NetBird
+        if: steps.detect.outputs.clusters != '[]'
+        run: |
+          netbird service install
+          netbird service start &
+          timeout 15 bash -c 'until [ -S /var/run/netbird.sock ]; do sleep 1; done'
       - name: Connect to NetBird
         if: steps.detect.outputs.clusters != '[]'
         run: netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
