@@ -27,12 +27,6 @@ values:
           enabled: false
         saml:
           enabled: true
-        initialServiceAccount:
-          enabled: true
-          name: bootstrap
-          keyPath: /data/initial-sa-key
-          role: Admin
-          lifetime: 24h0m0s
       services:
         api:
           advertisedURL: "https://xxx"
