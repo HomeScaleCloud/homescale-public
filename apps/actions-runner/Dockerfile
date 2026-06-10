@@ -22,7 +22,7 @@ RUN curl -fsSL https://apt.releases.hashicorp.com/gpg \
 RUN curl -fsSL https://pkgs.netbird.io/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL -o /usr/local/bin/omnictl \
+RUN curl -fsSLk -o /usr/local/bin/omnictl \
     https://REDACTED/omnictl/omnictl-linux-amd64 \
     && chmod +x /usr/local/bin/omnictl
 
