@@ -150,8 +150,8 @@ values:
         template.app-github-status-syncing: |
           message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is syncing on cluster {{ .Values.cluster.name }}"
           github:
-            repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
-            revisionPath: "{{ "{{" }}.app.status.sync.revision{{ "}}" }}"
+            repoURLPath: "{{ "{{" }}if .app.spec.source.repoURL{{ "}}" }}{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}(index .app.spec.sources 0).repoURL{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
+            revisionPath: "{{ "{{" }}if .app.status.sync.revision{{ "}}" }}{{ "{{" }}.app.status.sync.revision{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}index .app.status.sync.revisions 0{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             status:
               state: pending
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
@@ -159,16 +159,16 @@ values:
         template.app-github-status-pending: |
           message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is out of sync on cluster {{ .Values.cluster.name }}"
           github:
-            repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
-            revisionPath: "{{ "{{" }}.app.status.sync.revision{{ "}}" }}"
+            repoURLPath: "{{ "{{" }}if .app.spec.source.repoURL{{ "}}" }}{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}(index .app.spec.sources 0).repoURL{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
+            revisionPath: "{{ "{{" }}if .app.status.sync.revision{{ "}}" }}{{ "{{" }}.app.status.sync.revision{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}index .app.status.sync.revisions 0{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             status:
               state: pending
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
         template.app-github-status-success: |
           github:
-            repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
-            revisionPath: "{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}"
+            repoURLPath: "{{ "{{" }}if .app.spec.source.repoURL{{ "}}" }}{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}(index .app.spec.sources 0).repoURL{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
+            revisionPath: "{{ "{{" }}if .app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}index .app.status.operationState.syncResult.revisions 0{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             status:
               state: success
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
@@ -176,8 +176,8 @@ values:
         template.app-github-status-failure: |
           message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} failed to sync on cluster {{ .Values.cluster.name }}"
           github:
-            repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
-            revisionPath: "{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}"
+            repoURLPath: "{{ "{{" }}if .app.spec.source.repoURL{{ "}}" }}{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}(index .app.spec.sources 0).repoURL{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
+            revisionPath: "{{ "{{" }}if .app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}index .app.status.operationState.syncResult.revisions 0{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             status:
               state: failure
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
@@ -185,8 +185,8 @@ values:
         template.app-github-status-degraded: |
           message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is in a degraded state on cluster {{ .Values.cluster.name }}"
           github:
-            repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
-            revisionPath: "{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}"
+            repoURLPath: "{{ "{{" }}if .app.spec.source.repoURL{{ "}}" }}{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}(index .app.spec.sources 0).repoURL{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
+            revisionPath: "{{ "{{" }}if .app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}index .app.status.operationState.syncResult.revisions 0{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             status:
               state: failure
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
