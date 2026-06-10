@@ -83,7 +83,7 @@ values:
             send: [app-github-status-success]
             oncePer: app.status.operationState.startedAt
           - when: app.status.operationState.phase == 'Succeeded' && app.status.health.status in ['Degraded', 'Missing', 'Unknown']
-            send: [app-github-status-failure]
+            send: [app-github-status-degraded]
             oncePer: app.status.operationState.startedAt
         trigger.on-sync-errored: |
           - when: app.status.operationState.phase in ['Error', 'Failed']
@@ -152,6 +152,7 @@ values:
               state: failure
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              description: "App {{ "{{" }}.app.metadata.name{{ "}}" }} failed to sync on cluster {{ .Values.cluster.name }}"
         template.app-github-status-degraded: |
           github:
             repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
@@ -160,3 +161,4 @@ values:
               state: failure
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              description: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is in a degraded state on cluster {{ .Values.cluster.name }}"
