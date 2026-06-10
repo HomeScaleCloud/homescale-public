@@ -24,8 +24,6 @@ jobs:
 
   build:
     uses: ./.github/workflows/build.yaml
-    secrets:
-      INFISICAL_GH_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
 
   deploy:
     uses: ./.github/workflows/deploy.yaml
