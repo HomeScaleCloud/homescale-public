@@ -120,7 +120,7 @@ values:
                 "fields": [
                   {"title": "Health", "value": "{{ "{{" }}.app.status.health.status{{ "}}" }}", "short": true},
                   {"title": "Cluster", "value": "{{ "{{" }} index .app.metadata.labels "REDACTED/name" {{ "}}" }}", "short": true},
-                  {"title": "Degraded Resources", "value": "{{ "{{" }}range .app.status.resources{{ "}}" }}{{ "{{" }}if and .health (eq .health.status \"Degraded\"){{ "}}" }}{{ "{{" }}.kind{{ "}}" }}/{{ "{{" }}.name{{ "}}" }}: {{ "{{" }}.health.message{{ "}}" }} {{ "{{" }}end{{ "}}" }}{{ "{{" }}end{{ "}}" }}", "short": false}
+                  {"title": "Degraded Resources", "value": "{{ "{{" }}range .app.status.resources{{ "}}" }}{{ "{{" }}if and .health (eq .health.status `Degraded`){{ "}}" }}{{ "{{" }}.kind{{ "}}" }}/{{ "{{" }}.name{{ "}}" }}: {{ "{{" }}.health.message{{ "}}" }} {{ "{{" }}end{{ "}}" }}{{ "{{" }}end{{ "}}" }}", "short": false}
                 ]
               }]
         template.app-errored: |
