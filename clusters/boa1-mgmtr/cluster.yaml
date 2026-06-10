@@ -5,7 +5,6 @@ kubernetes:
 talos:
   version: v1.13.4
 features:
-  useEmbeddedDiscoveryService: true
   backupConfiguration:
     interval: 1h
 patches:
