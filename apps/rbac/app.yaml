@@ -1,7 +1,7 @@
 defaultDeploy: true
 
 path: apps/rbac
-namespace: kube-system
+namespace: rbac
 releaseName: rbac
 syncWave: -30
 values:
