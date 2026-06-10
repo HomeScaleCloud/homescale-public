@@ -60,8 +60,6 @@ jobs:
           echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
       - name: Connect to NetBird
         run: netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
-      - name: Install Ansible
-        run: pip install --quiet ansible
       - name: Install collections
         run: ansible-galaxy collection install -r collections/requirements.yml
       - name: Get Infisical write token via OIDC
