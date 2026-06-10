@@ -1,3 +1,0 @@
-machine:
-  nodeLabels:
-    REDACTED/name: ${CLUSTER_NAME}

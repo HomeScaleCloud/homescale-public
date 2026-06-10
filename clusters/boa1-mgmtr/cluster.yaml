@@ -9,11 +9,11 @@ kind: ControlPlane
 machines:
   - 11a9fe00-3f45-11ed-8000-3cecefaab010
 patches:
+  - file: patches/base.yaml
+  - file: patches/allow-scheduling-on-control-plane.yaml
   - name: install-disk
     inline:
       machine:
         install:
           diskSelector:
             model: 'INTEL SSDPEKNW512G8H'
-  - file: patches/allow-scheduling-on-control-plane.yaml
-  - file: patches/node-cluster-label.yaml
