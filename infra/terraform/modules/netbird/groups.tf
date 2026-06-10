@@ -53,6 +53,7 @@ locals {
 
   cluster_names = sort(distinct([
     for cluster_file in fileset("${path.module}/../../../../clusters", "*/**") : split("/", cluster_file)[0]
+    if split("/", cluster_file)[0] != "patches"
   ]))
 }
 
