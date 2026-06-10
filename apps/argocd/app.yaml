@@ -41,10 +41,10 @@ values:
         scopes: "[groups]"
         policy.default: '{{ if eq .Values.cluster.name "lab" }}role:admin{{ end }}'
         policy.csv: |
-          g, 4d4167e8-204c-4328-b5f4-4dae634d46a8, role:admin
-          g, 3a65b126-4dbe-4013-88dd-08fb8f45f6f7, role:readonly
-          p, 3a65b126-4dbe-4013-88dd-08fb8f45f6f7, applications, delete/*/Pod/*/*, */*, allow
-          p, 3a65b126-4dbe-4013-88dd-08fb8f45f6f7, applications, sync, */*, allow
+          g, sg-k8s-admin, role:admin
+          g, team-infra-plat, role:readonly
+          p, team-infra-plat, applications, delete/*/Pod/*/*, */*, allow
+          p, team-infra-plat, applications, sync, */*, allow
       params:
         application.operations.selfHealTimeout: "5"
     notifications:
