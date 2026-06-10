@@ -1,6 +1,6 @@
 defaultDeploy: true
 
 path: apps/node-feature-discovery
-namespace: kube-system
+namespace: node-feature-discovery
 releaseName: node-feature-discovery
 syncWave: 0
