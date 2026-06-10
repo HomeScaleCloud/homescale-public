@@ -29,8 +29,8 @@ values:
               id: saml
               name: Entra ID
               config:
-                ssoURL: "https://login.microsoftonline.com/$argocd-saml:entra-tenant-id/saml2"
-                caData: "$argocd-saml:saml-ca"
+                ssoURL: "$argocd-saml:entra-saml-sso-url"
+                caData: "$argocd-saml:entra-saml-ca"
                 redirectURI: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED/api/dex/callback"
                 entityIssuer: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED/api/dex/callback"
                 usernameAttr: email
