@@ -1,7 +1,7 @@
 defaultDeploy: true
 
 path: apps/generic-device-plugin-tun
-namespace: kube-system
+namespace: generic-device-plugin
 releaseName: generic-device-plugin-tun
 syncWave: -25
 values:
