@@ -11,6 +11,7 @@ spec:
       path: clusters/mgmt
       directory:
         recurse: true
+        exclude: 'cluster.yaml'
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
       path: apps
