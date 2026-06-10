@@ -26,6 +26,8 @@ values:
           enabled: false
         saml:
           enabled: true
+          labelRules:
+            "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups": "groups"
       services:
         api:
           advertisedURL: "https://REDACTED"
