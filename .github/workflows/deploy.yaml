@@ -207,6 +207,7 @@ jobs:
           curl -fsSLk -o /usr/local/bin/omnictl \
             https://REDACTED/omnictl/omnictl-linux-amd64
           chmod +x /usr/local/bin/omnictl
+          sudo apt-get install -y yq
 
       - name: Plan
         if: steps.detect.outputs.clusters != '[]' && github.event_name == 'pull_request'
