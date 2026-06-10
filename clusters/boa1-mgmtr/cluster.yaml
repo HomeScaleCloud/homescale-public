@@ -3,7 +3,7 @@ name: boa1-mgmtr
 kubernetes:
   version: v1.36.1
 talos:
-  version: v1.13.3
+  version: v1.13.4
 ---
 kind: ControlPlane
 machines:
