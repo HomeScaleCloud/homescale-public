@@ -11,6 +11,7 @@ usage() {
     echo ""
     echo "Commands:"
     for f in "$HSCTL_ROOT/hsctl.d/"*.sh; do
+        [[ "$(basename "$f")" == _* ]] && continue
         echo "  $(basename "$f" .sh)"
     done
     exit 1
@@ -51,6 +52,10 @@ if [[ ! -f "$module" ]]; then
     echo "hsctl: unknown command '$cmd'" >&2
     usage
 fi
+
+# shellcheck source=/dev/null
+lib="$HSCTL_ROOT/hsctl.d/_lib.sh"
+[[ -f "$lib" ]] && source "$lib"
 
 # shellcheck source=/dev/null
 source "$module"
