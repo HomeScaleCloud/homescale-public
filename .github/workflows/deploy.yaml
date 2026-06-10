@@ -230,6 +230,7 @@ jobs:
             if omnictl cluster template sync \
                 -f "$tmpdir/cluster.yaml" \
                 --dry-run \
+                --insecure-skip-tls-verify \
                 > "/tmp/omni-$cluster.txt" 2>&1; then
               echo "PLAN_${cluster}=success" >> "$GITHUB_ENV"
             else
@@ -256,7 +257,7 @@ jobs:
             for pf in clusters/patches/*.yaml; do
               CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "$pf" > "$tmpdir/patches/$(basename "$pf")"
             done
-            omnictl cluster template sync -f "$tmpdir/cluster.yaml"
+            omnictl cluster template sync -f "$tmpdir/cluster.yaml" --insecure-skip-tls-verify
             rm -rf "$tmpdir"
           done
 
