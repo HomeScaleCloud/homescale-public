@@ -10,12 +10,6 @@ jobs:
   bootstrap:
     name: "Bootstrap"
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/homescalecloud/actions-runner:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-      options: --cap-add NET_ADMIN --device /dev/net/tun
     defaults:
       run:
         shell: bash
@@ -59,7 +53,9 @@ jobs:
           echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
           echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
       - name: Connect to NetBird
-        run: netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
+        run: |
+          netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
+          sleep 10
       - name: Install collections
         run: ansible-galaxy collection install -r collections/requirements.yml
       - name: Get Infisical write token via OIDC
