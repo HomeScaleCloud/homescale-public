@@ -7,7 +7,6 @@ namespace: omni
 releaseName: omni
 syncWave: 0
 values:
-  certIssuer: letsencrypt-staging
   cluster:
     name: "{{ .Values.cluster.name }}"
   omni:
