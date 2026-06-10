@@ -119,7 +119,8 @@ values:
                 "color": "#E96D76",
                 "fields": [
                   {"title": "Health", "value": "{{ "{{" }}.app.status.health.status{{ "}}" }}", "short": true},
-                  {"title": "Cluster", "value": "{{ "{{" }} index .app.metadata.labels "REDACTED/name" {{ "}}" }}", "short": true}
+                  {"title": "Cluster", "value": "{{ "{{" }} index .app.metadata.labels "REDACTED/name" {{ "}}" }}", "short": true},
+                  {"title": "Degraded Resources", "value": "{{ "{{" }}range .app.status.resources{{ "}}" }}{{ "{{" }}if and .health (eq .health.status \"Degraded\"){{ "}}" }}{{ "{{" }}.kind{{ "}}" }}/{{ "{{" }}.name{{ "}}" }}: {{ "{{" }}.health.message{{ "}}" }} {{ "{{" }}end{{ "}}" }}{{ "{{" }}end{{ "}}" }}", "short": false}
                 ]
               }]
         template.app-errored: |
@@ -145,6 +146,7 @@ values:
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
         template.app-github-status-failure: |
+          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} failed to sync on cluster {{ .Values.cluster.name }}"
           github:
             repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
             revisionPath: "{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}"
@@ -152,8 +154,8 @@ values:
               state: failure
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
-              description: "App {{ "{{" }}.app.metadata.name{{ "}}" }} failed to sync on cluster {{ .Values.cluster.name }}"
         template.app-github-status-degraded: |
+          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is in a degraded state on cluster {{ .Values.cluster.name }}"
           github:
             repoURLPath: "{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}"
             revisionPath: "{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}"
@@ -161,4 +163,3 @@ values:
               state: failure
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
-              description: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is in a degraded state on cluster {{ .Values.cluster.name }}"
