@@ -73,6 +73,15 @@
         "apps/**/Dockerfile",
         "**/*.compose.yaml"
       ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "apps/**/Dockerfile"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-zA-Z-]+)(?: depName=(?<depName>[^\\s]+))?(?: extractVersion=(?<extractVersion>[^\\s]+))?\\nARG [A-Z_]+=(?<currentValue>[^\\n]+)"
+      ]
     }
   ],
   "platformAutomerge": true
