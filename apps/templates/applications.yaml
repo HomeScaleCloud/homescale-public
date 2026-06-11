@@ -35,6 +35,8 @@ metadata:
     xxx/name: {{ $clusterName | quote }}
 {{- if $app.podSecurity }}
     pod-security.kubernetes.io/enforce: {{ $app.podSecurity | quote }}
+    pod-security.kubernetes.io/warn: {{ $app.podSecurity | quote }}
+    pod-security.kubernetes.io/audit: {{ $app.podSecurity | quote }}
 {{- end }}
   annotations:
     argocd.argoproj.io/sync-wave: "-35"
