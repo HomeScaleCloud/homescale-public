@@ -351,6 +351,16 @@ jobs:
           secret-path: "/github-actions"
           export-type: env
 
+      - name: Import ArgoCD deploy key
+        uses: Infisical/secrets-action@v1.0.16
+        with:
+          method: "oidc"
+          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          env-slug: "prod"
+          project-slug: "homescale"
+          secret-path: "/k8s/argocd/deploy-key"
+          export-type: env
+
       - name: Setup NetBird client
         run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
 
@@ -393,7 +403,9 @@ jobs:
           chmod +x /usr/local/bin/omnictl
 
       - name: Install hsctl
-        run: cp hsctl /usr/local/bin/hsctl
+        run: |
+          chmod +x hsctl
+          echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
 
       - name: Install Helm
         run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
