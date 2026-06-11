@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: multus
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: multus
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: multus
+    spec:
+      hostNetwork: true
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      serviceAccountName: multus
+      priorityClassName: system-node-critical
+      initContainers:
+        - name: install-multus-binary
+          image: {{ .Values.image | default "ghcr.io/k8snetworkplumbingwg/multus-cni:v4.1.4" | quote }}
+          command:
+            - cp
+            - /usr/src/multus-cni/bin/multus
+            - /host/opt/cni/bin/multus
+          volumeMounts:
+            - name: cni-bin
+              mountPath: /host/opt/cni/bin
+          securityContext:
+            privileged: true
+      containers:
+        - name: multus-daemon
+          image: {{ .Values.image | default "ghcr.io/k8snetworkplumbingwg/multus-cni:v4.1.4" | quote }}
+          command:
+            - /usr/src/multus-cni/bin/multus-daemon
+          args:
+            - --cni-conf-dir=/host/etc/cni/net.d
+            - --cni-bin-dir=/host/opt/cni/bin
+            - --multus-autoconf-dir=/host/etc/cni/net.d
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: cni-conf
+              mountPath: /host/etc/cni/net.d
+            - name: cni-bin
+              mountPath: /host/opt/cni/bin
+            - name: host-run
+              mountPath: /host/run
+            - name: multus-state
+              mountPath: /var/lib/cni/multus
+      volumes:
+        - name: cni-conf
+          hostPath:
+            path: /etc/cni/net.d
+        - name: cni-bin
+          hostPath:
+            path: /opt/cni/bin
+        - name: host-run
+          hostPath:
+            path: /run
+        - name: multus-state
+          hostPath:
+            path: /var/lib/cni/multus
+            type: DirectoryOrCreate
