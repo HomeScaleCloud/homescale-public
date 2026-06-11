@@ -20,7 +20,11 @@ resource "kubernetes_secret_v1" "argocd_deploy_key" {
   }
   data = {
     url           = "git@github.com:HomeScaleCloud/homescale.git"
-    sshPrivateKey = base64decode(var.argocd_deploy_key)
+    sshPrivateKey = var.argocd_deploy_key
+  }
+  lifecycle {
+    # Infisical operator owns this secret after bootstrap — prevent Terraform drift fights
+    ignore_changes = [data]
   }
 }
 

@@ -16,7 +16,7 @@ module "mgmt_cluster" {
   infisical_workspace_id               = module.infisical.project_id
   infisical_k8s_operator_client_id     = module.infisical.k8s_operator_client_id
   infisical_k8s_operator_client_secret = module.infisical.k8s_operator_client_secret
-  argocd_deploy_key                    = data.infisical_secrets.github_actions.secrets["ARGOCD_DEPLOY_KEY"].value
+  argocd_deploy_key                    = data.infisical_secrets.k8s_argocd_deploy_key.secrets["sshPrivateKey"].value
 }
 
 # module "region_boa1" {
