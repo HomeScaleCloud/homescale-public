@@ -17,6 +17,8 @@ values:
     k8sServicePort: 7445
     ipam:
       mode: kubernetes
+    socketLB:
+      hostNamespaceOnly: true
     operator:
       replicas: 1
     cgroup:
