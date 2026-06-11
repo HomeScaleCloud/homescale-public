@@ -6,5 +6,8 @@ terraform {
     infisical = {
       source = "infisical/infisical"
     }
+    time = {
+      source = "hashicorp/time"
+    }
   }
 }
