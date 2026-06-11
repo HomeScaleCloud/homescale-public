@@ -3,6 +3,7 @@ defaultDeploy: true
 path: apps/netbird
 namespace: netbird
 releaseName: netbird
+podSecurity: privileged
 syncWave: -20
 syncOptions:
   - ServerSideApply=true
