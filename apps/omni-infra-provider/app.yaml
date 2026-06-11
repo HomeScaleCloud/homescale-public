@@ -1,0 +1,23 @@
+defaultDeploy: false
+
+clusters:
+  boa1-mgmtr:
+    deploy: true
+    values:
+      provider:
+        region: boa1
+        platform: metal
+
+path: apps/omni-infra-provider
+namespace: omni-infra-provider
+releaseName: omni-infra-provider
+syncWave: 0
+values:
+  omni:
+    apiEndpoint: "https://xxx"
+  provider:
+    region: ""
+    platform: ""
+    images:
+      metal: "ghcr.io/siderolabs/omni-infra-provider-bare-metal:v0.10.1"
+      virt: "ghcr.io/siderolabs/omni-infra-provider-kubevirt:v0.1.0"
