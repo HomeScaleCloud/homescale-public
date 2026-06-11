@@ -1,0 +1,14 @@
+apiVersion: netbird.io/v1alpha1
+kind: SetupKey
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  name: {{ .Release.Name }}
+  ephemeral: true
+  duration: 24h
+  {{- with .Values.netbird.autoGroups }}
+  autoGroups:
+    {{- range . }}
+    - name: {{ . }}
+    {{- end }}
+  {{- end }}
