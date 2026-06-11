@@ -1,13 +1,3 @@
-cluster:
-  apiServer:
-    admissionControl:
-      - name: PodSecurity
-        configuration:
-          exemptions:
-            namespaces:
-              - argocd
-              - netbird
-              - rook-ceph
 machine:
   nodeLabels:
     xxx/name: ${CLUSTER_NAME}

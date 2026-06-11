@@ -4,6 +4,7 @@ path: apps/generic-device-plugin-tun
 namespace: generic-device-plugin
 releaseName: generic-device-plugin-tun
 syncWave: -25
+podSecurity: privileged
 values:
   image:
     repository: ghcr.io/squat/generic-device-plugin
