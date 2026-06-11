@@ -69,7 +69,7 @@ values:
 
     extraContainers:
       - name: toolbox
-        image: alpine:latest
+        image: alpine:3.23.3
         command: ["sleep", "infinity"]
         volumeMounts:
           - name: data

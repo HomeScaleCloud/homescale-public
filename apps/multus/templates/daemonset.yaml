@@ -22,7 +22,7 @@ spec:
       priorityClassName: system-node-critical
       initContainers:
         - name: install-multus-binary
-          image: {{ .Values.image | default "ghcr.io/k8snetworkplumbingwg/multus-cni:v4.1.4" | quote }}
+          image: {{ required "image is required" .Values.image | quote }}
           command:
             - cp
             - /usr/src/multus-cni/bin/multus
@@ -34,7 +34,7 @@ spec:
             privileged: true
       containers:
         - name: multus-daemon
-          image: {{ .Values.image | default "ghcr.io/k8snetworkplumbingwg/multus-cni:v4.1.4" | quote }}
+          image: {{ required "image is required" .Values.image | quote }}
           command:
             - /usr/src/multus-cni/bin/multus-daemon
           args:
