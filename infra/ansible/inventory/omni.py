@@ -11,10 +11,19 @@ OMNI_SERVICE_ACCOUNT_KEY (or local omniconfig) in the environment.
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
 OMNI_ENDPOINT = os.environ.get("OMNI_ENDPOINT", "https://xxx")
+
+
+def _resolve(name):
+    """Return the absolute path of a binary, or abort with a clear error."""
+    path = shutil.which(name)
+    if not path:
+        sys.exit(f"error: '{name}' not found in PATH")
+    return path
 
 
 def _run(cmd):
@@ -28,9 +37,8 @@ def _run(cmd):
             env={**os.environ, "OMNI_ENDPOINT": OMNI_ENDPOINT},
         )
         return result.stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
-        msg = exc.stderr if isinstance(exc, subprocess.CalledProcessError) else str(exc)
-        sys.stderr.write(f"warning: {' '.join(cmd)} failed: {msg}\n")
+    except subprocess.CalledProcessError as exc:
+        sys.stderr.write(f"warning: {' '.join(cmd)} failed: {exc.stderr}\n")
         return None
 
 
@@ -67,7 +75,7 @@ def _group_key(cluster_name):
 
 
 def get_clusters():
-    stdout = _run(["omnictl", "get", "clusters", "-o", "json"])
+    stdout = _run([_resolve("omnictl"), "get", "clusters", "-o", "json"])
     names = []
     for res in _parse_resources(stdout):
         meta = res.get("metadata", {})
@@ -78,7 +86,7 @@ def get_clusters():
 
 
 def get_machines():
-    stdout = _run(["hsctl", "get", "machines", "-o", "json"])
+    stdout = _run([_resolve("hsctl"), "get", "machines", "-o", "json"])
     hosts = []
     hostvars = {}
 

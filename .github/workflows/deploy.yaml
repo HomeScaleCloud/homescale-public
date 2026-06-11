@@ -336,12 +336,12 @@ jobs:
     name: "Ansible"
     runs-on: ubuntu-latest
     needs: omni
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
 
       - name: Import Secrets
-        if: github.ref == 'refs/heads/main'
         uses: Infisical/secrets-action@v1.0.16
         with:
           method: "oidc"
@@ -352,11 +352,9 @@ jobs:
           export-type: env
 
       - name: Setup NetBird client
-        if: github.ref == 'refs/heads/main'
         run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
 
       - name: Generate NetBird Setup Key
-        if: github.ref == 'refs/heads/main'
         run: |
           NB_GROUP_ID=$(curl -fsSL \
             -H "Authorization: Token $NETBIRD_SA_TOKEN" \
@@ -384,33 +382,30 @@ jobs:
           echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
 
       - name: Connect to NetBird
-        if: github.ref == 'refs/heads/main'
         run: |
           netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
           sleep 10
 
       - name: Install omnictl
-        if: github.ref == 'refs/heads/main'
         run: |
           curl -fsSL -o /usr/local/bin/omnictl \
             https://xxx/omnictl/omnictl-linux-amd64
           chmod +x /usr/local/bin/omnictl
 
+      - name: Install hsctl
+        run: cp hsctl /usr/local/bin/hsctl
+
       - name: Install Helm
-        if: github.ref == 'refs/heads/main'
         run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Install Ansible
-        if: github.ref == 'refs/heads/main'
         run: pip install ansible kubernetes
 
       - name: Install Ansible collections
-        if: github.ref == 'refs/heads/main'
         working-directory: infra/ansible
         run: ansible-galaxy collection install -r requirements.yml
 
       - name: Run bootstrap playbook
-        if: github.ref == 'refs/heads/main'
         working-directory: infra/ansible
         env:
           OMNI_ENDPOINT: https://xxx
