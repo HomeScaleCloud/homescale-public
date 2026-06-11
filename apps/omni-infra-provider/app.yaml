@@ -7,6 +7,7 @@ clusters:
       provider:
         region: boa1
         platform: metal
+        address: "10.1.245.100/24"
 
 path: apps/omni-infra-provider
 namespace: omni-infra-provider
