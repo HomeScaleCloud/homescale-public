@@ -3,6 +3,8 @@ kind: DaemonSet
 metadata:
   name: multus
   namespace: kube-system
+  labels:
+    app: multus
 spec:
   selector:
     matchLabels:
@@ -15,68 +17,109 @@ spec:
         app: multus
     spec:
       hostNetwork: true
+      hostPID: true
       tolerations:
         - operator: Exists
           effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
       serviceAccountName: multus
       priorityClassName: system-node-critical
+      terminationGracePeriodSeconds: 10
       initContainers:
         - name: install-multus-binary
           image: {{ required "image is required" .Values.image | quote }}
           command:
-            - cp
-            - /usr/src/multus-cni/bin/multus
-            - /host/opt/cni/bin/multus
-          volumeMounts:
-            - name: cni-bin
-              mountPath: /host/opt/cni/bin
+            - /usr/src/multus-cni/bin/install_multus
+            - -d
+            - /host/opt/cni/bin
+            - -t
+            - thick
           securityContext:
             privileged: true
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: cnibin
+              mountPath: /host/opt/cni/bin
+              mountPropagation: Bidirectional
       containers:
         - name: multus-daemon
           image: {{ required "image is required" .Values.image | quote }}
           command:
             - /usr/src/multus-cni/bin/multus-daemon
-          args:
-            - -config=/etc/multus/daemon-config.json
+          env:
+            - name: MULTUS_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           resources:
             requests:
-              cpu: 10m
-              memory: 64Mi
+              cpu: 100m
+              memory: 50Mi
+            limits:
+              cpu: 100m
+              memory: 50Mi
           securityContext:
             privileged: true
+          terminationMessagePolicy: FallbackToLogsOnError
           volumeMounts:
-            - name: cni-conf
+            - name: cni
               mountPath: /host/etc/cni/net.d
-            - name: cni-bin
-              mountPath: /host/opt/cni/bin
+            - name: cnibin
+              mountPath: /opt/cni/bin
+            - name: hostroot
+              mountPath: /hostroot
+              mountPropagation: HostToContainer
+            - name: multus-daemon-config
+              mountPath: /etc/cni/net.d/multus.d
+              readOnly: true
             - name: host-run
               mountPath: /host/run
-            - name: host-netns
+            - name: host-var-lib-cni-multus
+              mountPath: /var/lib/cni/multus
+            - name: host-var-lib-kubelet
+              mountPath: /var/lib/kubelet
+              mountPropagation: HostToContainer
+            - name: host-run-k8s-cni-cncf-io
+              mountPath: /run/k8s.cni.cncf.io
+            - name: host-run-netns
               mountPath: /var/run/netns
               mountPropagation: HostToContainer
-            - name: multus-state
-              mountPath: /var/lib/cni/multus
-            - name: multus-daemon-config
-              mountPath: /etc/multus
+            - name: multus-conf-dir
+              mountPath: /etc/cni/multus/net.d
       volumes:
-        - name: cni-conf
+        - name: cni
           hostPath:
             path: /etc/cni/net.d
-        - name: cni-bin
+        - name: cnibin
           hostPath:
             path: /opt/cni/bin
-        - name: host-run
+        - name: hostroot
           hostPath:
-            path: /run
-        - name: host-netns
-          hostPath:
-            path: /var/run/netns
-            type: DirectoryOrCreate
-        - name: multus-state
-          hostPath:
-            path: /var/lib/cni/multus
-            type: DirectoryOrCreate
+            path: /
         - name: multus-daemon-config
           configMap:
             name: multus-daemon-config
+            items:
+              - key: daemon-config.json
+                path: daemon-config.json
+        - name: host-run
+          hostPath:
+            path: /run
+        - name: host-var-lib-cni-multus
+          hostPath:
+            path: /var/lib/cni/multus
+        - name: host-var-lib-kubelet
+          hostPath:
+            path: /var/lib/kubelet
+        - name: host-run-k8s-cni-cncf-io
+          hostPath:
+            path: /run/k8s.cni.cncf.io
+        - name: host-run-netns
+          hostPath:
+            path: /var/run/netns
+            type: DirectoryOrCreate
+        - name: multus-conf-dir
+          hostPath:
+            path: /etc/cni/multus/net.d
+            type: DirectoryOrCreate
