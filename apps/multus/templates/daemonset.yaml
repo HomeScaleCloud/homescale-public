@@ -85,8 +85,6 @@ spec:
             - name: host-run-netns
               mountPath: /var/run/netns
               mountPropagation: HostToContainer
-            - name: multus-conf-dir
-              mountPath: /etc/cni/multus/net.d
       volumes:
         - name: cni
           hostPath:
@@ -118,8 +116,4 @@ spec:
         - name: host-run-netns
           hostPath:
             path: /var/run/netns
-            type: DirectoryOrCreate
-        - name: multus-conf-dir
-          hostPath:
-            path: /etc/cni/multus/net.d
             type: DirectoryOrCreate
