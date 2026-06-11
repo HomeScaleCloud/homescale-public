@@ -427,7 +427,7 @@ jobs:
         working-directory: infra/ansible
         run: ansible-galaxy collection install -r requirements.yml
 
-      - name: Run bootstrap playbook
+      - name: Run cluster bootstrap playbook
         working-directory: infra/ansible
         env:
           OMNI_ENDPOINT: https://xxx
