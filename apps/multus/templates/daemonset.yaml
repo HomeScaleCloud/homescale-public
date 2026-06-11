@@ -21,18 +21,6 @@ spec:
       serviceAccountName: multus
       priorityClassName: system-node-critical
       initContainers:
-        - name: install-cni-plugins
-          image: {{ .Values.cniPluginsImage | default "ghcr.io/containernetworking/plugins:v1.6.2" | quote }}
-          command:
-            - cp
-            - -r
-            - /plugins/.
-            - /host/opt/cni/bin/
-          volumeMounts:
-            - name: cni-bin
-              mountPath: /host/opt/cni/bin
-          securityContext:
-            privileged: true
         - name: install-multus-binary
           image: {{ .Values.image | default "ghcr.io/k8snetworkplumbingwg/multus-cni:v4.1.4" | quote }}
           command:
