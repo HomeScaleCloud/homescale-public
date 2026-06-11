@@ -361,6 +361,16 @@ jobs:
           secret-path: "/k8s/argocd/deploy-key"
           export-type: env
 
+      - name: Import Infisical operator credentials
+        uses: Infisical/secrets-action@v1.0.16
+        with:
+          method: "oidc"
+          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          env-slug: "prod"
+          project-slug: "homescale"
+          secret-path: "/k8s/infisical"
+          export-type: env
+
       - name: Setup NetBird client
         run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
 

@@ -26,3 +26,19 @@ resource "infisical_project_identity" "k8s_operator" {
     is_temporary = false
   }]
 }
+
+resource "infisical_secret" "k8s_operator_client_id" {
+  name         = "INFISICAL_OPERATOR_CLIENT_ID"
+  value        = infisical_identity_universal_auth_client_secret.k8s_operator.client_id
+  env_slug     = var.environment
+  workspace_id = data.infisical_projects.homescale.id
+  folder_path  = "/k8s/infisical"
+}
+
+resource "infisical_secret" "k8s_operator_client_secret" {
+  name         = "INFISICAL_OPERATOR_CLIENT_SECRET"
+  value        = infisical_identity_universal_auth_client_secret.k8s_operator.client_secret
+  env_slug     = var.environment
+  workspace_id = data.infisical_projects.homescale.id
+  folder_path  = "/k8s/infisical"
+}

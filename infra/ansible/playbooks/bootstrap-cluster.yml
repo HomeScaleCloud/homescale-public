@@ -1,5 +1,5 @@
 ---
-- name: Bootstrap Omni-managed cluster
+- name: Bootstrap clusters
   hosts: "{{ target | default('clusters') }}"
   gather_facts: false
 
