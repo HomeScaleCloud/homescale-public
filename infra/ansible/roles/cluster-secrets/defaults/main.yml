@@ -1,0 +1,4 @@
+---
+argocd_deploy_key: "{{ lookup('env', 'ARGOCD_DEPLOY_KEY') }}"
+infisical_operator_client_id: "{{ lookup('env', omni_cluster_name | upper | replace('-', '_') + '_INFISICAL_OPERATOR_CLIENT_ID') }}"
+infisical_operator_client_secret: "{{ lookup('env', omni_cluster_name | upper | replace('-', '_') + '_INFISICAL_OPERATOR_CLIENT_SECRET') }}"

@@ -1,0 +1,17 @@
+---
+- name: Install ArgoCD
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo-cd
+    chart_repo_url: https://argoproj.github.io/argo-helm
+    chart_version: "{{ argocd_chart_version }}"
+    release_namespace: argocd
+    create_namespace: false
+    state: present
+    wait: true
+    wait_timeout: "300s"
+
+- name: Apply app-of-apps Application
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ playbook_dir | dirname | dirname | dirname }}/clusters/{{ omni_cluster_name }}/apps.yaml"
