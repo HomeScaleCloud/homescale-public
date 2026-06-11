@@ -33,6 +33,16 @@
         }}
       changed_when: true
 
+    - name: Wait for k8s API to be reachable
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Namespace
+        name: kube-system
+      register: _api_probe
+      retries: 10
+      delay: 30
+      until: _api_probe is not failed
+
   roles:
     - cluster-secrets
     - argocd
