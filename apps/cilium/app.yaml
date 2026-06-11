@@ -17,6 +17,8 @@ values:
     k8sServicePort: 7445
     ipam:
       mode: kubernetes
+    cni:
+      exclusive: false
     socketLB:
       hostNamespaceOnly: true
     operator:
