@@ -1,0 +1,27 @@
+---
+- name: Check if Cilium is already installed
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: DaemonSet
+    name: cilium
+    namespace: kube-system
+  register: _cilium_ds
+
+- name: Install Cilium
+  kubernetes.core.helm:
+    name: cilium
+    chart_ref: cilium
+    chart_repo_url: https://helm.cilium.io/
+    chart_version: "{{ cilium_chart_version }}"
+    release_namespace: kube-system
+    create_namespace: false
+    state: present
+    wait: true
+    wait_timeout: "300s"
+    values:
+      kubeProxyReplacement: true
+      k8sServiceHost: localhost
+      k8sServicePort: 7445
+      ipam:
+        mode: kubernetes
+  when: _cilium_ds.resources | length == 0
