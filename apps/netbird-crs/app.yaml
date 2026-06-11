@@ -3,6 +3,7 @@ defaultDeploy: true
 path: apps/netbird-crs
 namespace: netbird
 releaseName: netbird-crs
+podSecurity: privileged
 syncWave: -10
 values:
   cluster:
