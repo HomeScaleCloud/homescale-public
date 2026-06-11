@@ -74,8 +74,21 @@ get_machines() {
 }
 
 get_machine() {
-    local id="${1:-}"
-    [[ -z "$id" ]] && { echo "Usage: hsctl get machine <id>"; exit 1; }
+    local input="${1:-}"
+    [[ -z "$input" ]] && { echo "Usage: hsctl get machine <id|node-name>"; exit 1; }
+
+    # Resolve node name → UUID via ClusterMachineIdentity if input isn't already a UUID
+    local id
+    if [[ "$input" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+        id="$input"
+    else
+        id=$(omnictl get clustermachineidentity -o yaml 2>&1 | \
+            yq e 'select(.spec.nodename == "'"$input"'") | .metadata.id' 2>/dev/null | head -1)
+        if [[ -z "$id" ]]; then
+            echo "hsctl: no machine found with node name '$input'" >&2
+            exit 1
+        fi
+    fi
 
     case "$HSCTL_OUTPUT" in
         table)
