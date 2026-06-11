@@ -35,7 +35,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: omni-infra-provider
-                  key: OMNI_SERVICE_ACCOUNT_KEY # pragma: allowlist secret
+                  key: {{ $region }}-{{ $platform }} # pragma: allowlist secret
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
