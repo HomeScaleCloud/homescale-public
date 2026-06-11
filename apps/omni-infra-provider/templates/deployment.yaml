@@ -16,8 +16,11 @@ spec:
     metadata:
       labels:
         app: {{ .Release.Name }}
+      {{- with .Values.provider.address }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[{"name":{{ printf "%s-mgmt" $region | quote }},"namespace":{{ $.Release.Namespace | quote }},"ips":[{{ . | quote }}]}]'
+      {{- end }}
     spec:
-      hostNetwork: true
       containers:
         - name: omni-infra-provider
           image: {{ $image | quote }}
@@ -30,6 +33,7 @@ spec:
             {{- if and (eq $platform "metal") (not (eq false .Values.provider.secureBootEnabled)) }}
             - --secure-boot-enabled
             {{- end }}
+            - --api-advertise-address={{ required "provider.address is required" .Values.provider.address | splitList "/" | first }}
           env:
             - name: OMNI_SERVICE_ACCOUNT_KEY
               valueFrom:

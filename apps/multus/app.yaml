@@ -1,0 +1,10 @@
+defaultDeploy: false
+
+clusters:
+  boa1-gw:
+    deploy: true
+
+path: apps/multus
+namespace: kube-system
+releaseName: multus
+syncWave: -35
