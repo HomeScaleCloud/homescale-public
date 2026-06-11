@@ -1,0 +1,5 @@
+apiVersion: v2
+name: omni-infra-provider
+description: Helm chart for Omni Infrastructure Provider
+type: application
+version: 0.1.0
