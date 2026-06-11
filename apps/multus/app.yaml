@@ -4,6 +4,9 @@ clusters:
   boa1-gw:
     deploy: true
 
+values:
+  image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick
+
 path: apps/multus
 namespace: kube-system
 releaseName: multus
