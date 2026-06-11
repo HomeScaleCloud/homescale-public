@@ -68,9 +68,3 @@ resource "netbird_group" "cluster" {
 
   name = "cluster-${each.key}"
 }
-
-resource "netbird_network" "cluster" {
-  for_each = toset(local.cluster_names)
-
-  name = each.key
-}
