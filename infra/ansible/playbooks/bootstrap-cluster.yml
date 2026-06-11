@@ -45,6 +45,7 @@
 
   roles:
     - cluster-secrets
+    - cilium
     - argocd
 
   post_tasks:
