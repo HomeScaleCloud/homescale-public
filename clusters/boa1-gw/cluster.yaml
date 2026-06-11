@@ -1,5 +1,5 @@
 kind: Cluster
-name: boa1-mgmtr
+name: boa1-gw
 kubernetes:
   version: v1.36.1
 talos:

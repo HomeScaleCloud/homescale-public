@@ -60,7 +60,7 @@ Apps that contain a `Chart.yaml` and `Dockerfile` under `apps/<name>/` are built
 
 ### Clusters (`clusters/`)
 
-One directory per cluster: `mgmt`, `prod`, `lab`, `boa1-mgmtr`.
+One directory per cluster: `mgmt`, `prod`, `lab`, `boa1-gw`.
 
 - `clusters/<cluster>/apps.yaml` — the bootstrap ArgoCD app-of-apps (applied manually once)
 - `clusters/<cluster>/cluster.yaml` — Omni cluster template (Talos/k8s versions, machine assignments, patches); uses `$CLUSTER_NAME` envsubst substitution at deploy time
@@ -94,6 +94,13 @@ CI jobs connect to internal infrastructure (Omni, Terraform providers) by joinin
 **External service exposure** — a two-step pattern managed entirely in Terraform:
 1. A NetBird reverse proxy resource is created pointing at the internal `xxx` FQDN. This gives the service an address under `xxx` (the reverse proxy domain registered in `netbird.tf`).
 2. A Cloudflare `xxx` wildcard CNAME (in `dns.tf`) resolves to the NetBird reverse proxy cluster. Optionally a second Cloudflare CNAME is added for a friendlier public URL.
+
+**Gateway clusters (`*-gw`)** are single-node clusters, one per region. They serve as the regional entry point into the HomeScale mesh and handle three roles:
+- **Bare-metal provisioning** — runs the Omni infra provider (`omni-infra-provider` app) to PXE-boot Talos nodes in the region
+- **Subnet routing** — runs a NetBird subnet router that exposes the region's BMC and MGMT subnets across the WireGuard mesh
+- **Region ↔ mgmt connectivity** — bridges region-local services to the central `mgmt` cluster and vice versa
+
+The naming convention is `<region>-gw` (e.g. `boa1-gw`).
 
 ## VolSync Backups
 
