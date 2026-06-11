@@ -17,6 +17,11 @@ podSecurity: privileged
 values:
   omni:
     apiEndpoint: "https://REDACTED"
+  netbird:
+    image: "ghcr.io/netbirdio/netbird:0.71.4"
+    autoGroups:
+      - "cluster-{{ .Values.cluster.name }}"
+      - "app-omni-infra-provider"
   provider:
     region: ""
     platform: ""
