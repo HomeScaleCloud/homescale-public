@@ -38,9 +38,7 @@ spec:
           command:
             - /usr/src/multus-cni/bin/multus-daemon
           args:
-            - --cni-conf-dir=/host/etc/cni/net.d
-            - --cni-bin-dir=/host/opt/cni/bin
-            - --multus-autoconf-dir=/host/etc/cni/net.d
+            - -config=/etc/multus/daemon-config.json
           resources:
             requests:
               cpu: 10m
@@ -59,6 +57,8 @@ spec:
               mountPropagation: HostToContainer
             - name: multus-state
               mountPath: /var/lib/cni/multus
+            - name: multus-daemon-config
+              mountPath: /etc/multus
       volumes:
         - name: cni-conf
           hostPath:
@@ -77,3 +77,6 @@ spec:
           hostPath:
             path: /var/lib/cni/multus
             type: DirectoryOrCreate
+        - name: multus-daemon-config
+          configMap:
+            name: multus-daemon-config
