@@ -12,6 +12,7 @@ path: apps/omni-infra-provider
 namespace: omni-infra-provider
 releaseName: omni-infra-provider
 syncWave: 0
+podSecurity: privileged
 values:
   omni:
     apiEndpoint: "https://REDACTED"
