@@ -1,0 +1,44 @@
+---
+- name: Bootstrap Omni-managed cluster
+  hosts: "{{ target | default('clusters') }}"
+  gather_facts: false
+
+  vars:
+    kubeconfig_path: "/tmp/kubeconfig-{{ omni_cluster_name }}"
+
+  module_defaults:
+    kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig_path }}"
+    kubernetes.core.k8s_info:
+      kubeconfig: "{{ kubeconfig_path }}"
+    kubernetes.core.helm:
+      kubeconfig: "{{ kubeconfig_path }}"
+
+  pre_tasks:
+    - name: Fetch cluster kubeconfig
+      ansible.builtin.command:
+        cmd: >
+          omnictl kubeconfig {{ kubeconfig_path }}
+          --cluster {{ omni_cluster_name }}
+          --merge=false
+          --force
+          --service-account
+          --user github-actions
+          --ttl 1h
+      environment: >-  # pragma: allowlist secret
+        {{
+          {'OMNI_ENDPOINT': omni_endpoint}
+          | combine({'OMNI_SERVICE_ACCOUNT_KEY': omni_service_account_key}
+                    if omni_service_account_key else {})
+        }}
+      changed_when: true
+
+  roles:
+    - cluster-secrets
+    - argocd
+
+  post_tasks:
+    - name: Remove temporary kubeconfig
+      ansible.builtin.file:
+        path: "{{ kubeconfig_path }}"
+        state: absent

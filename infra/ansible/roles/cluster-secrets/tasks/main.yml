@@ -1,0 +1,60 @@
+---
+- name: Create argocd namespace
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: argocd
+    state: present
+
+- name: Create infisical namespace
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: infisical
+    state: present
+
+- name: Check ArgoCD deploy key
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: homescale-k8s-deploy-key
+    namespace: argocd
+  register: _deploy_key
+
+- name: Create ArgoCD deploy key
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: homescale-k8s-deploy-key
+        namespace: argocd
+        labels:
+          argocd.argoproj.io/secret-type: repository
+      stringData:
+        url: "git@github.com:HomeScaleCloud/homescale.git"
+        sshPrivateKey: "{{ argocd_deploy_key }}"
+  when: _deploy_key.resources | length == 0
+
+- name: Check Infisical operator credentials secret
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: infisical-operator-auth
+    namespace: infisical
+  register: _infisical_auth
+
+- name: Create Infisical operator credentials secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: infisical-operator-auth
+        namespace: infisical
+      stringData:
+        clientId: "{{ infisical_operator_client_id }}"
+        clientSecret: "{{ infisical_operator_client_secret }}"
+  when: _infisical_auth.resources | length == 0

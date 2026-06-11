@@ -1,0 +1,4 @@
+---
+# Bare-metal targets for future firmware and BMC management playbooks.
+# ansible_user: root
+# ansible_ssh_common_args: "-o StrictHostKeyChecking=accept-new"

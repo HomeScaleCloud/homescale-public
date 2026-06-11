@@ -331,3 +331,100 @@ jobs:
             -H "Authorization: Token $NETBIRD_SA_TOKEN" \
             "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
           echo "Setup key revoked"
+
+  ansible:
+    name: "Ansible"
+    runs-on: ubuntu-latest
+    needs: omni
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+
+      - name: Import Secrets
+        if: github.ref == 'refs/heads/main'
+        uses: Infisical/secrets-action@v1.0.16
+        with:
+          method: "oidc"
+          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          env-slug: "prod"
+          project-slug: "homescale"
+          secret-path: "/github-actions"
+          export-type: env
+
+      - name: Setup NetBird client
+        if: github.ref == 'refs/heads/main'
+        run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
+
+      - name: Generate NetBird Setup Key
+        if: github.ref == 'refs/heads/main'
+        run: |
+          NB_GROUP_ID=$(curl -fsSL \
+            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
+            https://api.netbird.io/api/groups \
+            | jq -r '.[] | select(.name == "GitHub Actions") | .id')
+
+          if [ -z "$NB_GROUP_ID" ] || [ "$NB_GROUP_ID" = "null" ]; then
+            echo "Failed to find GitHub Actions group" && exit 1
+          fi
+
+          NB_KEY_RESPONSE=$(curl -fsSL -X POST \
+            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
+            -H "Content-Type: application/json" \
+            https://api.netbird.io/api/setup-keys \
+            -d "{\"name\":\"github-actions-${GITHUB_RUN_ID}\",\"type\":\"one-off\",\"expires_in\":900,\"revokable\":true,\"ephemeral\":true,\"auto_groups\":[\"$NB_GROUP_ID\"]}")
+
+          NB_SETUP_KEY=$(echo "$NB_KEY_RESPONSE" | jq -r '.key')
+          NB_SETUP_KEY_ID=$(echo "$NB_KEY_RESPONSE" | jq -r '.id')
+
+          if [ -z "$NB_SETUP_KEY" ] || [ "$NB_SETUP_KEY" = "null" ]; then
+            echo "Failed to generate NetBird setup key" && exit 1
+          fi
+          echo "::add-mask::$NB_SETUP_KEY"
+          echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
+          echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
+
+      - name: Connect to NetBird
+        if: github.ref == 'refs/heads/main'
+        run: |
+          netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
+          sleep 10
+
+      - name: Install omnictl
+        if: github.ref == 'refs/heads/main'
+        run: |
+          curl -fsSL -o /usr/local/bin/omnictl \
+            https://xxx/omnictl/omnictl-linux-amd64
+          chmod +x /usr/local/bin/omnictl
+
+      - name: Install Helm
+        if: github.ref == 'refs/heads/main'
+        run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Install Ansible
+        if: github.ref == 'refs/heads/main'
+        run: pip install ansible kubernetes
+
+      - name: Install Ansible collections
+        if: github.ref == 'refs/heads/main'
+        working-directory: infra/ansible
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Run bootstrap playbook
+        if: github.ref == 'refs/heads/main'
+        working-directory: infra/ansible
+        env:
+          OMNI_ENDPOINT: https://xxx
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
+        run: ansible-playbook playbooks/bootstrap-cluster.yml
+
+      - name: Revoke NetBird Setup Key
+        if: always()
+        run: |
+          if [ -z "${NB_SETUP_KEY_ID:-}" ] || [ "${NB_SETUP_KEY_ID}" = "null" ]; then
+            echo "No setup key to revoke"
+            exit 0
+          fi
+          curl -fsSL -X DELETE \
+            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
+            "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
+          echo "Setup key revoked"
