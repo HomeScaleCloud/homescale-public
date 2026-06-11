@@ -1,0 +1,9 @@
+apiVersion: v2
+name: multus
+description: Helm chart for Multus CNI
+type: application
+version: 0.1.0
+dependencies:
+  - name: multus-cni
+    version: 4.1.4
+    repository: https://k8snetworkplumbingwg.github.io/helm-charts

@@ -1,4 +1,11 @@
 ---
+- name: Load Cilium app values
+  ansible.builtin.set_fact:
+    _cilium_app: >-
+      {{
+        lookup('file', playbook_dir ~ '/../../../apps/cilium/app.yaml') | from_yaml
+      }}
+
 - name: Check if Cilium is already installed
   kubernetes.core.k8s_info:
     api_version: apps/v1
@@ -18,32 +25,5 @@
     state: present
     wait: true
     wait_timeout: "300s"
-    values:
-      kubeProxyReplacement: true
-      k8sServiceHost: localhost
-      k8sServicePort: 7445
-      ipam:
-        mode: kubernetes
-      cgroup:
-        autoMount:
-          enabled: false
-        hostRoot: /sys/fs/cgroup
-      securityContext:
-        capabilities:
-          ciliumAgent:
-            - CHOWN
-            - KILL
-            - NET_ADMIN
-            - NET_RAW
-            - IPC_LOCK
-            - SYS_ADMIN
-            - SYS_RESOURCE
-            - DAC_OVERRIDE
-            - FOWNER
-            - SETGID
-            - SETUID
-          cleanCiliumState:
-            - NET_ADMIN
-            - SYS_ADMIN
-            - SYS_RESOURCE
+    values: "{{ _cilium_app.values.cilium }}"
   when: _cilium_ds.resources | length == 0
