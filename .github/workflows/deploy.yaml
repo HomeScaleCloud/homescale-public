@@ -95,7 +95,7 @@ jobs:
           sleep 10
       - name: Plan
         id: plan
-        run: terraform plan -replace=module.netbird.netbird_token.k8s_operator -out=tfplan
+        run: terraform plan -out=tfplan
         env:
           TF_VAR_netbird_token: ${{ env.NETBIRD_SA_TOKEN }}
       - name: Apply
