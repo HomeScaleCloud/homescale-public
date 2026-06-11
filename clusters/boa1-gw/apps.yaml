@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: apps-boa1-mgmtr
+  name: apps-boa1-gw
   namespace: argocd
 spec:
   project: default
   sources:
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
-      path: clusters/boa1-mgmtr
+      path: clusters/boa1-gw
       directory:
         recurse: true
         exclude: 'cluster.yaml'
@@ -16,10 +16,10 @@ spec:
       targetRevision: main
       path: apps
       helm:
-        releaseName: apps-boa1-mgmtr
+        releaseName: apps-boa1-gw
         values: |
           cluster:
-            name: boa1-mgmtr
+            name: boa1-gw
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

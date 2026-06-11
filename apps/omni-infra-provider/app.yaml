@@ -1,7 +1,7 @@
 defaultDeploy: false
 
 clusters:
-  boa1-mgmtr:
+  boa1-gw:
     deploy: true
     values:
       provider:
