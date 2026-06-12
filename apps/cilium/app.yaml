@@ -10,6 +10,25 @@ releaseName: cilium
 syncWave: -40
 syncOptions:
   - ServerSideApply=true
+ignoreDifferences:
+  - group: ""
+    kind: Secret
+    name: cilium-ca
+    namespace: kube-system
+    jsonPointers:
+      - /data
+  - group: ""
+    kind: Secret
+    name: hubble-relay-client-certs
+    namespace: kube-system
+    jsonPointers:
+      - /data
+  - group: ""
+    kind: Secret
+    name: hubble-server-certs
+    namespace: kube-system
+    jsonPointers:
+      - /data
 values:
   cilium:
     kubeProxyReplacement: true
