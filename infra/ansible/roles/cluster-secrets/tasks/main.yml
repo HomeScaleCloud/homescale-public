@@ -11,7 +11,7 @@
 - name: Read ArgoCD deploy key from Infisical
   infisical.vault.read_secrets:
     login_data: "{{ _infisical.login_data }}"
-    project_id: "{{ infisical_project_id }}"
+    project_slug: "{{ infisical_project_slug }}"
     env_slug: "{{ infisical_env_slug }}"
     path: /k8s/argocd/deploy-key
     as_dict: true
@@ -21,7 +21,7 @@
 - name: Read Infisical operator credentials from Infisical
   infisical.vault.read_secrets:
     login_data: "{{ _infisical.login_data }}"
-    project_id: "{{ infisical_project_id }}"
+    project_slug: "{{ infisical_project_slug }}"
     env_slug: "{{ infisical_env_slug }}"
     path: /k8s/infisical
     as_dict: true

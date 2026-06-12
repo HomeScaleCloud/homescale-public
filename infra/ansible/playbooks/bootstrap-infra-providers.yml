@@ -7,7 +7,7 @@
     omni_endpoint: "{{ lookup('env', 'OMNI_ENDPOINT') | default('https://REDACTED', true) }}"
     omni_sa_key: "{{ lookup('env', 'OMNI_SERVICE_ACCOUNT_KEY') }}"
     infisical_url: https://app.infisical.com
-    infisical_project_id: "{{ lookup('env', 'INFISICAL_PROJECT_ID') }}"
+    infisical_project_slug: homescale
     infisical_env_slug: prod
     infisical_secret_path: /k8s/omni/infra-providers
 
@@ -44,7 +44,7 @@
     - name: Read existing infra provider keys from Infisical
       infisical.vault.read_secrets:
         login_data: "{{ _infisical.login_data }}"
-        project_id: "{{ infisical_project_id }}"
+        project_slug: "{{ infisical_project_slug }}"
         env_slug: "{{ infisical_env_slug }}"
         path: "{{ infisical_secret_path }}"
         as_dict: true
@@ -56,14 +56,17 @@
       ansible.builtin.set_fact:
         _existing_provider_keys: "{{ _existing_keys.secrets | default({}) }}"
 
-    - name: Create infra provider {{ item.region }}-{{ item.platform }}
+    - name: Create infra provider
       ansible.builtin.command:
         cmd: omnictl infraprovider create {{ item.region }}-{{ item.platform }}
       environment:
         OMNI_ENDPOINT: "{{ omni_endpoint }}"
         OMNI_SERVICE_ACCOUNT_KEY: "{{ omni_sa_key }}"
       register: _create_results
-      changed_when: true
+      changed_when: _create_results.rc == 0
+      failed_when: >
+        _create_results.rc != 0 and
+        'already exist' not in (_create_results.stderr | lower)
       no_log: true
       loop: "{{ _providers }}"
       loop_control:
@@ -73,10 +76,10 @@
         (item.region ~ '-' ~ item.platform) not in _existing_provider_keys or
         _existing_provider_keys[item.region ~ '-' ~ item.platform] | length == 0
 
-    - name: Store infra provider key in Infisical for {{ item.region }}-{{ item.platform }}
+    - name: Store infra provider key in Infisical
       infisical.vault.create_secret:
         login_data: "{{ _infisical.login_data }}"
-        project_id: "{{ infisical_project_id }}"
+        project_slug: "{{ infisical_project_slug }}"
         env_slug: "{{ infisical_env_slug }}"
         path: "{{ infisical_secret_path }}"
         secret_name: "{{ item.region }}-{{ item.platform }}" # pragma: allowlist secret
@@ -88,5 +91,5 @@
         index_var: idx
         label: "{{ item.region }}-{{ item.platform }}"
       when: >
-        (item.region ~ '-' ~ item.platform) not in _existing_provider_keys or
-        _existing_provider_keys[item.region ~ '-' ~ item.platform] | length == 0
+        not (_create_results.results[idx].skipped | default(false)) and
+        _create_results.results[idx].rc == 0
