@@ -99,15 +99,17 @@ jobs:
         id: plan
         continue-on-error: true
         run: |
-          if terraform plan -out=tfplan > /tmp/tf-plan.txt 2>&1; then
+          if terraform plan -no-color -out=tfplan > /tmp/tf-plan-full.txt 2>&1; then
+            terraform show -no-color tfplan > /tmp/tf-plan.txt
             echo "PLAN_STATUS=success" >> "$GITHUB_ENV"
           else
+            cp /tmp/tf-plan-full.txt /tmp/tf-plan.txt
             echo "PLAN_STATUS=failed" >> "$GITHUB_ENV"
             exit 1
           fi
         env:
           TF_VAR_netbird_token: ${{ env.NETBIRD_SA_TOKEN }}
-      - name: Post plan results as PR comment
+      - name: Post plan results to PR
         if: always() && github.event_name == 'pull_request'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         with:
@@ -146,7 +148,7 @@ jobs:
             const marker = '<!-- terraform-plan -->';
             const body = [
               marker,
-              `## ${icon} Terraform plan`,
+              `## ${icon} Terraform Plan`,
               '',
               '```',
               output || '(no output)',
