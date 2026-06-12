@@ -31,6 +31,23 @@ spec:
       serviceAccountName: multus
       terminationGracePeriodSeconds: 10
       initContainers:
+        - name: install-cni-plugins
+          image: {{ required "cniPluginsImage is required" .Values.cniPluginsImage | quote }}
+          command:
+            - /bin/sh
+            - -c
+            - cp /opt/cni/bin/* /host/opt/cni/bin/
+          resources:
+            requests:
+              cpu: 10m
+              memory: 15Mi
+          securityContext:
+            privileged: true
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: cnibin
+              mountPath: /host/opt/cni/bin
+              mountPropagation: Bidirectional
         - name: install-multus-binary
           image: {{ required "image is required" .Values.image | quote }}
           command:
