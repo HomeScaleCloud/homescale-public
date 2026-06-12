@@ -1,8 +1,8 @@
-defaultDeploy: false
+defaultDeploy: true
 
 clusters:
-  boa1-gw:
-    deploy: true
+  mgmt:
+    deploy: false
 
 values:
   image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick
