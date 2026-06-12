@@ -157,7 +157,7 @@ jobs:
                 | jq -Rsc 'split("\n") | map(select(length > 0))'
             )
             machineclasses=$(
-              find infra/omni/machineclasses -maxdepth 1 -name '*.yaml' \
+              { [ -d infra/omni/machineclasses ] && find infra/omni/machineclasses -maxdepth 1 -name '*.yaml'; } \
                 | sed 's|.*/||; s|\.yaml$||' \
                 | sort -u \
                 | jq -Rsc 'split("\n") | map(select(length > 0))'
