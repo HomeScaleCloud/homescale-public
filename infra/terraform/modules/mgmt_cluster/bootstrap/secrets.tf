@@ -8,6 +8,9 @@ resource "kubernetes_namespace_v1" "infisical" {
   metadata {
     name = "infisical"
   }
+  lifecycle {
+    ignore_changes = [metadata[0].annotations, metadata[0].labels]
+  }
 }
 
 resource "kubernetes_secret_v1" "argocd_deploy_key" {
