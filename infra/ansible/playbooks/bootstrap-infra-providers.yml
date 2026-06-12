@@ -49,38 +49,43 @@
       loop_control:
         label: "{{ item.region }}-{{ item.platform }}"
 
-    - name: Create infra provider and store key for missing entries
-      when: >
-        _infisical_checks.results[idx].status == 404 or
-        (_infisical_checks.results[idx].json.secret.secretValue | default('')) | length == 0
-      block:
-        - name: Create infra provider {{ item.region }}-{{ item.platform }}
-          ansible.builtin.command:
-            cmd: omnictl infraprovider create {{ item.region }}-{{ item.platform }}
-          environment:
-            OMNI_ENDPOINT: "{{ omni_endpoint }}"
-            OMNI_SERVICE_ACCOUNT_KEY: "{{ omni_sa_key }}"
-          register: _create_result
-          changed_when: true
-          no_log: true
-
-        - name: Store infra provider key in Infisical for {{ item.region }}-{{ item.platform }}
-          ansible.builtin.uri:
-            url: "{{ infisical_base_url }}/api/v3/secrets/raw/{{ item.region }}-{{ item.platform }}"
-            method: "{{ 'PATCH' if _infisical_checks.results[idx].status == 200 else 'POST' }}"
-            headers:
-              Authorization: "Bearer {{ infisical_token }}"
-              Content-Type: application/json
-            body_format: json
-            body:
-              workspaceSlug: "{{ infisical_project_slug }}"
-              environment: "{{ infisical_env_slug }}"
-              secretPath: "{{ infisical_secret_path }}"
-              secretValue: "{{ _create_result.stdout | trim }}"
-            status_code: [200, 201]
-          no_log: true
-          changed_when: true
+    - name: Create infra provider {{ item.region }}-{{ item.platform }}
+      ansible.builtin.command:
+        cmd: omnictl infraprovider create {{ item.region }}-{{ item.platform }}
+      environment:
+        OMNI_ENDPOINT: "{{ omni_endpoint }}"
+        OMNI_SERVICE_ACCOUNT_KEY: "{{ omni_sa_key }}"
+      register: _create_results
+      changed_when: true
+      no_log: true
       loop: "{{ _providers }}"
       loop_control:
         index_var: idx
         label: "{{ item.region }}-{{ item.platform }}"
+      when: >
+        _infisical_checks.results[idx].status == 404 or
+        (_infisical_checks.results[idx].json.secret.secretValue | default('')) | length == 0
+
+    - name: Store infra provider key in Infisical for {{ item.region }}-{{ item.platform }}
+      ansible.builtin.uri:
+        url: "{{ infisical_base_url }}/api/v3/secrets/raw/{{ item.region }}-{{ item.platform }}"
+        method: "{{ 'PATCH' if _infisical_checks.results[idx].status == 200 else 'POST' }}"
+        headers:
+          Authorization: "Bearer {{ infisical_token }}"
+          Content-Type: application/json
+        body_format: json
+        body:
+          workspaceSlug: "{{ infisical_project_slug }}"
+          environment: "{{ infisical_env_slug }}"
+          secretPath: "{{ infisical_secret_path }}"
+          secretValue: "{{ _create_results.results[idx].stdout | trim }}"
+        status_code: [200, 201]
+      no_log: true
+      changed_when: true
+      loop: "{{ _providers }}"
+      loop_control:
+        index_var: idx
+        label: "{{ item.region }}-{{ item.platform }}"
+      when: >
+        _infisical_checks.results[idx].status == 404 or
+        (_infisical_checks.results[idx].json.secret.secretValue | default('')) | length == 0
