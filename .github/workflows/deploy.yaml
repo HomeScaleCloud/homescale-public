@@ -97,9 +97,69 @@ jobs:
           sleep 10
       - name: Plan
         id: plan
-        run: terraform plan -out=tfplan
+        continue-on-error: true
+        run: |
+          if terraform plan -out=tfplan > /tmp/tf-plan.txt 2>&1; then
+            echo "PLAN_STATUS=success" >> "$GITHUB_ENV"
+          else
+            echo "PLAN_STATUS=failed" >> "$GITHUB_ENV"
+            exit 1
+          fi
         env:
           TF_VAR_netbird_token: ${{ env.NETBIRD_SA_TOKEN }}
+      - name: Post plan results as PR comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        with:
+          script: |
+            const fs = require('fs');
+
+            async function upsertComment(marker, body) {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              const existing = comments.find(c => c.body.includes(marker));
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id,
+                  body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body,
+                });
+              }
+            }
+
+            const ok = process.env.PLAN_STATUS === 'success';
+            const output = fs.existsSync('/tmp/tf-plan.txt')
+              ? fs.readFileSync('/tmp/tf-plan.txt', 'utf8').trim()
+              : '(no output)';
+            const icon = ok ? '✅' : '❌';
+            const marker = '<!-- terraform-plan -->';
+            const body = [
+              marker,
+              `## ${icon} Terraform plan`,
+              '',
+              '```',
+              output || '(no output)',
+              '```',
+              '',
+              `> commit \`${{ github.sha }}\``,
+            ].join('\n');
+            await upsertComment(marker, body);
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: |
+          echo "Terraform plan failed. See PR comment for details."
+          exit 1
       - name: Apply
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve tfplan
@@ -157,7 +217,7 @@ jobs:
                 | jq -Rsc 'split("\n") | map(select(length > 0))'
             )
             machineclasses=$(
-              { [ -d infra/omni/machineclasses ] && find infra/omni/machineclasses -maxdepth 1 -name '*.yaml'; } \
+              { if [ -d infra/omni/machineclasses ]; then find infra/omni/machineclasses -maxdepth 1 -name '*.yaml'; fi; } \
                 | sed 's|.*/||; s|\.yaml$||' \
                 | sort -u \
                 | jq -Rsc 'split("\n") | map(select(length > 0))'
