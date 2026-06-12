@@ -11,6 +11,8 @@ on:
         required: true
       INFISICAL_ORG_ID:
         required: true
+      INFISICAL_PROJECT_ID:
+        required: true
   workflow_dispatch:
 
 concurrency:
@@ -422,6 +424,7 @@ jobs:
           OMNI_ENDPOINT: https://REDACTED
           OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
           INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: ansible-playbook playbooks/bootstrap-omni.yml
 
       - name: Run infra provider bootstrap playbook
@@ -430,6 +433,7 @@ jobs:
           OMNI_ENDPOINT: https://REDACTED
           OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
           INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: ansible-playbook playbooks/bootstrap-infra-providers.yml
 
       - name: Run cluster bootstrap playbook
@@ -438,6 +442,7 @@ jobs:
           OMNI_ENDPOINT: https://REDACTED
           OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
           INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: ansible-playbook playbooks/bootstrap-cluster.yml
 
       - name: Revoke NetBird Setup Key
