@@ -6,9 +6,8 @@
   vars:
     omni_endpoint: "{{ lookup('env', 'OMNI_ENDPOINT') | default('https://xxx', true) }}"
     omni_sa_key: "{{ lookup('env', 'OMNI_SERVICE_ACCOUNT_KEY') }}"
-    infisical_token: "{{ lookup('env', 'INFISICAL_TOKEN') }}"
-    infisical_base_url: https://app.infisical.com
-    infisical_project_slug: homescale
+    infisical_url: https://app.infisical.com
+    infisical_project_id: "{{ lookup('env', 'INFISICAL_PROJECT_ID') }}"
     infisical_env_slug: prod
     infisical_secret_path: /k8s/omni/infra-providers
 
@@ -33,21 +32,29 @@
             | list
           }}
 
-    - name: Check Infisical for each provider key
-      ansible.builtin.uri:
-        url: >-
-          {{ infisical_base_url }}/api/v3/secrets/raw/{{ item.region }}-{{ item.platform }}
-          ?workspaceSlug={{ infisical_project_slug }}
-          &environment={{ infisical_env_slug }}
-          &secretPath={{ infisical_secret_path }}
-        headers:
-          Authorization: "Bearer {{ infisical_token }}"
-        status_code: [200, 404]
-      register: _infisical_checks
+    - name: Login to Infisical
+      infisical.vault.login:
+        url: "{{ infisical_url }}"
+        auth_method: oidc_auth
+        identity_id: "{{ lookup('env', 'INFISICAL_IDENTITY_ID') }}"
+        jwt: "{{ lookup('env', 'INFISICAL_AUTH_JWT') }}"
+      register: _infisical
       no_log: true
-      loop: "{{ _providers }}"
-      loop_control:
-        label: "{{ item.region }}-{{ item.platform }}"
+
+    - name: Read existing infra provider keys from Infisical
+      infisical.vault.read_secrets:
+        login_data: "{{ _infisical.login_data }}"
+        project_id: "{{ infisical_project_id }}"
+        env_slug: "{{ infisical_env_slug }}"
+        path: "{{ infisical_secret_path }}"
+        as_dict: true
+      register: _existing_keys
+      ignore_errors: true
+      no_log: true
+
+    - name: Set existing keys dict
+      ansible.builtin.set_fact:
+        _existing_provider_keys: "{{ _existing_keys.secrets | default({}) }}"
 
     - name: Create infra provider {{ item.region }}-{{ item.platform }}
       ansible.builtin.command:
@@ -63,23 +70,17 @@
         index_var: idx
         label: "{{ item.region }}-{{ item.platform }}"
       when: >
-        _infisical_checks.results[idx].status == 404 or
-        (_infisical_checks.results[idx].json.secret.secretValue | default('')) | length == 0
+        (item.region ~ '-' ~ item.platform) not in _existing_provider_keys or
+        _existing_provider_keys[item.region ~ '-' ~ item.platform] | length == 0
 
     - name: Store infra provider key in Infisical for {{ item.region }}-{{ item.platform }}
-      ansible.builtin.uri:
-        url: "{{ infisical_base_url }}/api/v3/secrets/raw/{{ item.region }}-{{ item.platform }}"
-        method: "{{ 'PATCH' if _infisical_checks.results[idx].status == 200 else 'POST' }}"
-        headers:
-          Authorization: "Bearer {{ infisical_token }}"
-          Content-Type: application/json
-        body_format: json
-        body:
-          workspaceSlug: "{{ infisical_project_slug }}"
-          environment: "{{ infisical_env_slug }}"
-          secretPath: "{{ infisical_secret_path }}"
-          secretValue: "{{ _create_results.results[idx].stdout | trim }}"
-        status_code: [200, 201]
+      infisical.vault.create_secret:
+        login_data: "{{ _infisical.login_data }}"
+        project_id: "{{ infisical_project_id }}"
+        env_slug: "{{ infisical_env_slug }}"
+        path: "{{ infisical_secret_path }}"
+        secret_name: "{{ item.region }}-{{ item.platform }}" # pragma: allowlist secret
+        secret_value: "{{ _create_results.results[idx].stdout | trim }}" # pragma: allowlist secret
       no_log: true
       changed_when: true
       loop: "{{ _providers }}"
@@ -87,5 +88,5 @@
         index_var: idx
         label: "{{ item.region }}-{{ item.platform }}"
       when: >
-        _infisical_checks.results[idx].status == 404 or
-        (_infisical_checks.results[idx].json.secret.secretValue | default('')) | length == 0
+        (item.region ~ '-' ~ item.platform) not in _existing_provider_keys or
+        _existing_provider_keys[item.region ~ '-' ~ item.platform] | length == 0

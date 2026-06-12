@@ -11,6 +11,8 @@ on:
         required: true
       INFISICAL_ORG_ID:
         required: true
+      INFISICAL_PROJECT_ID:
+        required: true
   workflow_dispatch:
 
 concurrency:
@@ -351,26 +353,6 @@ jobs:
           secret-path: "/github-actions"
           export-type: env
 
-      - name: Import ArgoCD deploy key
-        uses: Infisical/secrets-action@v1.0.16
-        with:
-          method: "oidc"
-          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          env-slug: "prod"
-          project-slug: "homescale"
-          secret-path: "/k8s/argocd/deploy-key"
-          export-type: env
-
-      - name: Import Infisical operator credentials
-        uses: Infisical/secrets-action@v1.0.16
-        with:
-          method: "oidc"
-          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          env-slug: "prod"
-          project-slug: "homescale"
-          secret-path: "/k8s/infisical"
-          export-type: env
-
       - name: Setup NetBird client
         run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
 
@@ -415,18 +397,6 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "INFISICAL_AUTH_JWT=$TOKEN" >> "$GITHUB_ENV"
 
-      - name: Exchange OIDC token for Infisical access token
-        env:
-          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-        run: |
-          INFISICAL_TOKEN=$(curl -fsSL -X POST \
-            -H "Content-Type: application/json" \
-            https://app.infisical.com/api/v1/auth/oidc/login \
-            -d "{\"identityId\":\"$INFISICAL_IDENTITY_ID\",\"jwt\":\"$INFISICAL_AUTH_JWT\"}" \
-            | jq -r '.accessToken')
-          echo "::add-mask::$INFISICAL_TOKEN"
-          echo "INFISICAL_TOKEN=$INFISICAL_TOKEN" >> "$GITHUB_ENV"
-
       - name: Install omnictl
         run: |
           curl -fsSL -o /usr/local/bin/omnictl \
@@ -442,7 +412,7 @@ jobs:
         run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Install Ansible
-        run: pip install ansible kubernetes
+        run: pip install ansible kubernetes infisicalsdk==1.0.16
 
       - name: Install Ansible collections
         working-directory: infra/ansible
@@ -453,7 +423,8 @@ jobs:
         env:
           OMNI_ENDPOINT: https://xxx
           OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
-          INFISICAL_TOKEN: ${{ env.INFISICAL_TOKEN }}
+          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: ansible-playbook playbooks/bootstrap-omni.yml
 
       - name: Run infra provider bootstrap playbook
@@ -461,7 +432,8 @@ jobs:
         env:
           OMNI_ENDPOINT: https://xxx
           OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
-          INFISICAL_TOKEN: ${{ env.INFISICAL_TOKEN }}
+          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: ansible-playbook playbooks/bootstrap-infra-providers.yml
 
       - name: Run cluster bootstrap playbook
@@ -469,6 +441,8 @@ jobs:
         env:
           OMNI_ENDPOINT: https://xxx
           OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
+          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: ansible-playbook playbooks/bootstrap-cluster.yml
 
       - name: Revoke NetBird Setup Key

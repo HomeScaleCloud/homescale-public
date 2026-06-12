@@ -1,4 +1,4 @@
 ---
-argocd_deploy_key: "{{ lookup('env', 'sshPrivateKey') }}"
-infisical_operator_client_id: "{{ lookup('env', 'INFISICAL_OPERATOR_CLIENT_ID') }}"
-infisical_operator_client_secret: "{{ lookup('env', 'INFISICAL_OPERATOR_CLIENT_SECRET') }}"
+infisical_url: https://app.infisical.com
+infisical_project_id: "{{ lookup('env', 'INFISICAL_PROJECT_ID') }}"
+infisical_env_slug: prod
