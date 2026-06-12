@@ -20,19 +20,15 @@
             | from_yaml
           }}
 
-    - name: Init provider list
-      ansible.builtin.set_fact:
-        _providers: []
-
     - name: Build provider list from enabled clusters
       ansible.builtin.set_fact:
-        _providers: "{{ _providers + [item.value.values.provider | combine({'cluster': item.key})] }}"
-      loop: "{{ _app.clusters | dict2items }}"
-      loop_control:
-        label: "{{ item.key }}"
-      when: >
-        item.value.deploy | default(false) and
-        item.value.values.provider is defined
+        _providers: >-
+          {{
+            _app.clusters | dict2items
+            | selectattr('value.deploy', 'equalto', true)
+            | selectattr('value.values.provider', 'defined')
+            | list
+          }}
 
     - name: Login to Infisical
       infisical.vault.login:
@@ -60,7 +56,9 @@
 
     - name: Create infra provider
       ansible.builtin.command:
-        cmd: omnictl infraprovider create {{ item.region }}-{{ item.platform }}
+        cmd: >-
+          omnictl infraprovider create
+          {{ item.value['values']['provider']['region'] }}-{{ item.value['values']['provider']['platform'] }}
       environment:
         OMNI_ENDPOINT: "{{ omni_endpoint }}"
         OMNI_SERVICE_ACCOUNT_KEY: "{{ omni_sa_key }}"
@@ -73,10 +71,13 @@
       loop: "{{ _providers }}"
       loop_control:
         index_var: idx
-        label: "{{ item.cluster }} ({{ item.region }}-{{ item.platform }})"
+        label: >-
+          {{ item.key }}
+          ({{ item.value['values']['provider']['region'] }}-{{ item.value['values']['provider']['platform'] }})
       when: >
-        (item.region ~ '-' ~ item.platform) not in _existing_provider_keys or
-        _existing_provider_keys[item.region ~ '-' ~ item.platform] | length == 0
+        (item.value['values']['provider']['region'] ~ '-' ~ item.value['values']['provider']['platform'])
+        not in _existing_provider_keys or
+        _existing_provider_keys[item.value['values']['provider']['region'] ~ '-' ~ item.value['values']['provider']['platform']] | length == 0
 
     - name: Store infra provider key in Infisical
       infisical.vault.create_secret:
@@ -84,14 +85,17 @@
         project_id: "{{ infisical_project_id }}"
         env_slug: "{{ infisical_env_slug }}"
         path: "{{ infisical_secret_path }}"
-        secret_name: "{{ item.region }}-{{ item.platform }}" # pragma: allowlist secret
+        secret_name: >-
+          {{ item.value['values']['provider']['region'] }}-{{ item.value['values']['provider']['platform'] }} # pragma: allowlist secret
         secret_value: "{{ _create_results.results[idx].stdout | trim }}" # pragma: allowlist secret
       no_log: true
       changed_when: true
       loop: "{{ _providers }}"
       loop_control:
         index_var: idx
-        label: "{{ item.cluster }} ({{ item.region }}-{{ item.platform }})"
+        label: >-
+          {{ item.key }}
+          ({{ item.value['values']['provider']['region'] }}-{{ item.value['values']['provider']['platform'] }})
       when: >
         not (_create_results.results[idx].skipped | default(false)) and
         _create_results.results[idx].rc == 0
