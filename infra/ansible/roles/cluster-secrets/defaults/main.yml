@@ -1,4 +1,4 @@
 ---
 infisical_url: https://app.infisical.com
-infisical_project_id: "{{ lookup('env', 'INFISICAL_PROJECT_ID') }}"
+infisical_project_slug: homescale
 infisical_env_slug: prod
