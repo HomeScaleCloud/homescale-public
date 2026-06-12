@@ -1,4 +1,33 @@
 ---
+- name: Login to Infisical
+  infisical.vault.login:
+    url: "{{ infisical_url }}"
+    auth_method: oidc_auth
+    identity_id: "{{ lookup('env', 'INFISICAL_IDENTITY_ID') }}"
+    jwt: "{{ lookup('env', 'INFISICAL_AUTH_JWT') }}"
+  register: _infisical
+  no_log: true
+
+- name: Read ArgoCD deploy key from Infisical
+  infisical.vault.read_secrets:
+    login_data: "{{ _infisical.login_data }}"
+    project_id: "{{ infisical_project_id }}"
+    env_slug: "{{ infisical_env_slug }}"
+    path: /k8s/argocd/deploy-key
+    as_dict: true
+  register: _argocd_secrets
+  no_log: true
+
+- name: Read Infisical operator credentials from Infisical
+  infisical.vault.read_secrets:
+    login_data: "{{ _infisical.login_data }}"
+    project_id: "{{ infisical_project_id }}"
+    env_slug: "{{ infisical_env_slug }}"
+    path: /k8s/infisical
+    as_dict: true
+  register: _infisical_op_secrets
+  no_log: true
+
 - name: Create argocd namespace
   kubernetes.core.k8s:
     api_version: v1
@@ -34,7 +63,7 @@
           argocd.argoproj.io/secret-type: repository
       stringData:
         url: "git@github.com:HomeScaleCloud/homescale.git"
-        sshPrivateKey: "{{ argocd_deploy_key }}"
+        sshPrivateKey: "{{ _argocd_secrets.secrets.sshPrivateKey }}" # pragma: allowlist secret
   when: _deploy_key.resources | length == 0
 
 - name: Check Infisical operator credentials secret
@@ -55,6 +84,6 @@
         name: infisical-operator-auth
         namespace: infisical
       stringData:
-        clientId: "{{ infisical_operator_client_id }}"
-        clientSecret: "{{ infisical_operator_client_secret }}"
+        clientId: "{{ _infisical_op_secrets.secrets.INFISICAL_OPERATOR_CLIENT_ID }}" # pragma: allowlist secret
+        clientSecret: "{{ _infisical_op_secrets.secrets.INFISICAL_OPERATOR_CLIENT_SECRET }}" # pragma: allowlist secret
   when: _infisical_auth.resources | length == 0
