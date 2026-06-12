@@ -90,6 +90,15 @@
         not in _existing_provider_keys or
         _existing_provider_keys[item.value['values']['provider']['region'] ~ '-' ~ item.value['values']['provider']['platform']] | length == 0
 
+    - name: Show create result
+      ansible.builtin.debug:
+        msg: "{{ item.key }}: rc={{ _create_results.results[idx].rc }} stderr={{ _create_results.results[idx].stderr }}"
+      loop: "{{ _providers }}"
+      loop_control:
+        index_var: idx
+        label: "{{ item.key }}"
+      when: not (_create_results.results[idx].skipped | default(false))
+
     - name: Store infra provider key in Infisical
       infisical.vault.create_secret:
         login_data: "{{ _infisical.login_data }}"
