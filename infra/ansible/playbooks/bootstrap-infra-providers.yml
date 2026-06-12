@@ -54,6 +54,17 @@
       ansible.builtin.set_fact:
         _existing_provider_keys: "{{ _existing_keys.secrets | default({}) }}"
 
+    - name: Creating infra provider
+      ansible.builtin.debug:
+        msg: "{{ item.key }} ({{ item.value['values']['provider']['region'] }}-{{ item.value['values']['provider']['platform'] }})"
+      loop: "{{ _providers }}"
+      loop_control:
+        label: "{{ item.key }}"
+      when: >
+        (item.value['values']['provider']['region'] ~ '-' ~ item.value['values']['provider']['platform'])
+        not in _existing_provider_keys or
+        _existing_provider_keys[item.value['values']['provider']['region'] ~ '-' ~ item.value['values']['provider']['platform']] | length == 0
+
     - name: Create infra provider
       ansible.builtin.command:
         cmd: >-
