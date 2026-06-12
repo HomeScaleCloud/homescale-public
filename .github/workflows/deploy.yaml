@@ -406,6 +406,27 @@ jobs:
           netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
           sleep 10
 
+      - name: Request OIDC Token
+        run: |
+          TOKEN=$(curl -s \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL" \
+            | jq -r '.value')
+          echo "::add-mask::$TOKEN"
+          echo "INFISICAL_AUTH_JWT=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Exchange OIDC token for Infisical access token
+        env:
+          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+        run: |
+          INFISICAL_TOKEN=$(curl -fsSL -X POST \
+            -H "Content-Type: application/json" \
+            https://app.infisical.com/api/v1/auth/oidc/login \
+            -d "{\"identityId\":\"$INFISICAL_IDENTITY_ID\",\"jwt\":\"$INFISICAL_AUTH_JWT\"}" \
+            | jq -r '.accessToken')
+          echo "::add-mask::$INFISICAL_TOKEN"
+          echo "INFISICAL_TOKEN=$INFISICAL_TOKEN" >> "$GITHUB_ENV"
+
       - name: Install omnictl
         run: |
           curl -fsSL -o /usr/local/bin/omnictl \
@@ -426,6 +447,22 @@ jobs:
       - name: Install Ansible collections
         working-directory: infra/ansible
         run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Run Omni bootstrap playbook
+        working-directory: infra/ansible
+        env:
+          OMNI_ENDPOINT: https://xxx
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
+          INFISICAL_TOKEN: ${{ env.INFISICAL_TOKEN }}
+        run: ansible-playbook playbooks/bootstrap-omni.yml
+
+      - name: Run infra provider bootstrap playbook
+        working-directory: infra/ansible
+        env:
+          OMNI_ENDPOINT: https://xxx
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
+          INFISICAL_TOKEN: ${{ env.INFISICAL_TOKEN }}
+        run: ansible-playbook playbooks/bootstrap-infra-providers.yml
 
       - name: Run cluster bootstrap playbook
         working-directory: infra/ansible
