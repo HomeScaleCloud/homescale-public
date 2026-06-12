@@ -64,12 +64,12 @@ One directory per cluster: `mgmt`, `prod`, `lab`, `boa1-gw`.
 
 - `clusters/<cluster>/apps.yaml` — the bootstrap ArgoCD app-of-apps (applied manually once)
 - `clusters/<cluster>/cluster.yaml` — Omni cluster template (Talos/k8s versions, machine assignments, patches); uses `$CLUSTER_NAME` envsubst substitution at deploy time
-- `clusters/patches/` — shared Talos machine config patches referenced by cluster definitions
 
 ### Infrastructure (`infra/`)
 
 - `infra/terraform/` — Terraform for cloud resources (Cloudflare DNS, DigitalOcean, Infisical project setup, NetBird config, mgmt cluster bootstrap). State is in Terraform Cloud (`homescale` org, `homescale` workspace).
 - `infra/ansible/` — Bootstrapping playbooks (e.g., Omni bootstrap)
+- `infra/omni/patches/` — shared Talos machine config patches applied to clusters during Omni template sync
 
 ### Secrets
 
