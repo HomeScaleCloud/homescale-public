@@ -7,7 +7,7 @@
     omni_endpoint: "{{ lookup('env', 'OMNI_ENDPOINT') | default('https://xxx', true) }}"
     omni_sa_key: "{{ lookup('env', 'OMNI_SERVICE_ACCOUNT_KEY') }}"
     infisical_url: https://app.infisical.com
-    infisical_project_slug: homescale
+    infisical_project_id: "{{ lookup('env', 'INFISICAL_PROJECT_ID') }}"
     infisical_env_slug: prod
     infisical_secret_path: /k8s/omni/infra-providers
 
@@ -44,7 +44,7 @@
     - name: Read existing infra provider keys from Infisical
       infisical.vault.read_secrets:
         login_data: "{{ _infisical.login_data }}"
-        project_slug: "{{ infisical_project_slug }}"
+        project_id: "{{ infisical_project_id }}"
         env_slug: "{{ infisical_env_slug }}"
         path: "{{ infisical_secret_path }}"
         as_dict: true
@@ -79,7 +79,7 @@
     - name: Store infra provider key in Infisical
       infisical.vault.create_secret:
         login_data: "{{ _infisical.login_data }}"
-        project_slug: "{{ infisical_project_slug }}"
+        project_id: "{{ infisical_project_id }}"
         env_slug: "{{ infisical_env_slug }}"
         path: "{{ infisical_secret_path }}"
         secret_name: "{{ item.region }}-{{ item.platform }}" # pragma: allowlist secret
