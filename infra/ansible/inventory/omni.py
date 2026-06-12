@@ -78,6 +78,10 @@ def get_clusters():
     stdout = _run([_resolve("omnictl"), "get", "clusters", "-o", "json"])
     names = []
     for res in _parse_resources(stdout):
+        if isinstance(res, str):
+            if res:
+                names.append(res)
+            continue
         meta = res.get("metadata", {})
         name = meta.get("id") or meta.get("name")
         if name:
@@ -91,6 +95,8 @@ def get_machines():
     hostvars = {}
 
     for res in _parse_resources(stdout):
+        if not isinstance(res, dict):
+            continue
         meta = res.get("metadata", {})
         spec = res.get("spec", {})
         labels = meta.get("labels", {})
