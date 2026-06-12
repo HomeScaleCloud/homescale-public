@@ -25,5 +25,5 @@
     state: present
     wait: true
     wait_timeout: "300s"
-    values: "{{ _cilium_app.values.cilium }}"
+    values: "{{ _cilium_app['values']['cilium'] }}"
   when: _cilium_ds.resources | length == 0
