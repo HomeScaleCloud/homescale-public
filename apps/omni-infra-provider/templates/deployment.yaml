@@ -50,7 +50,7 @@ spec:
             - name: NB_SETUP_KEY
               valueFrom:
                 secretKeyRef:
-                  name: setup-key-{{ .Release.Name }}
+                  name: setup-key-{{ .Release.Name }}-{{ $region }}-{{ $platform }}
                   key: setup-key # pragma: allowlist secret
             - name: NB_MANAGEMENT_URL
               value: https://api.netbird.io
