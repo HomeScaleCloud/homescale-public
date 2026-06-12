@@ -43,30 +43,35 @@ def _run(cmd):
 
 
 def _parse_resources(stdout):
-    """Parse omnictl/hsctl -o json output (single doc or NDJSON)."""
+    """Parse omnictl/hsctl -o json output.
+
+    Handles single docs, pretty-printed multi-doc sequences (omnictl's actual
+    format — multiple JSON objects concatenated with whitespace), and NDJSON.
+    Uses raw_decode to stream complete objects rather than splitting on lines,
+    which avoids accidentally parsing bare strings from within finalizer arrays.
+    """
     if not stdout:
         return []
 
-    # Single JSON document
-    try:
-        data = json.loads(stdout)
-        if isinstance(data, list):
-            return data
-        if isinstance(data, dict):
-            return [data] if "metadata" in data else data.get("items", [])
-    except json.JSONDecodeError:
-        pass
-
-    # NDJSON — one resource per line
+    decoder = json.JSONDecoder()
     resources = []
-    for line in stdout.splitlines():
-        line = line.strip()
-        if not line:
-            continue
+    idx = 0
+    while idx < len(stdout):
+        while idx < len(stdout) and stdout[idx].isspace():
+            idx += 1
+        if idx >= len(stdout):
+            break
         try:
-            resources.append(json.loads(line))
+            obj, idx = decoder.raw_decode(stdout, idx)
         except json.JSONDecodeError:
-            continue
+            break
+        if isinstance(obj, list):
+            resources.extend(o for o in obj if isinstance(o, dict))
+        elif isinstance(obj, dict):
+            if "metadata" not in obj:
+                resources.extend(o for o in obj.get("items", []) if isinstance(o, dict))
+            else:
+                resources.append(obj)
     return resources
 
 
@@ -78,10 +83,6 @@ def get_clusters():
     stdout = _run([_resolve("omnictl"), "get", "clusters", "-o", "json"])
     names = []
     for res in _parse_resources(stdout):
-        if isinstance(res, str):
-            if res:
-                names.append(res)
-            continue
         meta = res.get("metadata", {})
         name = meta.get("id") or meta.get("name")
         if name:
