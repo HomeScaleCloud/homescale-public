@@ -1,0 +1,86 @@
+---
+- name: Bootstrap Omni infra provider service accounts
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    omni_endpoint: "{{ lookup('env', 'OMNI_ENDPOINT') | default('https://REDACTED', true) }}"
+    omni_sa_key: "{{ lookup('env', 'OMNI_SERVICE_ACCOUNT_KEY') }}"
+    infisical_token: "{{ lookup('env', 'INFISICAL_TOKEN') }}"
+    infisical_base_url: https://app.infisical.com
+    infisical_project_slug: homescale
+    infisical_env_slug: prod
+    infisical_secret_path: /k8s/omni/infra-providers
+
+  tasks:
+    - name: Load omni-infra-provider app config
+      ansible.builtin.set_fact:
+        _app: >-
+          {{
+            lookup('file', playbook_dir ~ '/../../apps/omni-infra-provider/app.yaml')
+            | from_yaml
+          }}
+
+    - name: Build provider list from enabled clusters
+      ansible.builtin.set_fact:
+        _providers: >-
+          {{
+            _app.clusters | dict2items
+            | selectattr('value.deploy', 'defined')
+            | selectattr('value.deploy', 'equalto', true)
+            | selectattr('value.values.provider', 'defined')
+            | map(attribute='value.values.provider')
+            | list
+          }}
+
+    - name: Check Infisical for each provider key
+      ansible.builtin.uri:
+        url: >-
+          {{ infisical_base_url }}/api/v3/secrets/raw/{{ item.region }}-{{ item.platform }}
+          ?workspaceSlug={{ infisical_project_slug }}
+          &environment={{ infisical_env_slug }}
+          &secretPath={{ infisical_secret_path }}
+        headers:
+          Authorization: "Bearer {{ infisical_token }}"
+        status_code: [200, 404]
+      register: _infisical_checks
+      no_log: true
+      loop: "{{ _providers }}"
+      loop_control:
+        label: "{{ item.region }}-{{ item.platform }}"
+
+    - name: Create infra provider and store key for missing entries
+      when: >
+        _infisical_checks.results[idx].status == 404 or
+        (_infisical_checks.results[idx].json.secret.secretValue | default('')) | length == 0
+      block:
+        - name: Create infra provider {{ item.region }}-{{ item.platform }}
+          ansible.builtin.command:
+            cmd: omnictl infraprovider create {{ item.region }}-{{ item.platform }}
+          environment:
+            OMNI_ENDPOINT: "{{ omni_endpoint }}"
+            OMNI_SERVICE_ACCOUNT_KEY: "{{ omni_sa_key }}"
+          register: _create_result
+          changed_when: true
+          no_log: true
+
+        - name: Store infra provider key in Infisical for {{ item.region }}-{{ item.platform }}
+          ansible.builtin.uri:
+            url: "{{ infisical_base_url }}/api/v3/secrets/raw/{{ item.region }}-{{ item.platform }}"
+            method: "{{ 'PATCH' if _infisical_checks.results[idx].status == 200 else 'POST' }}"
+            headers:
+              Authorization: "Bearer {{ infisical_token }}"
+              Content-Type: application/json
+            body_format: json
+            body:
+              workspaceSlug: "{{ infisical_project_slug }}"
+              environment: "{{ infisical_env_slug }}"
+              secretPath: "{{ infisical_secret_path }}"
+              secretValue: "{{ _create_result.stdout | trim }}"
+            status_code: [200, 201]
+          no_log: true
+          changed_when: true
+      loop: "{{ _providers }}"
+      loop_control:
+        index_var: idx
+        label: "{{ item.region }}-{{ item.platform }}"
