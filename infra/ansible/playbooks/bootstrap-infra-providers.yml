@@ -17,7 +17,7 @@
       ansible.builtin.set_fact:
         _app: >-
           {{
-            lookup('file', playbook_dir ~ '/../../apps/omni-infra-provider/app.yaml')
+            lookup('file', playbook_dir ~ '/../../../apps/omni-infra-provider/app.yaml')
             | from_yaml
           }}
 
