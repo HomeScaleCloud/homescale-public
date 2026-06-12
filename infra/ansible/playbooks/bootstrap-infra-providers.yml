@@ -78,7 +78,6 @@
       failed_when: >
         _create_results.rc != 0 and
         'already exist' not in (_create_results.stderr | lower)
-      no_log: true
       loop: "{{ _providers }}"
       loop_control:
         index_var: idx
@@ -90,15 +89,6 @@
         not in _existing_provider_keys or
         _existing_provider_keys[item.value['values']['provider']['region'] ~ '-' ~ item.value['values']['provider']['platform']] | length == 0
 
-    - name: Show create result
-      ansible.builtin.debug:
-        msg: "{{ item.key }}: rc={{ _create_results.results[idx].rc }} stderr={{ _create_results.results[idx].stderr }}"
-      loop: "{{ _providers }}"
-      loop_control:
-        index_var: idx
-        label: "{{ item.key }}"
-      when: not (_create_results.results[idx].skipped | default(false))
-
     - name: Store infra provider key in Infisical
       infisical.vault.create_secret:
         login_data: "{{ _infisical.login_data }}"
@@ -107,7 +97,10 @@
         path: "{{ infisical_secret_path }}"
         secret_name: >-
           {{ item.value['values']['provider']['region'] }}-{{ item.value['values']['provider']['platform'] }} # pragma: allowlist secret
-        secret_value: "{{ _create_results.results[idx].stdout | trim }}" # pragma: allowlist secret
+        secret_value: >- # pragma: allowlist secret
+          {{ _create_results.results[idx].stdout
+             | regex_search('OMNI_SERVICE_ACCOUNT_KEY=(.+)', '\1')
+             | first }}
       no_log: true
       changed_when: true
       loop: "{{ _providers }}"
