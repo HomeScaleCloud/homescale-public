@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: kube-multus-ds
+  name: multus-ds
   namespace: kube-system
   labels:
     tier: node
@@ -68,7 +68,7 @@ spec:
               mountPath: /host/opt/cni/bin
               mountPropagation: Bidirectional
       containers:
-        - name: kube-multus
+        - name: multus
           image: {{ required "image is required" .Values.image | quote }}
           command:
             - /usr/src/multus-cni/bin/multus-daemon
