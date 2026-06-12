@@ -1,9 +1,9 @@
 apiVersion: netbird.io/v1alpha1
 kind: SetupKey
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ .Release.Name }}-{{ .Values.provider.region }}-{{ .Values.provider.platform }}
 spec:
-  name: {{ .Release.Name }}
+  name: {{ .Release.Name }}-{{ .Values.provider.region }}-{{ .Values.provider.platform }}
   ephemeral: true
   duration: 24h
   {{- with .Values.netbird.autoGroups }}
