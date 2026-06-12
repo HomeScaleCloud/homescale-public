@@ -21,31 +21,19 @@ spec:
         k8s.v1.cni.cncf.io/networks: '[{"name":{{ printf "%s-mgmt" $region | quote }},"namespace":{{ $.Release.Namespace | quote }},"ips":[{{ . | quote }}]}]'
       {{- end }}
     spec:
-      containers:
-        - name: omni-infra-provider
-          image: {{ $image | quote }}
-          imagePullPolicy: IfNotPresent
-          args:
-            - --omni-api-endpoint={{ .Values.omni.apiEndpoint }}
-            - --id={{ $region }}-{{ $platform }}
-            - --machine-labels=region={{ $region }},platform={{ $platform }}
-            - --provider-name={{ $region }}-{{ $platform }}
-            {{- if and (eq $platform "metal") (not (eq false .Values.provider.secureBootEnabled)) }}
-            - --secure-boot-enabled
-            {{- end }}
-            - --api-advertise-address={{ required "provider.address is required" .Values.provider.address | splitList "/" | first }}
-          env:
-            - name: OMNI_SERVICE_ACCOUNT_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: omni-infra-provider
-                  key: {{ $region }}-{{ $platform }} # pragma: allowlist secret
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
+      initContainers:
         - name: netbird
           image: {{ required "netbird.image is required" .Values.netbird.image | quote }}
+          restartPolicy: Always
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "netbird status 2>/dev/null | grep -qi connected"
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 60
           env:
             - name: NB_SETUP_KEY
               valueFrom:
@@ -78,6 +66,29 @@ spec:
               mountPath: /var/run/netbird
             - name: netbird-lib
               mountPath: /var/lib/netbird
+      containers:
+        - name: omni-infra-provider
+          image: {{ $image | quote }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - --omni-api-endpoint={{ .Values.omni.apiEndpoint }}
+            - --id={{ $region }}-{{ $platform }}
+            - --machine-labels=region={{ $region }},platform={{ $platform }}
+            - --provider-name={{ $region }}-{{ $platform }}
+            {{- if and (eq $platform "metal") (not (eq false .Values.provider.secureBootEnabled)) }}
+            - --secure-boot-enabled
+            {{- end }}
+            - --api-advertise-address={{ required "provider.address is required" .Values.provider.address | splitList "/" | first }}
+          env:
+            - name: OMNI_SERVICE_ACCOUNT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: omni-infra-provider
+                  key: {{ $region }}-{{ $platform }} # pragma: allowlist secret
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
       volumes:
         - name: netbird-run
           emptyDir: {}
