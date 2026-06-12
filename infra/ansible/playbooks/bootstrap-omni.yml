@@ -6,7 +6,7 @@
   vars:
     omni_endpoint: "{{ lookup('env', 'OMNI_ENDPOINT') | default('https://xxx', true) }}"
     infisical_url: https://app.infisical.com
-    infisical_project_id: "{{ lookup('env', 'INFISICAL_PROJECT_ID') }}"
+    infisical_project_slug: homescale
     infisical_env_slug: prod
 
   tasks:
@@ -26,7 +26,7 @@
     - name: Read OMNI_SERVICE_ACCOUNT_KEY from Infisical
       infisical.vault.read_secrets:
         login_data: "{{ _infisical.login_data }}"
-        project_id: "{{ infisical_project_id }}"
+        project_slug: "{{ infisical_project_slug }}"
         env_slug: "{{ infisical_env_slug }}"
         path: /github-actions
         secret_name: OMNI_SERVICE_ACCOUNT_KEY # pragma: allowlist secret
@@ -44,7 +44,7 @@
     - name: Read MGMT_KUBECONFIG from Infisical
       infisical.vault.read_secrets:
         login_data: "{{ _infisical.login_data }}"
-        project_id: "{{ infisical_project_id }}"
+        project_slug: "{{ infisical_project_slug }}"
         env_slug: "{{ infisical_env_slug }}"
         path: /github-actions
         secret_name: MGMT_KUBECONFIG # pragma: allowlist secret
@@ -117,7 +117,7 @@
     - name: Store github-actions SA key in Infisical
       infisical.vault.create_secret:
         login_data: "{{ _infisical.login_data }}"
-        project_id: "{{ infisical_project_id }}"
+        project_slug: "{{ infisical_project_slug }}"
         env_slug: "{{ infisical_env_slug }}"
         path: /github-actions
         secret_name: OMNI_SERVICE_ACCOUNT_KEY # pragma: allowlist secret
