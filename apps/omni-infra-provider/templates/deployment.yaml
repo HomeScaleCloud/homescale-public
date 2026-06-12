@@ -1,21 +1,22 @@
 {{- $region := required "provider.region is required" .Values.provider.region -}}
 {{- $platform := required "provider.platform is required" .Values.provider.platform -}}
 {{- $image := required (printf "unsupported platform: %s" $platform) (get .Values.provider.images $platform) -}}
+{{- $name := printf "%s-%s-%s" .Release.Name $region $platform -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ $name }}
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: {{ .Release.Name }}
+      app: {{ $name }}
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}
+        app: {{ $name }}
       {{- with .Values.provider.address }}
       annotations:
         k8s.v1.cni.cncf.io/networks: '[{"name":{{ printf "%s-mgmt" $region | quote }},"namespace":{{ $.Release.Namespace | quote }},"ips":[{{ . | quote }}]}]'
@@ -83,7 +84,7 @@ spec:
             - name: OMNI_SERVICE_ACCOUNT_KEY
               valueFrom:
                 secretKeyRef:
-                  name: omni-infra-provider
+                  name: omni-infra-provider-{{ $region }}-{{ $platform }}
                   key: {{ $region }}-{{ $platform }} # pragma: allowlist secret
           securityContext:
             allowPrivilegeEscalation: false
