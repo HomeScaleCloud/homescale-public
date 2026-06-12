@@ -1,0 +1,5 @@
+apiVersion: v2
+name: multus
+description: Helm chart for Multus CNI
+type: application
+version: 0.1.0
