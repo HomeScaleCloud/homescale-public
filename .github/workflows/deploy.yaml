@@ -142,6 +142,13 @@ jobs:
                 | sort -u \
                 | jq -Rsc 'split("\n") | map(select(length > 0))'
             )
+            machineclasses=$(
+              git diff --name-only "$range" \
+                | { grep -E '^infra/omni/machineclasses/[^/]+\.yaml$' || true; } \
+                | sed 's|.*/||; s|\.yaml$||' \
+                | sort -u \
+                | jq -Rsc 'split("\n") | map(select(length > 0))'
+            )
           else
             clusters=$(
               find clusters -mindepth 2 -maxdepth 2 -name 'cluster.yaml' \
@@ -149,13 +156,22 @@ jobs:
                 | sort -u \
                 | jq -Rsc 'split("\n") | map(select(length > 0))'
             )
+            machineclasses=$(
+              find infra/omni/machineclasses -maxdepth 1 -name '*.yaml' \
+                | sed 's|.*/||; s|\.yaml$||' \
+                | sort -u \
+                | jq -Rsc 'split("\n") | map(select(length > 0))'
+            )
           fi
           echo "clusters=${clusters}" >> "$GITHUB_OUTPUT"
           echo "CLUSTERS=${clusters}" >> "$GITHUB_ENV"
           echo "Clusters detected: ${clusters}"
+          echo "machineclasses=${machineclasses}" >> "$GITHUB_OUTPUT"
+          echo "MACHINECLASSES=${machineclasses}" >> "$GITHUB_ENV"
+          echo "Machine classes detected: ${machineclasses}"
 
       - name: Import Secrets
-        if: steps.detect.outputs.clusters != '[]'
+        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
         uses: Infisical/secrets-action@v1.0.16
         with:
           method: "oidc"
@@ -166,11 +182,11 @@ jobs:
           export-type: env
 
       - name: Setup NetBird client
-        if: steps.detect.outputs.clusters != '[]'
+        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
         run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
 
       - name: Generate NetBird Setup Key
-        if: steps.detect.outputs.clusters != '[]'
+        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
         run: |
           NB_GROUP_ID=$(curl -fsSL \
             -H "Authorization: Token $NETBIRD_SA_TOKEN" \
@@ -198,13 +214,13 @@ jobs:
           echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
 
       - name: Connect to NetBird
-        if: steps.detect.outputs.clusters != '[]'
+        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
         run: |
           netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
           sleep 10
 
       - name: Install omnictl
-        if: steps.detect.outputs.clusters != '[]'
+        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
         run: |
           curl -fsSL -o /usr/local/bin/omnictl \
             https://REDACTED/omnictl/omnictl-linux-amd64
@@ -212,7 +228,7 @@ jobs:
           sudo apt-get install -y yq
 
       - name: Plan
-        if: steps.detect.outputs.clusters != '[]' && github.event_name == 'pull_request'
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && github.event_name == 'pull_request'
         id: plan
         continue-on-error: true
         env:
@@ -229,7 +245,7 @@ jobs:
               | yq -sY '[.[] | if .kind == "ControlPlane" or .kind == "Workers" then if has("region") then .region as $r | del(.region) | .patches += [{"name":"region-label","inline":{"machine":{"nodeLabels":{"topology.kubernetes.io/region":$r,"REDACTED/region":$r}}}}] else "machineset \(.kind) is missing required region field" | error end else . end] | .[]' \
               > "$tmpdir/cluster.yaml"
             mkdir -p "$tmpdir/patches"
-            for pf in clusters/patches/*.yaml; do
+            for pf in infra/omni/patches/*.yaml; do
               CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "$pf" > "$tmpdir/patches/$(basename "$pf")"
             done
             if omnictl cluster template sync \
@@ -243,10 +259,21 @@ jobs:
             fi
             rm -rf "$tmpdir"
           done
+          for mc in $(echo "$MACHINECLASSES" | jq -r '.[]'); do
+            echo "Planning machine class: $mc"
+            if omnictl apply -f "infra/omni/machineclasses/$mc.yaml" \
+                --dry-run \
+                > "/tmp/omni-mc-$mc.txt" 2>&1; then
+              echo "PLAN_MC_${mc}=success" >> "$GITHUB_ENV"
+            else
+              echo "PLAN_MC_${mc}=failed" >> "$GITHUB_ENV"
+              failed=true
+            fi
+          done
           [ "$failed" = "false" ]
 
       - name: Sync
-        if: steps.detect.outputs.clusters != '[]' && github.ref == 'refs/heads/main'
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && github.ref == 'refs/heads/main'
         env:
           OMNI_ENDPOINT: https://REDACTED
           OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
@@ -260,39 +287,28 @@ jobs:
               | yq -sY '[.[] | if .kind == "ControlPlane" or .kind == "Workers" then if has("region") then .region as $r | del(.region) | .patches += [{"name":"region-label","inline":{"machine":{"nodeLabels":{"topology.kubernetes.io/region":$r,"REDACTED/region":$r}}}}] else "machineset \(.kind) is missing required region field" | error end else . end] | .[]' \
               > "$tmpdir/cluster.yaml"
             mkdir -p "$tmpdir/patches"
-            for pf in clusters/patches/*.yaml; do
+            for pf in infra/omni/patches/*.yaml; do
               CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "$pf" > "$tmpdir/patches/$(basename "$pf")"
             done
             omnictl cluster template sync -f "$tmpdir/cluster.yaml"
             rm -rf "$tmpdir"
           done
+          for mc in $(echo "$MACHINECLASSES" | jq -r '.[]'); do
+            echo "Applying machine class: $mc"
+            omnictl apply -f "infra/omni/machineclasses/$mc.yaml"
+          done
 
       - name: Post plan results as PR comments
-        if: always() && github.event_name == 'pull_request' && steps.detect.outputs.clusters != '[]'
+        if: always() && github.event_name == 'pull_request' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]')
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
           CLUSTERS: ${{ steps.detect.outputs.clusters }}
+          MACHINECLASSES: ${{ steps.detect.outputs.machineclasses }}
         with:
           script: |
             const fs = require('fs');
-            const clusters = JSON.parse(process.env.CLUSTERS);
-            for (const cluster of clusters) {
-              const ok = process.env[`PLAN_${cluster}`] === 'success';
-              const output = fs.existsSync(`/tmp/omni-${cluster}.txt`)
-                ? fs.readFileSync(`/tmp/omni-${cluster}.txt`, 'utf8').trim()
-                : '(no output)';
-              const icon = ok ? '✅' : '❌';
-              const marker = `<!-- omni-cluster-sync-${cluster} -->`;
-              const body = [
-                marker,
-                `## ${icon} Omni cluster template plan — \`${cluster}\``,
-                '',
-                '```',
-                output || '(no output)',
-                '```',
-                '',
-                `> commit \`${{ github.sha }}\``,
-              ].join('\n');
+
+            async function upsertComment(marker, body) {
               const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -314,6 +330,48 @@ jobs:
                   body,
                 });
               }
+            }
+
+            const clusters = JSON.parse(process.env.CLUSTERS);
+            for (const cluster of clusters) {
+              const ok = process.env[`PLAN_${cluster}`] === 'success';
+              const output = fs.existsSync(`/tmp/omni-${cluster}.txt`)
+                ? fs.readFileSync(`/tmp/omni-${cluster}.txt`, 'utf8').trim()
+                : '(no output)';
+              const icon = ok ? '✅' : '❌';
+              const marker = `<!-- omni-cluster-sync-${cluster} -->`;
+              const body = [
+                marker,
+                `## ${icon} Omni cluster template plan — \`${cluster}\``,
+                '',
+                '```',
+                output || '(no output)',
+                '```',
+                '',
+                `> commit \`${{ github.sha }}\``,
+              ].join('\n');
+              await upsertComment(marker, body);
+            }
+
+            const machineclasses = JSON.parse(process.env.MACHINECLASSES);
+            for (const mc of machineclasses) {
+              const ok = process.env[`PLAN_MC_${mc}`] === 'success';
+              const output = fs.existsSync(`/tmp/omni-mc-${mc}.txt`)
+                ? fs.readFileSync(`/tmp/omni-mc-${mc}.txt`, 'utf8').trim()
+                : '(no output)';
+              const icon = ok ? '✅' : '❌';
+              const marker = `<!-- omni-machineclass-${mc} -->`;
+              const body = [
+                marker,
+                `## ${icon} Omni machine class plan — \`${mc}\``,
+                '',
+                '```',
+                output || '(no output)',
+                '```',
+                '',
+                `> commit \`${{ github.sha }}\``,
+              ].join('\n');
+              await upsertComment(marker, body);
             }
 
       - name: Fail if plan failed
