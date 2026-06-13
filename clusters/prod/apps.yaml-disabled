@@ -1,0 +1,36 @@
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: apps-prod
+#   namespace: argocd
+# spec:
+#   project: default
+#   sources:
+#     - repoURL: git@github.com:HomeScaleCloud/homescale.git
+#       targetRevision: main
+#       path: clusters/prod
+#       directory:
+#         recurse: true
+#         exclude: 'cluster.yaml'
+#     - repoURL: git@github.com:HomeScaleCloud/homescale.git
+#       targetRevision: main
+#       path: apps
+#       helm:
+#         releaseName: apps-prod
+#         values: |
+#           cluster:
+#             name: prod
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: argocd
+#   ignoreDifferences:
+#     - group: argoproj.io
+#       kind: Application
+#       jsonPointers:
+#         - /metadata/finalizers
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true

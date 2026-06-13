@@ -1,0 +1,25 @@
+# kind: Cluster
+# name: prod
+# kubernetes:
+#   version: v1.36.2
+# talos:
+#   version: v1.13.4
+# features:
+#   useEmbeddedDiscoveryService: true
+#   backupConfiguration:
+#     interval: 1h
+# patches:
+#   - file: patches/base.yaml
+#   - file: patches/allow-scheduling-on-control-plane.yaml
+# ---
+# kind: ControlPlane
+# region: boa1
+# machines:
+#   - 4c4c4544-0031-5310-8057-b7c04f584b32
+# patches:
+#   - name: install-disk
+#     inline:
+#       machine:
+#         install:
+#           diskSelector:
+#             model: 'Crucial_CT525MX3'
