@@ -1,5 +1,5 @@
 kind: Cluster
-name: boa1-gw
+name: lab
 kubernetes:
   version: v1.36.2
 talos:
