@@ -1,0 +1,43 @@
+kind: Cluster
+name: prod
+kubernetes:
+  version: v1.36.2
+talos:
+  version: v1.13.4
+features:
+  useEmbeddedDiscoveryService: true
+  backupConfiguration:
+    interval: 1h
+patches:
+  - file: patches/base.yaml
+  - file: patches/allow-scheduling-on-control-plane.yaml
+---
+kind: ControlPlane
+region: boa1
+machineClass:
+  name: boa1-metal
+  size: 3
+patches:
+  - name: install-disk
+    inline:
+      machine:
+        install:
+          diskSelector:
+            type: 'nvme'
+  - name: nics
+    inline:
+      machine:
+        network:
+          interfaces:
+            - interface: bond0
+              dhcp: true
+              bond:
+                mode: 802.3ad
+                lacpRate: fast
+                xmitHashPolicy: layer3+4
+                miimon: 100
+                interfaces:
+                  - eno1
+                  - eno2
+                  - eno3
+                  - eno4

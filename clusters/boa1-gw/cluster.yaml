@@ -1,5 +1,5 @@
 kind: Cluster
-name: lab
+name: boa1-gw
 kubernetes:
   version: v1.36.2
 talos:
@@ -23,3 +23,18 @@ patches:
         install:
           diskSelector:
             model: 'INTEL SSDPEKNW512G8H'
+  - name: nics
+    inline:
+      machine:
+        network:
+          interfaces:
+            - interface: bond0
+              dhcp: true
+              bond:
+                mode: 802.3ad
+                lacpRate: fast
+                xmitHashPolicy: layer3+4
+                miimon: 100
+                interfaces:
+                  - eno1
+                  - eno2
