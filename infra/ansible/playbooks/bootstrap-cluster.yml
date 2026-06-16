@@ -39,8 +39,8 @@
         kind: Namespace
         name: kube-system
       register: _api_probe
-      retries: 10
-      delay: 30
+      retries: 2
+      delay: 5
       until: _api_probe is not failed
       ignore_errors: true
 
