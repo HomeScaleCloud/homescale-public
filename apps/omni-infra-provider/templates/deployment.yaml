@@ -82,6 +82,7 @@ spec:
             - --api-advertise-address={{ required "provider.address is required" .Values.provider.address | splitList "/" | first }}
             - --disable-dhcp-proxy
             - --disable-dhcp-proxy-broadcast
+            - --debug
           env:
             - name: OMNI_SERVICE_ACCOUNT_KEY
               valueFrom:
