@@ -1,16 +1,16 @@
-resource "netbird_policy" "lab" {
-  name    = "Lab Policy"
-  enabled = true
-  rule {
-    action        = "accept"
-    bidirectional = false
-    enabled       = true
-    protocol      = "all"
-    name          = "Lab Policy"
-    sources       = [data.netbird_group.all.id]
-    destinations  = [netbird_group.cluster["lab"].id]
-  }
-}
+# resource "netbird_policy" "lab" {
+#   name    = "Lab Policy"
+#   enabled = true
+#   rule {
+#     action        = "accept"
+#     bidirectional = false
+#     enabled       = true
+#     protocol      = "all"
+#     name          = "Lab Policy"
+#     sources       = [data.netbird_group.all.id]
+#     destinations  = [netbird_group.cluster["lab"].id]
+#   }
+# }
 
 resource "netbird_policy" "region_mgmt" {
   name    = "Region Mgmt Networks"
