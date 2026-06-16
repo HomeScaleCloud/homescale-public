@@ -7,15 +7,3 @@ cluster:
 machine:
   nodeLabels:
     REDACTED/name: ${CLUSTER_NAME}
-  network:
-    interfaces:
-      - interface: bond0
-        dhcp: true
-        bond:
-          mode: 802.3ad
-          lacpRate: fast
-          xmitHashPolicy: layer3+4
-          miimon: 100
-          interfaces:
-            - eno1
-            - eno2
