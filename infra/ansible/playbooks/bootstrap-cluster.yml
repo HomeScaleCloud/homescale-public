@@ -42,6 +42,11 @@
       retries: 10
       delay: 30
       until: _api_probe is not failed
+      ignore_errors: true
+
+    - name: Skip cluster if API unreachable
+      when: _api_probe is failed
+      ansible.builtin.meta: end_host
 
   roles:
     - cluster-secrets
