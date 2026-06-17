@@ -4,4 +4,4 @@ metadata:
   id: boa1-metal
 spec:
   matchlabels:
-    - region = boa1, platform = metal
+    - omni.sidero.dev/infra-provider/boa1-metal/region = boa1, omni.sidero.dev/infra-provider/boa1-metal/platform = metal
