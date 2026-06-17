@@ -86,6 +86,7 @@ jobs:
         env:
           OMNI_ENDPOINT: https://xxx
           OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
+          MGMT_KUBECONFIG: ${{ env.MGMT_KUBECONFIG }}
           INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: ansible-playbook playbooks/bootstrap-omni.yml
