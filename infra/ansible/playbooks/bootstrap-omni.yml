@@ -41,26 +41,13 @@
         not _sa_check.failed and
         (_sa_check.secrets.OMNI_SERVICE_ACCOUNT_KEY | default('')) | length > 0
 
-    - name: Read MGMT_KUBECONFIG from Infisical
-      infisical.vault.read_secrets:
-        login_data: "{{ _infisical.login_data }}"
-        project_id: "{{ infisical_project_id }}"
-        env_slug: "{{ infisical_env_slug }}"
-        path: /github-actions
-        secret_name: MGMT_KUBECONFIG # pragma: allowlist secret
-        as_dict: true
-      register: _kubeconfig_resp
-      no_log: true
-      failed_when: >
-        _kubeconfig_resp.failed or
-        (_kubeconfig_resp.secrets.MGMT_KUBECONFIG | default('')) | length == 0
-
     - name: Write kubeconfig to temp file
       ansible.builtin.copy:
-        content: "{{ _kubeconfig_resp.secrets.MGMT_KUBECONFIG }}"
+        content: "{{ lookup('env', 'MGMT_KUBECONFIG') }}"
         dest: /tmp/mgmt-kubeconfig
         mode: "0600"
       no_log: true
+      failed_when: (lookup('env', 'MGMT_KUBECONFIG') | length) == 0
 
     - name: Wait for Omni pod to be ready
       kubernetes.core.k8s_info:
