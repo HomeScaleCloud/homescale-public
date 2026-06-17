@@ -1,6 +1,7 @@
 metadata:
-  id: boa1-metal
+  namespace: default
   type: MachineClasses.omni.sidero.dev
+  id: boa1-metal
 spec:
   matchlabels:
     - region = boa1, platform = metal
