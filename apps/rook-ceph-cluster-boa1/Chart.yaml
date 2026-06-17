@@ -1,0 +1,9 @@
+apiVersion: v2
+name: rook-ceph-cluster-boa1
+description: Rook-Ceph cluster for the boa1 region
+type: application
+version: 0.1.0
+dependencies:
+  - name: rook-ceph-cluster
+    version: v1.16.5
+    repository: https://charts.rook.io/release

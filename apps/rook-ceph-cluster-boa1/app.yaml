@@ -1,16 +1,26 @@
 defaultDeploy: false
 
-path: apps/rook-ceph-clusters
-namespace: rook-ceph
+path: apps/rook-ceph-cluster-boa1
+namespace: rook-ceph-boa1
+releaseName: boa1
+podSecurity: privileged
 syncWave: 0
 
 clusters:
   prod:
     deploy: true
     values:
-      clusters:
-        boa1:
-          namespace: rook-ceph-boa1
+      rook-ceph-cluster:
+        operatorNamespace: rook-ceph
+        clusterName: boa1
+        cephClusterSpec:
+          network:
+            provider: host
+          storage:
+            useAllNodes: true
+            useAllDevices: true
+            config:
+              minSize: "900G"
           placement:
             all:
               nodeAffinity:
@@ -21,8 +31,3 @@ clusters:
                           operator: In
                           values:
                             - boa1
-          storage:
-            useAllNodes: true
-            useAllDevices: true
-            config:
-              minSize: "900G"
