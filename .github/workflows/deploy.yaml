@@ -300,6 +300,17 @@ jobs:
         run: |
           set -euo pipefail
           failed=false
+          for mc in $(echo "$MACHINECLASSES" | jq -r '.[]'); do
+            echo "Planning machine class: $mc"
+            if omnictl apply -f "infra/omni/machineclasses/$mc.yaml" \
+                --dry-run \
+                > "/tmp/omni-mc-$mc.txt" 2>&1; then
+              echo "PLAN_MC_${mc}=success" >> "$GITHUB_ENV"
+            else
+              echo "PLAN_MC_${mc}=failed" >> "$GITHUB_ENV"
+              failed=true
+            fi
+          done
           for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
             echo "Planning cluster: $cluster"
             tmpdir=$(mktemp -d)
@@ -321,17 +332,6 @@ jobs:
             fi
             rm -rf "$tmpdir"
           done
-          for mc in $(echo "$MACHINECLASSES" | jq -r '.[]'); do
-            echo "Planning machine class: $mc"
-            if omnictl apply -f "infra/omni/machineclasses/$mc.yaml" \
-                --dry-run \
-                > "/tmp/omni-mc-$mc.txt" 2>&1; then
-              echo "PLAN_MC_${mc}=success" >> "$GITHUB_ENV"
-            else
-              echo "PLAN_MC_${mc}=failed" >> "$GITHUB_ENV"
-              failed=true
-            fi
-          done
           [ "$failed" = "false" ]
 
       - name: Sync
@@ -342,6 +342,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          for mc in $(echo "$MACHINECLASSES" | jq -r '.[]'); do
+            echo "Applying machine class: $mc"
+            omnictl apply -f "infra/omni/machineclasses/$mc.yaml"
+          done
           for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
             echo "Syncing cluster: $cluster"
             tmpdir=$(mktemp -d)
@@ -354,10 +358,6 @@ jobs:
             done
             omnictl cluster template sync -f "$tmpdir/cluster.yaml"
             rm -rf "$tmpdir"
-          done
-          for mc in $(echo "$MACHINECLASSES" | jq -r '.[]'); do
-            echo "Applying machine class: $mc"
-            omnictl apply -f "infra/omni/machineclasses/$mc.yaml"
           done
 
       - name: Post plan results as PR comments
