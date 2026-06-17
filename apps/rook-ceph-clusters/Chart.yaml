@@ -1,0 +1,5 @@
+apiVersion: v2
+name: rook-ceph-clusters
+description: Rook-Ceph cluster CRs — one CephCluster per region per k8s cluster
+type: application
+version: 0.1.0

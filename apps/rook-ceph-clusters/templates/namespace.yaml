@@ -1,0 +1,13 @@
+{{- range $name, $config := .Values.clusters }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ required (printf "clusters.%s.namespace is required" $name) $config.namespace }}
+  labels:
+    app.kubernetes.io/managed-by: rook-ceph-clusters
+    REDACTED/cluster: {{ $name | quote }}
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/warn: privileged
+    pod-security.kubernetes.io/audit: privileged
+{{- end }}

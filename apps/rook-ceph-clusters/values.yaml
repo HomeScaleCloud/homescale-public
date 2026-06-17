@@ -1,0 +1,18 @@
+# Defaults applied to every CephCluster spec unless overridden per-cluster.
+defaults:
+  cephVersion:
+    image: quay.io/ceph/ceph:v19
+  dataDirHostPath: /var/lib/rook
+  mon:
+    count: 3
+  mgr:
+    count: 2
+  dashboard:
+    enabled: false
+  network:
+    provider: host
+  storage:
+    useAllNodes: false
+    useAllDevices: false
+
+clusters: {}
