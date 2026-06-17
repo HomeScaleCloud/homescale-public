@@ -1,0 +1,12 @@
+{{- range $name, $config := .Values.clusters }}
+{{- $ns := required (printf "clusters.%s.namespace is required" $name) $config.namespace }}
+{{- $spec := mergeOverwrite (deepCopy $.Values.defaults) (omit $config "namespace" "blockPools" "filesystems") }}
+---
+apiVersion: ceph.rook.io/v1
+kind: CephCluster
+metadata:
+  name: {{ $name }}
+  namespace: {{ $ns }}
+spec:
+{{ toYaml $spec | nindent 2 }}
+{{- end }}

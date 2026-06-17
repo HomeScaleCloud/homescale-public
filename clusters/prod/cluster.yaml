@@ -18,6 +18,11 @@ machineClass:
   name: boa1-metal
   size: 3
 patches:
+  - name: region-label
+    inline:
+      machine:
+        nodeLabels:
+          REDACTED/region: boa1
   - name: install-disk
     inline:
       machine:
