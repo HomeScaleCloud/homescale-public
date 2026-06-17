@@ -1,0 +1,16 @@
+defaultDeploy: false
+
+path: apps/rook-ceph
+namespace: rook-ceph
+podSecurity: privileged
+syncWave: -5
+values:
+  rook-ceph:
+    crds:
+      enabled: true
+    logLevel: INFO
+    currentNamespaceOnly: false
+
+clusters:
+  prod:
+    deploy: true

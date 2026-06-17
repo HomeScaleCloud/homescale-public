@@ -1,0 +1,28 @@
+defaultDeploy: false
+
+path: apps/rook-ceph-clusters
+namespace: rook-ceph
+syncWave: 0
+
+clusters:
+  prod:
+    deploy: true
+    values:
+      clusters:
+        boa1:
+          namespace: rook-ceph-boa1
+          placement:
+            all:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                    - matchExpressions:
+                        - key: xxx/region
+                          operator: In
+                          values:
+                            - boa1
+          storage:
+            useAllNodes: true
+            useAllDevices: true
+            config:
+              minSize: "900G"
