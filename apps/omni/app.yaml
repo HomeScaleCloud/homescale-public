@@ -1,13 +1,6 @@
 clusters:
   mgmt:
     deploy: true
-    values:
-      omni:
-        replicaCount: 0
-      volsync:
-        restore:
-          enabled: true
-          previous: 3 
 
 path: apps/omni
 namespace: omni
