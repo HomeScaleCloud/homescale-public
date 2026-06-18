@@ -54,13 +54,13 @@ Each `apps/<name>/app.yaml` controls deployment with these fields:
 - `path` — path to the actual Helm chart (required)
 - `namespace` — target namespace (required)
 - `syncWave` — ArgoCD sync wave; bootstrap order is: infisical (-35) → cert-manager/argocd/rbac (-30) → netbird (-20) → external-dns (-10) → apps (0)
-- `values` — Helm values passed through; may use `{{ .Values.cluster.name }}` templating
+- `values` — Helm values passed through; may use `{{ .Values.cluster.name }}` and `{{ .Values.cluster.region }}` templating
 
 Apps that contain a `Chart.yaml` and `Dockerfile` under `apps/<name>/` are built and pushed to `ghcr.io/homescalecloud/<name>` by CI.
 
 ### Clusters (`clusters/`)
 
-One directory per cluster: `mgmt`, `prod`, `lab`, `boa1-gw`.
+One directory per cluster: `mgmt`, `boa1-prod`, `boa1-gw`. Cluster names follow the `<region>-<name>` convention (e.g. `boa1-prod`, `boa1-gw`); `mgmt` is the exception. Each cluster maps to exactly one region.
 
 - `clusters/<cluster>/apps.yaml` — the bootstrap ArgoCD app-of-apps (applied manually once)
 - `clusters/<cluster>/cluster.yaml` — Omni cluster template (Talos/k8s versions, machine assignments, patches); uses `$CLUSTER_NAME` envsubst substitution at deploy time

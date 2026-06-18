@@ -20,6 +20,7 @@ spec:
         values: |
           cluster:
             name: boa1-gw
+            region: boa1
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

@@ -9,6 +9,7 @@ revisionHistoryLimit: 10
 
 cluster:
   name: ""
+  region: ""
 
 destination:
   name: ""

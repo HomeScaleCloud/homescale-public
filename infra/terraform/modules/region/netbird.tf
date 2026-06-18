@@ -3,7 +3,7 @@ data "netbird_group" "cluster_mgmt" {
 }
 
 data "netbird_group" "cluster_prod" {
-  name = "cluster-prod"
+  name = "cluster-${var.region}-prod"
 }
 
 data "netbird_group" "net_region_mgmt" {
