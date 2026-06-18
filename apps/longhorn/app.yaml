@@ -1,0 +1,17 @@
+defaultDeploy: false
+
+clusters:
+  boa1-prod:
+    deploy: true
+
+path: apps/longhorn
+namespace: longhorn-system
+releaseName: longhorn
+syncWave: 0
+podSecurity: privileged
+values:
+  longhorn:
+    defaultSettings:
+      defaultDataPath: /var/mnt/longhorn
+      storageMinimalAvailablePercentage: 25
+      storageReservedPercentageForDefaultDisk: 30
