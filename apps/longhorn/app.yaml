@@ -11,6 +11,8 @@ syncWave: 0
 podSecurity: privileged
 values:
   longhorn:
+    preUpgradeChecker:
+      jobEnabled: false
     defaultSettings:
       defaultDataPath: /var/mnt/longhorn
       storageMinimalAvailablePercentage: 25
