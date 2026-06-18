@@ -11,9 +11,9 @@ values:
   ingress:
     enabled: true
     className: tailscale
-    host: "ha-{{ .Values.global.cluster }}-{{ .Values.global.region }}.REDACTED"
+    host: "ha-{{ .Values.cluster.name }}.REDACTED"
     annotations:
-      tailscale.com/hostname: "ha-{{ .Values.global.cluster }}-{{ .Values.global.region }}"
+      tailscale.com/hostname: "ha-{{ .Values.cluster.name }}"
       tailscale.com/tags: "tag:app-ha,tag:env-{{ .Values.global.env }}"
   pvc:
     size: 25Gi
