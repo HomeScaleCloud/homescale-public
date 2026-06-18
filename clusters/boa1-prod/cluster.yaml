@@ -11,6 +11,8 @@ features:
 patches:
   - file: patches/base.yaml
   - file: patches/allow-scheduling-on-control-plane.yaml
+  - file: patches/longhorn.yaml
+  - file: patches/longhorn-disk.yaml
 ---
 kind: ControlPlane
 machineClass:
@@ -23,7 +25,6 @@ patches:
         install:
           diskSelector:
             type: 'nvme'
-  - file: patches/longhorn.yaml
   - name: nics
     inline:
       machine:
