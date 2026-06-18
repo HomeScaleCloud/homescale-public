@@ -315,7 +315,6 @@ jobs:
             echo "Planning cluster: $cluster"
             tmpdir=$(mktemp -d)
             CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "clusters/$cluster/cluster.yaml" \
-              | yq -sY '[.[] | if .kind == "ControlPlane" or .kind == "Workers" then if has("region") then .region as $r | del(.region) | .patches += [{"name":"region-label","inline":{"machine":{"nodeLabels":{"topology.kubernetes.io/region":$r,"xxx/region":$r}}}}] else "machineset \(.kind) is missing required region field" | error end else . end] | .[]' \
               > "$tmpdir/cluster.yaml"
             mkdir -p "$tmpdir/patches"
             for pf in infra/omni/patches/*.yaml; do
@@ -350,7 +349,6 @@ jobs:
             echo "Syncing cluster: $cluster"
             tmpdir=$(mktemp -d)
             CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "clusters/$cluster/cluster.yaml" \
-              | yq -sY '[.[] | if .kind == "ControlPlane" or .kind == "Workers" then if has("region") then .region as $r | del(.region) | .patches += [{"name":"region-label","inline":{"machine":{"nodeLabels":{"topology.kubernetes.io/region":$r,"xxx/region":$r}}}}] else "machineset \(.kind) is missing required region field" | error end else . end] | .[]' \
               > "$tmpdir/cluster.yaml"
             mkdir -p "$tmpdir/patches"
             for pf in infra/omni/patches/*.yaml; do
