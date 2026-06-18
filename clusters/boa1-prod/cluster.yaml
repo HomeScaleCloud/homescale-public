@@ -23,6 +23,7 @@ patches:
         install:
           diskSelector:
             type: 'nvme'
+  - file: patches/longhorn.yaml
   - name: nics
     inline:
       machine:
