@@ -11,6 +11,7 @@ values:
     logLevel: INFO
     currentNamespaceOnly: false
     csi:
+      provisionerReplicas: 1
       cephFSPlugin:
         resources:
           plugin:
