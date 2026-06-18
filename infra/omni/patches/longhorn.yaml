@@ -1,8 +1,4 @@
 machine:
-  install:
-    extensions:
-      - image: ghcr.io/siderolabs/iscsi-tools:v0.1.6
-      - image: ghcr.io/siderolabs/util-linux-tools:v2.40.2
   kubelet:
     extraMounts:
       - destination: /var/mnt/longhorn
@@ -12,3 +8,11 @@ machine:
           - bind
           - rshared
           - rw
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: longhorn
+provisioning:
+  diskSelector:
+    match: 'disk.size >= 900000000000 && !system_disk'
+  grow: false
