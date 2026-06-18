@@ -56,20 +56,20 @@
 
     - name: Creating infra provider
       ansible.builtin.debug:
-        msg: "{{ item.key }} ({{ item.value['values']['provider']['region'] }}-{{ item.value['values']['provider']['platform'] }})"
+        msg: "{{ item.key }} ({{ item.key.split('-')[0] }}-{{ item.value['values']['provider']['platform'] }})"
       loop: "{{ _providers }}"
       loop_control:
         label: "{{ item.key }}"
       when: >
-        (item.value['values']['provider']['region'] ~ '-' ~ item.value['values']['provider']['platform'])
+        (item.key.split('-')[0] ~ '-' ~ item.value['values']['provider']['platform'])
         not in _existing_provider_keys or
-        _existing_provider_keys[item.value['values']['provider']['region'] ~ '-' ~ item.value['values']['provider']['platform']] | length == 0
+        _existing_provider_keys[item.key.split('-')[0] ~ '-' ~ item.value['values']['provider']['platform']] | length == 0
 
     - name: Create infra provider
       ansible.builtin.command:
         cmd: >-
           omnictl infraprovider create
-          {{ item.value['values']['provider']['region'] }}-{{ item.value['values']['provider']['platform'] }}
+          {{ item.key.split('-')[0] }}-{{ item.value['values']['provider']['platform'] }}
       environment:
         OMNI_ENDPOINT: "{{ omni_endpoint }}"
         OMNI_SERVICE_ACCOUNT_KEY: "{{ omni_sa_key }}"
@@ -83,11 +83,11 @@
         index_var: idx
         label: >-
           {{ item.key }}
-          ({{ item.value['values']['provider']['region'] }}-{{ item.value['values']['provider']['platform'] }})
+          ({{ item.key.split('-')[0] }}-{{ item.value['values']['provider']['platform'] }})
       when: >
-        (item.value['values']['provider']['region'] ~ '-' ~ item.value['values']['provider']['platform'])
+        (item.key.split('-')[0] ~ '-' ~ item.value['values']['provider']['platform'])
         not in _existing_provider_keys or
-        _existing_provider_keys[item.value['values']['provider']['region'] ~ '-' ~ item.value['values']['provider']['platform']] | length == 0
+        _existing_provider_keys[item.key.split('-')[0] ~ '-' ~ item.value['values']['provider']['platform']] | length == 0
 
     - name: Store infra provider key in Infisical
       infisical.vault.create_secret:
@@ -96,7 +96,7 @@
         env_slug: "{{ infisical_env_slug }}"
         path: "{{ infisical_secret_path }}"
         secret_name: >-
-          {{ item.value['values']['provider']['region'] }}-{{ item.value['values']['provider']['platform'] }} # pragma: allowlist secret
+          {{ item.key.split('-')[0] }}-{{ item.value['values']['provider']['platform'] }} # pragma: allowlist secret
         secret_value: >- # pragma: allowlist secret
           {{ _create_results.results[idx].stdout
              | regex_search('OMNI_SERVICE_ACCOUNT_KEY=(.+)', '\1')
@@ -108,7 +108,7 @@
         index_var: idx
         label: >-
           {{ item.key }}
-          ({{ item.value['values']['provider']['region'] }}-{{ item.value['values']['provider']['platform'] }})
+          ({{ item.key.split('-')[0] }}-{{ item.value['values']['provider']['platform'] }})
       when: >
         not (_create_results.results[idx].skipped | default(false)) and
         _create_results.results[idx].rc == 0
