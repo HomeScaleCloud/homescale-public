@@ -14,5 +14,6 @@ kind: UserVolumeConfig
 name: longhorn
 provisioning:
   diskSelector:
-    match: 'disk.size >= 900000000000 && !system_disk'
+    match: '!system_disk'
+  minSize: 900GiB
   grow: false
