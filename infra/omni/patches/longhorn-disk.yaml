@@ -1,0 +1,7 @@
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: longhorn
+provisioning:
+  diskSelector:
+    match: 'disk.size >= 900000000000 && !system_disk'
+  grow: false
