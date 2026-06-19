@@ -9,7 +9,7 @@ spec:
   serviceRef:
     name: ha
   groups:
-    - name: app-ha
+    - name: app-home-assistant
     - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
 ---
 apiVersion: netbird.io/v1alpha1
@@ -23,7 +23,7 @@ spec:
   serviceRef:
     name: z2m
   groups:
-    - name: app-ha
+    - name: app-home-assistant
     - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
 ---
 apiVersion: netbird.io/v1alpha1
@@ -37,5 +37,5 @@ spec:
   serviceRef:
     name: homebridge
   groups:
-    - name: app-ha
+    - name: app-home-assistant
     - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
