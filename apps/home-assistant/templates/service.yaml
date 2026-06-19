@@ -6,7 +6,7 @@ spec:
   selector:
     app: {{ .Release.Name }}
   ports:
-    - port: 80
+    - port: 443
       targetPort: 8123
 ---
 apiVersion: v1
