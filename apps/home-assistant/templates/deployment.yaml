@@ -15,6 +15,104 @@ spec:
       annotations:
         k8s.v1.cni.cncf.io/networks: '[{"name":"vlan-wifi","namespace":{{ .Release.Namespace | quote }},"ips":[{{ .Values.network.ip | quote }}]}]'
     spec:
+      initContainers:
+        - name: mqtt
+          image: "{{ .Values.mqtt.image.repository }}:{{ .Values.mqtt.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+          ports:
+            - containerPort: 1883
+            - containerPort: 1884
+            - containerPort: 9001
+          volumeMounts:
+            - name: mqtt-config
+              mountPath: /mosquitto/config
+            - name: mqtt-data
+              mountPath: /mosquitto/data
+            - name: mqtt-logs
+              mountPath: /mosquitto/log
+          readinessProbe:
+            tcpSocket:
+              port: 1883
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+        - name: zigbee2mqtt
+          image: "{{ .Values.zigbee2mqtt.image.repository }}:{{ .Values.zigbee2mqtt.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+          env:
+            - name: TZ
+              value: {{ .Values.zigbee2mqtt.config.tz | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_MQTT_SERVER
+              value: {{ .Values.zigbee2mqtt.config.mqttServer | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_MQTT_BASE_TOPIC
+              value: {{ .Values.zigbee2mqtt.config.mqttBaseTopic | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_SERIAL_PORT
+              value: {{ .Values.zigbee2mqtt.config.serialPort | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER
+              value: {{ .Values.zigbee2mqtt.config.serialAdapter | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_ADVANCED_CHANNEL
+              value: {{ .Values.zigbee2mqtt.config.channel | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_FRONTEND_ENABLED
+              value: {{ .Values.zigbee2mqtt.config.frontendEnabled | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED
+              value: {{ .Values.zigbee2mqtt.config.homeassistantEnabled | quote }}
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: zigbee2mqtt
+              mountPath: /app/data
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+        - name: matter
+          image: "{{ .Values.matter.image.repository }}:{{ .Values.matter.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+          ports:
+            - containerPort: 5580
+          volumeMounts:
+            - name: matter
+              mountPath: /data
+          readinessProbe:
+            tcpSocket:
+              port: 5580
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+        - name: homebridge
+          image: "{{ .Values.homebridge.image.repository }}:{{ .Values.homebridge.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+          ports:
+            - containerPort: 8581
+          volumeMounts:
+            - name: homebridge
+              mountPath: /homebridge
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8581
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
       containers:
         - name: home-assistant
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -28,18 +126,6 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
-        - name: zigbee2mqtt
-          image: "{{ .Values.zigbee2mqtt.image.repository }}:{{ .Values.zigbee2mqtt.image.tag }}"
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8080
-          volumeMounts:
-            - name: zigbee2mqtt
-              mountPath: /app/data
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
       volumes:
         - name: {{ .Release.Name }}
           persistentVolumeClaim:
@@ -47,3 +133,17 @@ spec:
         - name: zigbee2mqtt
           persistentVolumeClaim:
             claimName: zigbee2mqtt
+        - name: mqtt-config
+          persistentVolumeClaim:
+            claimName: mqtt-config
+        - name: mqtt-data
+          persistentVolumeClaim:
+            claimName: mqtt-data
+        - name: mqtt-logs
+          emptyDir: {}
+        - name: matter
+          persistentVolumeClaim:
+            claimName: matter
+        - name: homebridge
+          persistentVolumeClaim:
+            claimName: homebridge
