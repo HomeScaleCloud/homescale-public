@@ -4,6 +4,12 @@ clusters:
   boa1-prod:
     deploy: true
 
+ignoreDifferences:
+  - group: apiextensions.k8s.io
+    kind: CustomResourceDefinition
+    jsonPointers:
+      - /spec/preserveUnknownFields
+
 path: apps/longhorn
 namespace: longhorn-system
 releaseName: longhorn
