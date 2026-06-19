@@ -28,10 +28,6 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
-              add:
-                - NET_ADMIN
-                - NET_RAW
-                - NET_BROADCAST
         - name: zigbee2mqtt
           image: "{{ .Values.zigbee2mqtt.image.repository }}:{{ .Values.zigbee2mqtt.image.tag }}"
           imagePullPolicy: IfNotPresent
