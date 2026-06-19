@@ -24,8 +24,7 @@ spec:
             - -c
             - |
               chown -R 100:101 /mqtt-config /mqtt-data
-              chown -R 1000:1000 /z2m-data
-              chown -R 0:0 /ha-config /matter-data /homebridge-data
+              chown -R 0:0 /ha-config /z2m-data /matter-data /homebridge-data
           volumeMounts:
             - name: {{ .Release.Name }}
               mountPath: /ha-config
@@ -66,6 +65,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
           securityContext:
+            runAsUser: 100
+            runAsGroup: 101
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
@@ -142,6 +143,7 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
+              add: ["SETUID", "SETGID"]
       containers:
         - name: home-assistant
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
