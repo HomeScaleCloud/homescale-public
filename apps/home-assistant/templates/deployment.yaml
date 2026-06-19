@@ -153,6 +153,9 @@ spec:
           volumeMounts:
             - name: {{ .Release.Name }}
               mountPath: /config
+            - name: ha-tls
+              mountPath: /config/tls
+              readOnly: true
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -178,3 +181,6 @@ spec:
         - name: homebridge
           persistentVolumeClaim:
             claimName: homebridge
+        - name: ha-tls
+          secret:
+            secretName: ha-tls
