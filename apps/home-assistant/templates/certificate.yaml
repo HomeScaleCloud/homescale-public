@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ha-tls
+  namespace: home-assistant
+spec:
+  secretName: ha-tls
+  issuerRef:
+    name: {{ .Values.certIssuer | default "letsencrypt" }}
+    kind: ClusterIssuer
+  dnsNames:
+    - ha.home-assistant.{{ required "cluster.name is required" .Values.cluster.name }}xxx

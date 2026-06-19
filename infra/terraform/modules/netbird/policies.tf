@@ -71,3 +71,18 @@ resource "netbird_policy" "omni" {
     destinations  = [netbird_group.app["omni"].id]
   }
 }
+
+resource "netbird_policy" "home_assistant" {
+  name    = "Home Assistant"
+  enabled = true
+  rule {
+    action        = "accept"
+    bidirectional = false
+    enabled       = true
+    protocol      = "tcp"
+    ports         = ["80", "443"]
+    name          = "Home Assistant"
+    sources       = [data.netbird_group.owners.id]
+    destinations  = [netbird_group.app["home-assistant"].id]
+  }
+}
