@@ -23,8 +23,8 @@ spec:
             - sh
             - -c
             - |
-              chown -R 100:101 /mqtt-config /mqtt-data
-              chown -R 0:0 /ha-config /z2m-data /matter-data /homebridge-data
+              chown -R 100:101 /mqtt-config /mqtt-data 2>/dev/null || true
+              chown -R 0:0 /ha-config /z2m-data /matter-data /homebridge-data 2>/dev/null || true
           volumeMounts:
             - name: {{ .Release.Name }}
               mountPath: /ha-config
