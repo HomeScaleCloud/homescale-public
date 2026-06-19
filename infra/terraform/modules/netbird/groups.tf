@@ -26,6 +26,10 @@ data "netbird_group" "net_region_bmc" {
   name = "net-region-bmc"
 }
 
+data "netbird_group" "owners" {
+  name = "Owners"
+}
+
 resource "netbird_group" "region_routers" {
   name = "region-routers"
 }
