@@ -1,10 +1,21 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}
+  name: ha
 spec:
   selector:
     app: {{ .Release.Name }}
   ports:
     - port: 80
       targetPort: 8123
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: z2m
+spec:
+  selector:
+    app: {{ .Release.Name }}
+  ports:
+    - port: 80
+      targetPort: 8080
