@@ -12,8 +12,9 @@ spec:
     metadata:
       labels:
         app: {{ .Release.Name }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[{"name":"vlan-wifi","namespace":{{ .Release.Namespace | quote }},"ips":[{{ .Values.network.ip | quote }}]}]'
     spec:
-      hostNetwork: true
       containers:
         - name: home-assistant
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -23,7 +24,23 @@ spec:
           volumeMounts:
             - name: {{ .Release.Name }}
               mountPath: /config
-          {{- if .Values.zigbee.local }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add:
+                - NET_ADMIN
+                - NET_RAW
+                - NET_BROADCAST
+        - name: zigbee2mqtt
+          image: "{{ .Values.zigbee2mqtt.image.repository }}:{{ .Values.zigbee2mqtt.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: zigbee2mqtt
+              mountPath: /app/data
+          {{- if .Values.zigbee2mqtt.zigbee.local }}
           resources:
             limits:
               squat.ai/zigbee: 1
@@ -34,11 +51,10 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
-              add:
-                - NET_ADMIN
-                - NET_RAW
-                - NET_BROADCAST
       volumes:
         - name: {{ .Release.Name }}
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}
+        - name: zigbee2mqtt
+          persistentVolumeClaim:
+            claimName: zigbee2mqtt

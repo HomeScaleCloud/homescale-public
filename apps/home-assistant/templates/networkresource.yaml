@@ -1,0 +1,27 @@
+apiVersion: netbird.io/v1alpha1
+kind: NetworkResource
+metadata:
+  name: ha
+spec:
+  networkRouterRef:
+    name: '{{ required "cluster.name is required" .Values.cluster.name }}'
+    namespace: netbird
+  serviceRef:
+    name: ha
+  groups:
+    - name: app-ha
+    - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
+---
+apiVersion: netbird.io/v1alpha1
+kind: NetworkResource
+metadata:
+  name: z2m
+spec:
+  networkRouterRef:
+    name: '{{ required "cluster.name is required" .Values.cluster.name }}'
+    namespace: netbird
+  serviceRef:
+    name: z2m
+  groups:
+    - name: app-ha
+    - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}

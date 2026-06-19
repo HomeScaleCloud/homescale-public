@@ -44,3 +44,6 @@ patches:
                   - eno2
                   - eno3
                   - eno4
+            - interface: bond0.241
+              vlan:
+                vlanID: 241
