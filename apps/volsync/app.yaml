@@ -3,8 +3,6 @@ defaultDeploy: true
 clusters:
   boa1-gw:
     deploy: false
-  boa2-gw:
-    deploy: false
 
 path: apps/volsync
 namespace: volsync-system
