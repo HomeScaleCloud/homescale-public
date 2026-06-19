@@ -36,13 +36,6 @@ spec:
           volumeMounts:
             - name: zigbee2mqtt
               mountPath: /app/data
-          {{- if .Values.zigbee2mqtt.zigbee.local }}
-          resources:
-            limits:
-              squat.ai/zigbee: 1
-            requests:
-              squat.ai/zigbee: 1
-          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
