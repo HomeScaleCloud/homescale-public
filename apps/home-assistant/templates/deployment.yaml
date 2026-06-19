@@ -16,34 +16,6 @@ spec:
         k8s.v1.cni.cncf.io/networks: '[{"name":"vlan-wifi","namespace":{{ .Release.Namespace | quote }},"ips":[{{ .Values.network.ip | quote }}]}]'
     spec:
       initContainers:
-        # TODO: remove once post-migration ownership is confirmed healthy
-        - name: fix-permissions
-          image: busybox
-          command:
-            - sh
-            - -c
-            - |
-              chown -R 100:101 /mqtt-config /mqtt-data 2>/dev/null || true
-              chown -R 0:0 /ha-config /z2m-data /matter-data /homebridge-data 2>/dev/null || true
-          volumeMounts:
-            - name: {{ .Release.Name }}
-              mountPath: /ha-config
-            - name: zigbee2mqtt
-              mountPath: /z2m-data
-            - name: mqtt-config
-              mountPath: /mqtt-config
-            - name: mqtt-data
-              mountPath: /mqtt-data
-            - name: matter
-              mountPath: /matter-data
-            - name: homebridge
-              mountPath: /homebridge-data
-          securityContext:
-            runAsUser: 0
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
-              add: ["CHOWN", "FOWNER"]
         - name: mqtt
           image: "{{ .Values.mqtt.image.repository }}:{{ .Values.mqtt.image.tag }}"
           imagePullPolicy: IfNotPresent
