@@ -2,7 +2,7 @@ defaultDeploy: false
 
 clusters:
   boa1-prod:
-    deploy: false
+    deploy: true
 
 path: apps/home-assistant
 namespace: home-assistant
