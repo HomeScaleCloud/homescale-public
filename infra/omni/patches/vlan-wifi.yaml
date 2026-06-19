@@ -1,7 +1,0 @@
-apiVersion: v1alpha1
-kind: VLANConfig
-name: bond0.241
-vlanID: 241
-vlanMode: 802.1q
-parent: bond0
-up: true
