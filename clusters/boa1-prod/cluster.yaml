@@ -12,6 +12,7 @@ patches:
   - file: patches/base.yaml
   - file: patches/allow-scheduling-on-control-plane.yaml
   - file: patches/longhorn.yaml
+  - file: patches/vlan-wifi.yaml
 systemExtensions:
   - siderolabs/iscsi-tools
   - siderolabs/util-linux-tools
@@ -44,5 +45,3 @@ patches:
                   - eno2
                   - eno3
                   - eno4
-              vlans:
-                - vlanID: 241
