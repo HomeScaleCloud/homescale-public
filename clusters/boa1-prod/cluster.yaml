@@ -44,5 +44,5 @@ patches:
                   - eno2
                   - eno3
                   - eno4
-                vlans:
-                  - vlanId: 241
+              vlans:
+                - vlanId: 241
