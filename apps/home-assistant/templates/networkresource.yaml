@@ -25,3 +25,17 @@ spec:
   groups:
     - name: app-ha
     - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
+---
+apiVersion: netbird.io/v1alpha1
+kind: NetworkResource
+metadata:
+  name: homebridge
+spec:
+  networkRouterRef:
+    name: '{{ required "cluster.name is required" .Values.cluster.name }}'
+    namespace: netbird
+  serviceRef:
+    name: homebridge
+  groups:
+    - name: app-ha
+    - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}

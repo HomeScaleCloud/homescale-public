@@ -1,0 +1,48 @@
+{{- $pvcs := list "home-assistant" "zigbee2mqtt" "mqtt-config" "mqtt-data" "matter" "homebridge" -}}
+{{- $schedule := ((.Values.volsync).backupSchedule) | default "0 2 * * *" -}}
+{{- $restore := ((.Values.volsync).restore).enabled -}}
+{{- if not $restore }}
+{{- range $pvcs }}
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: {{ . }}
+  namespace: home-assistant
+spec:
+  sourcePVC: {{ . }}
+  trigger:
+    schedule: {{ $schedule | quote }}
+  restic:
+    repository: {{ . }}-volsync-repo # pragma: allowlist secret
+    copyMethod: Snapshot
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 3
+    pruneIntervalDays: 7
+{{- end }}
+{{- end }}
+{{- if $restore }}
+{{- range $pvcs }}
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: {{ . }}-restore
+  namespace: home-assistant
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: {{ . }}-volsync-repo # pragma: allowlist secret
+    copyMethod: Direct
+    destinationPVC: {{ . }}
+    {{- if (($.Values.volsync).restore).restoreAsOf }}
+    restoreAsOf: {{ $.Values.volsync.restore.restoreAsOf | quote }}
+    {{- end }}
+    {{- if (($.Values.volsync).restore).previous }}
+    previous: {{ $.Values.volsync.restore.previous }}
+    {{- end }}
+{{- end }}
+{{- end }}
