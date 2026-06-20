@@ -37,14 +37,15 @@ get_machines() {
     done
 
     # status_tsv: id, IPv4 addresses — from MachineStatus, exists for all connected machines
+    # Note: no 2>&1 here so omnictl's stderr reaches the terminal (auth flow, errors)
     local status_tsv identity_tsv
-    status_tsv=$(omnictl get machinestatus -o yaml 2>&1 | \
+    status_tsv=$(omnictl get machinestatus -o yaml | \
         yq e '[
           .metadata.id,
           (.spec.network.addresses // [] | map(select(test("^[0-9]"))) | map(sub("/[0-9]+$"; "")) | join(","))
         ] | @tsv' 2>/dev/null || true)
     # identity_tsv: id, nodename, cluster, role — assigned machines only
-    identity_tsv=$(omnictl get clustermachineidentity -o yaml 2>&1 | \
+    identity_tsv=$(omnictl get clustermachineidentity -o yaml | \
         yq e '[
           .metadata.id,
           (.spec.nodename // "-"),
@@ -82,7 +83,7 @@ get_machine() {
     if [[ "$input" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
         id="$input"
     else
-        id=$(omnictl get clustermachineidentity -o yaml 2>&1 | \
+        id=$(omnictl get clustermachineidentity -o yaml | \
             yq e 'select(.spec.nodename == "'"$input"'") | .metadata.id' 2>/dev/null | head -1)
         if [[ -z "$id" ]]; then
             echo "hsctl: no machine found with node name '$input'" >&2
@@ -94,12 +95,12 @@ get_machine() {
         table)
             printf "%-38s  %-16s  %-20s  %-14s  %s\n" "MACHINE ID" "NODE NAME" "CLUSTER" "ROLE" "NODE IPs"
             local identity_yaml
-            identity_yaml=$(omnictl get clustermachineidentity "$id" -o yaml 2>&1)
+            identity_yaml=$(omnictl get clustermachineidentity "$id" -o yaml)
             if printf '%s\n' "$identity_yaml" | grep -q "^metadata:"; then
                 printf '%s\n' "$identity_yaml" | _machine_table_rows
             else
                 local mgmt_addr
-                mgmt_addr=$(omnictl get machine "$id" -o yaml 2>&1 | yq e '.spec.managementaddress // "-"')
+                mgmt_addr=$(omnictl get machine "$id" -o yaml | yq e '.spec.managementaddress // "-"')
                 printf "%-38s  %-16s  %-20s  %-14s  %s\n" "$id" "-" "-" "-" "$mgmt_addr"
             fi
             ;;
