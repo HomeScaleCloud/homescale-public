@@ -54,6 +54,55 @@ clusters:
               reloadURL: "https://localhost:3000/api/admin/provisioning/dashboards/reload"
             datasources:
               reloadURL: "https://localhost:3000/api/admin/provisioning/datasources/reload"
+          defaultDashboardsEnabled: false
+          dashboardProviders:
+            dashboardproviders.yaml:
+              apiVersion: 1
+              providers:
+                - name: grafana-dashboards
+                  orgId: 1
+                  folder: ""
+                  type: file
+                  disableDeletion: true
+                  editable: true
+                  options:
+                    path: /var/lib/grafana/dashboards/grafana-dashboards
+          dashboards:
+            grafana-dashboards:
+              k8s-system-api-server:
+                url: "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-api-server.json"
+                token: ""
+              k8s-addons-prometheus:
+                url: "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-addons-prometheus.json"
+                token: ""
+              k8s-system-coredns:
+                url: "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-system-coredns.json"
+                token: ""
+              k8s-views-global:
+                url: "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-global.json"
+                token: ""
+              k8s-views-namespaces:
+                url: "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-namespaces.json"
+                token: ""
+              k8s-views-nodes:
+                url: "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-nodes.json"
+                token: ""
+              k8s-views-pods:
+                url: "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/master/dashboards/k8s-views-pods.json"
+                token: ""
+              k8s-events-exporter:
+                url: "https://grafana.com/api/dashboards/17882/revisions/2/download"
+                token: ""
+              ingress-controller:
+                url: "https://grafana.com/api/dashboards/9614/revisions/1/download"
+                token: ""
+                datasource: Prometheus
+              node-exporter-full:
+                url: "https://grafana.com/api/dashboards/1860/revisions/41/download"
+                token: ""
+              argocd-overview:
+                url: "https://grafana.com/api/dashboards/14584/revisions/1/download"
+                token: ""
         alertmanager:
           enabled: true
           config:
@@ -104,6 +153,14 @@ values:
     prometheus:
       prometheusSpec:
         retention: 30d
+        externalLabels:
+          cluster: "{{ .Values.cluster.name }}"
+        podMonitorSelectorNilUsesHelmValues: false
+        serviceMonitorSelectorNilUsesHelmValues: false
+        serviceMonitorSelector: {}
+        serviceMonitorNamespaceSelector: {}
+        podMonitorSelector: {}
+        podMonitorNamespaceSelector: {}
         storageSpec:
           volumeClaimTemplate:
             spec:
