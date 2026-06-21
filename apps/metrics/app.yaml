@@ -38,6 +38,8 @@ clusters:
             storageClassName: longhorn
             size: 5Gi
           adminPassword: ""
+          deploymentStrategy:
+            type: Recreate
           readinessProbe:
             httpGet:
               path: /api/health
