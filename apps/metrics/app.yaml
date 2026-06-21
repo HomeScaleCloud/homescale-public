@@ -102,7 +102,7 @@ clusters:
                 url: "https://grafana.com/api/dashboards/14584/revisions/1/download"
                 token: ""
               longhorn:
-                url: "https://grafana.com/api/dashboards/22705/revisions/1/download"
+                url: "https://grafana.com/api/dashboards/16888/revisions/12/download"
                 token: ""
         alertmanager:
           enabled: true
