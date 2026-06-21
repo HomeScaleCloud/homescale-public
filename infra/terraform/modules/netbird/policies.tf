@@ -86,3 +86,18 @@ resource "netbird_policy" "home_assistant" {
     destinations  = [netbird_group.app["home-assistant"].id]
   }
 }
+
+resource "netbird_policy" "metrics" {
+  name    = "Metrics"
+  enabled = true
+  rule {
+    action        = "accept"
+    bidirectional = false
+    enabled       = true
+    protocol      = "tcp"
+    ports         = ["80", "443"]
+    name          = "Metrics"
+    sources       = [data.netbird_group.team_infra_plat.id, data.netbird_group.team_sec_plat.id]
+    destinations  = [netbird_group.app["metrics"].id]
+  }
+}
