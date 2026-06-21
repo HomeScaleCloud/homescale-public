@@ -47,6 +47,26 @@ values:
           p, team-infra-plat, applications, sync, */*, allow
       params:
         application.operations.selfHealTimeout: "5"
+    controller:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+    server:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+    repoServer:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+    applicationSet:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
     notifications:
       enabled: true
       secret:
