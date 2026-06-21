@@ -3,6 +3,7 @@ ignore: |
   apps/**/templates/**
   argocd/**/templates/**
   apps/netbird/crds/tcproutes.yaml
+  apps/volsync/crds/crds.yaml
 rules:
   truthy: disable
   document-start: disable
