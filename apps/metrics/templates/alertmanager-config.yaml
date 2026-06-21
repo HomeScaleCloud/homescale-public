@@ -19,9 +19,8 @@ spec:
     - name: slack
       slackConfigs:
         - apiURL:
-            secret:
-              name: metrics-alertmanager-slack  # pragma: allowlist secret
-              key: SLACK_WEBHOOK_URL
+            name: metrics-alertmanager-slack  # pragma: allowlist secret
+            key: SLACK_WEBHOOK_URL
           channel: "#alerts"
           sendResolved: true
           title: {{ `'{{ template "slack.default.title" . }}'` }}
