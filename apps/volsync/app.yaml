@@ -8,3 +8,20 @@ path: apps/volsync
 namespace: volsync-system
 releaseName: volsync
 syncWave: -5
+
+ignoreDifferences:
+  - group: apiextensions.k8s.io
+    kind: CustomResourceDefinition
+    name: volumesnapshots.snapshot.storage.k8s.io
+    jsonPointers:
+      - /metadata/labels
+  - group: apiextensions.k8s.io
+    kind: CustomResourceDefinition
+    name: volumesnapshotcontents.snapshot.storage.k8s.io
+    jsonPointers:
+      - /metadata/labels
+  - group: apiextensions.k8s.io
+    kind: CustomResourceDefinition
+    name: volumesnapshotclasses.snapshot.storage.k8s.io
+    jsonPointers:
+      - /metadata/labels
