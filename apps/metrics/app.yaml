@@ -38,6 +38,22 @@ clusters:
             storageClassName: longhorn
             size: 5Gi
           adminPassword: ""
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTPS
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTPS
+          sidecar:
+            skipTlsVerify: true
+            dashboards:
+              reloadURL: "https://localhost:3000/api/admin/provisioning/dashboards/reload"
+            datasources:
+              reloadURL: "https://localhost:3000/api/admin/provisioning/datasources/reload"
         alertmanager:
           enabled: true
           config:
