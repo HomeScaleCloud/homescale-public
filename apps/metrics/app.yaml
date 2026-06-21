@@ -1,0 +1,107 @@
+defaultDeploy: false
+
+clusters:
+  boa1-prod:
+    deploy: true
+    values:
+      kube-prometheus-stack:
+        grafana:
+          enabled: true
+          service:
+            port: 443
+            targetPort: 3000
+          grafana.ini:
+            server:
+              protocol: https
+              http_port: 3000
+              cert_file: /etc/grafana/tls/tls.crt
+              cert_key: /etc/grafana/tls/tls.key
+              domain: xxx
+              root_url: https://xxx
+            auth:
+              disable_login_form: true
+              oauth_auto_login: true
+              signout_redirect_url: "https://login.microsoftonline.com/common/oauth2/v2.0/logout"
+            auth.azuread:
+              enabled: true
+              name: Microsoft
+              allow_sign_up: true
+              scopes: "openid email profile"
+          envFromSecret: grafana-oauth  # pragma: allowlist secret
+          extraSecretMounts:
+            - name: tls
+              secretName: metrics-tls  # pragma: allowlist secret
+              mountPath: /etc/grafana/tls
+              readOnly: true
+          persistence:
+            enabled: true
+            storageClassName: longhorn
+            size: 5Gi
+          adminPassword: ""
+        alertmanager:
+          enabled: true
+          config:
+            global:
+              resolve_timeout: 5m
+            route:
+              group_by: [alertname, cluster, namespace]
+              group_wait: 30s
+              group_interval: 5m
+              repeat_interval: 12h
+              receiver: "null"
+              routes:
+                - matchers:
+                    - alertname="Watchdog"
+                  receiver: "null"
+            receivers:
+              - name: "null"
+          alertmanagerSpec:
+            alertmanagerConfigSelector: {}
+            alertmanagerConfigMatcherStrategy:
+              type: None
+            storage:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: longhorn
+                  resources:
+                    requests:
+                      storage: 2Gi
+        prometheus:
+          prometheusSpec:
+            enableRemoteWriteReceiver: true
+
+path: apps/metrics
+namespace: metrics
+releaseName: metrics
+syncWave: 0
+podSecurity: privileged
+syncOptions:
+  - ServerSideApply=true
+values:
+  cluster:
+    name: "{{ .Values.cluster.name }}"
+  kube-prometheus-stack:
+    grafana:
+      enabled: false
+    alertmanager:
+      enabled: false
+    prometheus:
+      prometheusSpec:
+        retention: 30d
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: longhorn
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 50Gi
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeEtcd:
+      enabled: false
+    kubeProxy:
+      enabled: false

@@ -1,0 +1,30 @@
+{{- if eq .Values.cluster.name "boa1-prod" }}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: slack
+  namespace: metrics
+spec:
+  route:
+    receiver: slack
+    groupBy: [alertname, cluster, namespace]
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 4h
+    matchers:
+      - name: alertname
+        value: Watchdog
+        matchType: "!="
+  receivers:
+    - name: slack
+      slackConfigs:
+        - apiURL:
+            secret:
+              name: metrics-alertmanager-slack  # pragma: allowlist secret
+              key: SLACK_WEBHOOK_URL
+          channel: "#alerts"
+          sendResolved: true
+          title: {{ `'{{ template "slack.default.title" . }}'` }}
+          text: {{ `'{{ template "slack.default.text" . }}'` }}
+          iconEmoji: ":bell:"
+{{- end }}
