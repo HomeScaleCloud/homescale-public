@@ -40,7 +40,6 @@ clusters:
           adminPassword: ""
           deploymentStrategy:
             type: Recreate
-            rollingUpdate: null
           readinessProbe:
             httpGet:
               path: /api/health
