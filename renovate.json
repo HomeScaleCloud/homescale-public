@@ -25,6 +25,11 @@
       "automerge": false
     },
     {
+      "matchPackageNames": ["longhorn"],
+      "automerge": false,
+      "separateMultipleMinor": true
+    },
+    {
       "matchManagers": ["terraform"],
       "semanticCommitScope": "infra"
     },
