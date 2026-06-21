@@ -95,15 +95,14 @@ clusters:
               k8s-events-exporter:
                 url: "https://grafana.com/api/dashboards/17882/revisions/2/download"
                 token: ""
-              ingress-controller:
-                url: "https://grafana.com/api/dashboards/9614/revisions/1/download"
-                token: ""
-                datasource: Prometheus
               node-exporter-full:
                 url: "https://grafana.com/api/dashboards/1860/revisions/41/download"
                 token: ""
               argocd-overview:
                 url: "https://grafana.com/api/dashboards/14584/revisions/1/download"
+                token: ""
+              longhorn:
+                url: "https://grafana.com/api/dashboards/16888/revisions/12/download"
                 token: ""
         alertmanager:
           enabled: true
