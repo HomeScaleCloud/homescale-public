@@ -11,8 +11,9 @@ syncWave: 0
 podSecurity: privileged
 values:
   longhorn:
-    monitoring:
-      enabled: true
+    metrics:
+      serviceMonitor:
+        enabled: true
     preUpgradeChecker:
       jobEnabled: false
     defaultSettings:
