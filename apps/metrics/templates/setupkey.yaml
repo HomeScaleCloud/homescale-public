@@ -1,4 +1,3 @@
-{{- if ne .Values.cluster.name "boa1-prod" }}
 apiVersion: netbird.io/v1alpha1
 kind: SetupKey
 metadata:
@@ -11,4 +10,3 @@ spec:
   autoGroups:
     - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
     - name: app-metrics
-{{- end }}
