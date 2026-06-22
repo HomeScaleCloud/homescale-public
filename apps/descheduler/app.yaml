@@ -1,8 +1,4 @@
-defaultDeploy: false
-
-clusters:
-  boa1-prod:
-    deploy: true
+defaultDeploy: true
 
 path: apps/descheduler
 namespace: kube-system
