@@ -59,6 +59,7 @@ clusters:
           sidecar:
             skipTlsVerify: true
             dashboards:
+              searchNamespace: metrics
               reloadURL: "https://localhost:3000/api/admin/provisioning/dashboards/reload"
             datasources:
               enabled: false
