@@ -1,0 +1,14 @@
+apiVersion: netbird.io/v1alpha1
+kind: NetworkResource
+metadata:
+  name: prometheus
+  namespace: metrics
+spec:
+  networkRouterRef:
+    name: boa1-prod
+    namespace: netbird
+  serviceRef:
+    name: prometheus
+  groups:
+    - name: app-metrics
+    - name: cluster-boa1-prod

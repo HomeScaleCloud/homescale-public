@@ -61,18 +61,20 @@ clusters:
             dashboards:
               reloadURL: "https://localhost:3000/api/admin/provisioning/dashboards/reload"
             datasources:
-              reloadURL: "https://localhost:3000/api/admin/provisioning/datasources/reload"
-              defaultDatasourceEnabled: false
-          additionalDataSources:
-            - name: Prometheus
-              type: prometheus
-              url: http://prometheus.metrics.svc.cluster.local:9090
-              access: proxy
-              isDefault: true
-              uid: prometheus
-              jsonData:
-                httpMethod: POST
-                timeInterval: 30s
+              enabled: false
+          datasources:
+            datasources.yaml:
+              apiVersion: 1
+              datasources:
+                - name: Prometheus
+                  type: prometheus
+                  url: http://prometheus.metrics.svc.cluster.local:9090
+                  access: proxy
+                  isDefault: true
+                  uid: prometheus
+                  jsonData:
+                    httpMethod: POST
+                    timeInterval: 30s
           defaultDashboardsEnabled: false
         alertmanager:
           enabled: true
@@ -102,12 +104,6 @@ clusters:
                   resources:
                     requests:
                       storage: 2Gi
-        prometheus:
-          prometheusSpec:
-            remoteWrite:
-              - url: http://prometheus.metrics.svc.cluster.local:9090/api/v1/write
-            initContainers: []
-            volumes: []
 netbird:
   policy:
     rules:

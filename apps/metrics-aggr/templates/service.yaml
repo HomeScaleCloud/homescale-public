@@ -1,8 +1,8 @@
-{{- if eq .Values.cluster.name "boa1-prod" }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: "prometheus"
+  name: prometheus
+  namespace: metrics
 spec:
   type: ClusterIP
   ports:
@@ -13,4 +13,3 @@ spec:
   selector:
     app.kubernetes.io/name: prometheus
     operator.prometheus.io/name: aggregator
-{{- end }}
