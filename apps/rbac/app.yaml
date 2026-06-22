@@ -1,5 +1,3 @@
-defaultDeploy: true
-
 path: apps/rbac
 namespace: rbac
 releaseName: rbac
@@ -7,3 +5,4 @@ syncWave: -30
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
+defaultDeploy: true

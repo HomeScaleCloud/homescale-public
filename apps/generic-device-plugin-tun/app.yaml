@@ -1,5 +1,3 @@
-defaultDeploy: true
-
 path: apps/generic-device-plugin-tun
 namespace: generic-device-plugin
 releaseName: generic-device-plugin-tun
@@ -12,3 +10,4 @@ values:
   device:
     name: tun
     path: /dev/net/tun
+defaultDeploy: true

@@ -1,11 +1,10 @@
-clusters:
-  mgmt:
-    deploy: true
-
 path: apps/omni
 namespace: omni
 releaseName: omni
 syncWave: 0
+clusters:
+  mgmt:
+    deploy: true
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

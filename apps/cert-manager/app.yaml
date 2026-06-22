@@ -1,9 +1,12 @@
-defaultDeploy: true
-
 path: apps/cert-manager
 namespace: cert-manager
 releaseName: cert-manager
 syncWave: -30
+defaultDeploy: true
+values:
+  cert-manager:
+    crds:
+      enabled: true
 ignoreDifferences:
   - group: admissionregistration.k8s.io
     kind: MutatingWebhookConfiguration
@@ -15,7 +18,3 @@ ignoreDifferences:
     name: cert-manager-webhook
     jsonPointers:
       - /webhooks
-values:
-  cert-manager:
-    crds:
-      enabled: true

@@ -1,14 +1,11 @@
-defaultDeploy: true
-
-clusters:
-  mgmt:
-    deploy: false
-
-values:
-  image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick
-  cniPluginsImage: docker.io/rancher/hardened-cni-plugins:v1.9.1-build20260608
-
 path: apps/multus
 namespace: kube-system
 releaseName: multus
 syncWave: -35
+defaultDeploy: true
+clusters:
+  mgmt:
+    deploy: false
+values:
+  image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick
+  cniPluginsImage: docker.io/rancher/hardened-cni-plugins:v1.9.1-build20260608
