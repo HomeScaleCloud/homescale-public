@@ -3,6 +3,19 @@ namespace: homecraft
 releaseName: homecraft
 syncWave: 0
 defaultDeploy: false
+netbird:
+  policy:
+    rules:
+      - sources:
+          - all
+        ports:
+          - "25565"
+        protocol: tcp
+      - sources:
+          - all
+        ports:
+          - "25565"
+        protocol: udp
 clusters:
   boa1-prod:
     deploy: true
