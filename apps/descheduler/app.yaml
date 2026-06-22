@@ -22,13 +22,13 @@ values:
             - name: LowNodeUtilization
               args:
                 thresholds:
-                  cpu: 20
-                  memory: 20
+                  cpu: 40
+                  memory: 40
                   pods: 20
                 targetThresholds:
-                  cpu: 50
-                  memory: 50
-                  pods: 35
+                  cpu: 70
+                  memory: 70
+                  pods: 28
             - name: RemoveDuplicates
             - name: RemovePodsViolatingTopologySpreadConstraint
             - name: RemovePodsHavingTooManyRestarts
