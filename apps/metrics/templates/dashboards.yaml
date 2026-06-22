@@ -21,8 +21,6 @@ metadata:
   namespace: metrics
   labels:
     grafana_dashboard: "1"
-  annotations:
-    k8s-sidecar-target-directory: /var/lib/grafana/dashboards/grafana-dashboards
 data:
   {{ . }}.json: |
     {{ $.Files.Get (printf "dashboards/%s.json" .) | nindent 4 }}

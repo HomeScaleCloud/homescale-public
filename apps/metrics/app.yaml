@@ -63,18 +63,6 @@ clusters:
             datasources:
               reloadURL: "https://localhost:3000/api/admin/provisioning/datasources/reload"
           defaultDashboardsEnabled: false
-          dashboardProviders:
-            dashboardproviders.yaml:
-              apiVersion: 1
-              providers:
-                - name: grafana-dashboards
-                  orgId: 1
-                  folder: ""
-                  type: file
-                  disableDeletion: true
-                  editable: true
-                  options:
-                    path: /var/lib/grafana/dashboards/grafana-dashboards
         alertmanager:
           enabled: true
           config:
