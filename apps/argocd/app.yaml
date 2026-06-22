@@ -8,12 +8,9 @@ defaultDeploy: true
 netbird:
   policy:
     rules:
-      - sources:
-          - team-infra-plat
-        ports:
-          - "80"
-          - "443"
+      - sources: ["team-infra-plat"]
         protocol: tcp
+        ports: ["80", "443"]
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

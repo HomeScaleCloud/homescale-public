@@ -144,13 +144,9 @@ clusters:
 netbird:
   policy:
     rules:
-      - sources:
-          - team-infra-plat
-          - team-sec-plat
-        ports:
-          - "80"
-          - "443"
+      - sources: ["team-infra-plat", "team-sec-plat"]
         protocol: tcp
+        ports: ["80", "443"]
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

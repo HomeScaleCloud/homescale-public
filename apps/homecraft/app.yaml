@@ -6,16 +6,12 @@ defaultDeploy: false
 netbird:
   policy:
     rules:
-      - sources:
-          - all
-        ports:
-          - "25565"
+      - sources: ["all"]
         protocol: tcp
-      - sources:
-          - all
-        ports:
-          - "25565"
+        ports: ["25565"]
+      - sources: ["all"]
         protocol: udp
+        ports: ["25565"]
 clusters:
   boa1-prod:
     deploy: true
