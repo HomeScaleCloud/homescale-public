@@ -2,6 +2,7 @@ path: apps/metrics-aggr
 namespace: metrics
 releaseName: metrics-aggr
 syncWave: 1
+podSecurity: privileged
 defaultDeploy: false
 clusters:
   boa1-prod:
