@@ -141,6 +141,16 @@ clusters:
         prometheus:
           prometheusSpec:
             enableRemoteWriteReceiver: true
+netbird:
+  policy:
+    rules:
+      - sources:
+          - team-infra-plat
+          - team-sec-plat
+        ports:
+          - "80"
+          - "443"
+        protocol: tcp
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

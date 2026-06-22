@@ -2,6 +2,17 @@ path: apps/omni
 namespace: omni
 releaseName: omni
 syncWave: 0
+netbird:
+  policy:
+    rules:
+      - sources:
+          - github-actions
+          - app:omni-infra-provider
+          - team-infra-plat
+        ports:
+          - "80"
+          - "443"
+        protocol: tcp
 clusters:
   mgmt:
     deploy: true
