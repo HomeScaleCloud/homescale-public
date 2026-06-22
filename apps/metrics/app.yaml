@@ -57,12 +57,12 @@ clusters:
               port: 3000
               scheme: HTTPS
           sidecar:
-            skipTlsVerify: true
             dashboards:
-              searchNamespace: metrics
-              reloadURL: "https://localhost:3000/api/admin/provisioning/dashboards/reload"
+              enabled: false
             datasources:
               enabled: false
+          dashboardsConfigMaps:
+            default: grafana-dashboards
           datasources:
             datasources.yaml:
               apiVersion: 1
