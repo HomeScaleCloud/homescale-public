@@ -109,6 +109,16 @@ clusters:
             remoteWrite: []
             initContainers: []
             volumes: []
+            retention: 30d
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: longhorn
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 50Gi
 netbird:
   policy:
     rules:
@@ -125,7 +135,7 @@ values:
       enabled: false
     prometheus:
       prometheusSpec:
-        retention: 30d
+        retention: 2h
         externalLabels:
           cluster: "{{ .Values.cluster.name }}"
         podMonitorSelectorNilUsesHelmValues: false
@@ -134,15 +144,6 @@ values:
         serviceMonitorNamespaceSelector: {}
         podMonitorSelector: {}
         podMonitorNamespaceSelector: {}
-        storageSpec:
-          volumeClaimTemplate:
-            spec:
-              storageClassName: longhorn
-              accessModes:
-                - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 50Gi
         remoteWrite:
           - url: "http://xxx/api/v1/write"
         volumes:
