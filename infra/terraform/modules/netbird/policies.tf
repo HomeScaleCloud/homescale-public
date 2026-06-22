@@ -101,3 +101,18 @@ resource "netbird_policy" "metrics" {
     destinations  = [netbird_group.app["metrics"].id]
   }
 }
+
+resource "netbird_policy" "homecraft" {
+  name    = "HomeCraft"
+  enabled = true
+  rule {
+    action        = "accept"
+    bidirectional = false
+    enabled       = true
+    protocol      = "all"
+    ports         = ["25565"]
+    name          = "HomeCraft"
+    sources       = [data.netbird_group.all.id]
+    destinations  = [netbird_group.app["homecraft"].id]
+  }
+}
