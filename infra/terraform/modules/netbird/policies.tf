@@ -109,9 +109,19 @@ resource "netbird_policy" "homecraft" {
     action        = "accept"
     bidirectional = false
     enabled       = true
-    protocol      = "all"
+    protocol      = "tcp"
     ports         = ["25565"]
-    name          = "HomeCraft"
+    name          = "HomeCraft TCP"
+    sources       = [data.netbird_group.all.id]
+    destinations  = [netbird_group.app["homecraft"].id]
+  }
+  rule {
+    action        = "accept"
+    bidirectional = false
+    enabled       = true
+    protocol      = "udp"
+    ports         = ["25565"]
+    name          = "HomeCraft UDP"
     sources       = [data.netbird_group.all.id]
     destinations  = [netbird_group.app["homecraft"].id]
   }
