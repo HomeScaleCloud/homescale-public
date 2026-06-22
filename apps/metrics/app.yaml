@@ -62,6 +62,17 @@ clusters:
               reloadURL: "https://localhost:3000/api/admin/provisioning/dashboards/reload"
             datasources:
               reloadURL: "https://localhost:3000/api/admin/provisioning/datasources/reload"
+              defaultDatasourceEnabled: false
+          additionalDataSources:
+            - name: Prometheus
+              type: prometheus
+              url: http://prometheus.metrics.svc.cluster.local:9090
+              access: proxy
+              isDefault: true
+              uid: prometheus
+              jsonData:
+                httpMethod: POST
+                timeInterval: 30s
           defaultDashboardsEnabled: false
         alertmanager:
           enabled: true
@@ -93,38 +104,10 @@ clusters:
                       storage: 2Gi
         prometheus:
           prometheusSpec:
-            enableRemoteWriteReceiver: true
-            remoteWrite: []
+            remoteWrite:
+              - url: http://prometheus.metrics.svc.cluster.local:9090/api/v1/write
             initContainers: []
             volumes: []
-            retention: 30d
-            storageSpec:
-              volumeClaimTemplate:
-                spec:
-                  storageClassName: longhorn
-                  accessModes:
-                    - ReadWriteOnce
-                  resources:
-                    requests:
-                      storage: 50Gi
-        kubeStateMetrics:
-          serviceMonitor:
-            metricRelabelings:
-              - targetLabel: cluster
-                replacement: boa1-prod
-        nodeExporter:
-          serviceMonitor:
-            metricRelabelings:
-              - targetLabel: cluster
-                replacement: boa1-prod
-        kubelet:
-          serviceMonitor:
-            metricRelabelings:
-              - action: drop
-                sourceLabels: [__name__, le]
-                regex: (csi_operations|storage_operation_duration)_seconds_bucket;(0\.25|2\.5|15|25|120|600)(\.0)?
-              - targetLabel: cluster
-                replacement: boa1-prod
 netbird:
   policy:
     rules:
