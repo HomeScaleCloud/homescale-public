@@ -16068,13 +16068,13 @@
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(node_uname_info{job=\"$job\"}, nodename)",
+        "definition": "label_values(node_uname_info{cluster=\"$cluster\", job=\"$job\"}, nodename)",
         "includeAll": false,
         "label": "Nodename",
         "name": "nodename",
         "options": [],
         "query": {
-          "query": "label_values(node_uname_info{job=\"$job\"}, nodename)",
+          "query": "label_values(node_uname_info{cluster=\"$cluster\", job=\"$job\"}, nodename)",
           "refId": "Prometheus-nodename-Variable-Query"
         },
         "refresh": 1,
@@ -16088,13 +16088,13 @@
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(node_uname_info{job=\"$job\", nodename=\"$nodename\"}, instance)",
+        "definition": "label_values(node_uname_info{cluster=\"$cluster\", job=\"$job\", nodename=\"$nodename\"}, instance)",
         "includeAll": false,
         "label": "Instance",
         "name": "node",
         "options": [],
         "query": {
-          "query": "label_values(node_uname_info{job=\"$job\", nodename=\"$nodename\"}, instance)",
+          "query": "label_values(node_uname_info{cluster=\"$cluster\", job=\"$job\", nodename=\"$nodename\"}, instance)",
           "refId": "Prometheus-node-Variable-Query"
         },
         "refresh": 1,
