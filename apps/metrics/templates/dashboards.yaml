@@ -1,0 +1,30 @@
+{{- if eq .Values.cluster.name "boa1-prod" }}
+{{- $dashboards := list
+  "argocd-overview"
+  "k8s-addons-prometheus"
+  "k8s-events-exporter"
+  "k8s-system-api-server"
+  "k8s-system-coredns"
+  "k8s-views-global"
+  "k8s-views-namespaces"
+  "k8s-views-nodes"
+  "k8s-views-pods"
+  "longhorn"
+  "node-exporter-full"
+}}
+{{- range $dashboards }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-{{ . }}
+  namespace: metrics
+  labels:
+    grafana_dashboard: "1"
+  annotations:
+    k8s-sidecar-target-directory: /var/lib/grafana/dashboards/grafana-dashboards
+data:
+  {{ . }}.json: |
+    {{ $.Files.Get (printf "dashboards/%s.json" .) | nindent 4 }}
+{{- end }}
+{{- end }}
