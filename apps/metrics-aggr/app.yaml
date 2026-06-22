@@ -1,0 +1,11 @@
+path: apps/metrics-aggr
+namespace: metrics
+releaseName: metrics-aggr
+syncWave: 1
+defaultDeploy: false
+clusters:
+  boa1-prod:
+    deploy: true
+    values:
+      cluster:
+        name: boa1-prod
