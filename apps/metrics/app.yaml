@@ -201,3 +201,8 @@ values:
       enabled: false
     kubeProxy:
       enabled: false
+  metrics-server:
+    metrics:
+      enabled: true
+    serviceMonitor:
+      enabled: true

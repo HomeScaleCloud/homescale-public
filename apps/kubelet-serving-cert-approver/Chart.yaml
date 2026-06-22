@@ -1,0 +1,5 @@
+apiVersion: v2
+name: kubelet-serving-cert-approver
+description: Automatically approves kubelet serving certificate CSRs
+type: application
+version: 0.1.0
