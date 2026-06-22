@@ -1,16 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: "{{ .Release.Name }}"
+  name: "mc"
   labels:
     REDACTED/name: "{{ .Release.Name }}"
-  annotations:
-    tailscale.com/hostname: {{ .Release.Name }}
-    tailscale.com/proxy-group: ingress
-    tailscale.com/tags: tag:app,tag:env-{{ .Values.global.env }}
 spec:
-  type: LoadBalancer
-  loadBalancerClass: tailscale
+  type: ClusterIP
   ports:
   - name: minecraft
     port: 25565
