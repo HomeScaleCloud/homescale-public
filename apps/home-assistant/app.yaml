@@ -6,12 +6,9 @@ defaultDeploy: false
 netbird:
   policy:
     rules:
-      - sources:
-          - owners
-        ports:
-          - "80"
-          - "443"
+      - sources: ["owners"]
         protocol: tcp
+        ports: ["80", "443"]
 clusters:
   boa1-prod:
     deploy: true
