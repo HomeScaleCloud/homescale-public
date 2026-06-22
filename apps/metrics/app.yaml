@@ -119,6 +119,24 @@ clusters:
                   resources:
                     requests:
                       storage: 50Gi
+        kubeStateMetrics:
+          serviceMonitor:
+            metricRelabelings:
+              - targetLabel: cluster
+                replacement: boa1-prod
+        nodeExporter:
+          serviceMonitor:
+            metricRelabelings:
+              - targetLabel: cluster
+                replacement: boa1-prod
+        kubelet:
+          serviceMonitor:
+            metricRelabelings:
+              - action: drop
+                sourceLabels: [__name__, le]
+                regex: (csi_operations|storage_operation_duration)_seconds_bucket;(0\.25|2\.5|15|25|120|600)(\.0)?
+              - targetLabel: cluster
+                replacement: boa1-prod
 netbird:
   policy:
     rules:
