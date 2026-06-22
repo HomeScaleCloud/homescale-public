@@ -12,16 +12,14 @@
   "longhorn"
   "node-exporter-full"
 }}
-{{- range $dashboards }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: dashboard-{{ . }}
+  name: grafana-dashboards
   namespace: metrics
-  labels:
-    grafana_dashboard: "1"
 data:
+{{- range $dashboards }}
   {{ . }}.json: |
     {{ $.Files.Get (printf "dashboards/%s.json" .) | nindent 4 }}
 {{- end }}
