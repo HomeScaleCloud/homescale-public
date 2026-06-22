@@ -1,11 +1,10 @@
-defaultDeploy: true
-
 path: apps/spegel
 namespace: spegel
 releaseName: spegel
-podSecurity: privileged
 syncWave: -20
+podSecurity: privileged
 values:
   spegel:
     spegel:
       containerdRegistryConfigPath: /etc/cri/conf.d/hosts
+defaultDeploy: true

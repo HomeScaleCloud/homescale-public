@@ -1,0 +1,28 @@
+path: apps/homecraft
+namespace: homecraft
+releaseName: homecraft
+syncWave: 0
+defaultDeploy: false
+clusters:
+  boa1-prod:
+    enabled: true
+values:
+  global:
+    env: ""
+  minecraft:
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: 500m
+    minecraftServer:
+      eula: "TRUE"
+      memory: 2048M
+      type: "PAPER"
+      gameMode: "creative"
+      ops: "m4xm0rris"
+      motd: "HomeCraft - Powered by HomeScale Cloud"
+      icon: "https://raw.githubusercontent.com/HomeScaleCloud/homescale-public/c6e2a1e5698e5f0a319638e5877e25e83b50ba7d/media/homescale-icon.png"
+    persistence:
+      dataDir:
+        enabled: true
+        Size: "2Gi"

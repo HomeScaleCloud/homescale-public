@@ -1,9 +1,8 @@
-defaultDeploy: true
-
 path: apps/infisical
 namespace: infisical
 releaseName: infisical
 syncWave: -35
+defaultDeploy: true
 values:
   secrets-operator:
     controllerManager:
