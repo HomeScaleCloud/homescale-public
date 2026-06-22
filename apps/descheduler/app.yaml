@@ -1,0 +1,50 @@
+defaultDeploy: false
+
+clusters:
+  boa1-prod:
+    deploy: true
+
+path: apps/descheduler
+namespace: kube-system
+releaseName: descheduler
+syncWave: 0
+values:
+  descheduler:
+    kind: CronJob
+    schedule: "*/5 * * * *"
+    deschedulerPolicy:
+      profiles:
+        - name: default
+          pluginConfig:
+            - name: DefaultEvictor
+              args:
+                podProtections:
+                  defaultDisabled:
+                    - "PodsWithLocalStorage"
+                  extraEnabled:
+                    - "PodsWithPVC"
+            - name: LowNodeUtilization
+              args:
+                thresholds:
+                  cpu: 20
+                  memory: 20
+                  pods: 20
+                targetThresholds:
+                  cpu: 50
+                  memory: 50
+                  pods: 35
+            - name: RemoveDuplicates
+            - name: RemovePodsViolatingTopologySpreadConstraint
+            - name: RemovePodsHavingTooManyRestarts
+              args:
+                podRestartThreshold: 100
+                includingInitContainers: true
+          plugins:
+            balance:
+              enabled:
+                - LowNodeUtilization
+                - RemoveDuplicates
+                - RemovePodsViolatingTopologySpreadConstraint
+            deschedule:
+              enabled:
+                - RemovePodsHavingTooManyRestarts
