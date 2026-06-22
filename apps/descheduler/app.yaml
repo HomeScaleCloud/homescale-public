@@ -1,5 +1,3 @@
-defaultDeploy: true
-
 path: apps/descheduler
 namespace: kube-system
 releaseName: descheduler
@@ -44,3 +42,4 @@ values:
             deschedule:
               enabled:
                 - RemovePodsHavingTooManyRestarts
+defaultDeploy: true

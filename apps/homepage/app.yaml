@@ -1,5 +1,3 @@
-defaultDeploy: false
-
 path: apps/homepage
 namespace: homepage
 releaseName: homepage
@@ -12,3 +10,4 @@ values:
     enabled: true
     className: tailscale
     host: "homepage-{{ .Values.cluster.name }}.REDACTED"
+defaultDeploy: false

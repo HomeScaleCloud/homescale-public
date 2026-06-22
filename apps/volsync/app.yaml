@@ -1,14 +1,11 @@
-defaultDeploy: true
-
-clusters:
-  boa1-gw:
-    deploy: false
-
 path: apps/volsync
 namespace: volsync-system
 releaseName: volsync
 syncWave: -5
-
+defaultDeploy: true
+clusters:
+  boa1-gw:
+    deploy: false
 ignoreDifferences:
   - group: apiextensions.k8s.io
     kind: CustomResourceDefinition

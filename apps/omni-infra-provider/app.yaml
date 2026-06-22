@@ -1,5 +1,9 @@
+path: apps/omni-infra-provider
+namespace: omni-infra-provider
+releaseName: omni-infra-provider
+syncWave: 0
+podSecurity: privileged
 defaultDeploy: false
-
 clusters:
   boa1-gw:
     deploy: true
@@ -7,12 +11,6 @@ clusters:
       provider:
         platform: metal
         address: "10.1.245.100/24"
-
-path: apps/omni-infra-provider
-namespace: omni-infra-provider
-releaseName: omni-infra-provider
-syncWave: 0
-podSecurity: privileged
 values:
   omni:
     apiEndpoint: "https://REDACTED"

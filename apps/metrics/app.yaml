@@ -1,5 +1,11 @@
+path: apps/metrics
+namespace: metrics
+releaseName: metrics
+syncWave: 0
+podSecurity: privileged
+syncOptions:
+  - ServerSideApply=true
 defaultDeploy: false
-
 clusters:
   boa1-prod:
     deploy: true
@@ -135,14 +141,6 @@ clusters:
         prometheus:
           prometheusSpec:
             enableRemoteWriteReceiver: true
-
-path: apps/metrics
-namespace: metrics
-releaseName: metrics
-syncWave: 0
-podSecurity: privileged
-syncOptions:
-  - ServerSideApply=true
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

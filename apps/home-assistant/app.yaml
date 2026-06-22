@@ -1,13 +1,11 @@
-defaultDeploy: false
-
-clusters:
-  boa1-prod:
-    deploy: true
-
 path: apps/home-assistant
 namespace: home-assistant
 releaseName: home-assistant
 syncWave: 0
+defaultDeploy: false
+clusters:
+  boa1-prod:
+    deploy: true
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

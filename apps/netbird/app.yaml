@@ -1,18 +1,11 @@
-defaultDeploy: true
-
 path: apps/netbird
 namespace: netbird
 releaseName: netbird
-podSecurity: privileged
 syncWave: -20
+podSecurity: privileged
 syncOptions:
   - ServerSideApply=true
-ignoreDifferences:
-  - group: admissionregistration.k8s.io
-    kind: MutatingWebhookConfiguration
-    name: netbird-kubernetes-operator-mpod-webhook
-    jsonPointers:
-      - /webhooks
+defaultDeploy: true
 values:
   netbird-operator:
     cluster:
@@ -25,3 +18,9 @@ values:
       keyFromSecret:
         name: netbird
         key: NETBIRD_OPERATOR_TOKEN
+ignoreDifferences:
+  - group: admissionregistration.k8s.io
+    kind: MutatingWebhookConfiguration
+    name: netbird-kubernetes-operator-mpod-webhook
+    jsonPointers:
+      - /webhooks
