@@ -3,6 +3,15 @@ namespace: home-assistant
 releaseName: home-assistant
 syncWave: 0
 defaultDeploy: false
+netbird:
+  policy:
+    rules:
+      - sources:
+          - owners
+        ports:
+          - "80"
+          - "443"
+        protocol: tcp
 clusters:
   boa1-prod:
     deploy: true

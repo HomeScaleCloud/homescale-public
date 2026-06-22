@@ -5,6 +5,15 @@ syncWave: -30
 syncOptions:
   - ServerSideApply=true
 defaultDeploy: true
+netbird:
+  policy:
+    rules:
+      - sources:
+          - team-infra-plat
+        ports:
+          - "80"
+          - "443"
+        protocol: tcp
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

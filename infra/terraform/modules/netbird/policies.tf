@@ -1,17 +1,3 @@
-# resource "netbird_policy" "lab" {
-#   name    = "Lab Policy"
-#   enabled = true
-#   rule {
-#     action        = "accept"
-#     bidirectional = false
-#     enabled       = true
-#     protocol      = "all"
-#     name          = "Lab Policy"
-#     sources       = [data.netbird_group.all.id]
-#     destinations  = [netbird_group.cluster["lab"].id]
-#   }
-# }
-
 resource "netbird_policy" "region_mgmt" {
   name    = "Region Mgmt Networks"
   enabled = true
@@ -42,87 +28,55 @@ resource "netbird_policy" "region_bmc" {
   }
 }
 
-resource "netbird_policy" "argocd" {
-  name    = "ArgoCD"
-  enabled = true
-  rule {
-    action        = "accept"
-    bidirectional = false
-    enabled       = true
-    protocol      = "tcp"
-    ports         = ["80", "443"]
-    name          = "ArgoCD"
-    sources       = [data.netbird_group.team_infra_plat.id]
-    destinations  = [netbird_group.app["argocd"].id]
+locals {
+  app_yaml_files = fileset("${path.module}/../../../../apps", "*/app.yaml")
+
+  app_yamls = {
+    for f in local.app_yaml_files :
+    split("/", f)[0] => yamldecode(file("${path.module}/../../../../apps/${f}"))
   }
+
+  app_policies = {
+    for name, y in local.app_yamls :
+    name => y.netbird.policy
+    if try(y.netbird.policy, null) != null
+  }
+
+  # One entry per rule: single-rule apps use app_name, multi-rule apps use app_name-N
+  app_policy_rules = merge([
+    for app_name, policy in local.app_policies : {
+      for idx, rule in policy.rules :
+      length(policy.rules) == 1 ? app_name : "${app_name}-${idx}" => merge(rule, { app = app_name })
+    }
+  ]...)
+
+  netbird_source_groups = merge(
+    {
+      "all"             = data.netbird_group.all.id
+      "team-infra-plat" = data.netbird_group.team_infra_plat.id
+      "team-sec-plat"   = data.netbird_group.team_sec_plat.id
+      "github-actions"  = netbird_group.github_actions.id
+      "owners"          = data.netbird_group.owners.id
+      "sg-k8s-admin"    = data.netbird_group.sg_k8s_admin.id
+    },
+    { for k in local.app_names : "app:${k}" => netbird_group.app[k].id }
+  )
 }
 
-resource "netbird_policy" "omni" {
-  name    = "Omni"
-  enabled = true
-  rule {
-    action        = "accept"
-    bidirectional = false
-    enabled       = true
-    protocol      = "tcp"
-    ports         = ["80", "443"]
-    name          = "Omni"
-    sources       = [netbird_group.github_actions.id, netbird_group.app["omni-infra-provider"].id, data.netbird_group.team_infra_plat.id]
-    destinations  = [netbird_group.app["omni"].id]
-  }
-}
+resource "netbird_policy" "app" {
+  for_each = local.app_policy_rules
 
-resource "netbird_policy" "home_assistant" {
-  name    = "Home Assistant"
+  name    = "app-${each.key}"
   enabled = true
-  rule {
-    action        = "accept"
-    bidirectional = false
-    enabled       = true
-    protocol      = "tcp"
-    ports         = ["80", "443"]
-    name          = "Home Assistant"
-    sources       = [data.netbird_group.owners.id]
-    destinations  = [netbird_group.app["home-assistant"].id]
-  }
-}
 
-resource "netbird_policy" "metrics" {
-  name    = "Metrics"
-  enabled = true
   rule {
     action        = "accept"
     bidirectional = false
     enabled       = true
-    protocol      = "tcp"
-    ports         = ["80", "443"]
-    name          = "Metrics"
-    sources       = [data.netbird_group.team_infra_plat.id, data.netbird_group.team_sec_plat.id]
-    destinations  = [netbird_group.app["metrics"].id]
-  }
-}
-
-resource "netbird_policy" "homecraft" {
-  name    = "HomeCraft"
-  enabled = true
-  rule {
-    action        = "accept"
-    bidirectional = false
-    enabled       = true
-    protocol      = "tcp"
-    ports         = ["25565"]
-    name          = "HomeCraft TCP"
-    sources       = [data.netbird_group.all.id]
-    destinations  = [netbird_group.app["homecraft"].id]
-  }
-  rule {
-    action        = "accept"
-    bidirectional = false
-    enabled       = true
-    protocol      = "udp"
-    ports         = ["25565"]
-    name          = "HomeCraft UDP"
-    sources       = [data.netbird_group.all.id]
-    destinations  = [netbird_group.app["homecraft"].id]
+    name          = "app-${each.key}"
+    protocol      = each.value.protocol
+    ports         = try(each.value.ports, [])
+    sources       = [for s in each.value.sources : local.netbird_source_groups[s]]
+    destinations  = [netbird_group.app[each.value.app].id]
   }
 }
