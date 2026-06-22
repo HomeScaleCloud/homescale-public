@@ -10,7 +10,6 @@
   "k8s-views-nodes"
   "k8s-views-pods"
   "longhorn"
-  "node-exporter-full"
 }}
 ---
 apiVersion: v1
@@ -23,4 +22,13 @@ data:
   {{ . }}.json: |
     {{ $.Files.Get (printf "dashboards/%s.json" .) | nindent 4 }}
 {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-node-exporter
+  namespace: metrics
+data:
+  node-exporter-full.json: |
+    {{ $.Files.Get "dashboards/node-exporter-full.json" | nindent 4 }}
 {{- end }}

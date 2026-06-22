@@ -63,6 +63,15 @@ clusters:
               enabled: false
           dashboardsConfigMaps:
             default: grafana-dashboards
+          extraVolumes:
+            - name: dashboard-node-exporter
+              configMap:
+                name: grafana-dashboards-node-exporter
+          extraVolumeMounts:
+            - name: dashboard-node-exporter
+              mountPath: /etc/grafana/dashboards/default/node-exporter-full.json
+              subPath: node-exporter-full.json
+              readOnly: true
           datasources:
             datasources.yaml:
               apiVersion: 1
