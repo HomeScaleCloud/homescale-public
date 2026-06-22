@@ -1,0 +1,6 @@
+path: apps/kubelet-serving-cert-approver
+namespace: kubelet-serving-cert-approver
+releaseName: kubelet-serving-cert-approver
+syncWave: -10
+podSecurity: restricted
+defaultDeploy: true
