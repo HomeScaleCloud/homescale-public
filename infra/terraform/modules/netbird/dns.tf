@@ -21,3 +21,11 @@ resource "netbird_dns_record" "grafana" {
   content = "REDACTED"
   ttl     = 300
 }
+
+resource "netbird_dns_record" "prometheus" {
+  zone_id = netbird_dns_zone.metrics.id
+  name    = "REDACTED"
+  type    = "CNAME"
+  content = "REDACTED"
+  ttl     = 300
+}
