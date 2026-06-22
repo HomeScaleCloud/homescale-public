@@ -145,7 +145,7 @@ values:
         podMonitorSelector: {}
         podMonitorNamespaceSelector: {}
         remoteWrite:
-          - url: "http://xxx/api/v1/write"
+          - url: "http://xxx:9090/api/v1/write"
         volumes:
           - name: netbird-run
             emptyDir: {}
