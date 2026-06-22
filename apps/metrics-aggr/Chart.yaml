@@ -1,0 +1,5 @@
+apiVersion: v2
+name: metrics-aggr
+description: Prometheus aggregator for HomeScale — receives remote writes from all clusters
+type: application
+version: 0.1.0
