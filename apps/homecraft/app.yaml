@@ -7,6 +7,8 @@ clusters:
   boa1-prod:
     deploy: true
 values:
+  cluster:
+    name: "{{ .Values.cluster.name }}"
   global:
     env: ""
   minecraft:
@@ -20,7 +22,7 @@ values:
       type: "PAPER"
       gameMode: "creative"
       ops: "m4xm0rris"
-      motd: "HomeCraft - Powered by HomeScale Cloud"
+      motd: "HomeCraft - {{ .Values.cluster.name }}"
       icon: "https://avatars.githubusercontent.com/u/149919927?s=200&v=4"
     persistence:
       dataDir:
