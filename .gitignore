@@ -41,3 +41,4 @@ override.tf.json
 # Helm things
 Chart.lock
 **/charts/**.tgz
+**/charts/*/

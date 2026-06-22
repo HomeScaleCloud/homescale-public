@@ -2417,7 +2417,7 @@
         "name": "cluster",
         "options": [],
         "query": {
-          "query": "label_values(up, cluster)",
+          "query": "label_values(kube_node_info, cluster)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,

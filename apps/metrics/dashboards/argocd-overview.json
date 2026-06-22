@@ -285,7 +285,7 @@
       "repeatDirection": "h",
       "targets": [
         {
-          "expr": "sum(argocd_app_info{namespace=~\"$namespace\",dest_server=~\"$cluster\",health_status=~\"$health_status\",sync_status=~\"$sync_status\"})",
+          "expr": "sum(argocd_app_info{namespace=~\"$namespace\",dest_server=~\"$server\",health_status=~\"$health_status\",sync_status=~\"$sync_status\"})",
           "format": "time_series",
           "instant": false,
           "intervalFactor": 1,
@@ -424,7 +424,7 @@
       "repeatDirection": "h",
       "targets": [
         {
-          "expr": "sum(argocd_app_info{namespace=~\"$namespace\",dest_server=~\"$cluster\",operation!=\"\"})",
+          "expr": "sum(argocd_app_info{namespace=~\"$namespace\",dest_server=~\"$server\",operation!=\"\"})",
           "format": "time_series",
           "instant": true,
           "intervalFactor": 1,
@@ -495,7 +495,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(argocd_app_info{namespace=~\"$namespace\",dest_server=~\"$cluster\",health_status=~\"$health_status\",sync_status=~\"$sync_status\"}) by (namespace)",
+          "expr": "sum(argocd_app_info{namespace=~\"$namespace\",dest_server=~\"$server\",health_status=~\"$health_status\",sync_status=~\"$sync_status\"}) by (namespace)",
           "format": "time_series",
           "instant": false,
           "intervalFactor": 1,
@@ -620,7 +620,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(argocd_app_info{namespace=~\"$namespace\",dest_server=~\"$cluster\",health_status=~\"$health_status\",sync_status=~\"$sync_status\",health_status!=\"\"}) by (health_status)",
+              "expr": "sum(argocd_app_info{namespace=~\"$namespace\",dest_server=~\"$server\",health_status=~\"$health_status\",sync_status=~\"$sync_status\",health_status!=\"\"}) by (health_status)",
               "format": "time_series",
               "instant": false,
               "intervalFactor": 1,
@@ -731,7 +731,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(argocd_app_info{namespace=~\"$namespace\",dest_server=~\"$cluster\",health_status=~\"$health_status\",sync_status=~\"$sync_status\",health_status!=\"\"}) by (sync_status)",
+              "expr": "sum(argocd_app_info{namespace=~\"$namespace\",dest_server=~\"$server\",health_status=~\"$health_status\",sync_status=~\"$sync_status\",health_status!=\"\"}) by (sync_status)",
               "format": "time_series",
               "instant": false,
               "intervalFactor": 1,
@@ -850,7 +850,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(round(increase(argocd_app_sync_total{namespace=~\"$namespace\",dest_server=~\"$cluster\"}[$interval]))) by ($grouping)",
+              "expr": "sum(round(increase(argocd_app_sync_total{namespace=~\"$namespace\",dest_server=~\"$server\"}[$interval]))) by ($grouping)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{$grouping}}",
@@ -950,7 +950,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(round(increase(argocd_app_sync_total{namespace=~\"$namespace\",phase=~\"Error|Failed\",dest_server=~\"$cluster\"}[$interval]))) by ($grouping, phase)",
+              "expr": "sum(round(increase(argocd_app_sync_total{namespace=~\"$namespace\",phase=~\"Error|Failed\",dest_server=~\"$server\"}[$interval]))) by ($grouping, phase)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{phase}}: {{$grouping}}",
@@ -1065,7 +1065,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(increase(argocd_app_reconcile_count{namespace=~\"$namespace\",dest_server=~\"$cluster\"}[$interval])) by ($grouping)",
+              "expr": "sum(increase(argocd_app_reconcile_count{namespace=~\"$namespace\",dest_server=~\"$server\"}[$interval])) by ($grouping)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{$grouping}}",
@@ -1231,7 +1231,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(increase(argocd_app_k8s_request_total{namespace=~\"$namespace\",server=~\"$cluster\"}[$interval])) by (verb, resource_kind)",
+              "expr": "sum(increase(argocd_app_k8s_request_total{namespace=~\"$namespace\",server=~\"$server\"}[$interval])) by (verb, resource_kind)",
               "format": "time_series",
               "instant": false,
               "intervalFactor": 1,
@@ -1843,7 +1843,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(argocd_cluster_api_resource_objects{namespace=~\"$namespace\",server=~\"$cluster\"}) by (server)",
+              "expr": "sum(argocd_cluster_api_resource_objects{namespace=~\"$namespace\",server=~\"$server\"}) by (server)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{server}}",
@@ -1938,7 +1938,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "  sum(argocd_cluster_api_resources{namespace=~\"$namespace\",server=~\"$cluster\"}) by (server)",
+              "expr": "  sum(argocd_cluster_api_resources{namespace=~\"$namespace\",server=~\"$server\"}) by (server)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{server}}",
@@ -2032,7 +2032,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(increase(argocd_cluster_events_total{namespace=~\"$namespace\",server=~\"$cluster\"}[$interval])) by (server)",
+              "expr": "sum(increase(argocd_cluster_events_total{namespace=~\"$namespace\",server=~\"$server\"}[$interval])) by (server)",
               "format": "time_series",
               "intervalFactor": 1,
               "legendFormat": "{{server}}",
@@ -3884,7 +3884,7 @@
         "name": "cluster",
         "options": [],
         "query": {
-          "query": "label_values(argocd_cluster_info, server)",
+          "query": "label_values(argocd_cluster_info, name)",
           "refId": "Prometheus-cluster-Variable-Query"
         },
         "refresh": 1,
@@ -3895,6 +3895,28 @@
         "tagsQuery": "",
         "type": "query",
         "useTags": false
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(argocd_cluster_info{name=\"$cluster\"}, server)",
+        "hide": 2,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "name": "server",
+        "options": [],
+        "query": {
+          "query": "label_values(argocd_cluster_info{name=\"$cluster\"}, server)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query",
+        "label": "server"
       },
       {
         "allValue": ".*",
