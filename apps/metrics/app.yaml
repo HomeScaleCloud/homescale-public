@@ -152,7 +152,7 @@ values:
           - name: netbird-lib
             emptyDir: {}
         initContainers:
-          - name: netbird
+          - name: nb-client
             image: "ghcr.io/netbirdio/netbird:0.71.4"
             restartPolicy: Always
             startupProbe:
@@ -186,6 +186,8 @@ values:
                 value: "0"
             securityContext:
               privileged: true
+              runAsUser: 0
+              runAsNonRoot: false
               capabilities:
                 add:
                   - NET_ADMIN
