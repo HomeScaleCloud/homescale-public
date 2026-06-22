@@ -21,7 +21,7 @@ values:
       gameMode: "creative"
       ops: "m4xm0rris"
       motd: "HomeCraft - Powered by HomeScale Cloud"
-      icon: "https://raw.githubusercontent.com/HomeScaleCloud/homescale-public/c6e2a1e5698e5f0a319638e5877e25e83b50ba7d/media/homescale-icon.png"
+      icon: "https://avatars.githubusercontent.com/u/149919927?s=200&v=4"
     persistence:
       dataDir:
         enabled: true
