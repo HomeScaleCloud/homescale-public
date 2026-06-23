@@ -8,6 +8,13 @@ spec:
   replicas: 1
   retention: 90d
   enableRemoteWriteReceiver: true
+  ruleSelector: {}
+  ruleNamespaceSelector: {}
+  alerting:
+    alertmanagers:
+      - namespace: metrics
+        name: alertmanager
+        port: http-web
   serviceMonitorSelector:
     matchLabels:
       prometheus: aggregator
