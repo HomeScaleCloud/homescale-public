@@ -2816,6 +2816,94 @@
       ],
       "title": "Network - Errors",
       "type": "timeseries"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 72
+      },
+      "id": 67,
+      "panels": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 73
+          },
+          "id": 65,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{cluster=\"$cluster\", namespace=\"$namespace\", pod=~\"$pod\"}",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ],
+          "title": "Pod Logs",
+          "type": "logs"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 87
+          },
+          "id": 66,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{cluster=\"$cluster\", job=\"integrations/kubernetes/eventhandler\"} | logfmt | involvedObject_namespace=~`$namespace` | involvedObject_name=~`$pod`",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ],
+          "title": "Kubernetes Events",
+          "type": "logs"
+        }
+      ],
+      "title": "Logs",
+      "type": "row"
     }
   ],
   "preload": false,
