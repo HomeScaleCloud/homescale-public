@@ -67,42 +67,6 @@
           "type": "dashboard"
         },
         "type": "dashboard"
-      },
-      {
-        "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
-        },
-        "enable": true,
-        "hide": false,
-        "iconColor": "#5c4ee5",
-        "name": "terraform",
-        "target": {
-          "limit": 100,
-          "matchAny": false,
-          "tags": [
-            "terraform"
-          ],
-          "type": "tags"
-        }
-      },
-      {
-        "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
-        },
-        "enable": true,
-        "hide": false,
-        "iconColor": "red",
-        "name": "oncall",
-        "target": {
-          "limit": 100,
-          "matchAny": false,
-          "tags": [
-            "oncall"
-          ],
-          "type": "tags"
-        }
       }
     ]
   },
@@ -113,12 +77,100 @@
   "links": [],
   "panels": [
     {
-      "collapsed": false,
+      "collapsed": true,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 0
+      },
+      "id": 67,
+      "panels": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 73
+          },
+          "id": 65,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{cluster=\"$cluster\", namespace=\"$namespace\", pod=~\"$pod\"}",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ],
+          "title": "Pod Logs",
+          "type": "logs"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 87
+          },
+          "id": 66,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{cluster=\"$cluster\", job=\"integrations/kubernetes/eventhandler\"} | logfmt | involvedObject_namespace=~`$namespace` | involvedObject_name=~`$pod`",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ],
+          "title": "Kubernetes Events",
+          "type": "logs"
+        }
+      ],
+      "title": "Logs",
+      "type": "row"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 1
       },
       "id": 43,
       "panels": [],
@@ -151,7 +203,7 @@
         "h": 2,
         "w": 12,
         "x": 0,
-        "y": 1
+        "y": 2
       },
       "id": 2,
       "options": {
@@ -222,7 +274,7 @@
         "h": 2,
         "w": 6,
         "x": 12,
-        "y": 1
+        "y": 2
       },
       "id": 33,
       "options": {
@@ -287,7 +339,7 @@
         "h": 2,
         "w": 6,
         "x": 18,
-        "y": 1
+        "y": 2
       },
       "id": 41,
       "options": {
@@ -352,7 +404,7 @@
         "h": 2,
         "w": 5,
         "x": 0,
-        "y": 3
+        "y": 4
       },
       "id": 52,
       "options": {
@@ -453,7 +505,7 @@
         "h": 2,
         "w": 7,
         "x": 5,
-        "y": 3
+        "y": 4
       },
       "id": 53,
       "options": {
@@ -520,7 +572,7 @@
         "h": 2,
         "w": 6,
         "x": 12,
-        "y": 3
+        "y": 4
       },
       "id": 56,
       "options": {
@@ -591,7 +643,7 @@
         "h": 2,
         "w": 6,
         "x": 18,
-        "y": 3
+        "y": 4
       },
       "id": 57,
       "options": {
@@ -635,7 +687,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 6
       },
       "id": 47,
       "panels": [],
@@ -682,7 +734,7 @@
         "h": 8,
         "w": 3,
         "x": 0,
-        "y": 6
+        "y": 7
       },
       "id": 39,
       "options": {
@@ -755,7 +807,7 @@
         "h": 8,
         "w": 3,
         "x": 3,
-        "y": 6
+        "y": 7
       },
       "id": 48,
       "options": {
@@ -832,7 +884,7 @@
         "h": 8,
         "w": 3,
         "x": 6,
-        "y": 6
+        "y": 7
       },
       "id": 40,
       "options": {
@@ -905,7 +957,7 @@
         "h": 8,
         "w": 3,
         "x": 9,
-        "y": 6
+        "y": 7
       },
       "id": 49,
       "options": {
@@ -1029,7 +1081,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 6
+        "y": 7
       },
       "id": 38,
       "options": {
@@ -1299,7 +1351,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 14
+        "y": 15
       },
       "id": 50,
       "options": {
@@ -1430,7 +1482,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 15
       },
       "id": 30,
       "options": {
@@ -1564,7 +1616,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 22
+        "y": 23
       },
       "id": 29,
       "options": {
@@ -1673,7 +1725,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 22
+        "y": 23
       },
       "id": 51,
       "options": {
@@ -1783,7 +1835,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 31
       },
       "id": 59,
       "options": {
@@ -1830,7 +1882,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 38
+        "y": 39
       },
       "id": 62,
       "panels": [],
@@ -1905,7 +1957,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 39
+        "y": 40
       },
       "id": 60,
       "options": {
@@ -2008,7 +2060,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 39
+        "y": 40
       },
       "id": 61,
       "options": {
@@ -2130,7 +2182,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 47
+        "y": 48
       },
       "id": 63,
       "options": {
@@ -2290,7 +2342,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 47
+        "y": 48
       },
       "id": 64,
       "options": {
@@ -2370,7 +2422,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 56
       },
       "id": 45,
       "panels": [],
@@ -2443,7 +2495,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 56
+        "y": 57
       },
       "id": 31,
       "options": {
@@ -2553,7 +2605,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 56
+        "y": 57
       },
       "id": 34,
       "options": {
@@ -2663,7 +2715,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 64
+        "y": 65
       },
       "id": 36,
       "options": {
@@ -2773,7 +2825,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 64
+        "y": 65
       },
       "id": 37,
       "options": {
@@ -2816,94 +2868,6 @@
       ],
       "title": "Network - Errors",
       "type": "timeseries"
-    },
-    {
-      "collapsed": true,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 72
-      },
-      "id": 67,
-      "panels": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          },
-          "gridPos": {
-            "h": 14,
-            "w": 24,
-            "x": 0,
-            "y": 73
-          },
-          "id": 65,
-          "options": {
-            "dedupStrategy": "none",
-            "enableLogDetails": true,
-            "prettifyLogMessage": false,
-            "showCommonLabels": false,
-            "showLabels": false,
-            "showTime": true,
-            "sortOrder": "Descending",
-            "wrapLogMessage": true
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "loki",
-                "uid": "loki"
-              },
-              "editorMode": "code",
-              "expr": "{cluster=\"$cluster\", namespace=\"$namespace\", pod=~\"$pod\"}",
-              "queryType": "range",
-              "refId": "A"
-            }
-          ],
-          "title": "Pod Logs",
-          "type": "logs"
-        },
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          },
-          "gridPos": {
-            "h": 10,
-            "w": 24,
-            "x": 0,
-            "y": 87
-          },
-          "id": 66,
-          "options": {
-            "dedupStrategy": "none",
-            "enableLogDetails": true,
-            "prettifyLogMessage": false,
-            "showCommonLabels": false,
-            "showLabels": false,
-            "showTime": true,
-            "sortOrder": "Descending",
-            "wrapLogMessage": true
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "loki",
-                "uid": "loki"
-              },
-              "editorMode": "code",
-              "expr": "{cluster=\"$cluster\", job=\"integrations/kubernetes/eventhandler\"} | logfmt | involvedObject_namespace=~`$namespace` | involvedObject_name=~`$pod`",
-              "queryType": "range",
-              "refId": "A"
-            }
-          ],
-          "title": "Kubernetes Events",
-          "type": "logs"
-        }
-      ],
-      "title": "Logs",
-      "type": "row"
     }
   ],
   "preload": false,
