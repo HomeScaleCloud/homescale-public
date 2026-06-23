@@ -5,7 +5,7 @@ metadata:
   namespace: metrics
 spec:
   networkRouterRef:
-    name: boa1-prod
+    name: {{ required "cluster.name is required" .Values.cluster.name | quote }}
     namespace: netbird
   serviceRef:
     name: prometheus
@@ -20,10 +20,10 @@ metadata:
   namespace: metrics
 spec:
   networkRouterRef:
-    name: boa1-prod
+    name: {{ required "cluster.name is required" .Values.cluster.name | quote }}
     namespace: netbird
   serviceRef:
-    name: metrics-aggr-loki
+    name: loki
   groups:
     - name: app-metrics
     - name: cluster-boa1-prod
