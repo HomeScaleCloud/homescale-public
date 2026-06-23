@@ -152,7 +152,7 @@
                 "uid": "loki"
               },
               "editorMode": "code",
-              "expr": "{cluster=\"$cluster\", job=\"integrations/kubernetes/eventhandler\"} | logfmt | involvedObject_namespace=~`$namespace` | involvedObject_name=~`$pod`",
+              "expr": "{cluster=\"$cluster\", job=\"integrations/kubernetes/eventhandler\", namespace=~\"$namespace\"} | logfmt | name=~`$pod`",
               "queryType": "range",
               "refId": "A"
             }
