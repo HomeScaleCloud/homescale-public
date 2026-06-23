@@ -10,3 +10,51 @@ clusters:
     values:
       cluster:
         name: boa1-prod
+values:
+  loki:
+    deploymentMode: SingleBinary
+    loki:
+      auth_enabled: false
+      commonConfig:
+        replication_factor: 1
+      schemaConfig:
+        configs:
+          - from: "2024-01-01"
+            store: tsdb
+            object_store: filesystem
+            schema: v13
+            index:
+              prefix: index_
+              period: 24h
+      storage:
+        type: filesystem
+        bucketNames:
+          chunks: chunks
+          ruler: ruler
+          admin: admin
+      limits_config:
+        retention_period: 90d
+    singleBinary:
+      replicas: 1
+      persistence:
+        enabled: true
+        storageClass: longhorn
+        size: 100Gi
+    backend:
+      replicas: 0
+    read:
+      replicas: 0
+    write:
+      replicas: 0
+    minio:
+      enabled: false
+    gateway:
+      enabled: false
+    lokiCanary:
+      enabled: false
+    chunksCache:
+      enabled: false
+    resultsCache:
+      enabled: false
+    test:
+      enabled: false
