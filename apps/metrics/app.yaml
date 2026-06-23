@@ -209,11 +209,6 @@ values:
       enabled: true
   alloy:
     alloy:
-      extraEnv:
-        - name: HOSTNAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
       configMap:
         content: |-
           discovery.kubernetes "pods" {
