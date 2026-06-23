@@ -10,9 +10,9 @@ netbird:
       - sources: ["owners"]
         protocol: tcp
         ports: ["445"]
-clusters:
-  boa1-prod:
-    deploy: true
+# clusters:
+#   boa1-prod:
+#     deploy: true
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
