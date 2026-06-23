@@ -8,7 +8,7 @@ defaultDeploy: true
 netbird:
   policy:
     rules:
-      - sources: ["team-infra-plat"]
+      - sources: ["team-infra-plat", "team-sec-plat"]
         protocol: tcp
         ports: ["80", "443"]
 values:
@@ -44,6 +44,9 @@ values:
           g, team-infra-plat, role:readonly
           p, team-infra-plat, applications, delete/*/Pod/*/*, */*, allow
           p, team-infra-plat, applications, sync, */*, allow
+          g, team-sec-plat, role:readonly
+          p, team-sec-plat, applications, delete/*/Pod/*/*, */*, allow
+          p, team-sec-plat, applications, sync, */*, allow
       params:
         application.operations.selfHealTimeout: "5"
     controller:
