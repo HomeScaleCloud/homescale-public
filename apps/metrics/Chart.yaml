@@ -10,3 +10,6 @@ dependencies:
   - name: metrics-server
     version: 3.12.2
     repository: https://kubernetes-sigs.github.io/metrics-server/
+  - name: alloy
+    version: 1.10.0
+    repository: https://grafana.github.io/helm-charts
