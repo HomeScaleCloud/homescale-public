@@ -518,6 +518,138 @@
     },
     {
       "type": "row",
+      "title": "PVC Coverage",
+      "id": 11,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Bound PVCs without a VolSync ReplicationSource",
+      "description": "Bound PVCs that have no matching VolSync ReplicationSource. Not necessarily a problem — system PVCs, ephemeral storage, or intentionally unprotected volumes will appear here.",
+      "id": 12,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Namespace",
+            "desc": false
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Namespace"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PVC"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 280
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Storage Class"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(\n  kube_persistentvolumeclaim_info{cluster=\"$cluster\"}\n  * on(namespace, persistentvolumeclaim) group_left()\n  kube_persistentvolumeclaim_status_phase{cluster=\"$cluster\", phase=\"Bound\"}\n)\nunless on(namespace, persistentvolumeclaim)\nlabel_replace(\n  label_replace(\n    volsync_volume_out_of_sync{cluster=\"$cluster\", role=\"source\"},\n    \"namespace\", \"$1\", \"obj_namespace\", \"(.*)\"\n  ),\n  \"persistentvolumeclaim\", \"$1\", \"obj_name\", \"(.*)\"\n)",
+          "instant": true,
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true,
+              "cluster": true,
+              "endpoint": true,
+              "instance": true,
+              "job": true,
+              "prometheus": true,
+              "prometheus_replica": true,
+              "service": true,
+              "volumename": true
+            },
+            "indexByName": {
+              "namespace": 0,
+              "persistentvolumeclaim": 1,
+              "storageclass": 2
+            },
+            "renameByName": {
+              "namespace": "Namespace",
+              "persistentvolumeclaim": "PVC",
+              "storageclass": "Storage Class"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "row",
       "title": "Missed Intervals",
       "id": 9,
       "collapsed": false,
@@ -525,7 +657,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 35
       },
       "panels": []
     },
@@ -541,7 +673,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 36
       },
       "options": {
         "tooltip": {
