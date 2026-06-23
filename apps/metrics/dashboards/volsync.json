@@ -611,7 +611,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(\n  kube_persistentvolumeclaim_info{cluster=\"$cluster\"}\n  * on(namespace, persistentvolumeclaim) group_left()\n  kube_persistentvolumeclaim_status_phase{cluster=\"$cluster\", phase=\"Bound\"}\n)\nunless on(namespace, persistentvolumeclaim)\nlabel_replace(\n  label_replace(\n    volsync_volume_out_of_sync{cluster=\"$cluster\", role=\"source\"},\n    \"namespace\", \"$1\", \"obj_namespace\", \"(.*)\"\n  ),\n  \"persistentvolumeclaim\", \"$1\", \"obj_name\", \"(.*)\"\n)",
+          "expr": "(\n  kube_persistentvolumeclaim_info{cluster=\"$cluster\", persistentvolumeclaim!~\".*volsync.*\"}\n  * on(namespace, persistentvolumeclaim) group_left()\n  kube_persistentvolumeclaim_status_phase{cluster=\"$cluster\", phase=\"Bound\"}\n)\nunless on(namespace, persistentvolumeclaim)\nlabel_replace(\n  label_replace(\n    volsync_volume_out_of_sync{cluster=\"$cluster\", role=\"source\"},\n    \"namespace\", \"$1\", \"obj_namespace\", \"(.*)\"\n  ),\n  \"persistentvolumeclaim\", \"$1\", \"obj_name\", \"(.*)\"\n)",
           "instant": true,
           "format": "table",
           "refId": "A"
