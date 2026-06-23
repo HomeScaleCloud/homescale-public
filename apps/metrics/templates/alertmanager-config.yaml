@@ -15,6 +15,9 @@ spec:
       - name: alertname
         value: Watchdog
         matchType: "!="
+      - name: severity
+        value: critical
+        matchType: "="
   receivers:
     - name: slack
       slackConfigs:
