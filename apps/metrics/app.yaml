@@ -132,6 +132,10 @@ clusters:
                   resources:
                     requests:
                       storage: 2Gi
+        prometheus:
+          prometheusSpec:
+            remoteWrite:
+              - url: "http://prometheus.metrics.svc.cluster.local:9090/api/v1/write"
 netbird:
   policy:
     rules:
@@ -155,6 +159,9 @@ values:
         serviceMonitorSelectorNilUsesHelmValues: false
         remoteWrite:
           - url: "http://xxx:9090/api/v1/write"
+            remoteTimeout: 2m
+            queueConfig:
+              maxSamplesPerSend: 500
         volumes:
           - name: netbird-run
             emptyDir: {}
