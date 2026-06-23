@@ -6,6 +6,11 @@ defaultDeploy: true
 clusters:
   mgmt:
     deploy: false
+  boa1-prod:
+    values:
+      vlans:
+        wlan:
+          enabled: true
 values:
   image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick
   cniPluginsImage: docker.io/rancher/hardened-cni-plugins:v1.9.1-build20260608
