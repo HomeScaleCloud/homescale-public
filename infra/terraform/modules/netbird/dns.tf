@@ -29,3 +29,11 @@ resource "netbird_dns_record" "prometheus" {
   content = "xxx"
   ttl     = 300
 }
+
+resource "netbird_dns_record" "loki" {
+  zone_id = netbird_dns_zone.metrics.id
+  name    = "xxx"
+  type    = "CNAME"
+  content = "xxx"
+  ttl     = 300
+}

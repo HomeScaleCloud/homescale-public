@@ -86,7 +86,7 @@ clusters:
                     timeInterval: 30s
                 - name: Loki
                   type: loki
-                  url: http://metrics-aggr-loki.metrics.svc.cluster.local:3100
+                  url: http://loki.metrics.svc.cluster.local:3100
                   uid: loki
                   jsonData:
                     maxLines: 1000
@@ -119,6 +119,12 @@ clusters:
                   resources:
                     requests:
                       storage: 2Gi
+netbird:
+  policy:
+    rules:
+      - sources: ["team-infra-plat", "team-sec-plat", "app:metrics"]
+        protocol: tcp
+        ports: ["80", "443", "9090", "3100"]
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
