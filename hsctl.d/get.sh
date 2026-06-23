@@ -10,6 +10,7 @@ get_usage() {
     echo "Resources:"
     echo "  machines [--cluster <name>]   List all machines; enriches with node name for assigned ones"
     echo "  machine  <id>                 Show details for a specific machine"
+    echo "  time-machine creds            Show Time Machine Samba credentials from Infisical"
     exit 1
 }
 
@@ -108,6 +109,10 @@ get_machine() {
     esac
 }
 
+get_time_machine_creds() {
+    infisical secrets --env prod --path /k8s/time-machine
+}
+
 get_main() {
     HSCTL_OUTPUT="table"
     local args=()
@@ -130,6 +135,13 @@ get_main() {
             else
                 get_machines "$@"
             fi
+            ;;
+        time-machine)
+            local subcmd="${1:-}"; shift || true
+            case "$subcmd" in
+                creds) get_time_machine_creds ;;
+                *) echo "hsctl get time-machine: unknown subcommand '${subcmd}'" >&2; get_usage ;;
+            esac
             ;;
         *) echo "hsctl get: unknown resource '$resource'" >&2; get_usage ;;
     esac
