@@ -61,6 +61,19 @@ clusters:
               enabled: false
             datasources:
               enabled: false
+          dashboardProviders:
+            dashboardproviders.yaml:
+              apiVersion: 1
+              providers:
+                - name: default
+                  orgId: 1
+                  folder: ''
+                  type: file
+                  disableDeletion: false
+                  allowUiUpdates: false
+                  updateIntervalSeconds: 30
+                  options:
+                    path: /var/lib/grafana/dashboards/default
           dashboardsConfigMaps:
             default: grafana-dashboards
           extraVolumes:
