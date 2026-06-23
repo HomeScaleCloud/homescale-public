@@ -3911,7 +3911,7 @@
               "refId": "A"
             }
           ],
-          "title": "Node Events",
+          "title": "Kubernetes Events",
           "type": "logs"
         }
       ],
