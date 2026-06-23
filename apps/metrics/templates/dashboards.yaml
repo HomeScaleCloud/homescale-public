@@ -10,6 +10,7 @@
   "k8s-views-nodes"
   "k8s-views-pods"
   "longhorn"
+  "volsync"
 }}
 ---
 apiVersion: v1
