@@ -18,11 +18,9 @@ values:
   network:
     ip: "10.1.241.7/24"
   image:
-    repository: mbentley/timemachine
-    tag: "smb"
+    repository: ghcr.io/homescalecloud/time-machine
+    tag: latest
   timemachine:
-    advertisedHostname: time-machine
-    mimicModel: TimeCapsule8,119
     volumeName: Time Machine
     uid: "1000"
     gid: "1000"
