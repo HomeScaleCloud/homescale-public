@@ -6,7 +6,7 @@ metadata:
   namespace: metrics
 spec:
   route:
-    receiver: slack
+    receiver: discard
     groupBy: [alertname, cluster, namespace]
     groupWait: 30s
     groupInterval: 5m
@@ -15,10 +15,19 @@ spec:
       - name: alertname
         value: Watchdog
         matchType: "!="
-      - name: severity
-        value: critical
-        matchType: "="
+    routes:
+      - receiver: slack
+        matchers:
+          - name: severity
+            value: critical
+            matchType: "="
+      - receiver: slack
+        matchers:
+          - name: alertname
+            value: KubePodCrashLooping
+            matchType: "="
   receivers:
+    - name: discard
     - name: slack
       slackConfigs:
         - apiURL:

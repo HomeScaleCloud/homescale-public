@@ -158,11 +158,6 @@ values:
           cluster: "{{ .Values.cluster.name }}"
         podMonitorSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
-        additionalAlertRelabelConfigs:
-          - sourceLabels: [alertname]
-            regex: "KubePodCrashLooping|KubeDaemonSetRolloutStuck"
-            targetLabel: severity
-            replacement: critical
         remoteWrite:
           - name: prometheus-aggregator
             url: "http://xxx:9090/api/v1/write"
