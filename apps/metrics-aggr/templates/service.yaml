@@ -13,3 +13,22 @@ spec:
   selector:
     app.kubernetes.io/name: prometheus
     operator.prometheus.io/name: aggregator
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: metrics
+spec:
+  type: ClusterIP
+  ports:
+    - name: http-metrics
+      port: 3100
+      protocol: TCP
+      targetPort: http-metrics
+    - name: grpc
+      port: 9095
+      protocol: TCP
+      targetPort: grpc
+  selector:
+    app.kubernetes.io/name: loki

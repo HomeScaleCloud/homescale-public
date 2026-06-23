@@ -102,6 +102,26 @@ CI jobs connect to internal infrastructure (Omni, Terraform providers) by joinin
 
 The naming convention is `<region>-gw` (e.g. `boa1-gw`).
 
+### NetBird access policies for apps
+
+Each `apps/<name>/app.yaml` may include a top-level `netbird:` block (outside of `values:`). This is **not a Helm value** — it is read directly by Terraform (`infra/terraform/modules/netbird/policies.tf`) via `fileset` + `yamldecode` and used to create `netbird_policy` resources in the NetBird management plane.
+
+```yaml
+netbird:
+  policy:
+    rules:
+      - sources: ["team-infra-plat", "app:myapp"]
+        protocol: tcp
+        ports: ["443", "9090"]
+```
+
+- `destinations` is always the app's own NetBird group (`app-<app-name>`), created automatically by Terraform for every app directory.
+- `sources` must be keys from the known group map: `team-infra-plat`, `team-sec-plat`, `github-actions`, `owners`, `sg-k8s-admin`, `all`, or `app:<name>` (colon-separated) for another app's group.
+- If an app has no `netbird:` block, no policy is created for it (access is denied by default).
+- Multiple rules in `policy.rules` produce separate `netbird_policy` resources named `app-<name>-0`, `app-<name>-1`, etc.
+
+**Do not remove or treat this block as dead config** — it has no effect on Helm rendering but drives real infrastructure via Terraform.
+
 ## VolSync Backups
 
 VolSync (`apps/volsync/`, syncWave -5) provides PVC-level backup and restore via restic repositories.
