@@ -1,15 +1,19 @@
+{{- if ((.Values.vlans).wlan).enabled }}
+---
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
 metadata:
   name: vlan-wlan
+  namespace: kube-system
 spec:
   config: |
     {
       "cniVersion": "0.3.1",
       "type": "macvlan",
-      "master": {{ .Values.network.master | quote }},
+      "master": "bond0.241",
       "mode": "bridge",
       "ipam": {
         "type": "static"
       }
     }
+{{- end }}

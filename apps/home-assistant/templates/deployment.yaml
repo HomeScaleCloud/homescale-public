@@ -13,7 +13,7 @@ spec:
       labels:
         app: {{ .Release.Name }}
       annotations:
-        k8s.v1.cni.cncf.io/networks: '[{"name":"vlan-wlan","namespace":{{ .Release.Namespace | quote }},"ips":[{{ .Values.network.ip | quote }}]}]'
+        k8s.v1.cni.cncf.io/networks: '[{"name":"vlan-wlan","namespace":"kube-system","ips":[{{ .Values.network.ip | quote }}]}]'
     spec:
       initContainers:
         - name: mqtt

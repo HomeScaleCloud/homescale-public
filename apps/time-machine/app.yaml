@@ -1,0 +1,32 @@
+path: apps/time-machine
+namespace: time-machine
+releaseName: time-machine
+syncWave: 0
+defaultDeploy: false
+netbird:
+  policy:
+    rules:
+      - sources: ["owners"]
+        protocol: tcp
+        ports: ["445"]
+clusters:
+  boa1-prod:
+    deploy: true
+values:
+  cluster:
+    name: "{{ .Values.cluster.name }}"
+  network:
+    ip: "10.1.241.7/24"
+  image:
+    repository: mbentley/timemachine
+    tag: "smb"
+  timemachine:
+    advertisedHostname: time-machine
+    mimicModel: TimeCapsule8,119
+    volumeName: Time Machine
+    uid: "1000"
+    gid: "1000"
+  pvc:
+    size: 400Gi
+  volsync:
+    backupSchedule: "0 3 * * *"
