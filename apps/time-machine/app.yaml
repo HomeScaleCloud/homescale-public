@@ -2,6 +2,7 @@ path: apps/time-machine
 namespace: time-machine
 releaseName: time-machine
 syncWave: 0
+podSecurity: privileged
 defaultDeploy: false
 netbird:
   policy:
