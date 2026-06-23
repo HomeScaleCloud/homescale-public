@@ -8,7 +8,21 @@ spec:
     name: {{ required "cluster.name is required" .Values.cluster.name | quote }}
     namespace: netbird
   serviceRef:
-    name: metrics-grafana
+    name: grafana
+  groups:
+    - name: app-metrics
+    - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
+---
+apiVersion: netbird.io/v1alpha1
+kind: NetworkResource
+metadata:
+  name: alertmanager
+spec:
+  networkRouterRef:
+    name: {{ required "cluster.name is required" .Values.cluster.name | quote }}
+    namespace: netbird
+  serviceRef:
+    name: alertmanager
   groups:
     - name: app-metrics
     - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}

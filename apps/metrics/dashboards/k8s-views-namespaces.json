@@ -72,6 +72,298 @@
   "liveNow": false,
   "panels": [
     {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 85,
+      "panels": [
+        {
+          "type": "state-timeline",
+          "title": "Alert Timeline",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          },
+          "id": 86,
+          "options": {
+            "alignValue": "left",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": {
+                      "color": "red",
+                      "index": 0,
+                      "text": "Firing"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "ALERTS{cluster=\"$cluster\", alertstate=~\"firing|pending\", namespace=~\"$namespace\"}",
+              "legendFormat": "{{alertname}} [{{severity}}]",
+              "range": true,
+              "instant": false,
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Active Alerts",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "id": 87,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "alertname"
+              }
+            ]
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "alertname"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 300
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "alertstate"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 90
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "severity"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background",
+                      "mode": "basic"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "warning": {
+                            "color": "yellow",
+                            "index": 0,
+                            "text": "warning"
+                          },
+                          "critical": {
+                            "color": "red",
+                            "index": 1,
+                            "text": "critical"
+                          },
+                          "info": {
+                            "color": "blue",
+                            "index": 2,
+                            "text": "info"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "pod"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Pod details",
+                        "url": "/d/k8s_views_pods/kubernetes-views-pods?${datasource:queryparam}&${cluster:queryparam}&var-namespace=${__data.fields.namespace}&var-pod=${__value.text}&${resolution:queryparam}&${__url_time_range}",
+                        "targetBlank": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "node"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Node details",
+                        "url": "/d/k8s_views_nodes/kubernetes-views-nodes?${datasource:queryparam}&${cluster:queryparam}&var-node=${__value.text}&${resolution:queryparam}&${__url_time_range}",
+                        "targetBlank": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "ALERTS{cluster=\"$cluster\", alertstate=~\"firing|pending\", namespace=~\"$namespace\"}",
+              "instant": true,
+              "format": "table",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true,
+                  "__name__": true,
+                  "cluster": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "prometheus": true,
+                  "prometheus_replica": true,
+                  "service": true,
+                  "container": true
+                },
+                "indexByName": {
+                  "alertname": 0,
+                  "alertstate": 1,
+                  "severity": 2,
+                  "namespace": 3,
+                  "pod": 4,
+                  "node": 5
+                },
+                "renameByName": {}
+              }
+            }
+          ]
+        }
+      ],
+      "title": "Alerts",
+      "type": "row"
+    },
+    {
       "collapsed": false,
       "datasource": {
         "type": "datasource",
@@ -81,7 +373,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "id": 38,
       "panels": [],
@@ -124,7 +416,7 @@
         "h": 7,
         "w": 6,
         "x": 0,
-        "y": 1
+        "y": 2
       },
       "id": 46,
       "options": {
@@ -199,7 +491,7 @@
         "h": 7,
         "w": 6,
         "x": 6,
-        "y": 1
+        "y": 2
       },
       "id": 48,
       "options": {
@@ -300,7 +592,7 @@
         "h": 11,
         "w": 12,
         "x": 12,
-        "y": 1
+        "y": 2
       },
       "id": 32,
       "options": {
@@ -463,7 +755,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 8
+        "y": 9
       },
       "id": 62,
       "options": {
@@ -565,7 +857,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 8
+        "y": 9
       },
       "id": 64,
       "options": {
@@ -747,7 +1039,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 13
       },
       "id": 84,
       "options": {
@@ -853,7 +1145,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 23
       },
       "id": 40,
       "panels": [],
@@ -925,7 +1217,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 23
+        "y": 24
       },
       "id": 29,
       "options": {
@@ -1024,7 +1316,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 23
+        "y": 24
       },
       "id": 30,
       "options": {
@@ -1128,7 +1420,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 31
+        "y": 32
       },
       "id": 68,
       "options": {
@@ -1174,7 +1466,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 40
       },
       "id": 73,
       "panels": [],
@@ -1246,7 +1538,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 41
       },
       "id": 70,
       "options": {
@@ -1363,7 +1655,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 40
+        "y": 41
       },
       "id": 72,
       "options": {
@@ -1469,7 +1761,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 49
+        "y": 50
       },
       "id": 74,
       "options": {
@@ -1575,7 +1867,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 49
+        "y": 50
       },
       "id": 75,
       "options": {
@@ -1681,7 +1973,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 58
+        "y": 59
       },
       "id": 5,
       "options": {
@@ -1822,7 +2114,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 58
+        "y": 59
       },
       "id": 2,
       "options": {
@@ -1920,7 +2212,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 66
+        "y": 67
       },
       "id": 7,
       "options": {
@@ -2019,7 +2311,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 66
+        "y": 67
       },
       "id": 8,
       "options": {
@@ -2119,7 +2411,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 74
+        "y": 75
       },
       "id": 83,
       "options": {
@@ -2218,7 +2510,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 74
+        "y": 75
       },
       "id": 82,
       "options": {
@@ -2265,7 +2557,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 82
+        "y": 83
       },
       "id": 42,
       "panels": [],
@@ -2338,7 +2630,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 83
+        "y": 84
       },
       "id": 65,
       "options": {
@@ -2436,7 +2728,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 83
+        "y": 84
       },
       "id": 66,
       "options": {
@@ -2546,7 +2838,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 91
+        "y": 92
       },
       "id": 27,
       "options": {
@@ -2584,7 +2876,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 99
+        "y": 100
       },
       "id": 76,
       "panels": [],
@@ -2657,7 +2949,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 100
+        "y": 101
       },
       "id": 78,
       "options": {
@@ -2770,7 +3062,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 100
+        "y": 101
       },
       "id": 79,
       "options": {
@@ -2883,7 +3175,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 108
+        "y": 109
       },
       "id": 80,
       "options": {
@@ -2996,7 +3288,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 108
+        "y": 109
       },
       "id": 81,
       "options": {
