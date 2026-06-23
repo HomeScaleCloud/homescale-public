@@ -1,5 +1,0 @@
-apiVersion: v2
-name: time-machine
-description: Helm chart for macOS Time Machine backup server
-type: application
-version: 0.1.0
