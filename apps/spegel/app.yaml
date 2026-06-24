@@ -8,3 +8,6 @@ values:
     spegel:
       containerdRegistryConfigPath: /etc/cri/conf.d/hosts
 defaultDeploy: true
+clusters:
+  boa1-gw:
+    deploy: false
