@@ -12,10 +12,21 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: homebridge
+spec:
+  selector:
+    app: homebridge
+  ports:
+    - port: 80
+      targetPort: 8581
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: z2m
 spec:
   selector:
-    app: {{ .Release.Name }}
+    app: zigbee
   ports:
     - port: 80
       targetPort: 8080
@@ -26,7 +37,7 @@ metadata:
   name: mqtt
 spec:
   selector:
-    app: {{ .Release.Name }}
+    app: zigbee
   ports:
     - name: mqtt
       port: 1883
@@ -37,25 +48,3 @@ spec:
     - name: websocket
       port: 9001
       targetPort: 9001
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: matter
-spec:
-  selector:
-    app: {{ .Release.Name }}
-  ports:
-    - port: 5580
-      targetPort: 5580
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: homebridge
-spec:
-  selector:
-    app: {{ .Release.Name }}
-  ports:
-    - port: 80
-      targetPort: 8581
