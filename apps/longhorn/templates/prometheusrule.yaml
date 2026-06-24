@@ -9,67 +9,95 @@ spec:
   groups:
     - name: longhorn.rules
       rules:
-        - alert: LonghornVolumeActualSpaceUsedWarning
+        # Volume health
+        - alert: LonghornVolumeFaulted
           annotations:
-            description: "The actual space used by Longhorn volume {{$labels.volume}} on {{$labels.node}} is at {{$value}}% capacity for more than 5 minutes."
-            summary: "The actual used space of Longhorn volume is over 90% of the capacity."
-          expr: (longhorn_volume_actual_size_bytes / longhorn_volume_capacity_bytes) * 100 > 90
-          for: 5m
-          labels:
-            severity: warning
-        - alert: LonghornVolumeStatusCritical
-          annotations:
-            description: "Longhorn volume {{$labels.volume}} on {{$labels.node}} is Fault for more than 2 minutes."
-            summary: "Longhorn volume {{$labels.volume}} is Fault."
-          expr: longhorn_volume_robustness == 3
+            summary: "Longhorn volume is faulted."
+            description: "Volume {{ "{{" }}$labels.volume{{ "}}" }} (PVC {{ "{{" }}$labels.pvc_namespace{{ "}}" }}/{{ "{{" }}$labels.pvc{{ "}}" }}) is faulted on node {{ "{{" }}$labels.node{{ "}}" }}."
+          expr: longhorn_volume_robustness{state="faulted"} == 1
           for: 2m
           labels:
             severity: critical
-        - alert: LonghornVolumeStatusWarning
+
+        - alert: LonghornVolumeDegraded
           annotations:
-            description: "Longhorn volume {{$labels.volume}} on {{$labels.node}} is Degraded for more than 5 minutes."
-            summary: "Longhorn volume {{$labels.volume}} is Degraded."
-          expr: longhorn_volume_robustness == 2
+            summary: "Longhorn volume is degraded."
+            description: "Volume {{ "{{" }}$labels.volume{{ "}}" }} (PVC {{ "{{" }}$labels.pvc_namespace{{ "}}" }}/{{ "{{" }}$labels.pvc{{ "}}" }}) is degraded on node {{ "{{" }}$labels.node{{ "}}" }}. A replica may be rebuilding or unavailable."
+          expr: longhorn_volume_robustness{state="degraded"} == 1
           for: 5m
           labels:
             severity: warning
-        - alert: LonghornNodeStorageWarning
+
+        - alert: LonghornVolumeSpaceFilling
           annotations:
-            description: "The used storage of node {{$labels.node}} is at {{$value}}% capacity for more than 5 minutes."
-            summary: "The used storage of node is over 70% of the capacity."
-          expr: (longhorn_node_storage_usage_bytes / longhorn_node_storage_capacity_bytes) * 100 > 70
+            summary: "Longhorn volume is over 90% full."
+            description: "Volume {{ "{{" }}$labels.volume{{ "}}" }} (PVC {{ "{{" }}$labels.pvc_namespace{{ "}}" }}/{{ "{{" }}$labels.pvc{{ "}}" }}) actual usage is at {{ "{{" }}$value | humanizePercentage{{ "}}" }} of capacity."
+          expr: longhorn_volume_actual_size_bytes / longhorn_volume_capacity_bytes > 0.9
           for: 5m
           labels:
             severity: warning
+
+        # Disk health
+        - alert: LonghornDiskFailed
+          annotations:
+            summary: "Longhorn disk health check failed."
+            description: "Disk {{ "{{" }}$labels.disk{{ "}}" }} on node {{ "{{" }}$labels.node{{ "}}" }} has failed its health check."
+          expr: longhorn_disk_health == 0
+          for: 2m
+          labels:
+            severity: critical
+
+        - alert: LonghornDiskNotReady
+          annotations:
+            summary: "Longhorn disk is not ready."
+            description: "Disk {{ "{{" }}$labels.disk{{ "}}" }} on node {{ "{{" }}$labels.node{{ "}}" }} is not ready."
+          expr: longhorn_disk_status{condition="ready"} == 0
+          for: 5m
+          labels:
+            severity: critical
+
         - alert: LonghornDiskStorageWarning
           annotations:
-            description: "The used storage of disk {{$labels.disk}} on node {{$labels.node}} is at {{$value}}% capacity for more than 5 minutes."
-            summary: "The used storage of disk is over 70% of the capacity."
-          expr: (longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes) * 100 > 70
+            summary: "Longhorn disk storage over 70% used."
+            description: "Disk {{ "{{" }}$labels.disk{{ "}}" }} on node {{ "{{" }}$labels.node{{ "}}" }} is at {{ "{{" }}$value | humanizePercentage{{ "}}" }} capacity."
+          expr: longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes > 0.7
           for: 5m
           labels:
             severity: warning
+
+        - alert: LonghornDiskStorageCritical
+          annotations:
+            summary: "Longhorn disk storage over 90% used."
+            description: "Disk {{ "{{" }}$labels.disk{{ "}}" }} on node {{ "{{" }}$labels.node{{ "}}" }} is at {{ "{{" }}$value | humanizePercentage{{ "}}" }} capacity."
+          expr: longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes > 0.9
+          for: 5m
+          labels:
+            severity: critical
+
+        # Node health
         - alert: LonghornNodeDown
           annotations:
-            description: "There are {{$value}} Longhorn nodes which have been offline for more than 5 minutes."
-            summary: "Longhorn nodes are offline."
+            summary: "Longhorn node is offline."
+            description: "{{ "{{" }}$value{{ "}}" }} Longhorn node(s) have been offline for more than 5 minutes."
           expr: (avg(longhorn_node_count_total) or on() vector(0)) - (count(longhorn_node_status{condition="ready"} == 1) or on() vector(0)) > 0
           for: 5m
           labels:
             severity: critical
-        - alert: LonghornInstanceManagerCPUUsageWarning
+
+        - alert: LonghornNodeNotReady
           annotations:
-            description: "Longhorn instance manager {{$labels.instance_manager}} on {{$labels.node}} has CPU usage / CPU request at {{$value}}% for more than 5 minutes."
-            summary: "Longhorn instance manager {{$labels.instance_manager}} on {{$labels.node}} has CPU usage / CPU request over 300%."
-          expr: (longhorn_instance_manager_cpu_usage_millicpu / longhorn_instance_manager_cpu_requests_millicpu) * 100 > 300
+            summary: "Longhorn node is not ready."
+            description: "Longhorn node {{ "{{" }}$labels.node{{ "}}" }} is not ready."
+          expr: longhorn_node_status{condition="ready"} == 0
           for: 5m
           labels:
-            severity: warning
-        - alert: LonghornNodeCPUUsageWarning
+            severity: critical
+
+        - alert: LonghornNodeStorageWarning
           annotations:
-            description: "Longhorn node {{$labels.node}} has CPU usage / CPU capacity at {{$value}}% for more than 5 minutes."
-            summary: "Longhorn node {{$labels.node}} experiences high CPU pressure for more than 5 minutes."
-          expr: (longhorn_node_cpu_usage_millicpu / longhorn_node_cpu_capacity_millicpu) * 100 > 90
+            summary: "Longhorn node storage over 70% used."
+            description: "Node {{ "{{" }}$labels.node{{ "}}" }} storage is at {{ "{{" }}$value | humanizePercentage{{ "}}" }} capacity."
+          expr: longhorn_node_storage_usage_bytes / longhorn_node_storage_capacity_bytes > 0.7
           for: 5m
           labels:
             severity: warning
