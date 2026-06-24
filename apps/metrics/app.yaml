@@ -156,6 +156,10 @@ values:
         retention: 2h
         externalLabels:
           cluster: "{{ .Values.cluster.name }}"
+        ruleSelectorNilUsesHelmValues: false
+        ruleSelector:
+          matchLabels:
+            prometheus: "none"
         podMonitorSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
         remoteWrite:
