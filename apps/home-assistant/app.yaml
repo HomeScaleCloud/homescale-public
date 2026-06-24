@@ -13,6 +13,10 @@ netbird:
 clusters:
   boa1-prod:
     deploy: true
+    values:
+      zigbee2mqtt:
+        config:
+          serialPort: "tcp://10.1.241.238:6638"
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
@@ -42,7 +46,6 @@ values:
       tz: "Europe/London"
       mqttServer: "mqtt://localhost:1883"
       mqttBaseTopic: "z2m"
-      serialPort: "tcp://10.1.241.238:6638"
       serialAdapter: "ember"
       baudrate: "115200"
       rtscts: "false"
