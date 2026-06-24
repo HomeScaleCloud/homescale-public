@@ -16,6 +16,23 @@ spec:
         k8s.v1.cni.cncf.io/networks: '[{"name":"vlan-wlan","namespace":"kube-system","ips":[{{ .Values.network.ip | quote }}]}]'
     spec:
       initContainers:
+        - name: thread-routes
+          image: busybox:1.36.1
+          command:
+            - sh
+            - -c
+            - |
+              until ip link show net1 > /dev/null 2>&1; do sleep 1; done
+              echo 128 > /proc/sys/net/ipv6/conf/net1/accept_ra_rt_info_max_plen
+              echo 0 > /proc/sys/net/ipv6/conf/net1/accept_ra
+              echo 1 > /proc/sys/net/ipv6/conf/net1/accept_ra
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN"]
+              drop: ["ALL"]
+            runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
         - name: mqtt
           image: "{{ .Values.mqtt.image.repository }}:{{ .Values.mqtt.image.tag }}"
           imagePullPolicy: IfNotPresent
