@@ -2,11 +2,11 @@
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
-  name: slack
+  name: infra-plat
   namespace: metrics
 spec:
   route:
-    receiver: slack
+    receiver: infra-plat
     groupBy: [alertname, cluster, namespace]
     groupWait: 30s
     groupInterval: 5m
@@ -16,12 +16,12 @@ spec:
         value: "Watchdog"  # pipe-separate to exclude more: "Watchdog|InfoInhibitor|..."
         matchType: "!~"
   receivers:
-    - name: slack
+    - name: infra-plat
       slackConfigs:
         - apiURL:
             name: metrics-alertmanager-slack  # pragma: allowlist secret
             key: SLACK_WEBHOOK_URL
-          channel: "#alerts"
+          channel: "#alerts-infra-plat"
           sendResolved: false
           color: {{ `'{{ if eq .Status "resolved" }}good{{ else if eq .CommonLabels.severity "critical" }}danger{{ else if eq .CommonLabels.severity "warning" }}warning{{ else }}#439FE0{{ end }}'` }}
           title: {{ `'{{ if eq .Status "resolved" }}✅  RESOLVED{{ else }}{{ if eq .CommonLabels.severity "critical" }}🔴{{ else if eq .CommonLabels.severity "warning" }}🟡{{ else }}🔵{{ end }}  [FIRING:{{ len .Alerts.Firing }}]{{ end }}  {{ .CommonLabels.alertname }}  •  {{ .CommonLabels.cluster }}'` }}
