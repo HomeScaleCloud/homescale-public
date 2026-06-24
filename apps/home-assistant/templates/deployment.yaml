@@ -82,9 +82,6 @@ spec:
           image: "{{ .Values.matter.image.repository }}:{{ .Values.matter.image.tag }}"
           imagePullPolicy: IfNotPresent
           restartPolicy: Always
-          args:
-            - --primary-interface
-            - net1
           ports:
             - containerPort: 5580
           volumeMounts:
