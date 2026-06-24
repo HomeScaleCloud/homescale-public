@@ -44,9 +44,18 @@ values:
       mqttBaseTopic: "z2m"
       serialPort: "tcp://10.1.241.238:6638"
       serialAdapter: "ember"
+      baudrate: "115200"
+      rtscts: "false"
       channel: "25"
+      cacheState: "true"
+      logLevel: "info"
+      lastSeen: "ISO_8601_local"
+      adapterConcurrent: "38"
       frontendEnabled: "true"
+      frontendPort: "8080"
+      frontendPackage: "zigbee2mqtt-windfront"
       homeassistantEnabled: "true"
+      availabilityEnabled: "true"
   matter:
     image:
       repository: ghcr.io/matter-js/python-matter-server

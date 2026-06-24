@@ -172,12 +172,30 @@ spec:
               value: {{ .Values.zigbee2mqtt.config.serialPort | quote }}
             - name: ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER
               value: {{ .Values.zigbee2mqtt.config.serialAdapter | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_SERIAL_BAUDRATE
+              value: {{ .Values.zigbee2mqtt.config.baudrate | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_SERIAL_RTSCTS
+              value: {{ .Values.zigbee2mqtt.config.rtscts | quote }}
             - name: ZIGBEE2MQTT_CONFIG_ADVANCED_CHANNEL
               value: {{ .Values.zigbee2mqtt.config.channel | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_ADVANCED_CACHE_STATE
+              value: {{ .Values.zigbee2mqtt.config.cacheState | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_ADVANCED_LOG_LEVEL
+              value: {{ .Values.zigbee2mqtt.config.logLevel | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_ADVANCED_LAST_SEEN
+              value: {{ .Values.zigbee2mqtt.config.lastSeen | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_ADVANCED_ADAPTER_CONCURRENT
+              value: {{ .Values.zigbee2mqtt.config.adapterConcurrent | quote }}
             - name: ZIGBEE2MQTT_CONFIG_FRONTEND_ENABLED
               value: {{ .Values.zigbee2mqtt.config.frontendEnabled | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_FRONTEND_PORT
+              value: {{ .Values.zigbee2mqtt.config.frontendPort | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_FRONTEND_PACKAGE
+              value: {{ .Values.zigbee2mqtt.config.frontendPackage | quote }}
             - name: ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED
               value: {{ .Values.zigbee2mqtt.config.homeassistantEnabled | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_AVAILABILITY_ENABLED
+              value: {{ .Values.zigbee2mqtt.config.availabilityEnabled | quote }}
           ports:
             - containerPort: 8080
           volumeMounts:
