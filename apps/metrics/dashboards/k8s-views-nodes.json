@@ -136,9 +136,14 @@
                   "type": "value",
                   "options": {
                     "1": {
-                      "color": "red",
+                      "color": "yellow",
                       "index": 0,
-                      "text": "Firing"
+                      "text": "Warning / Pending"
+                    },
+                    "2": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "Critical"
                     }
                   }
                 }
@@ -151,8 +156,12 @@
                     "value": null
                   },
                   {
-                    "color": "red",
+                    "color": "yellow",
                     "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 2
                   }
                 ]
               }
@@ -165,7 +174,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "ALERTS{cluster=\"$cluster\", alertstate=~\"firing|pending\", node=~\"$node\"}",
+              "expr": "(ALERTS{cluster=\"$cluster\", node=~\"$node\", severity=\"critical\"} * 2) or (ALERTS{cluster=\"$cluster\", alertstate=~\"firing|pending\", node=~\"$node\"} * 1)",
               "legendFormat": "{{alertname}} [{{severity}}]",
               "range": true,
               "instant": false,
@@ -237,6 +246,33 @@
                   {
                     "id": "custom.width",
                     "value": 90
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background",
+                      "mode": "basic"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "firing": {
+                            "color": "red",
+                            "index": 0,
+                            "text": "firing"
+                          },
+                          "pending": {
+                            "color": "yellow",
+                            "index": 1,
+                            "text": "pending"
+                          }
+                        }
+                      }
+                    ]
                   }
                 ]
               },
