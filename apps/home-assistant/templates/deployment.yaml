@@ -27,12 +27,7 @@ spec:
               echo 0 > /proc/sys/net/ipv6/conf/net1/accept_ra
               echo 1 > /proc/sys/net/ipv6/conf/net1/accept_ra
           securityContext:
-            capabilities:
-              add: ["NET_ADMIN"]
-              drop: ["ALL"]
-            runAsUser: 0
-            runAsNonRoot: false
-            allowPrivilegeEscalation: false
+            privileged: true
         - name: mqtt
           image: "{{ .Values.mqtt.image.repository }}:{{ .Values.mqtt.image.tag }}"
           imagePullPolicy: IfNotPresent
