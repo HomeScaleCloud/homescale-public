@@ -107,7 +107,7 @@ On merge to `main`, CI runs `terraform apply` automatically (after `scan` and `b
 
 | Module | What it manages |
 |--------|----------------|
-| `modules/netbird/` | NetBird policies, groups, and reverse proxy domain — reads `netbird:` blocks from `app.yaml` files via `fileset` |
+| `modules/netbird/` | NetBird policies and groups — reads `netbird:` blocks from `app.yaml` files via `fileset` |
 | `modules/cloudflare/` | DNS records and Cloudflare Zero Trust Tunnel config — reads `exposePublic:` from `app.yaml` |
 | `modules/infisical/` | Infisical project structure, machine identities, and VolSync secret scaffolding |
 | `modules/mgmt_cluster/` | The `mgmt` DigitalOcean Kubernetes cluster and ArgoCD bootstrap |
