@@ -26,7 +26,7 @@ spec:
             capabilities:
               drop: ["ALL"]
           ports:
-            - containerPort: 8080
+            - containerPort: 80
           volumeMounts:
             - name: cache
               mountPath: /var/cache/nginx
