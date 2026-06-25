@@ -18,6 +18,10 @@ values:
       keyFromSecret:
         name: netbird
         key: NETBIRD_OPERATOR_TOKEN
+extraSources:
+  - repoURL: https://github.com/kubernetes-sigs/gateway-api
+    targetRevision: v1.5.0
+    path: config/crd/experimental
 ignoreDifferences:
   - group: admissionregistration.k8s.io
     kind: MutatingWebhookConfiguration
