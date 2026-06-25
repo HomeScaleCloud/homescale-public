@@ -1,7 +1,7 @@
 name: "CI"
 permissions:
   actions: read
-  contents: read
+  contents: write
   packages: write
   id-token: write
   issues: write
