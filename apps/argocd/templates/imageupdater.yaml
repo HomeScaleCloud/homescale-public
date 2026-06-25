@@ -6,7 +6,7 @@ metadata:
 spec:
   commonUpdateSettings:
     updateStrategy: newest-build
-    allowTags: "^[0-9a-f]{40}$"
+    allowTags: "regexp:^[0-9a-f]{40}$"
   writeBackConfig:
     method: argocd
   applicationRefs:
