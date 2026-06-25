@@ -38,6 +38,9 @@ override.tf.json
 # direnv local folder
 .direnv
 
+# MkDocs build output
+site/
+
 # Helm things
 Chart.lock
 **/charts/**.tgz
