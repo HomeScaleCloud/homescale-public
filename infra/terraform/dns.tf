@@ -117,11 +117,10 @@ resource "cloudflare_dns_record" "infisical_verify" {
   type    = "TXT"
 }
 
-resource "cloudflare_dns_record" "gh_pages_verify" {
+resource "cloudflare_dns_record" "docs" {
   zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
-  comment = "Domain ownership verification for Github Pages"
-  content = "d51b9fb8dccb174e7f835e6455ff3a" #pragma: allowlist secret
+  content = "homescalecloud.github.io" #pragma: allowlist secret
   ttl     = 1
-  type    = "TXT"
+  type    = "CNAME"
 }
