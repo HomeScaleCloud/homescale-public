@@ -2411,7 +2411,7 @@
         },
         "definition": "label_values(up, cluster)",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "label": "Cluster",
         "multi": false,
         "name": "cluster",
