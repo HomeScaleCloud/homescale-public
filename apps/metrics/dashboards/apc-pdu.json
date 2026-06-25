@@ -1,212 +1,231 @@
 {
-  "annotations": { "list": [] },
-  "description": "APC AP7920 Rack Switched PDU — BOA1",
+  "annotations": {"list": []},
+  "description": "Rack PDU health — input voltage, bank load, and per-outlet state",
   "editable": true,
   "graphTooltip": 1,
   "links": [],
   "panels": [
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
       "id": 1,
-      "title": "Power Overview",
+      "title": "Overview",
       "type": "row"
     },
     {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {"mode": "thresholds"},
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 195 },
-              { "color": "green", "value": 200 }
+              {"color": "red", "value": null},
+              {"color": "green", "value": 205},
+              {"color": "red", "value": 221}
             ]
           },
-          "unit": "volt",
-          "mappings": []
+          "mappings": [
+            {
+              "type": "range",
+              "options": {"from": 205, "to": 220, "result": {"text": "Normal", "index": 0}}
+            },
+            {
+              "type": "range",
+              "options": {"from": 0, "to": 204.99, "result": {"text": "Warning", "index": 1}}
+            },
+            {
+              "type": "range",
+              "options": {"from": 220.01, "to": 300, "result": {"text": "Warning", "index": 2}}
+            }
+          ],
+          "unit": "volt"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "gridPos": {"h": 4, "w": 5, "x": 0, "y": 1},
       "id": 2,
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "orientation": "auto",
-        "textMode": "auto",
         "colorMode": "background",
-        "graphMode": "none"
+        "graphMode": "none",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "apc_rpdu_input_voltage_volts{instance=\"10.1.246.6\"}",
-          "legendFormat": "Voltage"
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "apc_rpdu_input_voltage_volts{cluster=\"$cluster\", job=~\"$job\"}",
+          "legendFormat": "{{job}}"
         }
       ],
       "title": "Input Voltage",
       "type": "stat"
     },
     {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {"mode": "thresholds"},
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 6 },
-              { "color": "red", "value": 8 }
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 60},
+              {"color": "orange", "value": 80},
+              {"color": "red", "value": 95}
             ]
           },
-          "unit": "amp",
-          "decimals": 1,
-          "mappings": []
+          "mappings": [],
+          "unit": "percent",
+          "decimals": 0,
+          "max": 100,
+          "min": 0
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "gridPos": {"h": 4, "w": 5, "x": 5, "y": 1},
       "id": 3,
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "orientation": "auto",
-        "textMode": "auto",
         "colorMode": "background",
-        "graphMode": "none"
+        "graphMode": "none",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "apc_rpdu_bank_load_deciamps{instance=\"10.1.246.6\"} / 10",
-          "legendFormat": "Load"
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "apc_rpdu_bank_load_deciamps{cluster=\"$cluster\", job=~\"$job\"} / 10 / apc_rpdu_bank_near_overload_threshold_amps{cluster=\"$cluster\", job=~\"$job\"} * 100",
+          "legendFormat": "{{job}}"
         }
       ],
       "title": "Bank Load",
       "type": "stat"
     },
     {
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 2 },
-              { "color": "red", "value": 3 }
-            ]
-          },
-          "mappings": [
-            { "options": { "1": { "text": "Normal" }, "2": { "text": "Near Overload" }, "3": { "text": "OVERLOAD" } }, "type": "value" }
-          ]
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
       "id": 4,
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "background",
-        "graphMode": "none"
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "apc_rpdu_bank_load_state{instance=\"10.1.246.6\"}",
-          "legendFormat": "State"
-        }
-      ],
-      "title": "Bank Load State",
-      "type": "stat"
+      "title": "Trends",
+      "type": "row"
     },
     {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {"mode": "palette-classic"},
+          "custom": {"lineWidth": 2, "fillOpacity": 10, "spanNulls": false},
           "unit": "amp",
-          "decimals": 1,
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "spanNulls": false
-          }
+          "decimals": 1
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Near-Overload Threshold" },
+            "matcher": {"id": "byFrameRefID", "options": "threshold"},
             "properties": [
-              { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } },
-              { "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } },
-              { "id": "custom.fillOpacity", "value": 0 }
+              {"id": "color", "value": {"fixedColor": "orange", "mode": "fixed"}},
+              {"id": "custom.lineStyle", "value": {"dash": [8, 4], "fill": "dash"}},
+              {"id": "custom.lineWidth", "value": 1},
+              {"id": "custom.fillOpacity", "value": 0}
             ]
           }
         ]
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
       "id": 5,
       "options": {
-        "tooltip": { "mode": "multi", "sort": "none" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "tooltip": {"mode": "multi", "sort": "none"},
+        "legend": {"displayMode": "list", "placement": "bottom"}
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "apc_rpdu_bank_load_deciamps{instance=\"10.1.246.6\"} / 10",
-          "legendFormat": "Bank Load"
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "apc_rpdu_bank_load_deciamps{cluster=\"$cluster\", job=~\"$job\"} / 10",
+          "legendFormat": "{{job}}",
+          "refId": "load"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "apc_rpdu_bank_near_overload_threshold_amps{instance=\"10.1.246.6\"}",
-          "legendFormat": "Near-Overload Threshold"
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "apc_rpdu_bank_near_overload_threshold_amps{cluster=\"$cluster\", job=~\"$job\"}",
+          "legendFormat": "{{job}} near-overload threshold",
+          "refId": "threshold"
         }
       ],
-      "title": "Bank Load Over Time",
+      "title": "Bank Load (Amps)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"lineWidth": 2, "fillOpacity": 10, "spanNulls": false},
+          "unit": "volt",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+      "id": 6,
+      "options": {
+        "tooltip": {"mode": "multi", "sort": "none"},
+        "legend": {"displayMode": "list", "placement": "bottom"}
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "apc_rpdu_input_voltage_volts{cluster=\"$cluster\", job=~\"$job\"}",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "title": "Input Voltage",
       "type": "timeseries"
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
-      "id": 6,
-      "title": "Outlet States",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 14},
+      "id": 7,
+      "title": "Outlets",
       "type": "row"
     },
     {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {"mode": "thresholds"},
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 2 }
+              {"color": "red", "value": null},
+              {"color": "green", "value": 2}
             ]
           },
           "mappings": [
-            { "options": { "1": { "text": "Off" }, "2": { "text": "On" } }, "type": "value" }
-          ],
-          "custom": { "width": 100 }
+            {
+              "type": "value",
+              "options": {
+                "1": {"text": "Off", "index": 0},
+                "2": {"text": "On", "index": 1}
+              }
+            }
+          ]
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
-      "id": 7,
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 15},
+      "id": 8,
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "orientation": "horizontal",
-        "textMode": "auto",
         "colorMode": "background",
         "graphMode": "none",
-        "displayMode": "list",
-        "showUnfilled": true
+        "orientation": "horizontal",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "apc_rpdu_outlet_state{instance=\"10.1.246.6\"}",
-          "legendFormat": "{{outlet_name}}"
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "apc_rpdu_outlet_state{cluster=\"$cluster\", job=~\"$job\"}",
+          "legendFormat": "{{job}} — {{outlet_name}}"
         }
       ],
       "title": "Outlet States",
@@ -215,12 +234,53 @@
   ],
   "refresh": "1m",
   "schemaVersion": 39,
-  "tags": ["apc", "pdu", "power", "infrastructure", "boa1"],
-  "templating": { "list": [] },
-  "time": { "from": "now-6h", "to": "now" },
+  "tags": ["pdu", "power", "infrastructure"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "definition": "label_values(apc_rpdu_input_voltage_volts, cluster)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Cluster",
+        "multi": false,
+        "name": "cluster",
+        "options": [],
+        "query": {
+          "query": "label_values(apc_rpdu_input_voltage_volts, cluster)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "definition": "label_values(apc_rpdu_input_voltage_volts{cluster=\"$cluster\"}, job)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "PDU",
+        "multi": true,
+        "name": "job",
+        "options": [],
+        "query": {
+          "query": "label_values(apc_rpdu_input_voltage_volts{cluster=\"$cluster\"}, job)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {"from": "now-6h", "to": "now"},
   "timepicker": {},
   "timezone": "browser",
-  "title": "APC Rack PDU (AP7920) — BOA1",
-  "uid": "apc-pdu-boa1",
+  "title": "PDU Health",
+  "uid": "pdu-health",
   "version": 1
 }
