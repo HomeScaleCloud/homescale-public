@@ -8,21 +8,12 @@ A GitOps monorepo for **HomeScale** — private Kubernetes clusters for personal
 
 ## Documentation
 
-The `docs/` directory is published to GitHub Pages via MkDocs Material. **Update the docs whenever you make a change that affects user-facing behavior**, including:
+The `docs/` directory is published to GitHub Pages via MkDocs Material to https://xxx. **Update the docs whenever you make a change that affects user-facing behavior**, including:
 
 - Adding, removing, or changing any field in `app.yaml` (reference lives in `docs/operations/apps.md`)
 - Adding a new app or cluster
 - Changing networking, secrets, or backup behavior
 - Adding new `hsctl` commands or subcommands
-
-Build and preview locally:
-```bash
-# One-time setup
-python3 -m venv .venv && source .venv/bin/activate && pip install mkdocs-material
-
-# Serve with live reload
-mkdocs serve
-```
 
 ## Key Commands
 
@@ -102,9 +93,7 @@ Three reusable workflows called from `ci.yaml`:
 
 ### Networking
 
-Node-to-node connectivity across regions is handled by Talos KubeSpan, which automatically establishes WireGuard tunnels between all cluster nodes.
-
-NetBird is a separate zero-trust WireGuard mesh used for human and machine access to services — CI reaching internal infra, and service exposure to end users.
+NetBird is the zero-trust WireGuard mesh used for human and machine access to services — CI reaching internal infra, and service exposure to end users.
 CI jobs connect to internal infrastructure (Omni, Terraform providers) by joining the NetBird mesh with an ephemeral one-off setup key generated at the start of each workflow run and revoked at the end.
 
 **Internal service exposure** — the `netbird-crs` app deploys a `NetworkRouter` CRD per cluster. The NetBird operator automatically registers each `NetworkResource` into the cluster's DNS zone (`<cluster>xxx`), making any k8s Service reachable at `<service-name>.<namespace>.<cluster>xxx` across the mesh.
