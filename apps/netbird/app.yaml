@@ -8,12 +8,15 @@ syncOptions:
 defaultDeploy: true
 values:
   netbird-operator:
+    gatewayAPI:
+      enabled: true
     cluster:
       name: '{{ .Values.cluster.name }}'
     operator:
       replicaCount: 2
     webhook:
       failurePolicy: Ignore
+      enableCertManager: false
     netbirdAPI:
       keyFromSecret:
         name: netbird

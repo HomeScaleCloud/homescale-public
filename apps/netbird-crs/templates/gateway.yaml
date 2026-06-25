@@ -1,16 +1,3 @@
-{{- if .Values.gateway.enabled }}
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: netbird-private
-  namespace: netbird
-spec:
-  gatewayClassName: netbird-private
-  listeners:
-    - protocol: gateway.netbird.io/NetworkRouter
-      name: '{{ required "cluster.name is required" .Values.cluster.name }}'
-      port: 1
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -22,4 +9,3 @@ spec:
     - protocol: gateway.netbird.io/NetworkRouter
       name: '{{ required "cluster.name is required" .Values.cluster.name }}'
       port: 1
-{{- end }}
