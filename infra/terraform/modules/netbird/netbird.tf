@@ -10,10 +10,3 @@ resource "netbird_account_settings" "settings" {
   peer_expose_groups                 = [data.netbird_group.all.id]
   user_approval_required             = false
 }
-
-data "netbird_reverse_proxy_clusters" "all" {}
-
-resource "netbird_reverse_proxy_domain" "ext" {
-  domain         = "REDACTED"
-  target_cluster = data.netbird_reverse_proxy_clusters.all.clusters[0].address
-}
