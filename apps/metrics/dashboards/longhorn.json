@@ -511,6 +511,18 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "Usage"
             },
             "properties": [
@@ -648,15 +660,16 @@
             },
             "includeByName": {},
             "indexByName": {
-              "Time": 0,
-              "Value #capacity": 5,
-              "Value #usage-percentage": 6,
-              "Value #used": 4,
-              "namespace": 7,
-              "persistentvolumeclaim": 8,
-              "pvc": 2,
-              "pvc_namespace": 3,
-              "volume": 1
+              "Time": 1,
+              "Value #capacity": 6,
+              "Value #usage-percentage": 7,
+              "Value #used": 5,
+              "namespace": 8,
+              "persistentvolumeclaim": 9,
+              "pvc": 3,
+              "pvc_namespace": 4,
+              "volume": 2,
+              "cluster": 0
             },
             "renameByName": {
               "Value": "Capacity",
@@ -1228,6 +1241,18 @@
               {
                 "matcher": {
                   "id": "byName",
+                  "options": "cluster"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
                   "options": "Storage Capacity"
                 },
                 "properties": [
@@ -1298,17 +1323,18 @@
                   "service": true
                 },
                 "indexByName": {
-                  "Time": 0,
-                  "Value": 10,
-                  "__name__": 1,
-                  "container": 3,
-                  "endpoint": 4,
-                  "instance": 5,
-                  "job": 6,
-                  "namespace": 7,
-                  "node": 2,
-                  "pod": 8,
-                  "service": 9
+                  "Time": 1,
+                  "Value": 11,
+                  "__name__": 2,
+                  "container": 4,
+                  "endpoint": 5,
+                  "instance": 6,
+                  "job": 7,
+                  "namespace": 8,
+                  "node": 3,
+                  "pod": 9,
+                  "service": 10,
+                  "cluster": 0
                 },
                 "renameByName": {
                   "Value": "Storage Capacity",
@@ -1562,6 +1588,18 @@
               {
                 "matcher": {
                   "id": "byName",
+                  "options": "cluster"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
                   "options": "Capacity"
                 },
                 "properties": [
@@ -1626,18 +1664,19 @@
                   "service": true
                 },
                 "indexByName": {
-                  "Time": 0,
-                  "Value": 11,
-                  "__name__": 1,
-                  "container": 3,
-                  "disk": 4,
-                  "endpoint": 5,
-                  "instance": 6,
-                  "job": 7,
-                  "namespace": 8,
-                  "node": 2,
-                  "pod": 9,
-                  "service": 10
+                  "Time": 1,
+                  "Value": 12,
+                  "__name__": 2,
+                  "container": 4,
+                  "disk": 5,
+                  "endpoint": 6,
+                  "instance": 7,
+                  "job": 8,
+                  "namespace": 9,
+                  "node": 3,
+                  "pod": 10,
+                  "service": 11,
+                  "cluster": 0
                 },
                 "renameByName": {
                   "Value": "Capacity"

@@ -172,6 +172,18 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "__name__"
             },
             "properties": [
@@ -228,6 +240,7 @@
           "id": "labelsToFields",
           "options": {
             "keepLabels": [
+              "cluster",
               "group",
               "job",
               "removed_release",
@@ -251,14 +264,15 @@
               "job": true
             },
             "indexByName": {
-              "Time": 6,
-              "Value": 7,
-              "group": 1,
-              "job": 5,
-              "namespace": 0,
-              "removed_release": 4,
-              "resource": 3,
-              "version": 2
+              "Time": 7,
+              "Value": 8,
+              "group": 2,
+              "job": 6,
+              "namespace": 1,
+              "removed_release": 5,
+              "resource": 4,
+              "version": 3,
+              "cluster": 0
             },
             "renameByName": {}
           }
@@ -295,6 +309,12 @@
               },
               "version": {
                 "aggregations": [],
+                "operation": "groupby"
+              },
+              "cluster": {
+                "aggregations": [
+                  "lastNotNull"
+                ],
                 "operation": "groupby"
               }
             }

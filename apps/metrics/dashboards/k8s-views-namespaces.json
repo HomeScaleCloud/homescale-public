@@ -222,6 +222,18 @@
               {
                 "matcher": {
                   "id": "byName",
+                  "options": "cluster"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
                   "options": "alertname"
                 },
                 "properties": [
@@ -373,7 +385,6 @@
                   "Time": true,
                   "Value": true,
                   "__name__": true,
-                  "cluster": true,
                   "endpoint": true,
                   "instance": true,
                   "job": true,
@@ -383,12 +394,13 @@
                   "container": true
                 },
                 "indexByName": {
-                  "alertname": 0,
-                  "alertstate": 1,
-                  "severity": 2,
-                  "namespace": 3,
-                  "pod": 4,
-                  "node": 5
+                  "alertname": 1,
+                  "alertstate": 2,
+                  "severity": 3,
+                  "namespace": 4,
+                  "pod": 5,
+                  "node": 6,
+                  "cluster": 0
                 },
                 "renameByName": {}
               }
@@ -1012,6 +1024,18 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "pod"
             },
             "properties": [
@@ -1127,12 +1151,13 @@
               "uid": true
             },
             "indexByName": {
-              "pod": 0,
-              "namespace": 1,
-              "node": 2,
-              "created_by_kind": 3,
-              "pod_ip": 4,
-              "priority_class": 5
+              "pod": 1,
+              "namespace": 2,
+              "node": 3,
+              "created_by_kind": 4,
+              "pod_ip": 5,
+              "priority_class": 6,
+              "cluster": 0
             },
             "renameByName": {}
           }
@@ -1162,6 +1187,10 @@
                 "operation": "groupby"
               },
               "priority_class": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "cluster": {
                 "aggregations": [],
                 "operation": "groupby"
               }
