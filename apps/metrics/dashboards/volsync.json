@@ -532,7 +532,7 @@
     {
       "type": "table",
       "title": "Bound PVCs without a VolSync ReplicationSource",
-      "description": "Bound PVCs that have no matching VolSync ReplicationSource. Not necessarily a problem — system PVCs, ephemeral storage, or intentionally unprotected volumes will appear here.",
+      "description": "Bound PVCs that have no matching VolSync ReplicationSource. Not necessarily a problem \u2014 system PVCs, ephemeral storage, or intentionally unprotected volumes will appear here.",
       "id": 12,
       "datasource": {
         "type": "prometheus",
@@ -733,7 +733,7 @@
         },
         "definition": "label_values(volsync_volume_out_of_sync, cluster)",
         "hide": 0,
-        "includeAll": false,
+        "includeAll": true,
         "multi": false,
         "name": "cluster",
         "query": {

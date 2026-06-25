@@ -3213,7 +3213,7 @@
           "uid": "${datasource}"
         },
         "definition": "label_values(kube_node_info,cluster)",
-        "includeAll": false,
+        "includeAll": true,
         "name": "cluster",
         "options": [],
         "query": {
