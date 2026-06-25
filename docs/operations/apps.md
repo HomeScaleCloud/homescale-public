@@ -181,7 +181,7 @@ exposePublic:
 | -40 | cilium |
 | -35 | infisical, multus |
 | -30 | cert-manager, argocd, rbac |
-| -25 | generic-device-plugin |
+| -25 | generic-device-plugin-tun |
 | -20 | netbird, cert-manager-crs, spegel |
 | -10 | external-dns, netbird-crs, kubelet-serving-cert-approver |
 | -5 | volsync |
