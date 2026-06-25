@@ -228,6 +228,18 @@
               {
                 "matcher": {
                   "id": "byName",
+                  "options": "cluster"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
                   "options": "alertname"
                 },
                 "properties": [
@@ -379,7 +391,6 @@
                   "Time": true,
                   "Value": true,
                   "__name__": true,
-                  "cluster": true,
                   "endpoint": true,
                   "instance": true,
                   "job": true,
@@ -389,12 +400,13 @@
                   "container": true
                 },
                 "indexByName": {
-                  "alertname": 0,
-                  "alertstate": 1,
-                  "severity": 2,
-                  "namespace": 3,
-                  "pod": 4,
-                  "node": 5
+                  "alertname": 1,
+                  "alertstate": 2,
+                  "severity": 3,
+                  "namespace": 4,
+                  "pod": 5,
+                  "node": 6,
+                  "cluster": 0
                 },
                 "renameByName": {}
               }
@@ -725,6 +737,18 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "pod"
             },
             "properties": [
@@ -844,27 +868,28 @@
               "uid": true
             },
             "indexByName": {
-              "Time": 6,
-              "Value": 20,
-              "__name__": 7,
-              "container": 8,
-              "created_by_kind": 2,
-              "created_by_name": 9,
-              "endpoint": 10,
-              "env": 11,
-              "host_ip": 5,
-              "host_network": 12,
-              "instance": 13,
-              "job": 14,
-              "namespace": 1,
-              "node": 15,
-              "pod": 0,
-              "pod_ip": 3,
-              "priority_class": 4,
-              "project": 16,
-              "prometheus_replica": 17,
-              "service": 18,
-              "uid": 19
+              "Time": 7,
+              "Value": 21,
+              "__name__": 8,
+              "container": 9,
+              "created_by_kind": 3,
+              "created_by_name": 10,
+              "endpoint": 11,
+              "env": 12,
+              "host_ip": 6,
+              "host_network": 13,
+              "instance": 14,
+              "job": 15,
+              "namespace": 2,
+              "node": 16,
+              "pod": 1,
+              "pod_ip": 4,
+              "priority_class": 5,
+              "project": 17,
+              "prometheus_replica": 18,
+              "service": 19,
+              "uid": 20,
+              "cluster": 0
             },
             "renameByName": {}
           }
@@ -896,6 +921,10 @@
                 "operation": "groupby"
               },
               "priority_class": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "cluster": {
                 "aggregations": [],
                 "operation": "groupby"
               }
