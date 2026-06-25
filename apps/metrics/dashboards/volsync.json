@@ -451,12 +451,20 @@
               "service": true
             },
             "indexByName": {
-              "obj_name": 1,
-              "obj_namespace": 2,
+              "obj_name": 0,
+              "obj_namespace": 1,
+              "cluster": 2,
               "role": 3,
               "method": 4,
               "Value": 5,
-              "cluster": 0
+              "Time": 6,
+              "__name__": 7,
+              "endpoint": 8,
+              "instance": 9,
+              "job": 10,
+              "prometheus": 11,
+              "prometheus_replica": 12,
+              "service": 13
             },
             "renameByName": {
               "Value": "Status"
@@ -658,10 +666,20 @@
               "volumename": true
             },
             "indexByName": {
-              "namespace": 1,
-              "persistentvolumeclaim": 2,
+              "namespace": 0,
+              "persistentvolumeclaim": 1,
+              "cluster": 2,
               "storageclass": 3,
-              "cluster": 0
+              "Time": 4,
+              "Value": 5,
+              "__name__": 6,
+              "endpoint": 7,
+              "instance": 8,
+              "job": 9,
+              "prometheus": 10,
+              "prometheus_replica": 11,
+              "service": 12,
+              "volumename": 13
             },
             "renameByName": {
               "namespace": "Namespace",
