@@ -100,14 +100,6 @@ resource "cloudflare_dns_record" "cloudflare_sso_verify" {
   type    = "TXT"
 }
 
-resource "cloudflare_dns_record" "netbird_ext" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
-  name    = "REDACTED"
-  content = module.netbird.netbird_reverse_proxy_clusters_all
-  ttl     = 1
-  type    = "CNAME"
-}
-
 resource "cloudflare_dns_record" "infisical_verify" {
   zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"

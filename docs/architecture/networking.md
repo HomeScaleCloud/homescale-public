@@ -28,23 +28,9 @@ REDACTED
 
 No Ingress or LoadBalancer service is needed — the NetBird operator handles DNS registration automatically when a `NetworkResource` CR exists.
 
-## External service exposure
+## 🌐 External service exposure
 
-Two separate mechanisms exist for making services reachable outside the NetBird mesh.
-
-### NetBird reverse proxy (`REDACTED`)
-
-Terraform registers `REDACTED` as a NetBird reverse proxy domain (`netbird_reverse_proxy_domain`), and a Cloudflare wildcard CNAME resolves `REDACTED` to the NetBird reverse proxy cluster.
-
-Any service already registered in the NetBird mesh at `REDACTED` is automatically reachable at the corresponding `REDACTED` address — no per-app config required.
-
-```
-Internet → Cloudflare (REDACTED) → NetBird reverse proxy → REDACTED
-```
-
-### Cloudflare Zero Trust Tunnels (`exposePublic:`)
-
-For apps that need a specific public FQDN (e.g. `REDACTED`, `myapp.example.com`), add an `exposePublic:` block to the app's `app.yaml`:
+Public internet exposure goes through Cloudflare Zero Trust Tunnels. Add an `exposePublic:` block to the app's `app.yaml`:
 
 ```yaml
 exposePublic:
