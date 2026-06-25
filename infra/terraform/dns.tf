@@ -116,3 +116,12 @@ resource "cloudflare_dns_record" "infisical_verify" {
   ttl     = 1
   type    = "TXT"
 }
+
+resource "cloudflare_dns_record" "gh_pages_verify" {
+  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  name    = "xxx"
+  comment = "Domain ownership verification for Github Pages"
+  content = "d51b9fb8dccb174e7f835e6455ff3a" #pragma: allowlist secret
+  ttl     = 1
+  type    = "TXT"
+}
