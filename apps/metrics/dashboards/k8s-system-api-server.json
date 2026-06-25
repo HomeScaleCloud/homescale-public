@@ -264,15 +264,15 @@
               "job": true
             },
             "indexByName": {
-              "Time": 7,
-              "Value": 8,
+              "namespace": 0,
+              "cluster": 1,
               "group": 2,
-              "job": 6,
-              "namespace": 1,
-              "removed_release": 5,
-              "resource": 4,
               "version": 3,
-              "cluster": 0
+              "resource": 4,
+              "removed_release": 5,
+              "Time": 6,
+              "Value": 7,
+              "job": 8
             },
             "renameByName": {}
           }
