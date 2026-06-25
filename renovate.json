@@ -103,6 +103,17 @@
       ],
       "depNameTemplate": "infisicalsdk",
       "datasourceTemplate": "pypi"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "apps/**/app\\.yaml"
+      ],
+      "matchStrings": [
+        "repoURL:\\s*https://github\\.com/(?<depName>[^\\n\\s]+)\\n\\s+targetRevision:\\s*(?<currentValue>[^\\n\\s]+)"
+      ],
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "semver"
     }
   ],
   "platformAutomerge": true

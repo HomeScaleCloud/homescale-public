@@ -61,6 +61,22 @@ metadata:
 {{- end }}
 spec:
   project: {{ $project | quote }}
+{{- if $app.extraSources }}
+  sources:
+    - repoURL: {{ $repoURL | quote }}
+      targetRevision: {{ $targetRevision | quote }}
+      path: {{ $appPath | quote }}
+      helm:
+        releaseName: {{ $releaseName | quote }}
+{{- with $app.valueFiles }}
+        valueFiles:
+{{ toYaml . | nindent 10 }}
+{{- end }}
+        valuesObject:{{ tpl (toYaml $valuesObject) $root | nindent 10 }}
+{{- range $app.extraSources }}
+    - {{- toYaml . | nindent 6 }}
+{{- end }}
+{{- else }}
   source:
     repoURL: {{ $repoURL | quote }}
     targetRevision: {{ $targetRevision | quote }}
@@ -72,6 +88,7 @@ spec:
 {{ toYaml . | nindent 8 }}
 {{- end }}
       valuesObject:{{ tpl (toYaml $valuesObject) $root | nindent 8 }}
+{{- end }}
   destination:
 {{- if $destinationServer }}
     server: {{ $destinationServer | quote }}
