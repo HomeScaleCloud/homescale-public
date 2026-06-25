@@ -109,6 +109,19 @@ jobs:
           fi
         env:
           TF_VAR_netbird_token: ${{ env.NETBIRD_SA_TOKEN }}
+      - name: Write plan to job summary
+        if: always() && steps.plan.outcome != 'skipped'
+        run: |
+          icon=$([[ "${PLAN_STATUS:-}" == "success" ]] && echo "✅" || echo "❌")
+          {
+            echo "## ${icon} Terraform Plan"
+            echo ""
+            echo '```'
+            cat /tmp/tf-plan.txt 2>/dev/null || echo "(no output)"
+            echo '```'
+            echo ""
+            echo "> commit \`${{ github.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Post plan results to PR
         if: always() && github.event_name == 'pull_request'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
@@ -160,7 +173,7 @@ jobs:
       - name: Fail if plan failed
         if: steps.plan.outcome == 'failure'
         run: |
-          echo "Terraform plan failed. See PR comment for details."
+          echo "Terraform plan failed. See job summary for details."
           exit 1
       - name: Apply
         if: github.ref == 'refs/heads/main'
