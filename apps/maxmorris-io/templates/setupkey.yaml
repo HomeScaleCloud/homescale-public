@@ -1,0 +1,11 @@
+apiVersion: netbird.io/v1alpha1
+kind: SetupKey
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  name: {{ .Release.Name }}
+  ephemeral: true
+  duration: 24h
+  autoGroups:
+    - name: "cluster-{{ .Values.cluster.name }}"
+    - name: app-maxmorris-io

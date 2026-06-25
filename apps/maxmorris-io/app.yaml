@@ -2,12 +2,22 @@ path: apps/maxmorris-io
 namespace: maxmorris-io
 releaseName: maxmorris-io
 syncWave: 0
+podSecurity: privileged
 values:
+  netbird:
+    image: "ghcr.io/netbirdio/netbird:0.71.4"
   cluster:
     name: "{{ .Values.cluster.name }}"
   image:
     repository: ghcr.io/homescalecloud/maxmorris-io
     tag: "latest"
+netbird:
+  exposePublic:
+    cluster: boa1-prod
+    fqdn: REDACTED
+    port: 80
+    protocol: tcp
+
 defaultDeploy: false
 clusters:
   boa1-prod:
