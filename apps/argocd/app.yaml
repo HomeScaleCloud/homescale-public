@@ -216,6 +216,8 @@ values:
               label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
   argocd-image-updater:
+    config:
+      interval: 30s
     metrics:
       enabled: true
       serviceMonitor:
