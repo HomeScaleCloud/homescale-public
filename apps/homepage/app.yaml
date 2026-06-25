@@ -3,6 +3,8 @@ namespace: homepage
 releaseName: homepage
 syncWave: 0
 values:
+  cluster:
+    name: "{{ .Values.cluster.name }}"
   image:
     repository: ghcr.io/homescalecloud/homepage
     tag: "latest"  # pragma: allowlist secret

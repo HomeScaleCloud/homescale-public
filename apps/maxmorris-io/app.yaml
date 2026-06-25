@@ -3,6 +3,8 @@ namespace: maxmorris-io
 releaseName: maxmorris-io
 syncWave: 0
 values:
+  cluster:
+    name: "{{ .Values.cluster.name }}"
   image:
     repository: ghcr.io/homescalecloud/maxmorris-io
     tag: "latest"
