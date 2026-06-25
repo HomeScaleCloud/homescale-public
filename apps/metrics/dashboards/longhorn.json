@@ -660,16 +660,16 @@
             },
             "includeByName": {},
             "indexByName": {
-              "Time": 1,
-              "Value #capacity": 6,
-              "Value #usage-percentage": 7,
-              "Value #used": 5,
+              "volume": 0,
+              "pvc": 1,
+              "pvc_namespace": 2,
+              "cluster": 3,
+              "Value #used": 4,
+              "Value #capacity": 5,
+              "Value #usage-percentage": 6,
+              "Time": 7,
               "namespace": 8,
-              "persistentvolumeclaim": 9,
-              "pvc": 3,
-              "pvc_namespace": 4,
-              "volume": 2,
-              "cluster": 0
+              "persistentvolumeclaim": 9
             },
             "renameByName": {
               "Value": "Capacity",
@@ -1323,18 +1323,18 @@
                   "service": true
                 },
                 "indexByName": {
-                  "Time": 1,
-                  "Value": 11,
-                  "__name__": 2,
-                  "container": 4,
-                  "endpoint": 5,
-                  "instance": 6,
-                  "job": 7,
-                  "namespace": 8,
-                  "node": 3,
-                  "pod": 9,
-                  "service": 10,
-                  "cluster": 0
+                  "node": 0,
+                  "cluster": 1,
+                  "container": 2,
+                  "pod": 3,
+                  "Value": 4,
+                  "Time": 5,
+                  "__name__": 6,
+                  "endpoint": 7,
+                  "instance": 8,
+                  "job": 9,
+                  "namespace": 10,
+                  "service": 11
                 },
                 "renameByName": {
                   "Value": "Storage Capacity",
@@ -1664,19 +1664,19 @@
                   "service": true
                 },
                 "indexByName": {
-                  "Time": 1,
-                  "Value": 12,
-                  "__name__": 2,
-                  "container": 4,
-                  "disk": 5,
-                  "endpoint": 6,
-                  "instance": 7,
-                  "job": 8,
-                  "namespace": 9,
-                  "node": 3,
-                  "pod": 10,
-                  "service": 11,
-                  "cluster": 0
+                  "node": 0,
+                  "cluster": 1,
+                  "disk": 2,
+                  "Value": 3,
+                  "Time": 4,
+                  "__name__": 5,
+                  "container": 6,
+                  "endpoint": 7,
+                  "instance": 8,
+                  "job": 9,
+                  "namespace": 10,
+                  "pod": 11,
+                  "service": 12
                 },
                 "renameByName": {
                   "Value": "Capacity"

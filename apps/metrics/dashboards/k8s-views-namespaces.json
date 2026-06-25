@@ -394,13 +394,23 @@
                   "container": true
                 },
                 "indexByName": {
-                  "alertname": 1,
-                  "alertstate": 2,
-                  "severity": 3,
-                  "namespace": 4,
-                  "pod": 5,
+                  "alertname": 0,
+                  "alertstate": 1,
+                  "severity": 2,
+                  "namespace": 3,
+                  "pod": 4,
+                  "cluster": 5,
                   "node": 6,
-                  "cluster": 0
+                  "Time": 7,
+                  "Value": 8,
+                  "__name__": 9,
+                  "endpoint": 10,
+                  "instance": 11,
+                  "job": 12,
+                  "prometheus": 13,
+                  "prometheus_replica": 14,
+                  "service": 15,
+                  "container": 16
                 },
                 "renameByName": {}
               }
@@ -1151,13 +1161,28 @@
               "uid": true
             },
             "indexByName": {
-              "pod": 1,
-              "namespace": 2,
-              "node": 3,
+              "pod": 0,
+              "namespace": 1,
+              "node": 2,
+              "cluster": 3,
               "created_by_kind": 4,
               "pod_ip": 5,
               "priority_class": 6,
-              "cluster": 0
+              "Time": 7,
+              "Value": 8,
+              "__name__": 9,
+              "container": 10,
+              "created_by_name": 11,
+              "endpoint": 12,
+              "env": 13,
+              "host_ip": 14,
+              "host_network": 15,
+              "instance": 16,
+              "job": 17,
+              "project": 18,
+              "prometheus_replica": 19,
+              "service": 20,
+              "uid": 21
             },
             "renameByName": {}
           }

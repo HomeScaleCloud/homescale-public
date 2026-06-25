@@ -381,13 +381,23 @@
                   "container": true
                 },
                 "indexByName": {
-                  "alertname": 1,
-                  "alertstate": 2,
-                  "severity": 3,
-                  "namespace": 4,
-                  "pod": 5,
+                  "alertname": 0,
+                  "alertstate": 1,
+                  "severity": 2,
+                  "namespace": 3,
+                  "pod": 4,
+                  "cluster": 5,
                   "node": 6,
-                  "cluster": 0
+                  "Time": 7,
+                  "Value": 8,
+                  "__name__": 9,
+                  "endpoint": 10,
+                  "instance": 11,
+                  "job": 12,
+                  "prometheus": 13,
+                  "prometheus_replica": 14,
+                  "service": 15,
+                  "container": 16
                 },
                 "renameByName": {}
               }
@@ -2575,7 +2585,11 @@
             "excludeByName": {},
             "includeByName": {},
             "indexByName": {
-              "cluster": 0
+              "pod": 0,
+              "namespace": 1,
+              "cluster": 2,
+              "reason": 3,
+              "container": 4
             },
             "renameByName": {
               "container": "Container",
@@ -2753,11 +2767,11 @@
             "excludeByName": {},
             "includeByName": {},
             "indexByName": {
-              "condition": 4,
-              "container": 1,
-              "namespace": 2,
-              "pod": 3,
-              "cluster": 0
+              "pod": 0,
+              "namespace": 1,
+              "cluster": 2,
+              "condition": 3,
+              "container": 4
             },
             "renameByName": {
               "condition": "Condition",
