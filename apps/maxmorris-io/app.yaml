@@ -1,0 +1,12 @@
+path: apps/maxmorris-io
+namespace: maxmorris-io
+releaseName: maxmorris-io
+syncWave: 0
+values:
+  image:
+    repository: ghcr.io/homescalecloud/maxmorris-io
+    tag: "latest"
+defaultDeploy: false
+clusters:
+  boa1-prod:
+    deploy: true
