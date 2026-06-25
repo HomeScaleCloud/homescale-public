@@ -608,7 +608,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "label_replace(label_replace(avg by(volume, namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes{cluster=\"$cluster\"}),\"pvc\",\"$1\",\"persistentvolumeclaim\",\"(.*)\"),\"pvc_namespace\",\"$1\",\"namespace\",\"(.*)\")",
+          "expr": "label_replace(label_replace(avg by(volume, namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes{cluster=~\"$cluster\"}),\"pvc\",\"$1\",\"persistentvolumeclaim\",\"(.*)\"),\"pvc_namespace\",\"$1\",\"namespace\",\"(.*)\")",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -887,7 +887,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "avg(longhorn_node_count_total{cluster=\"$cluster\"}) OR on() vector(0)",
+              "expr": "avg(longhorn_node_count_total{cluster=~\"$cluster\"}) OR on() vector(0)",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -952,7 +952,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "count(longhorn_node_status{cluster=\"$cluster\", condition=\"allowScheduling\"}==0) OR on() vector(0)",
+              "expr": "count(longhorn_node_status{cluster=~\"$cluster\", condition=\"allowScheduling\"}==0) OR on() vector(0)",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -1056,7 +1056,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "(longhorn_node_storage_usage_bytes{cluster=\"$cluster\"}/longhorn_node_storage_capacity_bytes{cluster=\"$cluster\"}) * 100",
+              "expr": "(longhorn_node_storage_usage_bytes{cluster=~\"$cluster\"}/longhorn_node_storage_capacity_bytes{cluster=~\"$cluster\"}) * 100",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -1121,7 +1121,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "(count(longhorn_node_status{cluster=\"$cluster\", condition=\"schedulable\"}==1) OR on() vector(0)) - (count(longhorn_node_status{cluster=\"$cluster\", condition=\"allowScheduling\"}==0) OR on() vector(0))",
+              "expr": "(count(longhorn_node_status{cluster=~\"$cluster\", condition=\"schedulable\"}==1) OR on() vector(0)) - (count(longhorn_node_status{cluster=~\"$cluster\", condition=\"allowScheduling\"}==0) OR on() vector(0))",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -1186,7 +1186,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "(avg(longhorn_node_count_total{cluster=\"$cluster\"}) OR on() vector(0)) - (count(longhorn_node_status{condition=\"ready\"}==1) OR on() vector(0))",
+              "expr": "(avg(longhorn_node_count_total{cluster=~\"$cluster\"}) OR on() vector(0)) - (count(longhorn_node_status{condition=\"ready\"}==1) OR on() vector(0))",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -1274,7 +1274,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "longhorn_node_storage_capacity_bytes{cluster=\"$cluster\"}",
+              "expr": "longhorn_node_storage_capacity_bytes{cluster=~\"$cluster\"}",
               "format": "table",
               "instant": true,
               "interval": "",
@@ -1410,7 +1410,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "count by (node) (\r\n  (longhorn_volume_state{cluster=\"$cluster\"} == 2)\r\n  or\r\n  (longhorn_volume_state{cluster=\"$cluster\", state=\"attached\"} == 1)\r\n)",
+              "expr": "count by (node) (\r\n  (longhorn_volume_state{cluster=~\"$cluster\"} == 2)\r\n  or\r\n  (longhorn_volume_state{cluster=~\"$cluster\", state=\"attached\"} == 1)\r\n)",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -1521,7 +1521,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "(longhorn_disk_usage_bytes{cluster=\"$cluster\"}/longhorn_disk_capacity_bytes{cluster=\"$cluster\"})*100",
+              "expr": "(longhorn_disk_usage_bytes{cluster=~\"$cluster\"}/longhorn_disk_capacity_bytes{cluster=~\"$cluster\"})*100",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -1600,7 +1600,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "longhorn_disk_capacity_bytes{cluster=\"$cluster\"}",
+              "expr": "longhorn_disk_capacity_bytes{cluster=~\"$cluster\"}",
               "format": "table",
               "instant": true,
               "interval": "",
@@ -1748,7 +1748,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "(longhorn_node_cpu_usage_millicpu{cluster=\"$cluster\"} / longhorn_node_cpu_capacity_millicpu{cluster=\"$cluster\"}) * 100",
+              "expr": "(longhorn_node_cpu_usage_millicpu{cluster=~\"$cluster\"} / longhorn_node_cpu_capacity_millicpu{cluster=~\"$cluster\"}) * 100",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -1844,7 +1844,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "( longhorn_node_memory_usage_bytes{cluster=\"$cluster\"} / longhorn_node_memory_capacity_bytes{cluster=\"$cluster\"} ) * 100",
+              "expr": "( longhorn_node_memory_usage_bytes{cluster=~\"$cluster\"} / longhorn_node_memory_capacity_bytes{cluster=~\"$cluster\"} ) * 100",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -1940,7 +1940,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "longhorn_instance_manager_cpu_usage_millicpu{cluster=\"$cluster\"}",
+              "expr": "longhorn_instance_manager_cpu_usage_millicpu{cluster=~\"$cluster\"}",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -2036,7 +2036,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "(longhorn_instance_manager_cpu_usage_millicpu{cluster=\"$cluster\"}/longhorn_instance_manager_cpu_requests_millicpu{cluster=\"$cluster\"})*100",
+              "expr": "(longhorn_instance_manager_cpu_usage_millicpu{cluster=~\"$cluster\"}/longhorn_instance_manager_cpu_requests_millicpu{cluster=~\"$cluster\"})*100",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -2131,7 +2131,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "longhorn_instance_manager_memory_usage_bytes{cluster=\"$cluster\"}",
+              "expr": "longhorn_instance_manager_memory_usage_bytes{cluster=~\"$cluster\"}",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -2227,7 +2227,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "longhorn_manager_cpu_usage_millicpu{cluster=\"$cluster\"}",
+              "expr": "longhorn_manager_cpu_usage_millicpu{cluster=~\"$cluster\"}",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -2322,7 +2322,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "longhorn_manager_memory_usage_bytes{cluster=\"$cluster\"}",
+              "expr": "longhorn_manager_memory_usage_bytes{cluster=~\"$cluster\"}",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -2431,14 +2431,14 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(longhorn_volume_state{cluster=\"$cluster\"},volume)",
+        "definition": "label_values(longhorn_volume_state{cluster=~\"$cluster\"},volume)",
         "includeAll": true,
         "label": "Volume",
         "multi": true,
         "name": "volume",
         "options": [],
         "query": {
-          "query": "label_values(longhorn_volume_state{cluster=\"$cluster\"},volume)",
+          "query": "label_values(longhorn_volume_state{cluster=~\"$cluster\"},volume)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
