@@ -1,21 +1,10 @@
 # Networking
 
-HomeScale uses two separate WireGuard-based networks for different purposes:
+[NetBird](https://netbird.io/) is the zero-trust WireGuard mesh that connects all humans, machines, and services in HomeScale. This page covers how services are exposed — internally to the mesh and externally to the internet.
 
-| Network | Tool | Purpose |
-|---------|------|---------|
-| Node-to-node | [Talos KubeSpan](https://www.talos.dev/latest/talos-guides/network/kubespan/) | Pod/service traffic across cluster nodes in different regions |
-| Human and machine | [NetBird](https://netbird.io/) | Developer access, CI connectivity, service exposure |
+## Human and machine access
 
-## Node-to-node connectivity (KubeSpan)
-
-[Talos KubeSpan](https://www.talos.dev/latest/talos-guides/network/kubespan/) automatically establishes WireGuard tunnels between **all cluster nodes** across regions. This lets pod-to-pod and service traffic flow transparently between, for example, `mgmt` and `boa1-prod` without any manual VPN configuration.
-
-KubeSpan is configured at the Talos machine level in `infra/omni/patches/` and is enabled for all clusters.
-
-## Human and machine access (NetBird)
-
-[NetBird](https://netbird.io/) is a zero-trust WireGuard mesh overlay. It is used for:
+NetBird is used for:
 
 - **Developer access** — team members connect their laptops to the mesh and can reach internal services directly
 - **CI connectivity** — GitHub Actions jobs join the mesh with an ephemeral setup key at the start of each workflow run. The key is single-use and is revoked when the job completes
@@ -41,18 +30,41 @@ No Ingress or LoadBalancer service is needed — the NetBird operator handles DN
 
 ## External service exposure
 
-Public internet exposure uses a two-step Terraform-managed pattern:
+Two separate mechanisms exist for making services reachable outside the NetBird mesh.
+
+### NetBird reverse proxy (`REDACTED`)
+
+Terraform registers `REDACTED` as a NetBird reverse proxy domain (`netbird_reverse_proxy_domain`), and a Cloudflare wildcard CNAME resolves `REDACTED` to the NetBird reverse proxy cluster.
+
+Any service already registered in the NetBird mesh at `REDACTED` is automatically reachable at the corresponding `REDACTED` address — no per-app config required.
 
 ```
-Internet → Cloudflare (DNS + proxy) → NetBird reverse proxy → internal REDACTED service
+Internet → Cloudflare (REDACTED) → NetBird reverse proxy → REDACTED
 ```
 
-1. A **NetBird reverse proxy** resource is created in Terraform, pointing at the internal `REDACTED` FQDN. This gives the service an address under `REDACTED` (the reverse proxy domain registered in `netbird.tf`).
-2. A **Cloudflare wildcard CNAME** (`REDACTED`) resolves to the NetBird reverse proxy cluster. Optionally a second CNAME maps a friendlier public hostname (e.g. `myapp.example.com`) to the same target.
+### Cloudflare Zero Trust Tunnels (`exposePublic:`)
 
-This pattern is driven by the `exposePublic:` block in `app.yaml` — see the [App reference](../operations/apps.md#public-exposure-exposepublic) for details.
+For apps that need a specific public FQDN (e.g. `REDACTED`, `myapp.example.com`), add an `exposePublic:` block to the app's `app.yaml`:
 
-Alternatively, apps can use **Cloudflare Tunnel** (`cloudflared` app) for direct zero-trust ingress without a reverse proxy hop. This is configured via the same `exposePublic:` block with `cluster` pointing at the cluster running the `cloudflared` app.
+```yaml
+exposePublic:
+  cluster: boa1-prod   # which cluster's tunnel to route through
+  fqdn: myapp.io       # public hostname (must be in a Cloudflare zone Terraform manages)
+  port: 80             # backend service port
+```
+
+Terraform creates:
+- A `cloudflare_zero_trust_tunnel_cloudflared` resource for each cluster that has public apps (one tunnel per cluster, shared across all apps on that cluster)
+- A `cloudflare_zero_trust_tunnel_cloudflared_config` ingress entry for the app pointing at `<releaseName>.<namespace>.svc.cluster.local:<port>`
+- A proxied Cloudflare CNAME record for the FQDN pointing to `<tunnel-id>.cfargotunnel.com`
+
+The `cloudflared` app (deployed on the target cluster) maintains the outbound tunnel connection to Cloudflare. Traffic flows:
+
+```
+Internet → Cloudflare (proxied CNAME) → Cloudflare Tunnel → cloudflared pod → k8s Service
+```
+
+See the [App reference](../operations/apps.md#public-exposure-exposepublic) for the full `exposePublic:` field reference.
 
 ## NetBird access policies
 

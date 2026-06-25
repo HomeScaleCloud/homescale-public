@@ -23,21 +23,23 @@ values:
 
 ## Enabling backups for a new app
 
-1. **Add restic credentials to Infisical** at `/k8s/volsync/<cluster-name>/<app>`:
+Per-app Infisical credentials are **managed automatically by Terraform** (`infra/terraform/volsync.tf`). Whenever Terraform detects an app with a `volsync.yaml` template it creates the Infisical folder at `/k8s/volsync/<cluster>/<app>/` and populates it with Infisical reference expressions that derive from shared base credentials at `/k8s/volsync/`:
 
-    | Key | Value |
-    |-----|-------|
-    | `RESTIC_REPOSITORY` | `s3:https://<endpoint>/<bucket>/<app>` |
-    | `RESTIC_PASSWORD` | A strong random passphrase |
-    | `AWS_ACCESS_KEY_ID` | S3 access key |
-    | `AWS_SECRET_ACCESS_KEY` | S3 secret key |
+| Derived key | Source |
+|-------------|--------|
+| `RESTIC_REPOSITORY` | `<shared-base-url>/<cluster>/<app>` |
+| `RESTIC_PASSWORD` | Shared from `/k8s/volsync/RESTIC_PASSWORD` |
+| `AWS_ACCESS_KEY_ID` | Shared from `/k8s/volsync/AWS_ACCESS_KEY_ID` |
+| `AWS_SECRET_ACCESS_KEY` | Shared from `/k8s/volsync/AWS_SECRET_ACCESS_KEY` |
 
-2. **Add a `volsync.yaml` template** to the app's Helm chart. Follow the pattern from an existing app (e.g. `apps/home-assistant/templates/volsync.yaml`). The template gates on `{{ .Values.volsync.enabled }}` and creates:
+The shared base credentials must be configured once in Infisical at `/k8s/volsync/`. No per-app secret management is needed.
+
+1. **Add a `volsync.yaml` template** to the app's Helm chart. Follow the pattern from an existing app (e.g. `apps/home-assistant/templates/volsync.yaml`). The template gates on `{{ .Values.volsync.enabled }}` and creates:
    - An `InfisicalSecret` CR to sync the restic credentials
    - A `ReplicationSource` CR for normal operation
    - A `ReplicationDestination` CR when `volsync.restore.enabled: true`
 
-3. **Enable backups in `app.yaml`**:
+2. **Enable backups in `app.yaml`**:
 
     ```yaml
     values:
@@ -45,6 +47,8 @@ values:
         enabled: true
         backupSchedule: "0 2 * * *"   # optional; default is daily
     ```
+
+3. **Merge to `main`** — `terraform apply` creates the per-app Infisical paths. ArgoCD then deploys the `ReplicationSource` on the next sync.
 
 ## Restore procedure
 

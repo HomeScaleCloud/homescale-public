@@ -2,7 +2,7 @@
 
 ## Overview
 
-Each cluster is managed by [Omni](https://omni.siderolabs.com/) (SaaS control plane) running [Talos Linux](https://www.talos.dev/) nodes. Omni handles the low-level cluster lifecycle — provisioning, upgrading, machine assignments — while ArgoCD handles application state.
+Each Talos cluster is managed by [Omni](https://omni.siderolabs.com/), a self-hosted cluster lifecycle manager running on the `mgmt` cluster. Omni handles provisioning, upgrades, and machine assignments. ArgoCD handles application state.
 
 ## Cluster directory structure
 
@@ -11,9 +11,13 @@ Each cluster has a directory at `clusters/<cluster>/`:
 | File | Purpose |
 |------|---------|
 | `apps.yaml` | Bootstrap ArgoCD app-of-apps — applied manually once to seed the cluster |
-| `cluster.yaml` | Omni cluster template (Talos/k8s versions, machine selectors, patch overrides) |
+| `cluster.yaml` | Omni cluster template (Talos/k8s versions, machine selectors, patch overrides). **Not present for `mgmt`** — see below. |
 
-Raw Kubernetes manifests placed in `clusters/<cluster>/` are picked up directly by the app-of-apps as a second source and applied to the cluster. This is used for cluster-scoped resources that don't belong in any app chart (e.g. cluster-level RBAC, storage class config).
+Raw Kubernetes manifests placed in `clusters/<cluster>/` are picked up directly by the app-of-apps as a second source and applied to the cluster (`cluster.yaml` is excluded from this source). This is used for cluster-scoped resources that don't belong in any app chart (e.g. cluster-level RBAC, storage class config).
+
+### The `mgmt` cluster
+
+`mgmt` is a managed [DigitalOcean Kubernetes](https://docs.digitalocean.com/products/kubernetes/) cluster provisioned by Terraform (`infra/terraform/modules/mgmt_cluster/`). It does **not** have a `cluster.yaml` — Talos and Omni are not involved. Omni itself runs *on* `mgmt`, managing the other clusters.
 
 ## Cluster naming
 
@@ -42,12 +46,17 @@ The template uses `$CLUSTER_NAME` as an envsubst substitution that CI replaces a
 
 `infra/omni/patches/` contains Talos machine config patches applied during Omni template sync. Common patches:
 
-- KubeSpan configuration (node-to-node WireGuard tunnels)
 - Custom kubelet flags
 - NTP configuration
 - Kernel module loading
 
 See [Talos configuration docs](https://www.talos.dev/latest/reference/configuration/) for the patch schema.
+
+## Machine classes
+
+`infra/omni/machineclasses/` contains [Omni MachineClass](https://omni.siderolabs.com/reference/omni-resources/machine-class) resources. Machine classes define selectors that automatically assign bare-metal machines to clusters based on their labels or hardware attributes.
+
+CI syncs all machine class files on every push to `main` (`omnictl apply -f infra/omni/machineclasses/<name>.yaml`) and dry-runs them on PRs. Changes to machine class files trigger the Omni job in the same way as `cluster.yaml` changes.
 
 ## Bootstrap: adding a new cluster
 
@@ -66,7 +75,7 @@ See [Talos configuration docs](https://www.talos.dev/latest/reference/configurat
        values:
          someKey: clusterSpecificValue
    ```
-4. **Apply `apps.yaml` once** to bootstrap ArgoCD on the new cluster:
+4. **Merge to `main`** — CI runs the Omni template sync, then the Ansible `bootstrap-cluster.yml` playbook applies `apps.yaml` to the new cluster automatically. Alternatively, apply it manually:
    ```bash
    kubectl apply -f clusters/<cluster>/apps.yaml
    ```
@@ -98,7 +107,7 @@ On merge to `main`, CI runs `terraform apply` automatically (after `scan` and `b
 
 | Module | What it manages |
 |--------|----------------|
-| `modules/netbird/` | NetBird policies, groups, and reverse proxy resources — reads `app.yaml` files via `fileset` |
-| `modules/cloudflare/` | DNS records, Cloudflare tunnel ingress rules — reads `exposePublic:` from `app.yaml` |
-| `modules/infisical/` | Infisical project structure and machine identity setup |
-| `modules/digitalocean/` | DigitalOcean resources (mgmt cluster node, block storage) |
+| `modules/netbird/` | NetBird policies, groups, and reverse proxy domain — reads `netbird:` blocks from `app.yaml` files via `fileset` |
+| `modules/cloudflare/` | DNS records and Cloudflare Zero Trust Tunnel config — reads `exposePublic:` from `app.yaml` |
+| `modules/infisical/` | Infisical project structure, machine identities, and VolSync secret scaffolding |
+| `modules/mgmt_cluster/` | The `mgmt` DigitalOcean Kubernetes cluster and ArgoCD bootstrap |

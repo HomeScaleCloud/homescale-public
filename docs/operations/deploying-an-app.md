@@ -132,15 +132,20 @@ On merge to `main`:
 
 ## First-party Docker images
 
-If your app needs a custom image, add a `Dockerfile` to `apps/my-app/`. CI will build and push `ghcr.io/homescalecloud/my-app:latest` on every merge to `main`. Reference it in your `values.yaml`:
+If your app needs a custom image, add a `Dockerfile` to `apps/my-app/`. On every merge to `main`, CI builds and pushes two tags to `ghcr.io/homescalecloud/my-app`:
+
+- `:<git-sha>` — immutable, pinned to the exact commit
+- `:latest` — always points to the most recent build
+
+For production use, pin to the SHA tag in `values.yaml`:
 
 ```yaml
 image:
   repository: ghcr.io/homescalecloud/my-app
-  tag: "latest"  # pragma: allowlist secret
+  tag: "abc1234"  # pragma: allowlist secret
 ```
 
-The `# pragma: allowlist secret` comment suppresses a false positive from `detect-secrets` on the word "latest".
+The `# pragma: allowlist secret` comment suppresses a false positive from `detect-secrets` on the word after `tag:`.
 
 ## Exposing the app
 

@@ -37,7 +37,7 @@ HomeScale uses a full GitOps model: **this repository is the source of truth** f
 
 Each cluster bootstraps with a single [ArgoCD app-of-apps](https://argo-cd.readthedocs.io/en/stable/operator-manual/cluster-bootstrapping/#app-of-apps-pattern) (`clusters/<cluster>/apps.yaml`) applied manually once. That app has **two sources**:
 
-1. **`clusters/<cluster>/`** — any raw Kubernetes manifests scoped to that cluster (e.g. cluster-specific CRs, Omni machine selectors)
+1. **`clusters/<cluster>/`** — any raw Kubernetes manifests scoped to that cluster (e.g. cluster-scoped RBAC, namespace labels, custom CRs). `cluster.yaml` is excluded from this source.
 2. **`apps/`** — the Helm chart that reads every `apps/*/app.yaml` and renders one [ArgoCD `Application`](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#applications) per enabled app
 
 From that point on ArgoCD self-manages: changes to this repo are picked up automatically within the configured reconciliation interval (`timeout.reconciliation: 30s`).
@@ -69,7 +69,7 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 
 | Cluster | Role |
 |---------|------|
-| `mgmt` | Runs ArgoCD, Infisical operator, and shared infrastructure components |
+| `mgmt` | DigitalOcean-managed cluster that hosts Omni, ArgoCD, Infisical operator, and shared infrastructure |
 | `boa1-prod` | Production workloads for region `boa1` |
 | `boa1-gw` | Gateway cluster for region `boa1`; bare-metal provisioning, subnet routing |
 
@@ -88,7 +88,7 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 | -40 | `cilium` | CNI must be ready before any other pod can schedule |
 | -35 | `infisical`, `multus` | Secrets operator must be ready so other apps can pull secrets; Multus for multi-homed pods |
 | -30 | `cert-manager`, `argocd`, `rbac` | TLS infrastructure and access control before workloads |
-| -25 | `generic-device-plugin` | Node resource registration before consumers |
+| -25 | `generic-device-plugin-tun` | Node resource registration before consumers |
 | -20 | `netbird`, `cert-manager-crs`, `spegel` | Mesh access and certificate issuers before services need them |
 | -10 | `external-dns`, `netbird-crs`, `kubelet-serving-cert-approver` | DNS registration and network routing before apps |
 | -5 | `volsync` | Backup operator ready before app PVCs need it |
@@ -104,23 +104,45 @@ Three reusable workflows are called from `.github/workflows/ci.yaml`:
 Runs on every PR and push:
 
 - [`pre-commit`](https://pre-commit.com/) — YAML lint, trailing whitespace, detect-secrets, Helm lint
-- PR title validation against [Conventional Commits](https://www.conventionalcommits.org/) (enforced by gitlint)
-- [CodeQL](https://codeql.github.com/) — static analysis
-- [Trivy](https://trivy.dev/) — config scan for misconfigurations in Kubernetes manifests
+- PR title validation against [Conventional Commits](https://www.conventionalcommits.org/) (enforced by a regex check; only runs on PRs)
+- [CodeQL](https://codeql.github.com/) — static analysis of GitHub Actions workflow files
+- [Trivy](https://trivy.dev/) — config scan for misconfigurations in Kubernetes manifests (results uploaded to GitHub Security)
 
-### `build` — Docker images
+### `build` — Docker images and docs
 
 - Detects which `apps/*/` directories changed (on PRs); builds all on push to `main`
-- Builds the `Dockerfile` if present, pushes to `ghcr.io/homescalecloud/<name>`
-- Runs a Trivy image scan on each built image
-- Lints Helm charts (`helm lint`)
+- Builds the `Dockerfile` if present, tags with both `<git-sha>` and `latest`, pushes to `ghcr.io/homescalecloud/<name>`
+- Runs a Trivy vulnerability scan on each built image (CRITICAL/HIGH, blocks on failure)
+- Lints all Helm charts under `apps/`
+- **Deploys this documentation site** to GitHub Pages (`mkdocs gh-deploy`) on every push to `main`
 
 ### `deploy` — infrastructure and cluster sync
 
-Runs only on push to `main` (after `scan` and `build` pass):
+Runs on every PR and push to `main` (after `scan` and `build` pass). It has three sequential jobs:
 
-1. Joins the NetBird mesh with an ephemeral one-time setup key so it can reach internal infrastructure
-2. **Terraform plan/apply** — `infra/terraform/` manages Cloudflare DNS, DigitalOcean, Infisical project setup, NetBird configuration
-3. **Omni cluster template sync** — for clusters whose `cluster.yaml` changed, pushes the updated template to Omni
+#### 1. `terraform`
 
-ArgoCD then picks up any Git changes and reconciles cluster state automatically — no deploy step needed for app changes.
+Connects to NetBird (ephemeral setup key), then:
+
+- **On PR**: runs `terraform plan` and posts the plan diff as a PR comment
+- **On merge to `main`**: runs `terraform apply` — manages Cloudflare DNS, DigitalOcean, Infisical project structure, NetBird policies and groups
+
+#### 2. `omni` (after terraform)
+
+Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files. On PRs, only changed files are processed; on push to `main`, all clusters and machine classes are synced.
+
+- **On PR**: dry-runs each changed cluster template and machine class with `omnictl ... --dry-run`, posts results as PR comments
+- **On merge to `main`**: runs `omnictl cluster template sync` for all clusters and `omnictl apply` for all machine classes
+
+Shared Talos patches from `infra/omni/patches/` are applied alongside each cluster template.
+
+#### 3. `ansible` (after omni, main only)
+
+Runs two Ansible playbooks against the live clusters via NetBird:
+
+- **`bootstrap-infra-providers.yml`** — creates Omni service accounts for the `omni-infra-provider` app on each gateway cluster
+- **`bootstrap-cluster.yml`** — ensures ArgoCD is bootstrapped on every cluster (idempotent)
+
+---
+
+ArgoCD picks up any Git changes and reconciles cluster state automatically — no deploy step is needed for app-only changes.
