@@ -4,10 +4,6 @@ releaseName: homepage
 syncWave: 0
 podSecurity: privileged
 values:
-  netbird:
-    image: "ghcr.io/netbirdio/netbird:0.71.4"
-  cluster:
-    name: "{{ .Values.cluster.name }}"
   image:
     repository: ghcr.io/homescalecloud/homepage
     tag: "latest"  # pragma: allowlist secret
