@@ -157,6 +157,7 @@ clusters:
                 metrics_path: /snmp
                 params:
                   module: [apc_rpdu]
+                  auth: [snmpv1_public]
                 relabel_configs:
                   - source_labels: [__address__]
                     target_label: __param_target
