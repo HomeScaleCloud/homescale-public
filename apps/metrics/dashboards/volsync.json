@@ -310,6 +310,18 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "obj_name"
             },
             "properties": [
@@ -431,7 +443,6 @@
             "excludeByName": {
               "Time": true,
               "__name__": true,
-              "cluster": true,
               "endpoint": true,
               "instance": true,
               "job": true,
@@ -440,11 +451,12 @@
               "service": true
             },
             "indexByName": {
-              "obj_name": 0,
-              "obj_namespace": 1,
-              "role": 2,
-              "method": 3,
-              "Value": 4
+              "obj_name": 1,
+              "obj_namespace": 2,
+              "role": 3,
+              "method": 4,
+              "Value": 5,
+              "cluster": 0
             },
             "renameByName": {
               "Value": "Status"
@@ -570,6 +582,18 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "Namespace"
             },
             "properties": [
@@ -625,7 +649,6 @@
               "Time": true,
               "Value": true,
               "__name__": true,
-              "cluster": true,
               "endpoint": true,
               "instance": true,
               "job": true,
@@ -635,9 +658,10 @@
               "volumename": true
             },
             "indexByName": {
-              "namespace": 0,
-              "persistentvolumeclaim": 1,
-              "storageclass": 2
+              "namespace": 1,
+              "persistentvolumeclaim": 2,
+              "storageclass": 3,
+              "cluster": 0
             },
             "renameByName": {
               "namespace": "Namespace",

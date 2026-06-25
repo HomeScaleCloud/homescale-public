@@ -227,6 +227,18 @@
               {
                 "matcher": {
                   "id": "byName",
+                  "options": "cluster"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
                   "options": "alertname"
                 },
                 "properties": [
@@ -360,7 +372,6 @@
                   "Time": true,
                   "Value": true,
                   "__name__": true,
-                  "cluster": true,
                   "endpoint": true,
                   "instance": true,
                   "job": true,
@@ -370,12 +381,13 @@
                   "container": true
                 },
                 "indexByName": {
-                  "alertname": 0,
-                  "alertstate": 1,
-                  "severity": 2,
-                  "namespace": 3,
-                  "pod": 4,
-                  "node": 5
+                  "alertname": 1,
+                  "alertstate": 2,
+                  "severity": 3,
+                  "namespace": 4,
+                  "pod": 5,
+                  "node": 6,
+                  "cluster": 0
                 },
                 "renameByName": {}
               }
@@ -2450,6 +2462,18 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "reason"
             },
             "properties": [
@@ -2522,6 +2546,7 @@
           "id": "labelsToFields",
           "options": {
             "keepLabels": [
+              "cluster",
               "namespace",
               "pod",
               "reason",
@@ -2535,6 +2560,7 @@
           "options": {
             "include": {
               "names": [
+                "cluster",
                 "namespace",
                 "pod",
                 "reason",
@@ -2548,12 +2574,15 @@
           "options": {
             "excludeByName": {},
             "includeByName": {},
-            "indexByName": {},
+            "indexByName": {
+              "cluster": 0
+            },
             "renameByName": {
               "container": "Container",
               "namespace": "Namespace",
               "pod": "Pod Name",
-              "reason": "Reason"
+              "reason": "Reason",
+              "cluster": "Cluster"
             }
           }
         },
@@ -2613,6 +2642,18 @@
           }
         },
         "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cluster"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
           {
             "matcher": {
               "id": "byName",
@@ -2683,6 +2724,7 @@
           "id": "labelsToFields",
           "options": {
             "keepLabels": [
+              "cluster",
               "namespace",
               "pod",
               "reason",
@@ -2696,6 +2738,7 @@
           "options": {
             "include": {
               "names": [
+                "cluster",
                 "container",
                 "namespace",
                 "pod",
@@ -2710,16 +2753,18 @@
             "excludeByName": {},
             "includeByName": {},
             "indexByName": {
-              "condition": 3,
-              "container": 0,
-              "namespace": 1,
-              "pod": 2
+              "condition": 4,
+              "container": 1,
+              "namespace": 2,
+              "pod": 3,
+              "cluster": 0
             },
             "renameByName": {
               "condition": "Condition",
               "container": "Container",
               "namespace": "Namespace",
-              "pod": "Pod Name"
+              "pod": "Pod Name",
+              "cluster": "Cluster"
             }
           }
         }
