@@ -6,6 +6,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A GitOps monorepo for **HomeScale** — private Kubernetes clusters for personal/family use. ArgoCD watches this repo and reconciles all cluster state automatically on merge to `main`.
 
+## Documentation
+
+The `docs/` directory is published to GitHub Pages via MkDocs Material. **Update the docs whenever you make a change that affects user-facing behavior**, including:
+
+- Adding, removing, or changing any field in `app.yaml` (reference lives in `docs/operations/apps.md`)
+- Adding a new app or cluster
+- Changing networking, secrets, or backup behavior
+- Adding new `hsctl` commands or subcommands
+
+Build and preview locally:
+```bash
+# One-time setup
+python3 -m venv .venv && source .venv/bin/activate && pip install mkdocs-material
+
+# Serve with live reload
+mkdocs serve
+```
+
 ## Key Commands
 
 ```bash
