@@ -1,0 +1,11 @@
+path: apps/cloudflared
+namespace: cloudflared
+releaseName: cloudflared
+syncWave: 0
+defaultDeploy: false
+clusters:
+  boa1-prod:
+    deploy: true
+    values:
+      cluster:
+        name: boa1-prod
