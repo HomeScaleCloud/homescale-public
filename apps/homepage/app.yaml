@@ -7,6 +7,11 @@ values:
   image:
     repository: ghcr.io/homescalecloud/homepage
     tag: "latest"  # pragma: allowlist secret
+exposePublic:
+  cluster: boa1-prod
+  fqdn: REDACTED
+  port: 80
+
 defaultDeploy: false
 clusters:
   boa1-prod:
