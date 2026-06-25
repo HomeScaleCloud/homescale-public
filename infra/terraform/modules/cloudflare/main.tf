@@ -1,7 +1,3 @@
-data "cloudflare_zone" "homescale" {
-  zone_id = var.zone_id
-}
-
 locals {
   app_yaml_files = fileset("${path.module}/../../../../apps", "*/app.yaml")
 
@@ -22,4 +18,18 @@ locals {
   clusters_with_public_apps = toset([
     for _, v in local.public_apps : v.cluster
   ])
+
+  # Extract the apex zone (last two labels) from each app's FQDN
+  fqdn_apex_domains = toset([
+    for _, app in local.public_apps :
+    regex("([^.]+\\.[^.]+)$", app.fqdn)[0]
+  ])
+}
+
+data "cloudflare_zone" "app_zones" {
+  for_each = local.fqdn_apex_domains
+
+  filter = {
+    name = each.key
+  }
 }
