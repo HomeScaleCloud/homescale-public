@@ -16,7 +16,7 @@ netbird:
     cluster: boa1-prod
     fqdn: xxx
     port: 80
-    protocol: tcp
+    protocol: http
 
 defaultDeploy: false
 clusters:
