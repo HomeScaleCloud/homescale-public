@@ -3,11 +3,6 @@ namespace: maxmorris-io
 releaseName: maxmorris-io
 syncWave: 0
 podSecurity: privileged
-annotations:
-  argocd-image-updater.argoproj.io/image-list: "img=ghcr.io/homescalecloud/maxmorris-io"
-  argocd-image-updater.argoproj.io/img.update-strategy: newest-build
-  argocd-image-updater.argoproj.io/img.allow-tags: "regexp:^[0-9a-f]{40}$"
-  argocd-image-updater.argoproj.io/img.helm.image-tag: image.tag
 values:
   image:
     repository: ghcr.io/homescalecloud/maxmorris-io
