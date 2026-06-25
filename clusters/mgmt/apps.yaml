@@ -28,6 +28,7 @@ spec:
       kind: Application
       jsonPointers:
         - /metadata/finalizers
+        - /spec/source/helm/parameters
   syncPolicy:
     automated:
       prune: true
