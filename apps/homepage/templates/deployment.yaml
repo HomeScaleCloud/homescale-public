@@ -13,6 +13,51 @@ spec:
       labels:
         app: {{ .Release.Name }}
     spec:
+      initContainers:
+        - name: netbird
+          image: {{ required "netbird.image is required" .Values.netbird.image | quote }}
+          restartPolicy: Always
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "netbird status 2>/dev/null | grep -qi connected"
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 60
+          env:
+            - name: NB_SETUP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: setup-key-{{ .Release.Name }}
+                  key: setup-key # pragma: allowlist secret
+            - name: NB_MANAGEMENT_URL
+              value: https://api.netbird.io
+            - name: NB_LOG_LEVEL
+              value: info
+            - name: NB_LOG_FILE
+              value: console
+            - name: NB_DISABLE_PROFILES
+              value: "true"
+            - name: NB_DISABLE_UPDATE_SETTINGS
+              value: "true"
+            - name: NB_DAEMON_ADDR
+              value: unix:///var/run/netbird/netbird.sock
+            - name: NB_ENTRYPOINT_SERVICE_TIMEOUT
+              value: "0"
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - NET_ADMIN
+                - SYS_RESOURCE
+                - SYS_ADMIN
+          volumeMounts:
+            - name: netbird-run
+              mountPath: /var/run/netbird
+            - name: netbird-lib
+              mountPath: /var/lib/netbird
       containers:
         - name: homepage
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -40,4 +85,8 @@ spec:
         - name: run
           emptyDir: {}
         - name: tmp
+          emptyDir: {}
+        - name: netbird-run
+          emptyDir: {}
+        - name: netbird-lib
           emptyDir: {}
