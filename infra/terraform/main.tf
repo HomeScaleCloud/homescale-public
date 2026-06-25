@@ -1,7 +1,6 @@
 module "cloudflare" {
   source                 = "./modules/cloudflare"
   infisical_workspace_id = module.infisical.project_id
-  zone_id                = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
 }
 
 module "infisical" {
