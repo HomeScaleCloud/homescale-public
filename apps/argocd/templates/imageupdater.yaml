@@ -1,0 +1,26 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: homescale-apps
+  namespace: argocd
+spec:
+  commonUpdateSettings:
+    updateStrategy: newest-build
+    allowTags: "^[0-9a-f]{40}$"
+  writeBackConfig:
+    method: argocd
+  applicationRefs:
+    - namePattern: homepage
+      images:
+        - alias: img
+          imageName: ghcr.io/homescalecloud/homepage:latest
+          manifestTargets:
+            helm:
+              tag: image.tag
+    - namePattern: maxmorris-io
+      images:
+        - alias: img
+          imageName: ghcr.io/homescalecloud/maxmorris-io:latest
+          manifestTargets:
+            helm:
+              tag: image.tag
