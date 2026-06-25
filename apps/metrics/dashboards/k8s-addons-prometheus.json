@@ -3070,14 +3070,14 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(prometheus_build_info{cluster=\"$cluster\"}, pod)",
+        "definition": "label_values(prometheus_build_info{cluster=~\"$cluster\"}, pod)",
         "hide": 0,
         "includeAll": true,
         "multi": false,
         "name": "pod",
         "options": [],
         "query": {
-          "query": "label_values(prometheus_build_info{cluster=\"$cluster\"}, pod)",
+          "query": "label_values(prometheus_build_info{cluster=~\"$cluster\"}, pod)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
