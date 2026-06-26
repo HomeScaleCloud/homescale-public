@@ -35,7 +35,7 @@ Public internet exposure goes through Cloudflare Zero Trust Tunnels. Add an `exp
 ```yaml
 exposePublic:
   cluster: boa1-prod   # which cluster's tunnel to route through
-  fqdn: myapp.io       # public hostname (must be in a Cloudflare zone Terraform manages)
+  fqdn: myapp.io       # public hostname (must be in a Cloudflare zone in the HomeScale account)
   port: 80             # backend service port
 ```
 
