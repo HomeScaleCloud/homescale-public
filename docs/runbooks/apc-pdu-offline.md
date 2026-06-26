@@ -27,4 +27,4 @@ The alert fires per PDU (`$labels.job` / `$labels.instance`). Currently monitore
 
 ## Physical access
 
-The PDUs are in the BOA1 rack. If remote management is unavailable, the PDU display panel shows current load and outlet status. The `boa1-gw` cluster provides subnet routing to the BOA1 BMC subnet (`10.1.246.0/24`) via NetBird — if that route is down, access the PDU directly from a machine on the same VLAN.
+If remote management is unavailable, the PDU display panel shows current load and outlet status. The region's BMC subnet is routable over NetBird via the region's gw cluster.

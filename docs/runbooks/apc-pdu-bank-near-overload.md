@@ -36,4 +36,4 @@ This is a critical alert because:
 
 ## PDU web UI access
 
-The PDU management interface is at `http://10.1.246.5` and `http://10.1.246.6`, reachable via the `boa1-gw` cluster's NetBird subnet router on the BOA1 BMC subnet (`10.1.246.0/24`).
+The PDU management interface is reachable over NetBird via the region's gw cluster, which routes the region's BMC subnet.
