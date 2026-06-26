@@ -1,6 +1,6 @@
 {
   "annotations": {"list": []},
-  "description": "Rack PDU health — input voltage, bank load, and per-outlet state",
+  "description": "Rack PDU health — input voltage, bank load, outlet states, and device identity",
   "editable": true,
   "graphTooltip": 1,
   "links": [],
@@ -97,15 +97,171 @@
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
           "expr": "apc_rpdu_bank_load_deciamps{cluster=\"$cluster\", job=~\"$job\"} / 10 / apc_rpdu_bank_near_overload_threshold_amps{cluster=\"$cluster\", job=~\"$job\"} * 100",
+          "legendFormat": "{{job}} bank {{bank_index}}"
+        }
+      ],
+      "title": "Bank Load (% of near-overload threshold)",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 50},
+              {"color": "orange", "value": 70},
+              {"color": "red", "value": 90}
+            ]
+          },
+          "mappings": [],
+          "unit": "percent",
+          "decimals": 0,
+          "max": 100,
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 5, "x": 10, "y": 1},
+      "id": 9,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "apc_rpdu_bank_load_deciamps{cluster=\"$cluster\", job=~\"$job\"} / 10 / apc_rpdu_device_rated_amps{cluster=\"$cluster\", job=~\"$job\"} * 100",
           "legendFormat": "{{job}}"
         }
       ],
-      "title": "Bank Load",
+      "title": "Bank Load (% of rated capacity)",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          },
+          "unit": "s",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 9, "x": 15, "y": 1},
+      "id": 10,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "apc_rpdu_uptime_seconds{cluster=\"$cluster\", job=~\"$job\"}",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "title": "Uptime",
       "type": "stat"
     },
     {
       "collapsed": false,
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+      "id": 11,
+      "title": "Device Info",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "displayMode": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Rated Amps"},
+            "properties": [
+              {"id": "custom.width", "value": 100}
+            ]
+          }
+        ]
+      },
+      "gridPos": {"h": 5, "w": 24, "x": 0, "y": 6},
+      "id": 12,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {"show": false},
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "apc_rpdu_device_rated_amps{cluster=\"$cluster\", job=~\"$job\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": ""
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "job"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "cluster": true,
+              "instance": true
+            },
+            "renameByName": {
+              "Value": "Rated Amps",
+              "firmware_version": "Firmware",
+              "hardware_rev": "Hardware Rev",
+              "model": "Model",
+              "serial": "Serial",
+              "job": "PDU"
+            },
+            "indexByName": {
+              "job": 0,
+              "model": 1,
+              "firmware_version": 2,
+              "hardware_rev": 3,
+              "serial": 4,
+              "Value": 5
+            }
+          }
+        }
+      ],
+      "title": "Device Identity",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 11},
       "id": 4,
       "title": "Trends",
       "type": "row"
@@ -131,7 +287,7 @@
           }
         ]
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
       "id": 5,
       "options": {
         "tooltip": {"mode": "multi", "sort": "none"},
@@ -165,7 +321,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
       "id": 6,
       "options": {
         "tooltip": {"mode": "multi", "sort": "none"},
@@ -183,7 +339,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 14},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 20},
       "id": 7,
       "title": "Outlets",
       "type": "row"
@@ -212,7 +368,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 15},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 21},
       "id": 8,
       "options": {
         "colorMode": "background",
@@ -282,5 +438,5 @@
   "timezone": "browser",
   "title": "PDU Health",
   "uid": "pdu-health",
-  "version": 1
+  "version": 2
 }
