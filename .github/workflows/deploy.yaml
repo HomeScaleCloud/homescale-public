@@ -539,12 +539,6 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "INFISICAL_AUTH_JWT=$TOKEN" >> "$GITHUB_ENV"
 
-      - name: Install omnictl
-        run: |
-          curl -fsSL -o /usr/local/bin/omnictl \
-            https://xxx/omnictl/omnictl-linux-amd64
-          chmod +x /usr/local/bin/omnictl
-
       - name: Install hsctl
         run: |
           chmod +x hsctl
@@ -559,6 +553,19 @@ jobs:
       - name: Install Ansible collections
         working-directory: infra/ansible
         run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Run mgmt cluster bootstrap playbook
+        working-directory: infra/ansible
+        env:
+          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+        run: ansible-playbook playbooks/bootstrap-mgmt.yml
+
+      - name: Install omnictl
+        run: |
+          curl -fsSL -o /usr/local/bin/omnictl \
+            https://xxx/omnictl/omnictl-linux-amd64
+          chmod +x /usr/local/bin/omnictl
 
       - name: Run infra provider bootstrap playbook
         working-directory: infra/ansible
@@ -577,13 +584,6 @@ jobs:
           INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: ansible-playbook playbooks/bootstrap-cluster.yml
-
-      - name: Run mgmt cluster bootstrap playbook
-        working-directory: infra/ansible
-        env:
-          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
-        run: ansible-playbook playbooks/bootstrap-mgmt.yml
 
       - name: Revoke NetBird Setup Key
         if: always()
