@@ -70,7 +70,7 @@ CI syncs all machine class files on every push to `main` (`omnictl apply -f infr
    kubernetes:
      version: v1.36.2
    talos:
-     version: v1.13.4
+     version: v1.13.5
    features:
      useEmbeddedDiscoveryService: true
      backupConfiguration:
