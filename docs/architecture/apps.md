@@ -112,9 +112,6 @@ By default, apps deploy to the cluster that is running ArgoCD (determined by clu
 
 ### NetBird access policy (`netbird:`)
 
-!!! warning "Terraform input — not Helm config"
-    The `netbird:` block is read directly by Terraform (`infra/terraform/modules/netbird/policies.tf`). It has no effect on Helm rendering. Never delete it thinking it's dead config.
-
 Defines who can reach this app across the NetBird mesh. If absent, access is **denied by default**.
 
 ```yaml
