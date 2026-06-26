@@ -22,7 +22,7 @@ data:
           - 1.3.6.1.4.1.318.1.1.12.1.5      # rPDUIdentModelNumber
           - 1.3.6.1.4.1.318.1.1.12.1.6      # rPDUIdentSerialNumber
           - 1.3.6.1.4.1.318.1.1.12.1.7      # rPDUIdentDeviceRating (max amps)
-          - 1.3.6.1.4.1.318.1.1.12.3.5.1.1  # rPDU2OutletStatus (states + names)
+          - 1.3.6.1.4.1.318.1.1.12.3.3.1.1  # rPDUOutletControl (commanded state + names)
           - 1.3.6.1.4.1.318.1.1.12.2.2.1.1  # rPDU2Bank (load, state, threshold)
         get:
           - 1.3.6.1.4.1.318.1.1.12.1.15.0   # rPDU2DeviceStatusInputVoltage
@@ -91,16 +91,16 @@ data:
                 type: gauge
 
           - name: apc_rpdu_outlet_state
-            oid: 1.3.6.1.4.1.318.1.1.12.3.5.1.1.5
+            oid: 1.3.6.1.4.1.318.1.1.12.3.3.1.1.4
             type: gauge
-            help: "Outlet power state: 1=off 2=on"
+            help: "Outlet power state: 1=on 2=off (rPDUOutletControlOutletCommand)"
             indexes:
               - labelname: outlet_index
                 type: gauge
             lookups:
               - labels: [outlet_index]
                 labelname: outlet_name
-                oid: 1.3.6.1.4.1.318.1.1.12.3.5.1.1.2
+                oid: 1.3.6.1.4.1.318.1.1.12.3.3.1.1.2
                 type: DisplayString
 
 {{- end }}
