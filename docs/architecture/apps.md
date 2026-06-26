@@ -1,4 +1,4 @@
-# App Catalog
+# Apps
 
 Each app lives in `apps/<name>/` and is controlled by an `app.yaml`. The app catalog Helm chart (`apps/`) reads every `apps/*/app.yaml` and generates one ArgoCD `Application` per enabled app per cluster.
 
