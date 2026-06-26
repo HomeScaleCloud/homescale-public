@@ -15,7 +15,6 @@ rules:
       - resourcequotas
       - limitranges
       - events
-      - secrets
       - serviceaccounts
     verbs: ["*"]
   - apiGroups: ["apps"]
