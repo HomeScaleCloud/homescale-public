@@ -7,7 +7,18 @@ permissions:
 
 on:
   workflow_call:
+    inputs:
+      app:
+        type: string
+        default: ''
+        description: 'Specific app to build (empty = all changed/all)'
   workflow_dispatch:
+    inputs:
+      app:
+        type: string
+        default: ''
+        description: 'Specific app to build (empty = all)'
+        required: false
 
 jobs:
   discover:
@@ -24,6 +35,8 @@ jobs:
       - name: Find Docker & Helm targets
         id: set
         shell: bash
+        env:
+          INPUT_APP: ${{ inputs.app }}
         run: |
           set -euo pipefail
           # Find Dockerfiles under apps/** (supports apps/foo/src/Dockerfile or apps/foo/Dockerfile)
@@ -77,6 +90,12 @@ jobs:
             fi
           else
             echo "Non-PR event; building all discovered apps."
+          fi
+
+          if [[ -n "${INPUT_APP:-}" ]]; then
+            echo "Filtering to app: $INPUT_APP"
+            docker_json="$(jq --arg app "$INPUT_APP" 'map(select(.name == $app))' <<<"$docker_json")"
+            helm_json="$(jq --arg app "$INPUT_APP" 'map(select(.name == $app))' <<<"$helm_json")"
           fi
 
           echo "docker=$(jq -c . <<<"$docker_json")" >> "$GITHUB_OUTPUT"
