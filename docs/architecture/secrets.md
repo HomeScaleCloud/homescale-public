@@ -8,7 +8,7 @@
 
 ```
 Infisical project
-  └─ /k8s/<purpose>/<cluster>/<app>/KEY=VALUE
+  └─ /k8s/<purpose>/<cluster>/<app>/   ← path containing key-value pairs
        ▲
        │  synced by Infisical operator
        │
@@ -51,7 +51,7 @@ metadata:
   namespace: my-app
 spec:
   hostAPI: https://app.infisical.com/api
-  resyncInterval: 60
+  resyncInterval: 60  # seconds
   authentication:
     universalAuth:
       secretsScope:
