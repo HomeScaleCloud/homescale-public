@@ -4,7 +4,7 @@ metadata:
   name: multus
 rules:
   - apiGroups: ["k8s.cni.cncf.io"]
-    resources: ["*"]
+    resources: ["network-attachment-definitions"]
     verbs: ["*"]
   - apiGroups: [""]
     resources: ["pods", "pods/status"]
