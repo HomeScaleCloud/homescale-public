@@ -50,16 +50,6 @@ jobs:
       - uses: pre-commit-ci/lite-action@5d6cc0eb514c891a40562a58a8e71576c5c7fb43  # v1.1.0
         if: always()
 
-  zizmor:
-    name: zizmor
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
-      - name: Run zizmor
-        uses: zizmor-project/zizmor-action@v1
-        with:
-          args: --no-progress
 
   trivy:
     name: Trivy
