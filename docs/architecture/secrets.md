@@ -32,12 +32,12 @@ Secrets in Infisical follow a consistent path structure:
 |---------|---------|-------|
 | `/k8s/` | — | Prefix for all secrets synced to Kubernetes |
 | `<purpose>` | `volsync`, `app` | Logical category |
-| `<cluster-name>` | `mgmt`, `boa1-prod` | Cluster the secret is used on |
+| `<cluster-name>` | `<region>-prod`, `mgmt` | Cluster the secret is used on |
 | `<app>` | `home-assistant` | App or component name |
 
 Examples:
-- `/k8s/volsync/boa1-prod/home-assistant` — VolSync restic credentials for the home-assistant app on boa1-prod
-- `/k8s/app/mgmt/argocd` — ArgoCD-specific credentials on mgmt
+- `/k8s/volsync/<cluster>/home-assistant` — VolSync restic credentials for the home-assistant app on a given cluster
+- `/k8s/app/mgmt/argocd` — ArgoCD-specific credentials on the management cluster
 
 ## InfisicalSecret CR
 

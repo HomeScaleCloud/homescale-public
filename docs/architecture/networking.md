@@ -20,10 +20,10 @@ The `netbird-crs` app (syncWave -10) deploys a `NetworkRouter` CRD per cluster. 
 <service-name>.<namespace>.<cluster>REDACTED
 ```
 
-For example, the ArgoCD server on `mgmt` is reachable at:
+For example, the ArgoCD server on the management cluster is reachable at:
 
 ```
-REDACTED
+argocd-server.argocd.<cluster>REDACTED
 ```
 
 No Ingress or LoadBalancer service is needed — the NetBird operator handles DNS registration automatically when a `NetworkResource` CR exists.
@@ -93,6 +93,6 @@ Gateway clusters (`<region>-gw`) are single-node clusters — one per region —
 
 - **Bare-metal provisioning** — runs [`omni-infra-provider`](https://omni.siderolabs.com/how-to-guides/install-and-configure-omni-integration-in-bare-metal-mode) to PXE-boot Talos nodes in the region
 - **Subnet routing** — runs a NetBird subnet router that exposes the region's BMC and MGMT subnets (switch management, iDRAC/IPMI, etc.) across the WireGuard mesh
-- **Region ↔ mgmt connectivity** — bridges region-local services (accessible at `REDACTED`) to the `mgmt` cluster and vice versa
+- **Region ↔ management connectivity** — bridges region-local services (accessible at `*.<region>REDACTED`) to the management cluster and vice versa
 
-Naming convention: `<region>-gw` (e.g. `boa1-gw`).
+Naming convention: `<region>-gw`.
