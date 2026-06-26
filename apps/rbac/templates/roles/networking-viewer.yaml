@@ -16,5 +16,6 @@ rules:
     verbs: ["get", "list", "watch"]
   - apiGroups: ["netbird.io"]
     resources:
-      - "*"
+      - networkresources
+      - networkrouters
     verbs: ["get", "list", "watch"]
