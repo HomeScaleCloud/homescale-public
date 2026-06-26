@@ -7,6 +7,15 @@ resource "cloudflare_dns_record" "github_verify" {
   type    = "TXT"
 }
 
+resource "cloudflare_dns_record" "github_ent_verify" {
+  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  name    = "xxx"
+  comment = "Domain ownership verification for GitHub Enterprise"
+  content = "0b5219f3e7" #pragma: allowlist secret
+  ttl     = 1
+  type    = "TXT"
+}
+
 resource "cloudflare_dns_record" "azure_verify" {
   zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "xxx"
