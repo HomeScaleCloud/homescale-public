@@ -28,8 +28,8 @@ nav:
       - Overview: architecture/overview.md
       - Networking: architecture/networking.md
       - Secrets: architecture/secrets.md  # pragma: allowlist secret
-      - Apps: architecture/apps.md
       - Clusters: architecture/clusters.md
+      - Apps: architecture/apps.md
       - Backups: architecture/backups.md
   - Operations:
       - Deploying an App: operations/deploying-an-app.md
