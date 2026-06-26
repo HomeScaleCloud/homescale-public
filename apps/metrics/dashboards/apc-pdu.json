@@ -8,6 +8,171 @@
     {
       "collapsed": false,
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "id": 13,
+      "title": "Alerts",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "custom": {
+            "fillOpacity": 70,
+            "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {"color": "yellow", "index": 0, "text": "Warning / Pending"},
+                "2": {"color": "red", "index": 1, "text": "Critical"}
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1},
+              {"color": "red", "value": 2}
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 5, "w": 24, "x": 0, "y": 1},
+      "id": 14,
+      "options": {
+        "alignValue": "left",
+        "legend": {"displayMode": "list", "placement": "bottom", "showLegend": true},
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "auto",
+        "tooltip": {"mode": "single", "sort": "none"}
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "(ALERTS{cluster=~\"$cluster\", alertname=~\"ApcPdu.*\", severity=\"critical\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertname=~\"ApcPdu.*\", alertstate=~\"firing|pending\"} * 1)",
+          "legendFormat": "{{alertname}} ({{job}})",
+          "range": true,
+          "instant": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Alert Timeline",
+      "type": "state-timeline"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"align": "auto", "cellOptions": {"type": "auto"}, "inspect": false}
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "alertname"},
+            "properties": [{"id": "custom.width", "value": 280}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "alertstate"},
+            "properties": [
+              {"id": "custom.width", "value": 90},
+              {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "basic"}},
+              {
+                "id": "mappings",
+                "value": [
+                  {"type": "value", "options": {
+                    "firing":   {"color": "red",    "index": 0, "text": "firing"},
+                    "pending":  {"color": "yellow", "index": 1, "text": "pending"}
+                  }}
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "severity"},
+            "properties": [
+              {"id": "custom.width", "value": 100},
+              {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "basic"}},
+              {
+                "id": "mappings",
+                "value": [
+                  {"type": "value", "options": {
+                    "warning":  {"color": "yellow", "index": 0, "text": "warning"},
+                    "critical": {"color": "red",    "index": 1, "text": "critical"}
+                  }}
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "job"},
+            "properties": [{"id": "custom.width", "value": 140}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "instance"},
+            "properties": [{"id": "custom.width", "value": 120}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "bank_index"},
+            "properties": [{"id": "custom.width", "value": 90}]
+          }
+        ]
+      },
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 6},
+      "id": 15,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {"show": false},
+        "showHeader": true,
+        "sortBy": [{"desc": false, "displayName": "alertname"}]
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "ALERTS{cluster=~\"$cluster\", alertname=~\"ApcPdu.*\", alertstate=~\"firing|pending\"}",
+          "instant": true,
+          "format": "table",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true,
+              "cluster": true,
+              "endpoint": true,
+              "prometheus": true,
+              "prometheus_replica": true,
+              "service": true
+            },
+            "indexByName": {
+              "alertname":  0,
+              "alertstate": 1,
+              "severity":   2,
+              "job":        3,
+              "instance":   4,
+              "bank_index": 5
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "title": "Active Alerts",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 12},
       "id": 1,
       "title": "Overview",
       "type": "row"
@@ -20,30 +185,25 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "red", "value": null},
-              {"color": "green", "value": 205},
-              {"color": "red", "value": 221}
+              {"color": "red",    "value": null},
+              {"color": "yellow", "value": 190},
+              {"color": "green",  "value": 198},
+              {"color": "yellow", "value": 218},
+              {"color": "red",    "value": 225}
             ]
           },
           "mappings": [
-            {
-              "type": "range",
-              "options": {"from": 205, "to": 220, "result": {"text": "Normal", "index": 0}}
-            },
-            {
-              "type": "range",
-              "options": {"from": 0, "to": 204.99, "result": {"text": "Warning", "index": 1}}
-            },
-            {
-              "type": "range",
-              "options": {"from": 220.01, "to": 300, "result": {"text": "Warning", "index": 2}}
-            }
+            {"type": "range", "options": {"from": 198,   "to": 217.9, "result": {"text": "Normal",   "index": 0}}},
+            {"type": "range", "options": {"from": 190,   "to": 197.9, "result": {"text": "Warning",  "index": 1}}},
+            {"type": "range", "options": {"from": 218,   "to": 224.9, "result": {"text": "Warning",  "index": 2}}},
+            {"type": "range", "options": {"from": 0,     "to": 189.9, "result": {"text": "Critical", "index": 3}}},
+            {"type": "range", "options": {"from": 225,   "to": 300,   "result": {"text": "Critical", "index": 4}}}
           ],
           "unit": "volt"
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 5, "x": 0, "y": 1},
+      "gridPos": {"h": 4, "w": 5, "x": 0, "y": 13},
       "id": 2,
       "options": {
         "colorMode": "background",
@@ -70,10 +230,9 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "green", "value": null},
-              {"color": "yellow", "value": 60},
-              {"color": "orange", "value": 80},
-              {"color": "red", "value": 95}
+              {"color": "green",  "value": null},
+              {"color": "yellow", "value": 70},
+              {"color": "red",    "value": 90}
             ]
           },
           "mappings": [],
@@ -84,7 +243,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 5, "x": 5, "y": 1},
+      "gridPos": {"h": 4, "w": 5, "x": 5, "y": 13},
       "id": 3,
       "options": {
         "colorMode": "background",
@@ -111,10 +270,9 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "green", "value": null},
-              {"color": "yellow", "value": 50},
-              {"color": "orange", "value": 70},
-              {"color": "red", "value": 90}
+              {"color": "green",  "value": null},
+              {"color": "yellow", "value": 60},
+              {"color": "red",    "value": 80}
             ]
           },
           "mappings": [],
@@ -125,7 +283,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 5, "x": 10, "y": 1},
+      "gridPos": {"h": 4, "w": 5, "x": 10, "y": 13},
       "id": 9,
       "options": {
         "colorMode": "background",
@@ -151,16 +309,14 @@
           "color": {"mode": "thresholds"},
           "thresholds": {
             "mode": "absolute",
-            "steps": [
-              {"color": "green", "value": null}
-            ]
+            "steps": [{"color": "green", "value": null}]
           },
           "unit": "s",
           "decimals": 0
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 9, "x": 15, "y": 1},
+      "gridPos": {"h": 4, "w": 9, "x": 15, "y": 13},
       "id": 10,
       "options": {
         "colorMode": "background",
@@ -181,7 +337,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 17},
       "id": 11,
       "title": "Information",
       "type": "row"
@@ -190,21 +346,16 @@
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "align": "left",
-            "displayMode": "auto"
-          }
+          "custom": {"align": "left", "displayMode": "auto"}
         },
         "overrides": [
           {
             "matcher": {"id": "byName", "options": "Rated Amps"},
-            "properties": [
-              {"id": "custom.width", "value": 100}
-            ]
+            "properties": [{"id": "custom.width", "value": 100}]
           }
         ]
       },
-      "gridPos": {"h": 5, "w": 24, "x": 0, "y": 6},
+      "gridPos": {"h": 5, "w": 24, "x": 0, "y": 18},
       "id": 12,
       "options": {
         "cellHeight": "sm",
@@ -223,10 +374,7 @@
       "transformations": [
         {
           "id": "labelsToFields",
-          "options": {
-            "mode": "columns",
-            "valueLabel": "job"
-          }
+          "options": {"mode": "columns", "valueLabel": "job"}
         },
         {
           "id": "organize",
@@ -263,7 +411,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 11},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 23},
       "id": 4,
       "title": "Trends",
       "type": "row"
@@ -279,6 +427,15 @@
         },
         "overrides": [
           {
+            "matcher": {"id": "byFrameRefID", "options": "warning"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "yellow", "mode": "fixed"}},
+              {"id": "custom.lineStyle", "value": {"dash": [8, 4], "fill": "dash"}},
+              {"id": "custom.lineWidth", "value": 1},
+              {"id": "custom.fillOpacity", "value": 0}
+            ]
+          },
+          {
             "matcher": {"id": "byFrameRefID", "options": "threshold"},
             "properties": [
               {"id": "color", "value": {"fixedColor": "orange", "mode": "fixed"}},
@@ -289,7 +446,7 @@
           }
         ]
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
       "id": 5,
       "options": {
         "tooltip": {"mode": "multi", "sort": "none"},
@@ -301,6 +458,12 @@
           "expr": "apc_rpdu_bank_load_deciamps{cluster=\"$cluster\", job=~\"$job\"} / 10",
           "legendFormat": "{{job}}",
           "refId": "load"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "apc_rpdu_bank_near_overload_threshold_amps{cluster=\"$cluster\", job=~\"$job\"} * 0.7",
+          "legendFormat": "{{job}} warning threshold (70%)",
+          "refId": "warning"
         },
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
@@ -317,13 +480,29 @@
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
-          "custom": {"lineWidth": 2, "fillOpacity": 10, "spanNulls": false},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": false,
+            "thresholdsStyle": {"mode": "line"}
+          },
           "unit": "volt",
-          "decimals": 0
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "transparent", "value": null},
+              {"color": "red",         "value": 190},
+              {"color": "yellow",      "value": 198},
+              {"color": "transparent", "value": 218},
+              {"color": "yellow",      "value": 218},
+              {"color": "red",         "value": 225}
+            ]
+          }
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
       "id": 6,
       "options": {
         "tooltip": {"mode": "multi", "sort": "none"},
@@ -341,7 +520,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 20},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 32},
       "id": 7,
       "title": "Outlets",
       "type": "row"
@@ -354,7 +533,7 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "red", "value": null},
+              {"color": "red",   "value": null},
               {"color": "green", "value": 2}
             ]
           },
@@ -363,14 +542,14 @@
               "type": "value",
               "options": {
                 "1": {"text": "Off", "index": 0},
-                "2": {"text": "On", "index": 1}
+                "2": {"text": "On",  "index": 1}
               }
             }
           ]
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 21},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 33},
       "id": 8,
       "options": {
         "colorMode": "background",
@@ -440,5 +619,5 @@
   "timezone": "browser",
   "title": "PDU Health",
   "uid": "pdu-health",
-  "version": 2
+  "version": 3
 }
