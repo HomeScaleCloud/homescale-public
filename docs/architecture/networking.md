@@ -28,7 +28,7 @@ argocd-server.argocd.<cluster>REDACTED
 
 No Ingress or LoadBalancer service is needed — the NetBird operator handles DNS registration automatically when a `NetworkResource` CR exists.
 
-## 🌐 External service exposure
+## External service exposure
 
 Public internet exposure goes through Cloudflare Zero Trust Tunnels. Add an `exposePublic:` block to the app's `app.yaml`:
 
@@ -50,7 +50,7 @@ The `cloudflared` app (deployed on the target cluster) maintains the outbound tu
 Internet → Cloudflare (proxied CNAME) → Cloudflare Tunnel → cloudflared pod → k8s Service
 ```
 
-See the [App reference](../operations/apps.md#public-exposure-exposepublic) for the full `exposePublic:` field reference.
+See the [App reference](apps.md#public-exposure-exposepublic) for the full `exposePublic:` field reference.
 
 ## NetBird access policies
 

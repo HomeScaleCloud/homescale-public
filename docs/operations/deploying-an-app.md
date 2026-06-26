@@ -1,6 +1,6 @@
 # Deploying an App
 
-This page walks through the full process of adding a new application to the HomeScale app catalog.
+This page walks through adding a new application to the HomeScale app catalog.
 
 ## How apps work
 
@@ -51,7 +51,7 @@ netbird:
         ports: ["443"]
 ```
 
-See the [App reference](apps.md) for the full field list.
+See the [App reference](../architecture/apps.md) for the full field list.
 
 ### 3. Write `Chart.yaml`
 
@@ -197,10 +197,11 @@ If the app has a PVC that needs backup, add a `volsync.yaml` template to the cha
 ```yaml
 values:
   volsync:
+    enabled: true
     backupSchedule: "0 2 * * *"   # daily at 02:00
 ```
 
-See [Backups](backups.md) for the full procedure.
+See [Backups](../architecture/backups.md) for the full procedure.
 
 ## Common patterns
 

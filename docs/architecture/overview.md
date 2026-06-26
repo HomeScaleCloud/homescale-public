@@ -74,7 +74,7 @@ Prometheus Aggregator  ──  boa1-prod (metrics namespace)
     └──► Loki           log aggregation from all clusters via Grafana Alloy
 ```
 
-Prometheus on each cluster retains 2 hours of data and remote-writes everything to the central instance, which carries the `cluster` external label. Grafana, Alertmanager, and the aggregated Prometheus/Loki instances each run as a single instance on a designated prod cluster. See [alert runbooks](../runbooks/omni-down.md) for configured alerts.
+Prometheus on each cluster retains 2 hours of data and remote-writes everything to the central instance, which carries the `cluster` external label. Grafana, Alertmanager, and the aggregated Prometheus/Loki instances each run as a single instance on a designated prod cluster. See [alert runbooks](../runbooks/index.md) for configured alerts.
 
 ## App catalog (`apps/`)
 
@@ -93,7 +93,7 @@ clusters:
       replicaCount: 3       # cluster-specific value override (deep-merged)
 ```
 
-See the [App reference](../operations/apps.md) for the full field list.
+See the [App reference](apps.md) for the full field list.
 
 ### Apps built in CI
 
