@@ -26,6 +26,7 @@ nav:
   - Home: index.md
   - Architecture:
       - Overview: architecture/overview.md
+      - Teams: architecture/teams.md
       - Networking: architecture/networking.md
       - Secrets: architecture/secrets.md  # pragma: allowlist secret
       - Clusters: architecture/clusters.md

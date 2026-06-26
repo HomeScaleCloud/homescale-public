@@ -1,1 +1,75 @@
-*       @HomeScaleCloud/team-infra-plat
+# Catch-all: anything not explicitly listed below
+*                                               @HomeScaleCloud/team-infra-plat
+
+# ── Infrastructure Platforms ─────────────────────────────────────────────────
+
+# CI/CD pipelines
+.github/                                        @HomeScaleCloud/team-infra-plat
+
+# App catalog machinery
+apps/Chart.yaml                                 @HomeScaleCloud/team-infra-plat
+apps/values.yaml                                @HomeScaleCloud/team-infra-plat
+apps/templates/                                 @HomeScaleCloud/team-infra-plat
+
+# Cluster definitions and lifecycle
+clusters/                                       @HomeScaleCloud/team-infra-plat
+apps/omni/                                      @HomeScaleCloud/team-infra-plat
+apps/omni-infra-provider/                       @HomeScaleCloud/team-infra-plat
+infra/omni/                                     @HomeScaleCloud/team-infra-plat
+infra/ansible/                                  @HomeScaleCloud/team-infra-plat
+
+# Kubernetes platform
+apps/cilium/                                    @HomeScaleCloud/team-infra-plat
+apps/multus/                                    @HomeScaleCloud/team-infra-plat
+apps/descheduler/                               @HomeScaleCloud/team-infra-plat
+apps/node-feature-discovery/                    @HomeScaleCloud/team-infra-plat
+apps/generic-device-plugin-tun/                 @HomeScaleCloud/team-infra-plat
+apps/kubelet-serving-cert-approver/             @HomeScaleCloud/team-infra-plat
+apps/spegel/                                    @HomeScaleCloud/team-infra-plat
+
+# GitOps & delivery
+apps/argocd/                                    @HomeScaleCloud/team-infra-plat
+
+# Networking & ingress
+apps/netbird/                                   @HomeScaleCloud/team-infra-plat
+apps/netbird-crs/                               @HomeScaleCloud/team-infra-plat
+apps/cloudflared/                               @HomeScaleCloud/team-infra-plat
+apps/traefik-private/                           @HomeScaleCloud/team-infra-plat
+apps/traefik-public/                            @HomeScaleCloud/team-infra-plat
+apps/external-dns/                              @HomeScaleCloud/team-infra-plat
+apps/external-dns-crs/                          @HomeScaleCloud/team-infra-plat
+
+# TLS
+apps/cert-manager/                              @HomeScaleCloud/team-infra-plat
+apps/cert-manager-crs/                          @HomeScaleCloud/team-infra-plat
+
+# Storage & backup
+apps/longhorn/                                  @HomeScaleCloud/team-infra-plat
+apps/volsync/                                   @HomeScaleCloud/team-infra-plat
+
+# Observability
+apps/metrics/                                   @HomeScaleCloud/team-infra-plat
+apps/metrics-aggr/                              @HomeScaleCloud/team-infra-plat
+
+# Terraform – infra-plat modules
+infra/terraform/modules/cloudflare/             @HomeScaleCloud/team-infra-plat
+infra/terraform/modules/netbird/                @HomeScaleCloud/team-infra-plat
+
+# Terraform – public cloud modules (both teams: infra-plat operates, sec-plat reviews for security posture)
+infra/terraform/modules/mgmt_cluster/           @HomeScaleCloud/team-infra-plat @HomeScaleCloud/team-sec-plat
+infra/terraform/modules/region/                 @HomeScaleCloud/team-infra-plat @HomeScaleCloud/team-sec-plat
+
+# ── Security Platforms ────────────────────────────────────────────────────────
+
+# Identity and SSO
+# Note: Entra SAML config lives in apps/argocd/ and apps/metrics/ (infra-plat files) —
+# changes to SSO settings in those app.yaml files require sec-plat review by convention.
+
+# Secrets management
+apps/infisical/                                 @HomeScaleCloud/team-sec-plat
+
+# Access control
+apps/rbac/                                      @HomeScaleCloud/team-sec-plat
+
+# Terraform – Infisical project structure and machine identities
+infra/terraform/modules/infisical/              @HomeScaleCloud/team-sec-plat
