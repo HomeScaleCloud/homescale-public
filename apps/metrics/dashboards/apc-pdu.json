@@ -383,7 +383,6 @@
               "Time": true,
               "__name__": true,
               "cluster": true,
-              "instance": true,
               "prometheus": true,
               "prometheus_replica": true
             },
@@ -393,15 +392,17 @@
               "hardware_rev": "Hardware Rev",
               "model": "Model",
               "serial": "Serial",
+              "instance": "IP",
               "job": "PDU"
             },
             "indexByName": {
               "job": 0,
-              "model": 1,
-              "firmware_version": 2,
-              "hardware_rev": 3,
-              "serial": 4,
-              "Value": 5
+              "instance": 1,
+              "model": 2,
+              "firmware_version": 3,
+              "hardware_rev": 4,
+              "serial": 5,
+              "Value": 6
             }
           }
         }
