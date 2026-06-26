@@ -50,7 +50,7 @@ spec:
           expr: apc_rpdu_bank_load_deciamps{job=~"pdu_.*"} / 10 / apc_rpdu_bank_near_overload_threshold_amps{job=~"pdu_.*"} * 100 > 70
           for: 5m
           labels:
-            severity: warning
+            severity: critical
 
         - alert: ApcPduBankNearOverload
           annotations:

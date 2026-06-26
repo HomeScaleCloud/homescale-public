@@ -16,21 +16,6 @@ This is a warning — equipment continues to operate, but sustained voltage devi
 |---|---|---|---|
 | 208V (single-phase) | 198–218V | < 198V or > 218V | < 190V or > 225V |
 
-## Diagnosis
-
-```bash
-# Check current voltage reading via SNMP
-kubectl -n metrics exec -it deploy/snmp-exporter -- \
-  snmpget -v1 -c public 10.1.246.5 1.3.6.1.4.1.318.1.1.12.2.3.1.1.2.1
-
-# Or query Prometheus directly
-curl -sG 'http://prometheus.metrics.svc.cluster.local:9090/api/v1/query' \
-  --data-urlencode 'query=apc_rpdu_input_voltage_volts{job="pdu_01_boa1"}' \
-  | jq '.data.result[].value[1]'
-```
-
-Check the PDU Health dashboard for the voltage trend — a gradual drift vs. a sudden spike indicates different underlying causes.
-
 ## Common causes
 
 | Symptom | Likely cause | Action |

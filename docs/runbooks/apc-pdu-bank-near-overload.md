@@ -27,24 +27,6 @@ This is a critical alert because:
 2. Redistribute load — move a device to another bank or PDU before load increases further.
 3. Check whether `ApcPduBankLoadHigh` fired earlier and was not acted on.
 
-## Diagnosis
-
-```bash
-# Check bank load states across both PDUs
-kubectl -n metrics exec -it deploy/snmp-exporter -- \
-  snmpwalk -v1 -c public 10.1.246.5 1.3.6.1.4.1.318.1.1.12.3.5.1.1.3
-
-# Query bank states in Prometheus
-curl -sG 'http://prometheus.metrics.svc.cluster.local:9090/api/v1/query' \
-  --data-urlencode 'query=apc_rpdu_bank_load_state{job=~"pdu_.*"}' \
-  | jq '.data.result[] | {job: .metric.job, bank: .metric.bank_index, state: .value[1]}'
-
-# Current load per bank in amps
-curl -sG 'http://prometheus.metrics.svc.cluster.local:9090/api/v1/query' \
-  --data-urlencode 'query=apc_rpdu_bank_load_deciamps / 10' \
-  | jq '.data.result[] | {job: .metric.job, bank: .metric.bank_index, amps: .value[1]}'
-```
-
 ## If the circuit breaker has already tripped
 
 1. Identify which bank tripped — affected outlets will have no power; the PDU front panel will show the bank in fault state.
@@ -54,4 +36,4 @@ curl -sG 'http://prometheus.metrics.svc.cluster.local:9090/api/v1/query' \
 
 ## PDU web UI access
 
-The PDU management interface is at `http://10.1.246.5` and `http://10.1.246.6`, reachable via the `boa1-gw` NetBird subnet router on the BOA1 MGMT subnet (`10.1.246.0/24`).
+The PDU management interface is at `http://10.1.246.5` and `http://10.1.246.6`, reachable via the `boa1-gw` cluster's NetBird subnet router on the BOA1 BMC subnet (`10.1.246.0/24`).

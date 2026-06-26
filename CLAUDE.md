@@ -15,6 +15,16 @@ The `docs/` directory is published to GitHub Pages via MkDocs Material to https:
 - Changing networking, secrets, or backup behavior
 - Adding new `hsctl` commands or subcommands
 
+### Alert runbooks
+
+Every `PrometheusRule` alert must have a corresponding runbook in `docs/runbooks/<alert-name-kebab-case>.md` and an entry in the `mkdocs.yml` nav under the appropriate group. The alert must include a `runbook_url` annotation pointing to `https://REDACTED/runbooks/<alert-name-kebab-case>/`.
+
+- **New alert** → create the runbook page, add it to `mkdocs.yml`, add `runbook_url` to the alert annotation.
+- **Changed alert** (severity, thresholds, description, rename) → update the runbook to match.
+- **Deleted alert** → remove the runbook page and `mkdocs.yml` entry.
+
+Runbooks live under `docs/runbooks/` grouped by system (e.g. Omni alerts → `omni-*.md`, PDU alerts → `apc-pdu-*.md`). See existing runbooks for the expected format: header with severity/alert/dashboard, "What this means" section, "Common causes" table, remediation steps. No "Diagnosis" section — the alert firing is the diagnosis.
+
 ## Key Commands
 
 ```bash
