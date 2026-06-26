@@ -15,3 +15,7 @@ misconfigurations:
     paths:
       - "apps/rbac/templates/roles/networking-admin.yaml"
     statement: "Intentional: networking-admin is the designated role for managing network resources"
+  - id: KSV-0050
+    paths:
+      - "apps/rbac/templates/roles/rbac-admin.yaml"
+    statement: "Intentional: rbac-admin is the designated role for RBAC management; bind/escalate are inherent to that purpose"
