@@ -4,7 +4,6 @@ permissions:
   packages: read
   contents: read
   id-token: write
-  security-events: write
 
 on:
   workflow_call:
@@ -51,27 +50,16 @@ jobs:
       - uses: pre-commit-ci/lite-action@5d6cc0eb514c891a40562a58a8e71576c5c7fb43  # v1.1.0
         if: always()
 
-  codeql:
-    name: CodeQL
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - language: actions
-            build-mode: none
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+  zizmor:
+    name: zizmor
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e  # v4.36.2
+      - name: Run zizmor
+        uses: zizmor-project/zizmor-action@v1
         with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-      - name: Run CodeQL Scan
-        uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e  # v4.36.2
-        with:
-          category: "/language:${{matrix.language}}"
+          args: --no-progress
 
   trivy:
     name: Trivy
@@ -83,11 +71,6 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
           scan-type: 'config'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          exit-code: '0'
+          format: 'table'
+          exit-code: '1'
           severity: 'CRITICAL,HIGH'
-      - name: Upload Trivy scan results to GitHub Security
-        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e  # v4.36.2
-        with:
-          sarif_file: 'trivy-results.sarif'
