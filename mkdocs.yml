@@ -26,11 +26,11 @@ nav:
       - Overview: architecture/overview.md
       - Networking: architecture/networking.md
       - Secrets: architecture/secrets.md  # pragma: allowlist secret
+      - App Reference: architecture/apps.md
+      - Clusters: architecture/clusters.md
+      - Backups: architecture/backups.md
   - Operations:
       - Deploying an App: operations/deploying-an-app.md
-      - App Reference: operations/apps.md
-      - Clusters: operations/clusters.md
-      - Backups: operations/backups.md
   - Runbooks:
       - Overview: runbooks/index.md
       - Omni:
