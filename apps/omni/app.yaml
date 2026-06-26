@@ -11,12 +11,7 @@ netbird:
 clusters:
   mgmt:
     deploy: true
-    values:
-      omni:
-        replicaCount: 0
-      volsync:
-        restore:
-          enabled: true
+
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
