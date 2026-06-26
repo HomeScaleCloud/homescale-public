@@ -122,15 +122,3 @@ Security Platforms is responsible for the security posture of all public cloud a
 | Module | What it manages |
 |--------|----------------|
 | `infra/terraform/modules/infisical/` | Infisical project structure, machine identities, and secret path layout |
-
----
-
-## Cross-cutting concerns
-
-These areas span both teams. CODEOWNERS cannot enforce sub-file ownership, so they are conventions rather than gates.
-
-**NetBird access policies** — The `netbird: policy:` block inside each `apps/<name>/app.yaml` is read by Terraform (`modules/netbird/policies.tf`) to create `netbird_policy` resources. Infrastructure Platforms owns the operator and mesh; Security Platforms should be consulted on any policy change (sources, ports, new app groups).
-
-**Entra ID SSO configuration** — SSO config is embedded in each app's `app.yaml` (under `values:`). Those files are Infrastructure Platforms's to operate, but any change to SSO URLs, certificate data, or auth provider settings requires Security Platforms review.
-
-**VolSync secret paths** — VolSync repo credentials live at `/k8s/volsync/<cluster>/<app>` in Infisical. The Infisical project structure is Security Platforms's; the path convention and `InfisicalSecret` CRs in each app chart are Infrastructure Platforms's.
