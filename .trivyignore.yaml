@@ -1,0 +1,17 @@
+misconfigurations:
+  - id: KSV-0045
+    paths:
+      - "apps/rbac/templates/roles/workloads-admin.yaml"
+      - "apps/rbac/templates/roles/node-admin.yaml"
+      - "apps/rbac/templates/roles/storage-admin.yaml"
+      - "apps/rbac/templates/roles/rbac-admin.yaml"
+      - "apps/rbac/templates/roles/networking-admin.yaml"
+    statement: "Intentional: admin roles are purpose-built and explicitly bound to named subjects"
+  - id: KSV-0053
+    paths:
+      - "apps/rbac/templates/roles/workloads-admin.yaml"
+    statement: "Intentional: operators need exec access for debugging"
+  - id: KSV-0056
+    paths:
+      - "apps/rbac/templates/roles/networking-admin.yaml"
+    statement: "Intentional: networking-admin is the designated role for managing network resources"
