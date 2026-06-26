@@ -1,4 +1,4 @@
-# Cluster Operations
+# Clusters
 
 ## Overview
 
