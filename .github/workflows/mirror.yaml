@@ -1,0 +1,53 @@
+name: Public Mirror
+
+on:
+  workflow_call:
+    secrets:
+      PUBLIC_DEPLOY_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+
+      - name: Scrub and push to public mirror
+        env:
+          GIT_SSH_KEY: ${{ secrets.PUBLIC_DEPLOY_KEY }}
+        run: |
+          # Dynamically find app dirs with exposePublic: true — leave those untouched
+          PUBLIC_PATTERN=$(grep -rl "^exposePublic:" apps/*/app.yaml \
+            | sed 's|/app.yaml||' \
+            | paste -sd'|')
+
+          # Scrub any FQDN ending in xxx from all tracked text files,
+          # except public app directories detected above.
+          find . -type f \
+            \( -name "*.yaml" -o -name "*.yml" -o -name "*.tf" -o -name "*.md" \
+               -o -name "*.json" -o -name "*.sh" -o -name "*.txt" \
+               -o -name "Dockerfile" \) \
+            ! -path './.git/*' \
+            | { [ -n "$PUBLIC_PATTERN" ] && grep -Ev "^\./($PUBLIC_PATTERN)/" || cat; } \
+            | xargs -r sed -i -E \
+                's/([a-zA-Z0-9*._-]+\.)?homescale\.cloud/xxx/g'
+
+          # Set up SSH for push
+          mkdir -p ~/.ssh
+          printf '%s\n' "$GIT_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git remote add public git@github.com:HomeScaleCloud/homescale-public.git
+
+          # Orphan commit so the public repo never accumulates history with sensitive data
+          git checkout --orphan public-mirror
+          git add -A
+          git commit -m "mirror: ${GITHUB_SHA:0:7}"
+          git push public public-mirror:main --force
