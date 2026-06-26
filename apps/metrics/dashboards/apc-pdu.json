@@ -137,7 +137,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "apc_rpdu_bank_load_deciamps{cluster=\"$cluster\", job=~\"$job\"} / 10 / apc_rpdu_device_rated_amps{cluster=\"$cluster\", job=~\"$job\"} * 100",
+          "expr": "apc_rpdu_bank_load_deciamps{cluster=\"$cluster\", job=~\"$job\"} / 10 / on(cluster, job) group_left() apc_rpdu_device_rated_amps{cluster=\"$cluster\", job=~\"$job\"} * 100",
           "legendFormat": "{{job}}"
         }
       ],
@@ -183,7 +183,7 @@
       "collapsed": false,
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
       "id": 11,
-      "title": "Device Info",
+      "title": "Information",
       "type": "row"
     },
     {
@@ -235,7 +235,9 @@
               "Time": true,
               "__name__": true,
               "cluster": true,
-              "instance": true
+              "instance": true,
+              "prometheus": true,
+              "prometheus_replica": true
             },
             "renameByName": {
               "Value": "Rated Amps",
@@ -256,7 +258,7 @@
           }
         }
       ],
-      "title": "Device Identity",
+      "title": "Info",
       "type": "table"
     },
     {
