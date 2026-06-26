@@ -294,8 +294,19 @@ jobs:
           netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
           sleep 10
 
-      - name: Install omnictl
+      - name: Check Omni reachability
+        id: omni_check
         if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
+        run: |
+          if curl -sf --max-time 10 https://REDACTED/healthz > /dev/null 2>&1; then
+            echo "reachable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Omni unreachable — skipping sync"
+            echo "reachable=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install omnictl
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
         run: |
           curl -fsSL -o /usr/local/bin/omnictl \
             https://REDACTED/omnictl/omnictl-linux-amd64
@@ -303,7 +314,7 @@ jobs:
           sudo apt-get install -y yq
 
       - name: Plan
-        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && github.event_name == 'pull_request'
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.event_name == 'pull_request'
         id: plan
         continue-on-error: true
         env:
@@ -347,7 +358,7 @@ jobs:
           [ "$failed" = "false" ]
 
       - name: Sync
-        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && github.ref == 'refs/heads/main'
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
         env:
           OMNI_ENDPOINT: https://REDACTED
           OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
@@ -372,7 +383,7 @@ jobs:
           done
 
       - name: Post plan results as PR comments
-        if: always() && github.event_name == 'pull_request' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]')
+        if: always() && github.event_name == 'pull_request' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
           CLUSTERS: ${{ steps.detect.outputs.clusters }}
