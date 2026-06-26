@@ -6,6 +6,8 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
+  logo: assets/homescale-icon.png
+  favicon: assets/homescale-icon.png
   palette:
     - scheme: slate
       primary: indigo
