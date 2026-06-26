@@ -3,7 +3,7 @@ name: boa1-gw
 kubernetes:
   version: v1.36.2
 talos:
-  version: v1.13.4
+  version: v1.13.5
 features:
   useEmbeddedDiscoveryService: true
   backupConfiguration:
