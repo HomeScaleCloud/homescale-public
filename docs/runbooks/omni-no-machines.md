@@ -16,27 +16,9 @@ Possible causes:
 !!! danger
     If this alert fires alongside `OmniDown`, investigate storage first — a corrupted database may cause Omni to start in a degraded state with no records visible.
 
-## Diagnosis
-
-```bash
-# Confirm current machine count via Omni API (requires omnictl configured)
-omnictl get machine
-
-# Check the PVC
-kubectl -n omni get pvc
-
-# Check Omni's data directory size (via the toolbox sidecar)
-kubectl -n omni exec -it deploy/omni -c toolbox -- du -sh /data/
-
-# Check SQLite DB size
-kubectl -n omni exec -it deploy/omni -c toolbox -- ls -lh /data/omni.db
-```
-
-If the database is empty (a few KB instead of hundreds of MB or more), data was lost.
-
 ## Recovery
 
-If data was lost, restore from the most recent VolSync backup. Follow the [VolSync restore procedure](../operations/backups.md) for the `omni` app.
+Restore from the most recent VolSync backup. Follow the [VolSync restore procedure](../operations/backups.md) for the `omni` app.
 
 After restore:
 1. Confirm `omni_machines` recovers to the expected count

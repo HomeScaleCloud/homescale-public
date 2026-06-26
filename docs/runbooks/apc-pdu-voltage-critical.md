@@ -19,29 +19,13 @@ The alert value (`$value`) is the current measured voltage.
 
 ## Immediate actions
 
-1. **Check whether equipment is already shutting down** — log into each node and check power state via IPMI/BMC. Check `kubectl get nodes` for any nodes going `NotReady`.
+1. **Check whether equipment is already shutting down** — check `kubectl get nodes` for any nodes going `NotReady` and check power state via IPMI/BMC.
 
-2. **Check UPS status** — if the facility is on UPS, a critically low voltage may indicate the UPS is on battery and nearing exhaustion. Check the UPS management interface.
+2. **Check UPS status** — critically low voltage may indicate the UPS is on battery and nearing exhaustion. Check the UPS management interface.
 
 3. **Do not restart equipment** while voltage is unstable — a PSU restart into low voltage can cause further damage.
 
 4. **Notify facilities immediately** — voltage this far out of range is a facility infrastructure issue.
-
-## Diagnosis
-
-```bash
-# Current voltage reading
-kubectl -n metrics exec -it deploy/snmp-exporter -- \
-  snmpget -v1 -c public 10.1.246.5 1.3.6.1.4.1.318.1.1.12.2.3.1.1.2.1
-
-# Check Prometheus for recent voltage history (last 30 minutes)
-curl -sG 'http://prometheus.metrics.svc.cluster.local:9090/api/v1/query_range' \
-  --data-urlencode 'query=apc_rpdu_input_voltage_volts' \
-  --data-urlencode 'start=now-30m' \
-  --data-urlencode 'end=now' \
-  --data-urlencode 'step=30s' \
-  | jq '.data.result[].values'
-```
 
 ## Common causes
 
