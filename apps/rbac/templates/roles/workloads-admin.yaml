@@ -40,9 +40,12 @@ rules:
     verbs: ["*"]
   - apiGroups: ["cert-manager.io"]
     resources:
-      - "*"
+      - certificates
+      - certificaterequests
+      - issuers
+      - clusterissuers
     verbs: ["*"]
   - apiGroups: ["secrets.infisical.com"]
     resources:
-      - "*"
+      - infisicalsecrets
     verbs: ["*"]
