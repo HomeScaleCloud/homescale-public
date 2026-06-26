@@ -105,15 +105,14 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 |------|------|------|
 | `mgmt` | DigitalOcean Kubernetes (DOKS) | Single management cluster. Hosts Omni, ArgoCD, Infisical operator, and shared infrastructure. Provisioned by DigitalOcean via Terraform. |
 | `<region>-gw` | Talos (Omni-managed) | One per region. Gateway cluster for bare-metal provisioning and subnet routing. |
-| `<region>-prod` | Talos (Omni-managed) | One per region. General compute cluster for production workloads. |
+| `<region>-*` | Talos (Omni-managed) | General compute clusters for production workloads. |
 
-Talos clusters have their node config, k8s version, and machine assignments managed entirely by Omni, which runs on the management cluster. The CI deploy workflow syncs `clusters/<name>/cluster.yaml` to Omni on every merge to `main`.
+Talos clusters have their node config, k8s version, and machine assignments managed entirely by Omni, which runs on the `mgmt` cluster. The CI deploy workflow syncs `clusters/<name>/cluster.yaml` to Omni on every merge to `main`.
 
-**Gateway clusters** (`<region>-gw`) — one per region — have three distinct roles:
+**Gateway clusters** (`<region>-gw`) — one per region — have two distinct roles:
 
+- **Subnet routing** — a NetBird subnet router exposes the region's BMC and MGMT subnets across the WireGuard mesh so they're reachable from the `mgmt` cluster and CI
 - **Bare-metal provisioning** — the `omni-infra-provider` app runs the Omni infrastructure provider to PXE-boot Talos nodes in the region
-- **Subnet routing** — a NetBird subnet router exposes the region's BMC and MGMT subnets across the WireGuard mesh so they're reachable from the management cluster and CI
-- **Region ↔ management connectivity** — bridges region-local services to the central management cluster
 
 ## Sync wave order
 
@@ -123,7 +122,7 @@ Talos clusters have their node config, k8s version, and machine assignments mana
 |------|------|-----------|
 | -40 | `cilium` | CNI must be ready before any other pod can schedule |
 | -35 | `infisical`, `multus` | Secrets operator must be ready so other apps can pull secrets; Multus for multi-homed pods |
-| -30 | `cert-manager`, `argocd`, `rbac` | TLS infrastructure and access control before workloads |
+| -30 | `cert-manager`, `argocd`, `rbac` | TLS, GitOps and access control |
 | -25 | `generic-device-plugin-tun` | Node resource registration before consumers |
 | -20 | `netbird`, `cert-manager-crs`, `spegel` | Mesh access and certificate issuers before services need them |
 | -10 | `external-dns`, `netbird-crs`, `kubelet-serving-cert-approver` | DNS registration and network routing before apps |
@@ -152,14 +151,14 @@ Runs on every PR and push:
 - Lints all Helm charts under `apps/`
 - **Deploys this documentation site** to GitHub Pages (`mkdocs gh-deploy`) on every push to `main`
 
-### `deploy` — infrastructure and cluster sync
+### `deploy` — infrastructure and cluster sync/bootstrap
 
 Runs on every PR and push to `main` (after `scan` and `build` pass). CI connects to internal infrastructure by joining the NetBird mesh with an ephemeral setup key that is revoked at the end of the run. It has three sequential jobs:
 
 #### 1. `terraform`
 
 - **On PR**: runs `terraform plan` and posts the plan diff as a PR comment
-- **On merge to `main`**: runs `terraform apply` — manages Cloudflare DNS, DigitalOcean, Infisical project structure, NetBird policies and groups, VolSync secret paths
+- **On merge to `main`**: runs `terraform apply` — manages Cloudflare DNS, DigitalOcean, Infisical project structure, NetBird policies and groups, VolSync secret paths, etc
 
 #### 2. `omni` (after terraform)
 
