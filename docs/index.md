@@ -1,5 +1,8 @@
 # HomeScale
 
+!!! warning "Work in progress"
+    This documentation was recently bootstrapped and is largely AI-generated from the repository. As a result, some pages may be incomplete, imprecise, or lag behind recent changes. Over time, the docs will be reviewed, corrected, and expanded until they become a reliable reference. For now, treat the repository itself as the source of truth.
+
 [HomeScaleCloud/homescale](https://github.com/HomeScaleCloud/homescale) is a GitOps monorepo for Kubernetes clusters and supporting infrastructure.
 
 ## Technology stack
