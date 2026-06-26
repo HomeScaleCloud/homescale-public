@@ -94,3 +94,8 @@ values:
       enabled: true
       size: 16Gi
       existingClaim: omni
+
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
