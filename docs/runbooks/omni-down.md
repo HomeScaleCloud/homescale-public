@@ -6,7 +6,7 @@
 
 ## What this means
 
-The Prometheus scrape target for the Omni pod in the `omni` namespace on the `mgmt` cluster has been returning failures for 5 minutes. While the pod may still be running, its metrics endpoint (`/metrics` on port 2122) is not responding.
+The Prometheus scrape target for the Omni pod in the `omni` namespace on the management cluster has been returning failures for 5 minutes. While the pod may still be running, its metrics endpoint (`/metrics` on port 2122) is not responding.
 
 Cluster provisioning, machine management, kubeconfig access, and `omnictl` operations are unavailable until Omni is restored.
 

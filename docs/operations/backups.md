@@ -66,7 +66,7 @@ Edit `apps/<app>/app.yaml` to scale the app to zero and enable restore mode. For
 
 ```yaml
 clusters:
-  boa1-prod:
+  <cluster-name>:
     values:
       myApp:
         replicaCount: 0
@@ -106,10 +106,19 @@ Remove both the `replicaCount: 0` override and the `volsync.restore` block from 
 
 ## Restic repository storage
 
-Restic repositories can target any S3-compatible object store. HomeScale uses DigitalOcean Spaces. Each app gets its own prefix in the bucket:
+HomeScale uses Backblaze B2 via its S3-compatible API. Each app gets its own prefix appended to a shared base URL:
 
 ```
-s3:https://<region>.digitaloceanspaces.com/<bucket>/<cluster>/<app>
+<RESTIC_REPOSITORY>/<cluster>/<app>
 ```
 
-Credentials are stored in Infisical and synced to each cluster at `/k8s/volsync/<cluster>/<app>`.
+where `RESTIC_REPOSITORY` is the shared base URL stored in Infisical at `/k8s/volsync/RESTIC_REPOSITORY`. Terraform derives per-app repository paths automatically — no manual path configuration is needed when adding a new app.
+
+Credentials are stored in Infisical at `/k8s/volsync/` and synced per-app to `/k8s/volsync/<cluster>/<app>/`:
+
+| Secret | Description |
+|---|---|
+| `RESTIC_REPOSITORY` | Full B2 S3-compatible URL + `/<cluster>/<app>` suffix |
+| `RESTIC_PASSWORD` | Shared restic encryption passphrase |
+| `AWS_ACCESS_KEY_ID` | Backblaze B2 application key ID |
+| `AWS_SECRET_ACCESS_KEY` | Backblaze B2 application key |
