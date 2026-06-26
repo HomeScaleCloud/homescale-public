@@ -14,41 +14,30 @@ jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout full history
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          fetch-depth: 0
 
-      - name: Scrub and push to public mirror
+      - name: Install git-filter-repo
+        run: pip install git-filter-repo
+
+      - name: Rewrite history — scrub internal FQDNs
+        run: |
+          # Any FQDN ending in REDACTED → xxx, across every blob in every commit
+          printf 'regex:([a-zA-Z0-9*._-]+\\.)?homescale\\.cloud==>xxx\n' > /tmp/replacements.txt
+          # --force: needed because we didn't clone from an empty repo
+          git filter-repo --replace-text /tmp/replacements.txt --force
+
+      - name: Push to public mirror
         env:
           GIT_SSH_KEY: ${{ secrets.PUBLIC_DEPLOY_KEY }}
         run: |
-          # Dynamically find app dirs with exposePublic: true — leave those untouched
-          PUBLIC_PATTERN=$(grep -rl "^exposePublic:" apps/*/app.yaml \
-            | sed 's|/app.yaml||' \
-            | paste -sd'|')
-
-          # Scrub any FQDN ending in REDACTED from all tracked text files,
-          # except public app directories detected above.
-          find . -type f \
-            \( -name "*.yaml" -o -name "*.yml" -o -name "*.tf" -o -name "*.md" \
-               -o -name "*.json" -o -name "*.sh" -o -name "*.txt" \
-               -o -name "Dockerfile" \) \
-            ! -path './.git/*' \
-            | { [ -n "$PUBLIC_PATTERN" ] && grep -Ev "^\./($PUBLIC_PATTERN)/" || cat; } \
-            | xargs -r sed -i -E \
-                's/([a-zA-Z0-9*._-]+\.)?homescale\.cloud/xxx/g'
-
-          # Set up SSH for push
           mkdir -p ~/.ssh
           printf '%s\n' "$GIT_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
 
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
+          # filter-repo removes origin as a safety measure; add the public remote fresh
           git remote add public git@github.com:HomeScaleCloud/homescale-public.git
-
-          # Orphan commit so the public repo never accumulates history with sensitive data
-          git checkout --orphan public-mirror
-          git add -A
-          git commit -m "mirror: ${GITHUB_SHA:0:7}"
-          git push public public-mirror:main --force
+          git push public main --force
