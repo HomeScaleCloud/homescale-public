@@ -1,46 +1,80 @@
 # Architecture Overview
 
-HomeScale uses a full GitOps model: **this repository is the source of truth** for every cluster. Nothing is applied manually except the one-time bootstrap. All ongoing changes flow through a pull request.
+HomeScale uses a full GitOps model: **this repository is the source of truth** for every cluster. Nothing is applied manually except the one-time bootstrap. All ongoing changes flow through pushes to the `main` branch.
 
 ## GitOps loop
 
+There are two independent reconciliation paths from `main`:
+
+### Path 1 — CI (push-based, triggered on merge)
+
 ```
-┌─────────────┐    PR merged     ┌──────────────┐    Terraform apply   ┌───────────────────┐
-│  Git (main) │ ───────────────► │  CI: deploy  │ ───────────────────► │ Cloud resources   │
-└─────────────┘                  └──────────────┘                       │ (Cloudflare, NB…) │
-       │                                │                               └───────────────────┘
-       │                                │ Omni cluster template sync
-       │                                ▼
-       │                         ┌──────────────┐
-       │                         │ Omni / Talos │  (cluster config, node assignments)
-       │                         └──────────────┘
+PR merged to main
        │
-       │  ArgoCD polls every 30 s
-       ▼
-┌─────────────────────────────────────────────────────┐
-│  ArgoCD (on each cluster)                           │
-│  ┌──────────────────────────┐                       │
-│  │  app-of-apps (apps.yaml) │  two sources:         │
-│  │  • clusters/<cluster>/   │  raw manifests        │
-│  │  • apps/                 │  Helm → Applications  │
-│  └──────────────────────────┘                       │
-│              │ generates per-app ArgoCD Application  │
-│              ▼                                       │
-│  ┌──────────────────────────────────────────────┐   │
-│  │  ArgoCD Application (one per enabled app)    │   │
-│  │  → syncs apps/<name>/ Helm chart to cluster  │   │
-│  └──────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────┘
+       ├─► scan ──────────────────── YAML lint, secrets scan, CodeQL, Trivy
+       │
+       ├─► build ─────────────────── Docker images → ghcr.io/homescalecloud/<name>
+       │                             MkDocs → GitHub Pages (xxx)
+       │
+       └─► deploy
+              │
+              ├─► terraform apply ── Cloudflare DNS, NetBird policies/groups,
+              │                      Infisical project structure, VolSync secret paths,
+              │                      DigitalOcean (mgmt cluster)
+              │
+              └─► omni sync ──────── cluster.yaml → Omni (Talos node config,
+                                     k8s version, machine assignments)
 ```
 
-### App-of-apps pattern
+### Path 2 — ArgoCD (pull-based, continuous)
 
-Each cluster bootstraps with a single [ArgoCD app-of-apps](https://argo-cd.readthedocs.io/en/stable/operator-manual/cluster-bootstrapping/#app-of-apps-pattern) (`clusters/<cluster>/apps.yaml`) applied manually once. That app has **two sources**:
+```
+Git (main)
+    │  ▲ polls every 30s
+    │  │
+    ▼  │
+ArgoCD (on each cluster)
+    │
+    ├── Source 1: clusters/<cluster>/   raw Kubernetes manifests
+    │
+    └── Source 2: apps/                 Helm chart → one ArgoCD Application per enabled app
+                                                │
+                                                └─► syncs apps/<name>/ charts to cluster
+```
 
-1. **`clusters/<cluster>/`** — any raw Kubernetes manifests scoped to that cluster (e.g. cluster-scoped RBAC, namespace labels, custom CRs). `cluster.yaml` is excluded from this source.
-2. **`apps/`** — the Helm chart that reads every `apps/*/app.yaml` and renders one [ArgoCD `Application`](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#applications) per enabled app
+These two paths are independent. CI handles infrastructure and Talos cluster config; ArgoCD handles every Kubernetes workload. App-only changes (editing `app.yaml`, chart templates, values) are picked up by ArgoCD once merged into the `main` branch without any CI deploy step.
 
-From that point on ArgoCD self-manages: changes to this repo are picked up automatically within the configured reconciliation interval (`timeout.reconciliation: 30s`).
+## Secrets
+
+```
+Infisical (SaaS)
+    │
+    │  Infisical k8s operator (syncWave -35)
+    │  watches InfisicalSecret CRs in each namespace
+    ▼
+Kubernetes Secrets  ──►  consumed by app pods as env vars / mounted files
+```
+
+Each app that needs secrets defines an `InfisicalSecret` CR in its Helm chart pointing at a path in Infisical (e.g. `/k8s/<namespace>/<app>`). The operator syncs them into the cluster at runtime — no secrets are stored in this repo. See [Secrets](secrets.md) for details.
+
+## Observability
+
+```
+Every cluster
+    │  kube-prometheus-stack (per-cluster)
+    │  scrapes: node-exporter, kube-state-metrics, app ServiceMonitors
+    │
+    │  remote-write (via NetBird)
+    ▼
+Prometheus Aggregator  ──  boa1-prod (metrics namespace)
+    │
+    ├──► Grafana        dashboards at xxx
+    ├──► Alertmanager   fires to #alerts-infra-plat Slack channel
+    │                   alert title links to runbook
+    └──► Loki           log aggregation from all clusters via Grafana Alloy
+```
+
+Prometheus on each cluster retains 2 hours of data and remote-writes everything to the central instance, which carries the `cluster` external label. Grafana, Alertmanager, and the aggregated Prometheus/Loki instances each run as a single instance on a designated prod cluster. See [alert runbooks](../runbooks/omni-down.md) for configured alerts.
 
 ## App catalog (`apps/`)
 
@@ -67,17 +101,19 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 
 ## Cluster topology
 
-| Cluster | Role |
-|---------|------|
-| `mgmt` | DigitalOcean-managed cluster that hosts Omni, ArgoCD, Infisical operator, and shared infrastructure |
-| `boa1-prod` | Production workloads for region `boa1` |
-| `boa1-gw` | Gateway cluster for region `boa1`; bare-metal provisioning, subnet routing |
+| Type | Kind | Role |
+|------|------|------|
+| `mgmt` | DigitalOcean Kubernetes (DOKS) | Single management cluster. Hosts Omni, ArgoCD, Infisical operator, and shared infrastructure. Provisioned by DigitalOcean via Terraform. |
+| `<region>-gw` | Talos (Omni-managed) | One per region. Gateway cluster for bare-metal provisioning and subnet routing. |
+| `<region>-prod` | Talos (Omni-managed) | One per region. General compute cluster for production workloads. |
 
-**Gateway clusters** (`*-gw`) have three distinct roles:
+Talos clusters have their node config, k8s version, and machine assignments managed entirely by Omni, which runs on the management cluster. The CI deploy workflow syncs `clusters/<name>/cluster.yaml` to Omni on every merge to `main`.
 
-- **Bare-metal provisioning** — the `omni-infra-provider` app runs the [Omni infrastructure provider](https://omni.siderolabs.com/how-to-guides/install-and-configure-omni-integration-in-bare-metal-mode) to PXE-boot Talos nodes in the region
-- **Subnet routing** — a NetBird subnet router exposes the region's BMC and MGMT subnets across the WireGuard mesh so they're reachable from `mgmt` and CI
-- **Region ↔ mgmt connectivity** — bridges region-local services to the central `mgmt` cluster
+**Gateway clusters** (`<region>-gw`) — one per region — have three distinct roles:
+
+- **Bare-metal provisioning** — the `omni-infra-provider` app runs the Omni infrastructure provider to PXE-boot Talos nodes in the region
+- **Subnet routing** — a NetBird subnet router exposes the region's BMC and MGMT subnets across the WireGuard mesh so they're reachable from the management cluster and CI
+- **Region ↔ management connectivity** — bridges region-local services to the central management cluster
 
 ## Sync wave order
 
@@ -118,18 +154,16 @@ Runs on every PR and push:
 
 ### `deploy` — infrastructure and cluster sync
 
-Runs on every PR and push to `main` (after `scan` and `build` pass). It has three sequential jobs:
+Runs on every PR and push to `main` (after `scan` and `build` pass). CI connects to internal infrastructure by joining the NetBird mesh with an ephemeral setup key that is revoked at the end of the run. It has three sequential jobs:
 
 #### 1. `terraform`
 
-Connects to NetBird (ephemeral setup key), then:
-
 - **On PR**: runs `terraform plan` and posts the plan diff as a PR comment
-- **On merge to `main`**: runs `terraform apply` — manages Cloudflare DNS, DigitalOcean, Infisical project structure, NetBird policies and groups
+- **On merge to `main`**: runs `terraform apply` — manages Cloudflare DNS, DigitalOcean, Infisical project structure, NetBird policies and groups, VolSync secret paths
 
 #### 2. `omni` (after terraform)
 
-Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files. On PRs, only changed files are processed; on push to `main`, all clusters and machine classes are synced.
+Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files.
 
 - **On PR**: dry-runs each changed cluster template and machine class with `omnictl ... --dry-run`, posts results as PR comments
 - **On merge to `main`**: runs `omnictl cluster template sync` for all clusters and `omnictl apply` for all machine classes
