@@ -47,7 +47,7 @@ spec:
             description: "{{ "{{" }}$value{{ "}}" }} machine(s) in Omni are reporting Secure Boot as disabled. Machines without Secure Boot are vulnerable to boot-time tampering and do not meet the cluster's security baseline."
             runbook_url: "https://xxx/runbooks/omni-secure-boot-disabled/"
             dashboard_url: "https://xxx/d/omni"
-          expr: omni_machine_secure_boot_status{status="false"} > 0
+          expr: omni_machine_secure_boot_status{enabled="false"} > 0
           for: 1m
           labels:
             severity: warning
