@@ -564,7 +564,7 @@ jobs:
       - name: Install omnictl
         run: |
           curl -fsSL -o /usr/local/bin/omnictl \
-            https://REDACTED/omnictl/omnictl-linux-amd64
+            https://REDACTED/api/omnictl/omnictl-linux-amd64
           chmod +x /usr/local/bin/omnictl
 
       - name: Run infra provider bootstrap playbook
