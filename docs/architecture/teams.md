@@ -1,6 +1,6 @@
 # Team Ownership
 
-HomeScale is maintained by two platform teams. This page records which team owns each component and what that means for code review and on-call.
+HomeScale is maintained by two platform teams. This page records which team owns each component and what that means for code review.
 
 ## Teams
 
@@ -36,6 +36,8 @@ CODEOWNERS is configured in `.github/CODEOWNERS`. All paths default to Infrastru
 
 ### Networking & ingress
 
+NetBird is the zero-trust WireGuard mesh that connects all clusters, CI jobs, and end-user devices. Infrastructure Platforms owns the mesh topology, network resource definitions, and the Terraform that creates NetBird groups and access policies. External services are exposed via a Cloudflare tunnel or reverse proxy, with DNS managed automatically by external-dns.
+
 | App | What it does |
 |-----|-------------|
 | `netbird` / `netbird-crs` | Zero-trust WireGuard mesh and network resources |
@@ -58,12 +60,16 @@ CODEOWNERS is configured in `.github/CODEOWNERS`. All paths default to Infrastru
 
 ### Observability
 
+Infrastructure Platforms owns the full observability stack: per-cluster Prometheus instances feed into a central aggregation layer with Grafana, Alertmanager, and Loki. All PrometheusRule alerts and their runbooks are Infrastructure Platforms's to author and maintain.
+
 | App | What it does |
 |-----|-------------|
 | `metrics` | Per-cluster kube-prometheus-stack |
 | `metrics-aggr` | Central aggregation, Grafana, Alertmanager, Loki |
 
 ### Cluster lifecycle
+
+Infrastructure Platforms owns the full lifecycle of every cluster: bare-metal provisioning via PXE boot (Omni infra provider), Talos OS config patches, Kubernetes version upgrades, and the bootstrap app-of-apps that seeds ArgoCD on a fresh cluster. Gateway clusters (`*-gw`) are also Infrastructure Platforms's responsibility — they run the regional infra provider and subnet router that connect each region to the WireGuard mesh.
 
 | Path | What it does |
 |------|-------------|
