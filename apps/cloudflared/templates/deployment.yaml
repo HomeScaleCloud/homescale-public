@@ -12,6 +12,9 @@ spec:
       labels:
         app: cloudflared
     spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: cloudflared
           image: "cloudflare/cloudflared:{{ .Values.image.tag }}"
