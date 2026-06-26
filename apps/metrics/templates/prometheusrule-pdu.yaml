@@ -1,0 +1,60 @@
+{{- if .Values.snmpExporter.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: apc-pdu-rules
+  namespace: metrics
+spec:
+  groups:
+    - name: apc-pdu.rules
+      rules:
+        - alert: ApcPduOffline
+          annotations:
+            summary: "PDU {{ "{{" }}$labels.job{{ "}}" }} is unreachable."
+            description: "SNMP scrapes for {{ "{{" }}$labels.job{{ "}}" }} ({{ "{{" }}$labels.instance{{ "}}" }}) have been failing for 3 minutes. PDU may be offline or the network path is down."
+            dashboard_url: "https://REDACTED/d/pdu-health"
+          expr: up{job=~"pdu_.*"} == 0
+          for: 3m
+          labels:
+            severity: critical
+
+        - alert: ApcPduVoltageWarning
+          annotations:
+            summary: "PDU {{ "{{" }}$labels.job{{ "}}" }} input voltage out of range."
+            description: "PDU {{ "{{" }}$labels.job{{ "}}" }} input voltage is {{ "{{" }}$value{{ "}}" }}V — outside the 198–218V normal range for a 208V circuit."
+            dashboard_url: "https://REDACTED/d/pdu-health"
+          expr: apc_rpdu_input_voltage_volts{job=~"pdu_.*"} < 198 or apc_rpdu_input_voltage_volts{job=~"pdu_.*"} > 218
+          for: 2m
+          labels:
+            severity: warning
+
+        - alert: ApcPduVoltageCritical
+          annotations:
+            summary: "PDU {{ "{{" }}$labels.job{{ "}}" }} input voltage critically out of range."
+            description: "PDU {{ "{{" }}$labels.job{{ "}}" }} input voltage is {{ "{{" }}$value{{ "}}" }}V — critically outside safe limits (190–225V). Equipment may be at risk."
+            dashboard_url: "https://REDACTED/d/pdu-health"
+          expr: apc_rpdu_input_voltage_volts{job=~"pdu_.*"} < 190 or apc_rpdu_input_voltage_volts{job=~"pdu_.*"} > 225
+          for: 2m
+          labels:
+            severity: critical
+
+        - alert: ApcPduBankLoadHigh
+          annotations:
+            summary: "PDU {{ "{{" }}$labels.job{{ "}}" }} bank {{ "{{" }}$labels.bank_index{{ "}}" }} load is high."
+            description: "PDU {{ "{{" }}$labels.job{{ "}}" }} bank {{ "{{" }}$labels.bank_index{{ "}}" }} load is at {{ "{{" }}$value | humanize{{ "}}" }}% of its near-overload threshold."
+            dashboard_url: "https://REDACTED/d/pdu-health"
+          expr: apc_rpdu_bank_load_deciamps{job=~"pdu_.*"} / 10 / apc_rpdu_bank_near_overload_threshold_amps{job=~"pdu_.*"} * 100 > 70
+          for: 5m
+          labels:
+            severity: warning
+
+        - alert: ApcPduBankNearOverload
+          annotations:
+            summary: "PDU {{ "{{" }}$labels.job{{ "}}" }} bank {{ "{{" }}$labels.bank_index{{ "}}" }} is at near-overload or overload."
+            description: "PDU {{ "{{" }}$labels.job{{ "}}" }} bank {{ "{{" }}$labels.bank_index{{ "}}" }} has reached state {{ "{{" }}$value{{ "}}" }} (2=nearOverload, 3=overload) as reported by the PDU itself."
+            dashboard_url: "https://REDACTED/d/pdu-health"
+          expr: apc_rpdu_bank_load_state{job=~"pdu_.*"} >= 2
+          for: 2m
+          labels:
+            severity: critical
+{{- end }}
