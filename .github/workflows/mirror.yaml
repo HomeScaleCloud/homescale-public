@@ -5,6 +5,7 @@ on:
     secrets:
       PUBLIC_DEPLOY_KEY:
         required: true
+  workflow_dispatch:
 
 permissions:
   contents: read
