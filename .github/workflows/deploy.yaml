@@ -309,7 +309,7 @@ jobs:
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
         run: |
           curl -fsSL -o /usr/local/bin/omnictl \
-            https://xxx/omnictl/omnictl-linux-amd64
+            https://xxx/api/omnictl/omnictl-linux-amd64
           chmod +x /usr/local/bin/omnictl
           sudo apt-get install -y yq
 
