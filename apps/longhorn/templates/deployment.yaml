@@ -15,7 +15,9 @@ spec:
         app: snapshot-controller
     spec:
       serviceAccountName: snapshot-controller
-      securityContext: {}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: snapshot-controller
           image: registry.k8s.io/sig-storage/snapshot-controller:v8.6.0
@@ -47,3 +49,4 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1000
+            allowPrivilegeEscalation: false
