@@ -6,7 +6,7 @@
 
 ## What this means
 
-`omni_machine_secure_boot_status{status="false"}` is greater than 0 — one or more machines registered in Omni are not booting with Secure Boot enabled.
+`omni_machine_secure_boot_status{enabled="false"}` is greater than 0 — one or more machines registered in Omni are not booting with Secure Boot enabled.
 
 Secure Boot ensures that only signed bootloaders and kernels can run on a machine, protecting against boot-time tampering and unauthorized code execution. Machines without Secure Boot do not meet the cluster's security baseline.
 
