@@ -31,3 +31,10 @@ jobs:
       INFISICAL_GH_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
       INFISICAL_ORG_ID: ${{ secrets.INFISICAL_ORG_ID }}
       INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+
+  mirror:
+    uses: ./.github/workflows/mirror.yaml
+    needs: [scan]
+    if: github.event_name == 'push'
+    secrets:
+      PUBLIC_DEPLOY_KEY: ${{ secrets.PUBLIC_DEPLOY_KEY }}
