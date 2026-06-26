@@ -16,10 +16,10 @@ Cluster provisioning, machine management, kubeconfig access, and `omnictl` opera
 |---|---|
 | Pod crash-looping | Check logs for the root cause; restart if transient |
 | PVC full or unavailable | Check `omni_sqlite_db_size_bytes` in Grafana and Longhorn volume health |
-| etcd corruption | May require restore from VolSync backup — see [Backups](../operations/backups.md) |
+| etcd corruption | May require restore from VolSync backup — see [Backups](../architecture/backups.md) |
 | TLS cert expired | Renew the cert-manager certificate for `omni-tls` |
 | SideroLink WireGuard failure at startup | Restart pod; check `REDACTED` DNS resolution |
 
 ## Restore from backup
 
-If Omni's storage is corrupted and needs to be restored, follow the [VolSync restore procedure](../operations/backups.md) for the `omni` app.
+If Omni's storage is corrupted and needs to be restored, follow the [VolSync restore procedure](../architecture/backups.md) for the `omni` app.

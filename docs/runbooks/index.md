@@ -7,8 +7,8 @@ Runbooks for alerts fired by Prometheus. Each alert links back to this page via 
 | Alert | Severity |
 |-------|----------|
 | [OmniDown](omni-down.md) | critical |
-| [OmniNoConnectedMachines](omni-no-connected-machines.md) | warning |
-| [OmniNoMachines](omni-no-machines.md) | warning |
+| [OmniNoConnectedMachines](omni-no-connected-machines.md) | critical |
+| [OmniNoMachines](omni-no-machines.md) | critical |
 | [OmniSecureBootDisabled](omni-secure-boot-disabled.md) | warning |
 
 ## PDU
@@ -18,5 +18,5 @@ Runbooks for alerts fired by Prometheus. Each alert links back to this page via 
 | [ApcPduOffline](apc-pdu-offline.md) | critical |
 | [ApcPduVoltageCritical](apc-pdu-voltage-critical.md) | critical |
 | [ApcPduBankNearOverload](apc-pdu-bank-near-overload.md) | warning |
-| [ApcPduBankLoadHigh](apc-pdu-bank-load-high.md) | info |
+| [ApcPduBankLoadHigh](apc-pdu-bank-load-high.md) | critical |
 | [ApcPduVoltageWarning](apc-pdu-voltage-warning.md) | warning |

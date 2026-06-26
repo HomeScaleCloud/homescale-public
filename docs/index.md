@@ -1,8 +1,5 @@
 # HomeScale
 
-!!! warning "These docs are new and still finding their feet"
-    This documentation was recently bootstrapped and is largely AI-generated from the repository. As a result, some pages may be incomplete, imprecise, or lag behind recent changes. Over time, the docs will be reviewed, corrected, and expanded until they become a reliable reference. For now, treat the repository itself as the source of truth.
-
 HomeScale is a GitOps monorepo for private Kubernetes clusters. ArgoCD watches this repo and reconciles all cluster state automatically on merge to `main`.
 
 ## Common tasks

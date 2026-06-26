@@ -18,7 +18,7 @@ Possible causes:
 
 ## Recovery
 
-Restore from the most recent VolSync backup. Follow the [VolSync restore procedure](../operations/backups.md) for the `omni` app.
+Restore from the most recent VolSync backup. Follow the [VolSync restore procedure](../architecture/backups.md) for the `omni` app.
 
 After restore:
 1. Confirm `omni_machines` recovers to the expected count
