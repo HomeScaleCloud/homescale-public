@@ -12,6 +12,7 @@ spec:
           annotations:
             summary: "PDU {{ "{{" }}$labels.job{{ "}}" }} is unreachable."
             description: "SNMP scrapes for {{ "{{" }}$labels.job{{ "}}" }} ({{ "{{" }}$labels.instance{{ "}}" }}) have been failing for 3 minutes. PDU may be offline or the network path is down."
+            runbook_url: "https://xxx/runbooks/apc-pdu-offline/"
             dashboard_url: "https://xxx/d/pdu-health"
           expr: up{job=~"pdu_.*"} == 0
           for: 3m
@@ -22,6 +23,7 @@ spec:
           annotations:
             summary: "PDU {{ "{{" }}$labels.job{{ "}}" }} input voltage out of range."
             description: "PDU {{ "{{" }}$labels.job{{ "}}" }} input voltage is {{ "{{" }}$value{{ "}}" }}V — outside the 198–218V normal range for a 208V circuit."
+            runbook_url: "https://xxx/runbooks/apc-pdu-voltage-warning/"
             dashboard_url: "https://xxx/d/pdu-health"
           expr: apc_rpdu_input_voltage_volts{job=~"pdu_.*"} < 198 or apc_rpdu_input_voltage_volts{job=~"pdu_.*"} > 218
           for: 2m
@@ -32,6 +34,7 @@ spec:
           annotations:
             summary: "PDU {{ "{{" }}$labels.job{{ "}}" }} input voltage critically out of range."
             description: "PDU {{ "{{" }}$labels.job{{ "}}" }} input voltage is {{ "{{" }}$value{{ "}}" }}V — critically outside safe limits (190–225V). Equipment may be at risk."
+            runbook_url: "https://xxx/runbooks/apc-pdu-voltage-critical/"
             dashboard_url: "https://xxx/d/pdu-health"
           expr: apc_rpdu_input_voltage_volts{job=~"pdu_.*"} < 190 or apc_rpdu_input_voltage_volts{job=~"pdu_.*"} > 225
           for: 2m
@@ -42,6 +45,7 @@ spec:
           annotations:
             summary: "PDU {{ "{{" }}$labels.job{{ "}}" }} bank {{ "{{" }}$labels.bank_index{{ "}}" }} load is high."
             description: "PDU {{ "{{" }}$labels.job{{ "}}" }} bank {{ "{{" }}$labels.bank_index{{ "}}" }} load is at {{ "{{" }}$value | humanize{{ "}}" }}% of its near-overload threshold."
+            runbook_url: "https://xxx/runbooks/apc-pdu-bank-load-high/"
             dashboard_url: "https://xxx/d/pdu-health"
           expr: apc_rpdu_bank_load_deciamps{job=~"pdu_.*"} / 10 / apc_rpdu_bank_near_overload_threshold_amps{job=~"pdu_.*"} * 100 > 70
           for: 5m
@@ -52,6 +56,7 @@ spec:
           annotations:
             summary: "PDU {{ "{{" }}$labels.job{{ "}}" }} bank {{ "{{" }}$labels.bank_index{{ "}}" }} is at near-overload or overload."
             description: "PDU {{ "{{" }}$labels.job{{ "}}" }} bank {{ "{{" }}$labels.bank_index{{ "}}" }} has reached state {{ "{{" }}$value{{ "}}" }} (2=nearOverload, 3=overload) as reported by the PDU itself."
+            runbook_url: "https://xxx/runbooks/apc-pdu-bank-near-overload/"
             dashboard_url: "https://xxx/d/pdu-health"
           expr: apc_rpdu_bank_load_state{job=~"pdu_.*"} >= 2
           for: 2m

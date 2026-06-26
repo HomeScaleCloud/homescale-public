@@ -1,0 +1,54 @@
+{{- if eq .Values.cluster.name "boa1-prod" }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: omni-rules
+  namespace: metrics
+spec:
+  groups:
+    - name: omni.rules
+      rules:
+        - alert: OmniDown
+          annotations:
+            summary: "Omni is unreachable."
+            description: "The Omni management plane has not been scraped successfully for 5 minutes. Cluster provisioning, machine management, and kubeconfig access are unavailable."
+            runbook_url: "https://xxx/runbooks/omni-down/"
+            dashboard_url: "https://xxx/d/omni"
+          expr: up{namespace="omni"} == 0
+          for: 5m
+          labels:
+            severity: critical
+
+        - alert: OmniNoConnectedMachines
+          annotations:
+            summary: "Omni has no connected machines."
+            description: "omni_connected_machines has been 0 for 10 minutes. All machines have lost their SideroLink/WireGuard connection to Omni. This likely indicates a networking change (firewall rule, NetBird config, or SideroLink endpoint change) broke connectivity."
+            runbook_url: "https://xxx/runbooks/omni-no-connected-machines/"
+            dashboard_url: "https://xxx/d/omni"
+          expr: omni_connected_machines == 0
+          for: 10m
+          labels:
+            severity: critical
+
+        - alert: OmniNoMachines
+          annotations:
+            summary: "Omni reports zero total machines."
+            description: "omni_machines has been 0 for 5 minutes. Omni's storage may have been wiped or the state database has been corrupted. All machine and cluster records would be lost."
+            runbook_url: "https://xxx/runbooks/omni-no-machines/"
+            dashboard_url: "https://xxx/d/omni"
+          expr: omni_machines == 0
+          for: 5m
+          labels:
+            severity: critical
+
+        - alert: OmniSecureBootDisabled
+          annotations:
+            summary: "One or more Omni machines have Secure Boot disabled."
+            description: "{{ "{{" }}$value{{ "}}" }} machine(s) in Omni are reporting Secure Boot as disabled. Machines without Secure Boot are vulnerable to boot-time tampering and do not meet the cluster's security baseline."
+            runbook_url: "https://xxx/runbooks/omni-secure-boot-disabled/"
+            dashboard_url: "https://xxx/d/omni"
+          expr: omni_machine_secure_boot_status{status="false"} > 0
+          for: 1m
+          labels:
+            severity: warning
+{{- end }}
