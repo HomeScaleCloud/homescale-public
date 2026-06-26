@@ -32,6 +32,7 @@ nav:
       - Clusters: operations/clusters.md
       - Backups: operations/backups.md
   - Runbooks:
+      - Overview: runbooks/index.md
       - Omni:
           - OmniDown: runbooks/omni-down.md
           - OmniNoConnectedMachines: runbooks/omni-no-connected-machines.md
