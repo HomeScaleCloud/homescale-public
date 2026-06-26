@@ -39,9 +39,12 @@ rules:
     verbs: ["get", "list", "watch"]
   - apiGroups: ["cert-manager.io"]
     resources:
-      - "*"
+      - certificates
+      - certificaterequests
+      - issuers
+      - clusterissuers
     verbs: ["get", "list", "watch"]
   - apiGroups: ["secrets.infisical.com"]
     resources:
-      - "*"
+      - infisicalsecrets
     verbs: ["get", "list", "watch"]

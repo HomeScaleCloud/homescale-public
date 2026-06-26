@@ -16,5 +16,6 @@ rules:
     verbs: ["*"]
   - apiGroups: ["netbird.io"]
     resources:
-      - "*"
+      - networkresources
+      - networkrouters
     verbs: ["*"]
