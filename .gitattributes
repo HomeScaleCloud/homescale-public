@@ -4,4 +4,5 @@
 *.yml linguist-language=YAML
 *.yaml linguist-language=YAML
 *.json linguist-language=JSON
+apps/metrics/dashboards/*.json linguist-vendored
 * text=auto eol=lf
