@@ -10,7 +10,7 @@
 
 Secure Boot ensures that only signed bootloaders and kernels can run on a machine, protecting against boot-time tampering and unauthorized code execution. Machines without Secure Boot do not meet the cluster's security baseline.
 
-To identify which machine(s) are affected, check the Omni UI (reachable at `https://omni.<cluster>REDACTED` on the management cluster) — each machine's detail page shows its Secure Boot status.
+To identify which machine(s) are affected, check the Omni UI (reachable at `https://REDACTED`) — each machine's detail page shows its Secure Boot status.
 
 ## Common causes
 
