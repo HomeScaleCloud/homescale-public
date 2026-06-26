@@ -60,13 +60,31 @@ CI syncs all machine class files on every push to `main` (`omnictl apply -f infr
 
 ## Bootstrap: adding a new cluster
 
-!!! note
-    This is a one-time manual process. After bootstrap ArgoCD manages everything.
+1. **Create `clusters/<cluster>/cluster.yaml`** — the Omni cluster template defining Talos/k8s versions and machinesets. Commit and merge this first; CI syncs it to Omni, which creates the cluster and provisions the assigned machines.
 
-1. **Create the cluster in Omni** — assign machines, set Talos/k8s versions
-2. **Create `clusters/<cluster>/`** with:
-   - `cluster.yaml` — Omni template for the new cluster
-   - `apps.yaml` — ArgoCD app-of-apps pointing at this repo
+   A minimal single-node control plane using the `boa1-metal` machine class:
+
+   ```yaml
+   kind: Cluster
+   name: $CLUSTER_NAME
+   kubernetes:
+     version: v1.36.2
+   talos:
+     version: v1.13.4
+   features:
+     useEmbeddedDiscoveryService: true
+     backupConfiguration:
+       interval: 1h
+   patches:
+     - file: patches/base.yaml
+     - file: patches/allow-scheduling-on-control-plane.yaml
+   ---
+   kind: ControlPlane
+   machineClass:
+     name: boa1-metal
+     size: 1
+   ```
+2. **Create `clusters/<cluster>/apps.yaml`** — the ArgoCD app-of-apps pointing at this repo. Commit this after the cluster is up.
 3. **Add per-cluster overrides** to any `apps/*/app.yaml` that needs cluster-specific config:
    ```yaml
    clusters:
@@ -75,7 +93,7 @@ CI syncs all machine class files on every push to `main` (`omnictl apply -f infr
        values:
          someKey: clusterSpecificValue
    ```
-4. **Merge to `main`** — CI runs the Omni template sync, then the Ansible `bootstrap-cluster.yml` playbook applies `apps.yaml` to the new cluster automatically. Alternatively, apply it manually:
+4. **Merge to `main`** — CI runs the Omni template sync, then the Ansible `bootstrap-cluster.yml` playbook runs automatically. The bootstrap playbook applies `apps.yaml` to the new cluster and seeds critical credentials (Infisical machine identities, kubeconfig, etc.) that apps depend on at startup. Alternatively, apply the app-of-apps manually:
    ```bash
    kubectl apply -f clusters/<cluster>/apps.yaml
    ```
@@ -93,15 +111,13 @@ Omni handles the upgrade sequence — control plane nodes first, then workers �
 
 Cloud resources (Cloudflare DNS, DigitalOcean, Infisical project setup, NetBird configuration, mgmt cluster bootstrap) live in `infra/terraform/`. State is in [Terraform Cloud](https://developer.hashicorp.com/terraform/cloud-docs) (`homescale` org, `homescale` workspace).
 
-```bash
-# Plan changes locally
-terraform -chdir=infra/terraform plan
+Terraform runs only in CI — it uses GitHub OIDC for Infisical auth and cannot be run locally. On merge to `main`, CI runs `terraform apply` automatically (after `scan` and `build` pass). On PRs, CI runs `terraform plan` and posts the plan as a PR comment.
 
-# Format
+To format Terraform files locally:
+
+```bash
 terraform -chdir=infra/terraform fmt
 ```
-
-On merge to `main`, CI runs `terraform apply` automatically (after `scan` and `build` pass). On PRs, CI runs `terraform plan` and posts the plan as a PR comment.
 
 ### Terraform modules
 
