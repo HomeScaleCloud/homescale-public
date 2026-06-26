@@ -1,0 +1,63 @@
+---
+- name: Bootstrap mgmt cluster
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    kubeconfig_path: "/tmp/kubeconfig-mgmt"
+    omni_cluster_name: mgmt
+
+  module_defaults:
+    kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig_path }}"
+    kubernetes.core.k8s_info:
+      kubeconfig: "{{ kubeconfig_path }}"
+    kubernetes.core.helm:
+      kubeconfig: "{{ kubeconfig_path }}"
+
+  pre_tasks:
+    - name: Login to Infisical
+      infisical.vault.login:
+        url: "{{ infisical_url }}"
+        auth_method: oidc_auth
+        identity_id: "{{ lookup('env', 'INFISICAL_IDENTITY_ID') }}"
+        jwt: "{{ lookup('env', 'INFISICAL_AUTH_JWT') }}"
+      register: _infisical
+      no_log: true
+
+    - name: Read mgmt kubeconfig from Infisical
+      infisical.vault.read_secrets:
+        login_data: "{{ _infisical.login_data }}"
+        project_id: "{{ infisical_project_id }}"
+        env_slug: "{{ infisical_env_slug }}"
+        path: /github-actions
+        as_dict: true
+      register: _github_actions_secrets
+      no_log: true
+
+    - name: Write kubeconfig
+      ansible.builtin.copy:
+        content: "{{ _github_actions_secrets.secrets.MGMT_KUBECONFIG }}"
+        dest: "{{ kubeconfig_path }}"
+        mode: "0600"
+      no_log: true
+
+    - name: Wait for k8s API
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Namespace
+        name: kube-system
+      register: _api_probe
+      retries: 6
+      delay: 10
+      until: _api_probe is not failed
+
+  roles:
+    - cluster-secrets
+    - argocd
+
+  post_tasks:
+    - name: Remove temporary kubeconfig
+      ansible.builtin.file:
+        path: "{{ kubeconfig_path }}"
+        state: absent

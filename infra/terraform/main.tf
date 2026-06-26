@@ -14,14 +14,11 @@ module "netbird" {
 }
 
 module "mgmt_cluster" {
-  source                               = "./modules/mgmt_cluster"
-  digitalocean_token                   = data.infisical_secrets.github_actions.secrets["DIGITALOCEAN_TOKEN"].value
-  k8s_version                          = "1.34."
-  region                               = "lon1"
-  infisical_workspace_id               = module.infisical.project_id
-  infisical_k8s_operator_client_id     = module.infisical.k8s_operator_client_id
-  infisical_k8s_operator_client_secret = module.infisical.k8s_operator_client_secret
-  argocd_deploy_key                    = data.infisical_secrets.k8s_argocd_deploy_key.secrets["sshPrivateKey"].value
+  source                 = "./modules/mgmt_cluster"
+  digitalocean_token     = data.infisical_secrets.github_actions.secrets["DIGITALOCEAN_TOKEN"].value
+  k8s_version            = "1.34."
+  region                 = "lon1"
+  infisical_workspace_id = module.infisical.project_id
 }
 
 # module "region_boa1" {
