@@ -6,173 +6,175 @@
   "links": [],
   "panels": [
     {
-      "collapsed": false,
+      "collapsed": true,
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
       "id": 13,
       "title": "Alerts",
-      "type": "row"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "custom": {
-            "fillOpacity": 70,
-            "hideFrom": {"legend": false, "tooltip": false, "viz": false},
-            "lineWidth": 0,
-            "spanNulls": false
+      "type": "row",
+      "panels": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "custom": {
+                "fillOpacity": 70,
+                "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": {"color": "yellow", "index": 0, "text": "Warning / Pending"},
+                    "2": {"color": "red", "index": 1, "text": "Critical"}
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 1},
+                  {"color": "red", "value": 2}
+                ]
+              }
+            },
+            "overrides": []
           },
-          "mappings": [
+          "gridPos": {"h": 5, "w": 24, "x": 0, "y": 1},
+          "id": 14,
+          "options": {
+            "alignValue": "left",
+            "legend": {"displayMode": "list", "placement": "bottom", "showLegend": true},
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {"mode": "single", "sort": "none"}
+          },
+          "targets": [
             {
-              "type": "value",
+              "datasource": {"type": "prometheus", "uid": "prometheus"},
+              "expr": "(ALERTS{cluster=~\"$cluster\", alertname=~\"ApcPdu.*\", severity=\"critical\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertname=~\"ApcPdu.*\", alertstate=~\"firing|pending\"} * 1)",
+              "legendFormat": "{{alertname}} ({{job}})",
+              "range": true,
+              "instant": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Alert Timeline",
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "custom": {"align": "auto", "cellOptions": {"type": "auto"}, "inspect": false}
+            },
+            "overrides": [
+              {
+                "matcher": {"id": "byName", "options": "alertname"},
+                "properties": [{"id": "custom.width", "value": 280}]
+              },
+              {
+                "matcher": {"id": "byName", "options": "alertstate"},
+                "properties": [
+                  {"id": "custom.width", "value": 90},
+                  {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "basic"}},
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {"type": "value", "options": {
+                        "firing":   {"color": "red",    "index": 0, "text": "firing"},
+                        "pending":  {"color": "yellow", "index": 1, "text": "pending"}
+                      }}
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {"id": "byName", "options": "severity"},
+                "properties": [
+                  {"id": "custom.width", "value": 100},
+                  {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "basic"}},
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {"type": "value", "options": {
+                        "warning":  {"color": "yellow", "index": 0, "text": "warning"},
+                        "critical": {"color": "red",    "index": 1, "text": "critical"}
+                      }}
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {"id": "byName", "options": "job"},
+                "properties": [{"id": "custom.width", "value": 140}]
+              },
+              {
+                "matcher": {"id": "byName", "options": "instance"},
+                "properties": [{"id": "custom.width", "value": 120}]
+              },
+              {
+                "matcher": {"id": "byName", "options": "bank_index"},
+                "properties": [{"id": "custom.width", "value": 90}]
+              }
+            ]
+          },
+          "gridPos": {"h": 6, "w": 24, "x": 0, "y": 6},
+          "id": 15,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {"show": false},
+            "showHeader": true,
+            "sortBy": [{"desc": false, "displayName": "alertname"}]
+          },
+          "targets": [
+            {
+              "datasource": {"type": "prometheus", "uid": "prometheus"},
+              "expr": "ALERTS{cluster=~\"$cluster\", alertname=~\"ApcPdu.*\", alertstate=~\"firing|pending\"}",
+              "instant": true,
+              "format": "table",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
               "options": {
-                "1": {"color": "yellow", "index": 0, "text": "Warning / Pending"},
-                "2": {"color": "red", "index": 1, "text": "Critical"}
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true,
+                  "__name__": true,
+                  "cluster": true,
+                  "endpoint": true,
+                  "prometheus": true,
+                  "prometheus_replica": true,
+                  "service": true
+                },
+                "indexByName": {
+                  "alertname":  0,
+                  "alertstate": 1,
+                  "severity":   2,
+                  "job":        3,
+                  "instance":   4,
+                  "bank_index": 5
+                },
+                "renameByName": {}
               }
             }
           ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {"color": "green", "value": null},
-              {"color": "yellow", "value": 1},
-              {"color": "red", "value": 2}
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 5, "w": 24, "x": 0, "y": 1},
-      "id": 14,
-      "options": {
-        "alignValue": "left",
-        "legend": {"displayMode": "list", "placement": "bottom", "showLegend": true},
-        "mergeValues": true,
-        "rowHeight": 0.9,
-        "showValue": "auto",
-        "tooltip": {"mode": "single", "sort": "none"}
-      },
-      "targets": [
-        {
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "(ALERTS{cluster=~\"$cluster\", alertname=~\"ApcPdu.*\", severity=\"critical\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertname=~\"ApcPdu.*\", alertstate=~\"firing|pending\"} * 1)",
-          "legendFormat": "{{alertname}} ({{job}})",
-          "range": true,
-          "instant": false,
-          "refId": "A"
+          "title": "Active Alerts",
+          "type": "table"
         }
-      ],
-      "title": "Alert Timeline",
-      "type": "state-timeline"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "fieldConfig": {
-        "defaults": {
-          "custom": {"align": "auto", "cellOptions": {"type": "auto"}, "inspect": false}
-        },
-        "overrides": [
-          {
-            "matcher": {"id": "byName", "options": "alertname"},
-            "properties": [{"id": "custom.width", "value": 280}]
-          },
-          {
-            "matcher": {"id": "byName", "options": "alertstate"},
-            "properties": [
-              {"id": "custom.width", "value": 90},
-              {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "basic"}},
-              {
-                "id": "mappings",
-                "value": [
-                  {"type": "value", "options": {
-                    "firing":   {"color": "red",    "index": 0, "text": "firing"},
-                    "pending":  {"color": "yellow", "index": 1, "text": "pending"}
-                  }}
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {"id": "byName", "options": "severity"},
-            "properties": [
-              {"id": "custom.width", "value": 100},
-              {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "basic"}},
-              {
-                "id": "mappings",
-                "value": [
-                  {"type": "value", "options": {
-                    "warning":  {"color": "yellow", "index": 0, "text": "warning"},
-                    "critical": {"color": "red",    "index": 1, "text": "critical"}
-                  }}
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {"id": "byName", "options": "job"},
-            "properties": [{"id": "custom.width", "value": 140}]
-          },
-          {
-            "matcher": {"id": "byName", "options": "instance"},
-            "properties": [{"id": "custom.width", "value": 120}]
-          },
-          {
-            "matcher": {"id": "byName", "options": "bank_index"},
-            "properties": [{"id": "custom.width", "value": 90}]
-          }
-        ]
-      },
-      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 6},
-      "id": 15,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {"show": false},
-        "showHeader": true,
-        "sortBy": [{"desc": false, "displayName": "alertname"}]
-      },
-      "targets": [
-        {
-          "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "ALERTS{cluster=~\"$cluster\", alertname=~\"ApcPdu.*\", alertstate=~\"firing|pending\"}",
-          "instant": true,
-          "format": "table",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Value": true,
-              "__name__": true,
-              "cluster": true,
-              "endpoint": true,
-              "prometheus": true,
-              "prometheus_replica": true,
-              "service": true
-            },
-            "indexByName": {
-              "alertname":  0,
-              "alertstate": 1,
-              "severity":   2,
-              "job":        3,
-              "instance":   4,
-              "bank_index": 5
-            },
-            "renameByName": {}
-          }
-        }
-      ],
-      "title": "Active Alerts",
-      "type": "table"
+      ]
     },
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 12},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 1},
       "id": 1,
       "title": "Overview",
       "type": "row"
@@ -203,7 +205,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 5, "x": 0, "y": 13},
+      "gridPos": {"h": 4, "w": 5, "x": 0, "y": 2},
       "id": 2,
       "options": {
         "colorMode": "background",
@@ -243,7 +245,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 5, "x": 5, "y": 13},
+      "gridPos": {"h": 4, "w": 5, "x": 5, "y": 2},
       "id": 3,
       "options": {
         "colorMode": "background",
@@ -283,7 +285,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 5, "x": 10, "y": 13},
+      "gridPos": {"h": 4, "w": 5, "x": 10, "y": 2},
       "id": 9,
       "options": {
         "colorMode": "background",
@@ -316,7 +318,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 9, "x": 15, "y": 13},
+      "gridPos": {"h": 4, "w": 9, "x": 15, "y": 2},
       "id": 10,
       "options": {
         "colorMode": "background",
@@ -337,7 +339,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 17},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 6},
       "id": 11,
       "title": "Information",
       "type": "row"
@@ -355,7 +357,7 @@
           }
         ]
       },
-      "gridPos": {"h": 5, "w": 24, "x": 0, "y": 18},
+      "gridPos": {"h": 5, "w": 24, "x": 0, "y": 7},
       "id": 12,
       "options": {
         "cellHeight": "sm",
@@ -412,7 +414,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 23},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 12},
       "id": 4,
       "title": "Trends",
       "type": "row"
@@ -447,7 +449,7 @@
           }
         ]
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 13},
       "id": 5,
       "options": {
         "tooltip": {"mode": "multi", "sort": "none"},
@@ -503,7 +505,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 13},
       "id": 6,
       "options": {
         "tooltip": {"mode": "multi", "sort": "none"},
@@ -521,7 +523,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 32},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 21},
       "id": 7,
       "title": "Outlets",
       "type": "row"
@@ -550,7 +552,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 33},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 22},
       "id": 8,
       "options": {
         "colorMode": "background",
@@ -620,5 +622,5 @@
   "timezone": "browser",
   "title": "PDU Health",
   "uid": "pdu-health",
-  "version": 3
+  "version": 4
 }
