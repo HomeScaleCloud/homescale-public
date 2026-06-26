@@ -8,7 +8,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: {{ .Values.omni.persistence.size | default "16Gi" }}
+      storage: {{ .Values.omni.persistence.size | default "25Gi" }}
   {{- if .Values.omni.persistence.storageClassName }}
   storageClassName: {{ .Values.omni.persistence.storageClassName }}
   {{- end }}
