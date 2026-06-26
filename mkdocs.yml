@@ -31,6 +31,18 @@ nav:
       - App Reference: operations/apps.md
       - Clusters: operations/clusters.md
       - Backups: operations/backups.md
+  - Runbooks:
+      - Omni:
+          - OmniDown: runbooks/omni-down.md
+          - OmniNoConnectedMachines: runbooks/omni-no-connected-machines.md
+          - OmniNoMachines: runbooks/omni-no-machines.md
+          - OmniSecureBootDisabled: runbooks/omni-secure-boot-disabled.md
+      - PDU:
+          - ApcPduOffline: runbooks/apc-pdu-offline.md
+          - ApcPduVoltageWarning: runbooks/apc-pdu-voltage-warning.md
+          - ApcPduVoltageCritical: runbooks/apc-pdu-voltage-critical.md
+          - ApcPduBankLoadHigh: runbooks/apc-pdu-bank-load-high.md
+          - ApcPduBankNearOverload: runbooks/apc-pdu-bank-near-overload.md
 
 plugins:
   - search
