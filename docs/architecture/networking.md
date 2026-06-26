@@ -71,21 +71,9 @@ netbird:
         ports: ["25565"]
 ```
 
-The **destination** is always the app's own NetBird group (`app-<name>`), created automatically by Terraform for every app directory that exists. If no `netbird:` block is present, **access is denied by default**.
+The **destination** is always the app's own NetBird group (`app-<name>`), created automatically by Terraform for every app directory. If no `netbird:` block is present, **access is denied by default**.
 
-Multiple rules under `policy.rules` produce separate `netbird_policy` resources named `app-<name>-0`, `app-<name>-1`, etc.
-
-### Valid `sources` values
-
-| Value | Who |
-|-------|-----|
-| `team-infra-plat` | Infrastructure platform team |
-| `team-sec-plat` | Security platform team |
-| `github-actions` | CI/CD runners |
-| `owners` | Owners group (personal / family access) |
-| `sg-k8s-admin` | Kubernetes admins security group |
-| `all` | Everyone on the NetBird mesh |
-| `app:<name>` | Another app's NetBird group (colon-separated, e.g. `app:metrics`) |
+See the [App reference](apps.md#netbird-access-policy-netbird) for the full field reference including valid `sources` values.
 
 ## Gateway clusters
 

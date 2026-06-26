@@ -109,10 +109,7 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 
 Talos clusters have their node config, k8s version, and machine assignments managed entirely by Omni, which runs on the `mgmt` cluster. The CI deploy workflow syncs `clusters/<name>/cluster.yaml` to Omni on every merge to `main`.
 
-**Gateway clusters** (`<region>-gw`) — one per region — have two distinct roles:
-
-- **Subnet routing** — a NetBird subnet router exposes the region's BMC and MGMT subnets across the WireGuard mesh so they're reachable from the `mgmt` cluster and CI
-- **Bare-metal provisioning** — the `omni-infra-provider` app runs the Omni infrastructure provider to PXE-boot Talos nodes in the region
+See [Gateway clusters](networking.md#gateway-clusters) for how gateway clusters handle bare-metal provisioning and subnet routing.
 
 ## Sync wave order
 

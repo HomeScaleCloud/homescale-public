@@ -64,7 +64,7 @@ extraSources:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `syncWave` | int | `0` | ArgoCD sync wave. Lower numbers sync first. See [sync wave order](#sync-wave-order) below |
+| `syncWave` | int | `0` | ArgoCD sync wave. Lower numbers sync first. See [sync wave order](overview.md#sync-wave-order) |
 | `syncPolicy` | object | global automated prune+self-heal | Merged over the global `syncPolicy`. Use to disable automated sync or self-heal for a specific app |
 | `syncOptions` | list of strings | `["CreateNamespace=true"]` | Concatenated with the global `syncOptions` (duplicates removed). Common values: `ServerSideApply=true` |
 | `ignoreDifferences` | list | — | ArgoCD `ignoreDifferences` entries — suppress spurious drift detection on fields that are mutated out-of-band (e.g. webhook CABundles, generated secrets) |
@@ -154,7 +154,7 @@ The **destination** is always the app's own NetBird group (`app-<name>`), create
 !!! warning "Terraform input — not Helm config"
     The `exposePublic:` block is read directly by Terraform (`infra/terraform/modules/cloudflare/`). It creates a Cloudflare tunnel ingress rule and a DNS record. Never delete it thinking it's dead config.
 
-Use this to expose an app to the public internet via a Cloudflare tunnel. Terraform creates a `cloudflare_zero_trust_tunnel_cloudflared_config` ingress entry and a proxied `CNAME` DNS record.
+Exposes an app to the public internet via a Cloudflare Zero Trust Tunnel. See [External service exposure](networking.md#external-service-exposure) for how it works.
 
 ```yaml
 exposePublic:
@@ -173,17 +173,7 @@ exposePublic:
 
 ## Sync wave order
 
-| Wave | What syncs |
-|------|-----------|
-| -40 | cilium |
-| -35 | infisical, multus |
-| -30 | cert-manager, argocd, rbac |
-| -25 | generic-device-plugin-tun |
-| -20 | netbird, cert-manager-crs, spegel |
-| -10 | external-dns, netbird-crs, kubelet-serving-cert-approver |
-| -5 | volsync |
-| 0 | all other apps (default) |
-| 1+ | apps that must come after the default wave |
+See [sync wave order](overview.md#sync-wave-order) in the architecture overview.
 
 ---
 
