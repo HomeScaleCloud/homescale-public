@@ -536,16 +536,16 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "red",   "value": null},
-              {"color": "green", "value": 2}
+              {"color": "green", "value": null},
+              {"color": "red",   "value": 2}
             ]
           },
           "mappings": [
             {
               "type": "value",
               "options": {
-                "1": {"text": "Off", "index": 0},
-                "2": {"text": "On",  "index": 1}
+                "1": {"text": "On",  "index": 0},
+                "2": {"text": "Off", "index": 1}
               }
             }
           ]
@@ -622,5 +622,5 @@
   "timezone": "browser",
   "title": "PDU Health",
   "uid": "pdu-health",
-  "version": 4
+  "version": 5
 }
