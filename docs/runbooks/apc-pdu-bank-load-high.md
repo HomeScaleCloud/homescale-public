@@ -1,6 +1,6 @@
 # ApcPduBankLoadHigh
 
-**Severity:** Warning
+**Severity:** Critical
 **Alert:** `ApcPduBankLoadHigh`
 **Dashboard:** [PDU Health](https://REDACTED/d/pdu-health)
 
@@ -9,6 +9,8 @@
 A PDU bank's current draw has exceeded **70% of its near-overload threshold** for 5 minutes. The alert fires per bank (`$labels.bank_index`). The alert value is the load as a percentage of the near-overload threshold.
 
 This is a warning to act before the bank reaches the near-overload state (`ApcPduBankNearOverload`). At 70% of the near-overload threshold there is still headroom, but adding more load or losing a circuit could push it over.
+
+Check the PDU Health dashboard to see which bank is elevated and the load trend over time.
 
 ## Understanding PDU banks
 
@@ -19,21 +21,6 @@ APC AP7920 PDUs have per-bank circuit breakers. Each bank has a rated near-overl
 | 1 | Normal |
 | 2 | Near-overload |
 | 3 | Overload |
-
-## Diagnosis
-
-```bash
-# Check current bank load readings (all banks)
-kubectl -n metrics exec -it deploy/snmp-exporter -- \
-  snmpwalk -v1 -c public 10.1.246.5 1.3.6.1.4.1.318.1.1.12.3.5.1.1.2
-
-# Query load as percentage of near-overload threshold in Prometheus
-curl -sG 'http://prometheus.metrics.svc.cluster.local:9090/api/v1/query' \
-  --data-urlencode 'query=apc_rpdu_bank_load_deciamps / 10 / apc_rpdu_bank_near_overload_threshold_amps * 100' \
-  | jq '.data.result[] | {bank: .metric.bank_index, pct: .value[1]}'
-```
-
-Check the PDU Health dashboard to see which bank is elevated and the trend over time.
 
 ## Common causes and remediation
 

@@ -10,33 +10,15 @@ The Prometheus scrape target for the Omni pod in the `omni` namespace on the `mg
 
 Cluster provisioning, machine management, kubeconfig access, and `omnictl` operations are unavailable until Omni is restored.
 
-## Diagnosis
-
-```bash
-# Check pod status
-kubectl -n omni get pods
-
-# Check recent events
-kubectl -n omni describe pod -l app.kubernetes.io/name=omni
-
-# Check logs
-kubectl -n omni logs -l app.kubernetes.io/name=omni --tail=100
-
-# Check the health endpoint directly
-kubectl -n omni exec -it deploy/omni -- curl -sk https://localhost/healthz
-```
-
-Omni exposes `/healthz` on its HTTPS port and `/metrics` on port 2122. If the pod is `Running` but health checks are failing, it may be stuck in an error state (e.g., embedded etcd issue, storage problem, TLS misconfiguration).
-
 ## Common causes
 
-| Cause | Signs | Fix |
-|---|---|---|
-| Pod crash-looping | `CrashLoopBackOff` in `kubectl get pods` | Check logs for the root cause; restart if transient |
-| PVC full or unavailable | Storage errors in logs | Check `omni_sqlite_db_size_bytes` and Longhorn volume health |
-| etcd corruption | `etcd` errors in logs | May require restore from VolSync backup — see [Backups](../operations/backups.md) |
-| TLS cert expired | TLS handshake errors | Renew cert-manager certificate for `omni-tls` |
-| SideroLink WireGuard failure | WireGuard errors at startup | Restart pod; check `REDACTED` DNS resolution |
+| Cause | Fix |
+|---|---|
+| Pod crash-looping | Check logs for the root cause; restart if transient |
+| PVC full or unavailable | Check `omni_sqlite_db_size_bytes` in Grafana and Longhorn volume health |
+| etcd corruption | May require restore from VolSync backup — see [Backups](../operations/backups.md) |
+| TLS cert expired | Renew the cert-manager certificate for `omni-tls` |
+| SideroLink WireGuard failure at startup | Restart pod; check `REDACTED` DNS resolution |
 
 ## Restore from backup
 
