@@ -16,6 +16,11 @@ clusters:
           service:
             port: 443
             targetPort: 3000
+          serviceMonitor:
+            enabled: true
+            scheme: https
+            tlsConfig:
+              insecureSkipVerify: true
           grafana.ini:
             server:
               protocol: https
