@@ -2,7 +2,7 @@
 
 ![ci](https://github.com/HomeScaleCloud/homescale/actions/workflows/ci.yaml/badge.svg?branch=main)
 
-This monorepo contains the Infrastructure as Code (IaC) used to manage **HomeScale**, a collection of private cloud environments for myself, friends, and family.
+This monorepo contains the Infrastructure as Code (IaC) used to manage **HomeScale**, a private cloud environment for myself, friends, and family.
 
 ## 🔧 Key Technologies
 
