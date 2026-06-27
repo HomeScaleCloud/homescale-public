@@ -218,10 +218,6 @@ values:
   argocd-image-updater:
     config:
       interval: 30s
-    metrics:
-      enabled: true
-      serviceMonitor:
-        enabled: true
 ignoreDifferences:
   - group: ""
     kind: Secret
