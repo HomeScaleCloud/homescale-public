@@ -6,6 +6,16 @@ resource "netbird_dns_record" "omni" {
   ttl     = 300
 }
 
+resource "netbird_dns_record" "kubeapi" {
+  for_each = netbird_dns_zone.cluster
+
+  zone_id = each.value.id
+  name    = "k8s.${each.key}REDACTED"
+  type    = "CNAME"
+  content = "${each.key}REDACTED"
+  ttl     = 300
+}
+
 resource "netbird_dns_zone" "metrics" {
   name                 = "REDACTED"
   domain               = "REDACTED"
