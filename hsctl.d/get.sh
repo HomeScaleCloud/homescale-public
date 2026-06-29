@@ -137,7 +137,7 @@ for p in data.get('peers', {}).get('details', []):
     if m and m.group(1) not in seen:
         c = m.group(1)
         seen[c] = True
-        fqdn = f'{c}REDACTED'
+        fqdn = f'k8s.{c}REDACTED'
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
@@ -156,9 +156,9 @@ elif output_fmt == 'yaml':
         print(f'  k8sVersion: {cl["k8s_version"]}')
         print(f'  talosVersion: {cl["talos_version"]}')
 else:
-    print(f'{"CLUSTER":<20}  {"PROXY FQDN":<52}  {"K8S VERSION":<14}  TALOS VERSION')
+    print(f'{"CLUSTER":<20}  {"API FQDN":<44}  {"K8S VERSION":<14}  TALOS VERSION')
     for cl in clusters:
-        print(f'{cl["name"]:<20}  {cl["fqdn"]:<52}  {cl["k8s_version"]:<14}  {cl["talos_version"]}')
+        print(f'{cl["name"]:<20}  {cl["fqdn"]:<44}  {cl["k8s_version"]:<14}  {cl["talos_version"]}')
 PYEOF
 }
 
@@ -167,7 +167,7 @@ get_kubeconfig() {
     [[ -z "$cluster" ]] && { echo "Usage: hsctl get kubeconfig <cluster>"; exit 1; }
 
     local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
-    local fqdn="${cluster}REDACTED"
+    local fqdn="k8s.${cluster}REDACTED"
 
     python3 - "$cluster" "$fqdn" "$kubeconfig" <<'PYEOF'
 import json, sys, ssl, urllib.request
