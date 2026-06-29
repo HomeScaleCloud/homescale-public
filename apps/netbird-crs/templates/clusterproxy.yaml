@@ -1,0 +1,11 @@
+apiVersion: netbird.io/v1alpha1
+kind: ClusterProxy
+metadata:
+  name: netbird-clusterproxy
+  namespace: netbird
+spec:
+  clusterName: {{ required "cluster.name is required" .Values.cluster.name }}
+  serviceAccountName: netbird-clusterproxy
+  groups:
+    - k8s
+    - cluster-{{ required "cluster.name is required" .Values.cluster.name }}
