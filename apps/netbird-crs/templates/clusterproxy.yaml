@@ -7,5 +7,5 @@ spec:
   clusterName: {{ required "cluster.name is required" .Values.cluster.name }}
   serviceAccountName: netbird-clusterproxy
   groups:
-    - k8s
-    - cluster-{{ required "cluster.name is required" .Values.cluster.name }}
+    - name: k8s
+    - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
