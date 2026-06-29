@@ -1,0 +1,19 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: netbird-clusterproxy
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - users
+      - groups
+    verbs:
+      - impersonate
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - userextras/*
+      - uids
+    verbs:
+      - impersonate

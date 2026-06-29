@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: netbird-clusterproxy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: netbird-clusterproxy
+subjects:
+  - kind: ServiceAccount
+    name: netbird-clusterproxy
+    namespace: netbird
