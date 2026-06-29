@@ -8,6 +8,8 @@ get_usage() {
     echo "Usage: hsctl get <resource> [-o table|yaml|json] [flags...]"
     echo ""
     echo "Resources:"
+    echo "  clusters                      List Kubernetes clusters reachable via NetBird"
+    echo "  kubeconfig <cluster>          Write kubeconfig context for a cluster"
     echo "  machines [--cluster <name>]   List all machines; enriches with node name for assigned ones"
     echo "  machine  <id>                 Show details for a specific machine"
     exit 1
@@ -108,6 +110,92 @@ get_machine() {
     esac
 }
 
+get_clusters() {
+    netbird status --json 2>/dev/null | python3 -c "
+import json, sys, re, urllib.request, ssl
+output_fmt = sys.argv[1]
+data = json.load(sys.stdin)
+seen = {}
+clusters = []
+for p in data.get('peers', {}).get('details', []):
+    m = re.match(r'^clusterproxy-(.*?)-[0-9a-f]{10}-', p.get('fqdn', ''))
+    if m and m.group(1) not in seen:
+        c = m.group(1)
+        seen[c] = True
+        fqdn = f'{c}REDACTED'
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        try:
+            ver = json.loads(urllib.request.urlopen(f'https://{fqdn}/version', timeout=5, context=ctx).read()).get('gitVersion', '?')
+        except Exception:
+            ver = '?'
+        clusters.append({'name': c, 'fqdn': fqdn, 'version': ver})
+if output_fmt == 'json':
+    print(json.dumps(clusters, indent=2))
+elif output_fmt == 'yaml':
+    for cl in clusters:
+        print(f\"- name: {cl['name']}\")
+        print(f\"  fqdn: {cl['fqdn']}\")
+        print(f\"  version: {cl['version']}\")
+else:
+    print(f\"{'CLUSTER':<20}  {'PROXY FQDN':<52}  VERSION\")
+    for cl in clusters:
+        print(f\"{cl['name']:<20}  {cl['fqdn']:<52}  {cl['version']}\")
+" "$HSCTL_OUTPUT"
+}
+
+get_kubeconfig() {
+    local cluster="${1:-}"
+    [[ -z "$cluster" ]] && { echo "Usage: hsctl get kubeconfig <cluster>"; exit 1; }
+
+    local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
+    local fqdn="${cluster}REDACTED"
+
+    python3 - "$cluster" "$fqdn" "$kubeconfig" <<'PYEOF'
+import json, sys, ssl, urllib.request
+from pathlib import Path
+
+cluster, fqdn, kubeconfig_path = sys.argv[1], sys.argv[2], sys.argv[3]
+
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
+try:
+    urllib.request.urlopen(f'https://{fqdn}/version', timeout=5, context=ctx)
+except Exception as e:
+    print(f'error: cluster {cluster!r} not reachable at {fqdn}: {e}', file=sys.stderr)
+    sys.exit(1)
+
+import yaml  # PyYAML — available via system python on macOS
+
+server = f'https://{fqdn}'
+p = Path(kubeconfig_path)
+p.parent.mkdir(parents=True, exist_ok=True)
+cfg = yaml.safe_load(p.read_text()) if p.exists() else None
+if not cfg:
+    cfg = {'apiVersion': 'v1', 'kind': 'Config'}
+
+def upsert(collection, name, value):
+    items = cfg.get(collection) or []
+    for i, item in enumerate(items):
+        if item.get('name') == name:
+            items[i] = value
+            cfg[collection] = items
+            return
+    items.append(value)
+    cfg[collection] = items
+
+upsert('clusters', cluster, {'name': cluster, 'cluster': {'server': server, 'insecure-skip-tls-verify': True}})
+upsert('users',    'netbird', {'name': 'netbird', 'user': {'token': 'none'}})
+upsert('contexts', cluster, {'name': cluster, 'context': {'cluster': cluster, 'user': 'netbird', 'namespace': 'default'}})
+cfg['current-context'] = cluster
+
+p.write_text(yaml.dump(cfg, default_flow_style=False))
+print(f'Switched to cluster {cluster!r}')
+PYEOF
+}
+
 get_main() {
     HSCTL_OUTPUT="table"
     local args=()
@@ -124,6 +212,12 @@ get_main() {
 
     local resource; resource="$(tr '[:upper:]' '[:lower:]' <<< "$1")"; shift
     case "$resource" in
+        cluster|clusters)
+            get_clusters "$@"
+            ;;
+        kubeconfig|kc)
+            get_kubeconfig "$@"
+            ;;
         machine|machines|m)
             if [[ $# -gt 0 && "$1" != -* ]]; then
                 get_machine "$@"

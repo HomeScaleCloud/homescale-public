@@ -38,6 +38,10 @@ resource "netbird_group" "k8s" {
   name = "k8s"
 }
 
+resource "netbird_group" "omni_k8s" {
+  name = "omni-k8s"
+}
+
 resource "netbird_group" "github_actions" {
   name = "GitHub Actions"
 }

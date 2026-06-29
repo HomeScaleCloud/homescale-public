@@ -28,6 +28,21 @@ resource "netbird_policy" "region_bmc" {
   }
 }
 
+resource "netbird_policy" "omni_k8s" {
+  name    = "Omni (k8s proxy)"
+  enabled = true
+  rule {
+    action        = "accept"
+    bidirectional = false
+    enabled       = true
+    protocol      = "tcp"
+    ports         = ["443"]
+    name          = "Omni (k8s proxy)"
+    sources       = [netbird_group.github_actions.id, data.netbird_group.sg_k8s_admin.id]
+    destinations  = [netbird_group.omni_k8s.id]
+  }
+}
+
 resource "netbird_policy" "k8s" {
   name    = "Kubernetes"
   enabled = true
