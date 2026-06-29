@@ -28,6 +28,21 @@ resource "netbird_policy" "region_bmc" {
   }
 }
 
+resource "netbird_policy" "k8s" {
+  name    = "Kubernetes"
+  enabled = true
+  rule {
+    action        = "accept"
+    bidirectional = false
+    enabled       = true
+    protocol      = "tcp"
+    ports         = ["443"]
+    name          = "Kubernetes"
+    sources       = [data.netbird_group.team_infra_plat.id, data.netbird_group.team_sec_plat.id, data.netbird_group.sg_k8s_admin.id]
+    destinations  = [netbird_group.k8s.id]
+  }
+}
+
 locals {
   app_yaml_files = fileset("${path.module}/../../../../apps", "*/app.yaml")
 
