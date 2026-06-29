@@ -111,10 +111,25 @@ get_machine() {
 }
 
 get_clusters() {
-    netbird status --json 2>/dev/null | python3 -c "
+    local netbird_json talos_tsv
+    netbird_json=$(netbird status --json 2>/dev/null || echo '{}')
+    talos_tsv=$(omnictl get clusters -o yaml 2>/dev/null | \
+        yq e '[.metadata.id, (.spec.talosversion // "?")] | @tsv' - 2>/dev/null || true)
+
+    python3 - "$HSCTL_OUTPUT" "$talos_tsv" "$netbird_json" <<'PYEOF'
 import json, sys, re, urllib.request, ssl
-output_fmt = sys.argv[1]
-data = json.load(sys.stdin)
+
+output_fmt   = sys.argv[1]
+talos_tsv    = sys.argv[2]
+netbird_json = sys.argv[3]
+
+talos_versions = {}
+for line in talos_tsv.strip().splitlines():
+    parts = line.split('\t')
+    if len(parts) == 2:
+        talos_versions[parts[0]] = parts[1]
+
+data = json.loads(netbird_json)
 seen = {}
 clusters = []
 for p in data.get('peers', {}).get('details', []):
@@ -127,22 +142,24 @@ for p in data.get('peers', {}).get('details', []):
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
         try:
-            ver = json.loads(urllib.request.urlopen(f'https://{fqdn}/version', timeout=5, context=ctx).read()).get('gitVersion', '?')
+            k8s_ver = json.loads(urllib.request.urlopen(f'https://{fqdn}/version', timeout=5, context=ctx).read()).get('gitVersion', '?')
         except Exception:
-            ver = '?'
-        clusters.append({'name': c, 'fqdn': fqdn, 'version': ver})
+            k8s_ver = '?'
+        clusters.append({'name': c, 'fqdn': fqdn, 'k8s_version': k8s_ver, 'talos_version': talos_versions.get(c, '?')})
+
 if output_fmt == 'json':
     print(json.dumps(clusters, indent=2))
 elif output_fmt == 'yaml':
     for cl in clusters:
-        print(f\"- name: {cl['name']}\")
-        print(f\"  fqdn: {cl['fqdn']}\")
-        print(f\"  version: {cl['version']}\")
+        print(f'- name: {cl["name"]}')
+        print(f'  fqdn: {cl["fqdn"]}')
+        print(f'  k8sVersion: {cl["k8s_version"]}')
+        print(f'  talosVersion: {cl["talos_version"]}')
 else:
-    print(f\"{'CLUSTER':<20}  {'PROXY FQDN':<52}  VERSION\")
+    print(f'{"CLUSTER":<20}  {"PROXY FQDN":<52}  {"K8S VERSION":<14}  TALOS VERSION')
     for cl in clusters:
-        print(f\"{cl['name']:<20}  {cl['fqdn']:<52}  {cl['version']}\")
-" "$HSCTL_OUTPUT"
+        print(f'{cl["name"]:<20}  {cl["fqdn"]:<52}  {cl["k8s_version"]:<14}  {cl["talos_version"]}')
+PYEOF
 }
 
 get_kubeconfig() {
