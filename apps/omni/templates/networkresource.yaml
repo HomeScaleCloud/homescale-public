@@ -25,5 +25,5 @@ spec:
   serviceRef:
     name: k8s
   groups:
-    - name: app-omni
+    - name: omni-k8s
     - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}
