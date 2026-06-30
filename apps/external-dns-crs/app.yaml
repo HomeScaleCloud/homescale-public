@@ -6,3 +6,5 @@ defaultDeploy: false
 clusters:
   mgmt:
     deploy: true
+  mgmt-vultr:
+    deploy: true

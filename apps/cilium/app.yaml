@@ -8,6 +8,8 @@ defaultDeploy: true
 clusters:
   mgmt:
     deploy: false
+  mgmt-vultr:
+    deploy: false
 values:
   cilium:
     kubeProxyReplacement: true

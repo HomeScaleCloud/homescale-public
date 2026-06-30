@@ -12,6 +12,10 @@ terraform {
       source  = "digitalocean/digitalocean"
       version = "2.92.0"
     }
+    vultr = {
+      source  = "vultr/vultr"
+      version = "~> 2.0"
+    }
     helm = {
       source  = "hashicorp/helm"
       version = "3.2.0"
