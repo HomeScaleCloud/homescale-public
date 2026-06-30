@@ -21,7 +21,7 @@ variable "node_count" {
 }
 
 variable "node_plan" {
-  description = "Vultr plan ID for worker nodes (default: vc2-2c-4gb = 2 vCPU, 4 GB RAM)"
+  description = "Vultr plan ID for worker nodes"
   type        = string
   default     = "vc2-4c-8gb"
 }
