@@ -233,7 +233,7 @@ values:
             emptyDir: {}
         initContainers:
           - name: nb-client
-            image: "ghcr.io/netbirdio/netbird:0.71.4"
+            image: "ghcr.io/netbirdio/netbird:0.72.4"
             restartPolicy: Always
             startupProbe:
               exec:
@@ -364,7 +364,7 @@ values:
           operator: Exists
       initContainers:
         - name: nb-client
-          image: "ghcr.io/netbirdio/netbird:0.71.4"
+          image: "ghcr.io/netbirdio/netbird:0.72.4"
           restartPolicy: Always
           startupProbe:
             exec:
