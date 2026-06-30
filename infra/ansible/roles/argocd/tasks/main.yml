@@ -1,13 +1,14 @@
 ---
-- name: Check if ArgoCD namespace exists
+- name: Check if ArgoCD is already installed
   kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Namespace
-    name: argocd
-  register: _argocd_ns
+    api_version: apps/v1
+    kind: Deployment
+    name: argocd-server
+    namespace: argocd
+  register: _argocd_server
 
 - name: Install ArgoCD
-  when: _argocd_ns.resources | length == 0
+  when: _argocd_server.resources | length == 0
   kubernetes.core.helm:
     name: argocd
     chart_ref: argo-cd
@@ -20,7 +21,7 @@
     wait_timeout: "300s"
 
 - name: Deploy apps
-  when: _argocd_ns.resources | length == 0
+  when: _argocd_server.resources | length == 0
   kubernetes.core.k8s:
     state: present
     src: "{{ playbook_dir | dirname | dirname | dirname }}/clusters/{{ omni_cluster_name }}/apps.yaml"
