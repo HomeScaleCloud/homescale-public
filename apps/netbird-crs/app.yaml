@@ -3,6 +3,10 @@ namespace: netbird
 releaseName: netbird-crs
 syncWave: -10
 podSecurity: privileged
+clusters:
+  mgmt:
+    values:
+      kubeApiServer: "https://kubernetes.default.svc/"
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
