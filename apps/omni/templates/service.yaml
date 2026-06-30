@@ -36,7 +36,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: {{ required "machineApiHostname is required" .Values.machineApiHostname }}
+    external-dns.alpha.kubernetes.io/hostname: {{ required "siderolinkHostname is required" .Values.siderolinkHostname }}
     service.beta.kubernetes.io/vultr-loadbalancer-backend-protocol: "udp"
     service.beta.kubernetes.io/vultr-loadbalancer-protocol: "udp"
     service.beta.kubernetes.io/vultr-loadbalancer-healthcheck-port: "8080"
@@ -61,7 +61,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: {{ required "siderolinkHostname is required" .Values.siderolinkHostname }}
+    external-dns.alpha.kubernetes.io/hostname: {{ required "machineApiHostname is required" .Values.machineApiHostname }}
   name: machine-api
   namespace: omni
 spec:
