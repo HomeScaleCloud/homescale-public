@@ -23,7 +23,7 @@ module "mgmt_cluster" {
 
 module "mgmt_vultr_cluster" {
   source                 = "./modules/mgmt_vultr_cluster"
-  vultr_api_key          = data.infisical_secrets.github_actions.secrets["VULTR_API_KEY"].value
+  vultr_api_key          = data.infisical_secrets.github_actions.secrets["VULTR_TOKEN"].value
   k8s_version            = "v1.32.3+1"
   region                 = "lhr"
   infisical_workspace_id = module.infisical.project_id
