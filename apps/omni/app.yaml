@@ -36,6 +36,8 @@ values:
           enabled: true
           labelRules:
             "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups": "groups"
+      features:
+        enableBreakGlassConfigs: true
       services:
         api:
           advertisedURL: "https://xxx"
