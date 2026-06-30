@@ -5,6 +5,7 @@ metadata:
   namespace: netbird
 spec:
   clusterName: {{ required "cluster.name is required" .Values.cluster.name }}
+  apiServer: {{ .Values.kubeApiServer | default "https://kubernetes.default.svc.cluster.local/" }}
   serviceAccountName: netbird-clusterproxy
   groups:
     - name: k8s
