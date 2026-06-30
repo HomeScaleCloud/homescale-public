@@ -36,7 +36,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: xxx
+    external-dns.alpha.kubernetes.io/hostname: {{ required "siderolinkHostname is required" .Values.siderolinkHostname }}
   name: siderolink
   namespace: omni
 spec:

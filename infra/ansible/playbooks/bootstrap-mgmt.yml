@@ -1,11 +1,13 @@
 ---
-- name: Bootstrap mgmt cluster
+- name: Bootstrap mgmt-class cluster
   hosts: localhost
   gather_facts: false
 
   vars:
-    kubeconfig_path: "/tmp/kubeconfig-mgmt"
-    omni_cluster_name: mgmt
+    cluster_name: mgmt
+    kubeconfig_secret_key: "{{ cluster_name | upper | replace('-', '_') }}_KUBECONFIG"
+    kubeconfig_path: "/tmp/kubeconfig-{{ cluster_name }}"
+    omni_cluster_name: "{{ cluster_name }}"
 
   module_defaults:
     kubernetes.core.k8s:
@@ -25,7 +27,7 @@
       register: _infisical
       no_log: true
 
-    - name: Read mgmt kubeconfig from Infisical
+    - name: Read cluster kubeconfig from Infisical
       infisical.vault.read_secrets:
         login_data: "{{ _infisical.login_data }}"
         project_id: "{{ infisical_project_id }}"
@@ -35,9 +37,15 @@
       register: _github_actions_secrets
       no_log: true
 
+    - name: Skip if kubeconfig not yet available
+      when: >
+        _github_actions_secrets.secrets[kubeconfig_secret_key] is not defined
+        or not _github_actions_secrets.secrets[kubeconfig_secret_key]
+      ansible.builtin.meta: end_play
+
     - name: Write kubeconfig
       ansible.builtin.copy:
-        content: "{{ _github_actions_secrets.secrets.MGMT_KUBECONFIG }}"
+        content: "{{ _github_actions_secrets.secrets[kubeconfig_secret_key] }}"
         dest: "{{ kubeconfig_path }}"
         mode: "0600"
       no_log: true
