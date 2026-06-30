@@ -1,0 +1,9 @@
+path: apps/node-inotify-limits
+namespace: kube-system
+releaseName: node-inotify-limits
+syncWave: -25
+podSecurity: privileged
+defaultDeploy: false
+clusters:
+  mgmt:
+    deploy: true
