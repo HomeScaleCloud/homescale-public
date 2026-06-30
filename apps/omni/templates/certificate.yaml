@@ -9,6 +9,6 @@ spec:
     name: {{ .Values.certIssuer | default "letsencrypt" }}
     kind: ClusterIssuer
   dnsNames:
-    - REDACTED
-    - REDACTED
-    - REDACTED
+    - omni.{{ required "cluster.name is required" .Values.cluster.name }}REDACTED
+    - k8s.omni.{{ required "cluster.name is required" .Values.cluster.name }}REDACTED
+    - {{ required "siderolinkHostname is required" .Values.siderolinkHostname }}
