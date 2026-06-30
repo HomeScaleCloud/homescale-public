@@ -11,6 +11,9 @@ netbird:
 clusters:
   mgmt:
     deploy: true
+    values:
+      omni:
+        replicaCount: 0
 
 values:
   cluster:
