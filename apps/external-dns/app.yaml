@@ -20,5 +20,3 @@ values:
             name: cloudflare
             key: credential
     domainFilters: ["REDACTED"]
-    extraArgs:
-      - --resolve-service-load-balancer-hostname
