@@ -6,8 +6,6 @@ defaultDeploy: true
 clusters:
   mgmt:
     deploy: false
-  mgmt-vultr:
-    deploy: false
   boa1-prod:
     values:
       vlans:
