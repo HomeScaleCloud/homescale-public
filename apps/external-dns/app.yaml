@@ -6,8 +6,6 @@ defaultDeploy: false
 clusters:
   mgmt:
     deploy: true
-  mgmt-vultr:
-    deploy: true
 values:
   external-dns:
     sources:

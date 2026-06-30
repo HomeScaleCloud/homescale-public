@@ -1,7 +1,7 @@
 terraform {
   required_providers {
-    digitalocean = {
-      source = "digitalocean/digitalocean"
+    vultr = {
+      source = "vultr/vultr"
     }
     infisical = {
       source = "infisical/infisical"
@@ -9,6 +9,6 @@ terraform {
   }
 }
 
-provider "digitalocean" {
-  token = var.digitalocean_token
+provider "vultr" {
+  api_key = var.vultr_api_key
 }

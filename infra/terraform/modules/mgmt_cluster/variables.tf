@@ -1,17 +1,29 @@
+variable "vultr_api_key" {
+  description = "Vultr API key"
+  type        = string
+  sensitive   = true
+}
+
 variable "region" {
-  description = "Name of the region the cluster resides in"
+  description = "Vultr region ID for the cluster (e.g. lhr for London)"
   type        = string
 }
 
 variable "k8s_version" {
-  description = "Kubernetes version to be used (options vary by platform)."
+  description = "Kubernetes version string as returned by the Vultr API (e.g. v1.34.8+2). Check available versions at https://api.vultr.com/v2/kubernetes/versions"
   type        = string
 }
 
-variable "digitalocean_token" {
-  description = "DigitalOcean API Token"
+variable "node_count" {
+  description = "Number of worker nodes in the default node pool"
+  type        = number
+  default     = 2
+}
+
+variable "node_plan" {
+  description = "Vultr plan ID for worker nodes (default: vc2-2c-4gb = 2 vCPU, 4 GB RAM)"
   type        = string
-  sensitive   = true
+  default     = "vc2-2c-4gb"
 }
 
 variable "infisical_workspace_id" {

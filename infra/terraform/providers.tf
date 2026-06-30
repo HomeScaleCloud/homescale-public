@@ -8,10 +8,6 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "5.21.1"
     }
-    digitalocean = {
-      source  = "digitalocean/digitalocean"
-      version = "2.92.0"
-    }
     vultr = {
       source  = "vultr/vultr"
       version = "~> 2.0"
@@ -52,8 +48,6 @@ provider "infisical" {
 }
 
 provider "cloudflare" {}
-
-provider "digitalocean" {}
 
 provider "netbird" {
   token = var.netbird_token

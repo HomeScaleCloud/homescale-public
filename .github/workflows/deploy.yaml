@@ -561,13 +561,6 @@ jobs:
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: ansible-playbook playbooks/bootstrap-mgmt.yml -e cluster_name=mgmt
 
-      - name: Run mgmt-vultr cluster bootstrap playbook
-        working-directory: infra/ansible
-        env:
-          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
-        run: ansible-playbook playbooks/bootstrap-mgmt.yml -e cluster_name=mgmt-vultr
-
       - name: Install omnictl
         run: |
           curl -fsSL -o /usr/local/bin/omnictl \

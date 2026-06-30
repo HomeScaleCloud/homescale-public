@@ -15,14 +15,6 @@ module "netbird" {
 
 module "mgmt_cluster" {
   source                 = "./modules/mgmt_cluster"
-  digitalocean_token     = data.infisical_secrets.github_actions.secrets["DIGITALOCEAN_TOKEN"].value
-  k8s_version            = "1.34."
-  region                 = "lon1"
-  infisical_workspace_id = module.infisical.project_id
-}
-
-module "mgmt_vultr_cluster" {
-  source                 = "./modules/mgmt_vultr_cluster"
   vultr_api_key          = data.infisical_secrets.github_actions.secrets["VULTR_TOKEN"].value
   k8s_version            = "v1.34.8+2"
   region                 = "lhr"

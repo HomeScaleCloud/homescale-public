@@ -11,28 +11,12 @@ netbird:
 clusters:
   mgmt:
     deploy: true
-  mgmt-vultr:
-    deploy: true
     values:
-      siderolinkHostname: REDACTED
       omni:
-        additionalConfigSources:
-          - existingSecret: omni  # pragma: allowlist secret
-            key: config.yaml
-
-        config:
-          services:
-            api:
-              advertisedURL: "https://REDACTED"
-            kubernetesProxy:
-              advertisedURL: "https://REDACTED"
-            machineAPI:
-              # DNS record for REDACTED must be created the
-              # same way REDACTED was set up (not in Terraform).
-              advertisedURL: "https://REDACTED"
-            siderolink:
-              wireGuard:
-                advertisedEndpoint: "REDACTED:50180"
+        replicaCount: 0
+      volsync:
+        restore:
+          enabled: true
 
 values:
   cluster:
