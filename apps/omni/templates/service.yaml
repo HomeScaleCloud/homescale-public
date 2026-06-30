@@ -39,6 +39,7 @@ metadata:
     external-dns.alpha.kubernetes.io/hostname: {{ required "siderolinkHostname is required" .Values.siderolinkHostname }}
     service.beta.kubernetes.io/vultr-loadbalancer-backend-protocol: "udp"
     service.beta.kubernetes.io/vultr-loadbalancer-protocol: "udp"
+    service.beta.kubernetes.io/vultr-loadbalancer-healthcheck-protocol: "udp"
   name: siderolink
   namespace: omni
 spec:
