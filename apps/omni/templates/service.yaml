@@ -37,6 +37,7 @@ kind: Service
 metadata:
   annotations:
     external-dns.alpha.kubernetes.io/hostname: {{ required "siderolinkHostname is required" .Values.siderolinkHostname }}
+    service.beta.kubernetes.io/vultr-loadbalancer-protocol: udp
   name: siderolink
   namespace: omni
 spec:
@@ -49,6 +50,20 @@ spec:
       port: 50180
       protocol: UDP
       targetPort: wireguard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: {{ required "machineApiHostname is required" .Values.machineApiHostname }}
+  name: machine-api
+  namespace: omni
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/instance: omni
+    app.kubernetes.io/name: omni
+  ports:
     - name: https
       port: 443
       protocol: TCP
