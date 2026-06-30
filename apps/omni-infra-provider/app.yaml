@@ -15,7 +15,7 @@ values:
   omni:
     apiEndpoint: "https://xxx"
   netbird:
-    image: "ghcr.io/netbirdio/netbird:0.71.4"
+    image: "ghcr.io/netbirdio/netbird:0.72.4"
     autoGroups:
       - "cluster-{{ .Values.cluster.name }}"
       - "app-omni-infra-provider"
