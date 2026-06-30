@@ -16,7 +16,7 @@ module "netbird" {
 module "mgmt_cluster" {
   source                 = "./modules/mgmt_cluster"
   vultr_api_key          = data.infisical_secrets.github_actions.secrets["VULTR_TOKEN"].value
-  k8s_version            = "v1.34.8+2"
+  k8s_version            = "v1.36.1+2"
   region                 = "lhr"
   infisical_workspace_id = module.infisical.project_id
 }
