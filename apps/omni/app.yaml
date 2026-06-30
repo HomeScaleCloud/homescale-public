@@ -11,28 +11,12 @@ netbird:
 clusters:
   mgmt:
     deploy: true
-  mgmt-vultr:
-    deploy: true
     values:
-      siderolinkHostname: xxx
       omni:
-        additionalConfigSources:
-          - existingSecret: omni  # pragma: allowlist secret
-            key: config.yaml
-
-        config:
-          services:
-            api:
-              advertisedURL: "https://xxx"
-            kubernetesProxy:
-              advertisedURL: "https://xxx"
-            machineAPI:
-              # DNS record for xxx must be created the
-              # same way xxx was set up (not in Terraform).
-              advertisedURL: "https://xxx"
-            siderolink:
-              wireGuard:
-                advertisedEndpoint: "xxx:50180"
+        replicaCount: 0
+      volsync:
+        restore:
+          enabled: true
 
 values:
   cluster:

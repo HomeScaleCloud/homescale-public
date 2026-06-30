@@ -1,17 +1,11 @@
-output "k8s_endpoint" {
-  value       = digitalocean_kubernetes_cluster.mgmt.endpoint
-  description = "Kubernetes API Endpoint"
+output "kube_config" {
+  value       = base64decode(vultr_kubernetes.mgmt.kube_config)
+  description = "Decoded kubeconfig for the mgmt cluster"
   sensitive   = true
 }
 
-output "k8s_token" {
-  value       = digitalocean_kubernetes_cluster.mgmt.kube_config.0.token
-  description = "Kubernetes API Token"
-  sensitive   = true
-}
-
-output "k8s_ca" {
-  value       = base64decode(digitalocean_kubernetes_cluster.mgmt.kube_config.0.cluster_ca_certificate)
-  description = "Kubernetes Cluster CA"
+output "endpoint" {
+  value       = vultr_kubernetes.mgmt.endpoint
+  description = "Kubernetes API server endpoint"
   sensitive   = true
 }

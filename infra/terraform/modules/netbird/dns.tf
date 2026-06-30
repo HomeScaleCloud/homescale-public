@@ -1,10 +1,8 @@
 resource "netbird_dns_record" "omni" {
-  for_each = toset(["mgmt", "mgmt-vultr"])
-
-  zone_id = netbird_dns_zone.cluster[each.key].id
-  name    = "omni.${each.key}xxx"
+  zone_id = netbird_dns_zone.cluster["mgmt"].id
+  name    = "xxx"
   type    = "CNAME"
-  content = "api.omni.${each.key}xxx"
+  content = "xxx"
   ttl     = 300
 }
 
