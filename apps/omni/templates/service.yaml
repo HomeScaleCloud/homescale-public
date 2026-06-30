@@ -36,10 +36,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: {{ required "siderolinkHostname is required" .Values.siderolinkHostname }}
-    service.beta.kubernetes.io/vultr-loadbalancer-backend-protocol: "udp"
-    service.beta.kubernetes.io/vultr-loadbalancer-protocol: "udp"
-    service.beta.kubernetes.io/vultr-loadbalancer-healthcheck-port: "8080"
+    external-dns.alpha.kubernetes.io/hostname: xxx
   name: siderolink
   namespace: omni
 spec:
@@ -48,28 +45,10 @@ spec:
     app.kubernetes.io/instance: omni
     app.kubernetes.io/name: omni
   ports:
-    - name: healthcheck
-      port: 8080
-      protocol: TCP
-      targetPort: 8080
     - name: wireguard
       port: 50180
       protocol: UDP
       targetPort: wireguard
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: {{ required "machineApiHostname is required" .Values.machineApiHostname }}
-  name: machine-api
-  namespace: omni
-spec:
-  type: LoadBalancer
-  selector:
-    app.kubernetes.io/instance: omni
-    app.kubernetes.io/name: omni
-  ports:
     - name: https
       port: 443
       protocol: TCP
