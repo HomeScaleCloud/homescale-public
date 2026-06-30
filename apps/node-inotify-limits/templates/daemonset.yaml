@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    xxx/name: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      priorityClassName: system-node-critical
+      tolerations:
+        - operator: Exists
+      initContainers:
+        - name: sysctl
+          image: alpine:3.23.3
+          command:
+            - sysctl
+            - -w
+            - fs.inotify.max_user_instances=1024
+            - fs.inotify.max_user_watches=524288
+          securityContext:
+            privileged: true
+      containers:
+        - name: pause
+          image: alpine:3.23.3
+          command: ["sleep", "infinity"]
+          resources:
+            requests:
+              cpu: 1m
+              memory: 5Mi
+            limits:
+              cpu: 10m
+              memory: 10Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+  updateStrategy:
+    type: RollingUpdate

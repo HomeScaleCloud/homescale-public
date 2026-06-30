@@ -1,0 +1,5 @@
+apiVersion: v2
+name: node-inotify-limits
+description: Helm chart for raising inotify instance and watch limits on each node
+type: application
+version: 0.1.0
