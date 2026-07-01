@@ -24,6 +24,7 @@ spec:
 {{- end }}
 {{- end }}
 {{- if $restore }}
+{{- $moverSecurityContexts := default (dict) (($.Values.volsync).restore).moverSecurityContext }}
 {{- range $pvcs }}
 ---
 apiVersion: volsync.backube/v1alpha1
@@ -43,6 +44,10 @@ spec:
     {{- end }}
     {{- if (($.Values.volsync).restore).previous }}
     previous: {{ $.Values.volsync.restore.previous }}
+    {{- end }}
+    {{- with index $moverSecurityContexts . }}
+    moverSecurityContext:
+{{ toYaml . | indent 6 }}
     {{- end }}
 {{- end }}
 {{- end }}
