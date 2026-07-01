@@ -171,7 +171,7 @@ The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a 
 
 1. **Find the snapshot you want** (optional):
    ```bash
-   hsctl volsync snapshot list <app>
+   hsctl get snapshot <app>
    ```
 
 2. **Scale down and enable restore** in `apps/<app>/app.yaml` For example, for omni:

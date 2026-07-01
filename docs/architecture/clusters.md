@@ -85,7 +85,8 @@ Machines must be registered with Omni before they can be claimed here — see [R
    machines:
      - <machine-uuid>
    ```
-2. **Create `clusters/<cluster>/apps.yaml`** — the ArgoCD app-of-apps pointing at this repo. Commit this after the cluster is up.
+2. **Create `clusters/<cluster>/apps.yaml`** — the ArgoCD app-of-apps pointing at this repo.
+
 3. **Add per-cluster overrides** to any `apps/*/app.yaml` that needs cluster-specific config:
    ```yaml
    clusters:
@@ -94,10 +95,8 @@ Machines must be registered with Omni before they can be claimed here — see [R
        values:
          someKey: clusterSpecificValue
    ```
-4. **Merge to `main`** — CI runs the Omni template sync, then the Ansible `bootstrap-cluster.yml` playbook runs automatically. The bootstrap playbook applies `apps.yaml` to the new cluster and seeds critical credentials (Infisical machine identities, kubeconfig, etc.) that apps depend on at startup. Alternatively, apply the app-of-apps manually:
-   ```bash
-   kubectl apply -f clusters/<cluster>/apps.yaml
-   ```
+4. **Merge to `main`** — CI runs the Omni template sync, then the Ansible `bootstrap-cluster.yml` playbook runs automatically. The bootstrap playbook applies `apps.yaml` to the new cluster and seeds critical credentials (Infisical machine identities, kubeconfig, etc.) that apps depend on at startup.
+
 5. **ArgoCD takes over** — it syncs the app catalog and deploys all enabled apps in sync-wave order
 
 ## Upgrading Talos or Kubernetes
