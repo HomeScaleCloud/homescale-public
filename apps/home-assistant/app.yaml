@@ -24,6 +24,9 @@ clusters:
       volsync:
         restore:
           enabled: true
+          moverSecurityContext:
+            mqtt-config:
+              runAsUser: 0
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
