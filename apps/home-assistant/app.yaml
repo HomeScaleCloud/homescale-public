@@ -14,9 +14,16 @@ clusters:
   boa1-prod:
     deploy: true
     values:
+      replicaCount: 0
       zigbee2mqtt:
+        replicaCount: 0
         config:
           serialPort: "tcp://10.1.241.238:6638"
+      homebridge:
+        replicaCount: 0
+      volsync:
+        restore:
+          enabled: true
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
@@ -25,6 +32,7 @@ values:
   image:
     repository: ghcr.io/home-assistant/home-assistant
     tag: "2026.3.2"
+  replicaCount: 1
   pvc:
     size: 25Gi
   mqtt:
@@ -37,6 +45,7 @@ values:
       data:
         size: 5Gi
   zigbee2mqtt:
+    replicaCount: 1
     image:
       repository: ghcr.io/koenkk/zigbee2mqtt
       tag: "2.9.2"
@@ -66,6 +75,7 @@ values:
     pvc:
       size: 1Gi
   homebridge:
+    replicaCount: 1
     image:
       repository: homebridge/homebridge
       tag: "latest"
