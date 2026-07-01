@@ -34,6 +34,7 @@ nav:
       - Backups: architecture/backups.md
   - Operations:
       - Deploying an App: operations/deploying-an-app.md
+      - Registering Machines: operations/registering-machines.md
   - Runbooks:
       - Overview: runbooks/index.md
       - Omni:

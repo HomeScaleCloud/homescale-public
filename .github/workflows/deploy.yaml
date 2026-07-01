@@ -567,15 +567,6 @@ jobs:
             https://REDACTED/api/omnictl/omnictl-linux-amd64
           chmod +x /usr/local/bin/omnictl
 
-      - name: Run infra provider bootstrap playbook
-        working-directory: infra/ansible
-        env:
-          OMNI_ENDPOINT: https://REDACTED
-          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
-          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
-        run: ansible-playbook playbooks/bootstrap-infra-providers.yml
-
       - name: Run cluster bootstrap playbook
         working-directory: infra/ansible
         env:

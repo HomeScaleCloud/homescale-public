@@ -14,7 +14,6 @@ apps/templates/                                 @HomeScaleCloud/team-infra-plat
 # Cluster definitions and lifecycle
 clusters/                                       @HomeScaleCloud/team-infra-plat
 apps/omni/                                      @HomeScaleCloud/team-infra-plat
-apps/omni-infra-provider/                       @HomeScaleCloud/team-infra-plat
 infra/omni/                                     @HomeScaleCloud/team-infra-plat
 infra/ansible/                                  @HomeScaleCloud/team-infra-plat
 

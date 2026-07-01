@@ -77,9 +77,8 @@ See the [App reference](apps.md#netbird-access-policy-netbird) for the full fiel
 
 ## Gateway clusters
 
-Gateway clusters (`<region>-gw`) are single-node clusters — one per region — that handle bare-metal provisioning and act as the regional entry point into the HomeScale mesh:
+Gateway clusters (`<region>-gw`) are single-node clusters — one per region — that act as the regional entry point into the HomeScale mesh:
 
-- **Bare-metal provisioning** — runs [`omni-infra-provider`](https://omni.siderolabs.com/how-to-guides/install-and-configure-omni-integration-in-bare-metal-mode) to PXE-boot Talos nodes in the region
 - **Subnet routing** — runs a NetBird subnet router that exposes the region's BMC and MGMT subnets (switch management, iDRAC/IPMI, etc.) across the WireGuard mesh
 - **Region ↔ management connectivity** — bridges region-local services (accessible at `*.<region>REDACTED`) to the management cluster and vice versa
 
