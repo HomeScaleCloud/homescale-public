@@ -26,7 +26,8 @@ clusters:
           enabled: true
           moverSecurityContext:
             mqtt-config:
-              runAsUser: 0
+              runAsUser: 100
+              runAsGroup: 101
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
