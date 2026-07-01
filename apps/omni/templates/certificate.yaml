@@ -10,6 +10,6 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - omni.{{ required "cluster.name is required" .Values.cluster.name }}xxx
-    - k8s.omni.{{ required "cluster.name is required" .Values.cluster.name }}xxx
+    - k8s.api.omni.{{ required "cluster.name is required" .Values.cluster.name }}xxx
     - {{ required "siderolinkHostname is required" .Values.siderolinkHostname }}
     - {{ required "machineApiHostname is required" .Values.machineApiHostname }}
