@@ -75,14 +75,6 @@ values:
         mountPath: /tls
         readOnly: true
 
-    extraContainers:
-      - name: toolbox
-        image: alpine:3.23.3
-        command: ["sleep", "infinity"]
-        volumeMounts:
-          - name: data
-            mountPath: /data
-
     readinessProbe:
       failureThreshold: 3
       httpGet:
