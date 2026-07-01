@@ -69,7 +69,7 @@ Infrastructure Platforms owns the full observability stack: per-cluster Promethe
 
 ### Cluster lifecycle
 
-Infrastructure Platforms owns the full lifecycle of every cluster: bare-metal provisioning via PXE boot (Omni infra provider), Talos OS config patches, Kubernetes version upgrades, and the bootstrap app-of-apps that seeds ArgoCD on a fresh cluster. Gateway clusters (`*-gw`) are also Infrastructure Platforms's responsibility — they run the regional infra provider and subnet router that connect each region to the WireGuard mesh.
+Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS config patches, Kubernetes version upgrades, and the bootstrap app-of-apps that seeds ArgoCD on a fresh cluster. Gateway clusters (`*-gw`) are also Infrastructure Platforms's responsibility — they run the regional subnet router that connects each region to the WireGuard mesh.
 
 | Path | What it does |
 |------|-------------|
@@ -77,7 +77,6 @@ Infrastructure Platforms owns the full lifecycle of every cluster: bare-metal pr
 | `infra/omni/` | Talos machine config patches |
 | `infra/ansible/` | Bootstrap playbooks |
 | `apps/omni/` | Omni control plane |
-| `apps/omni-infra-provider/` | PXE boot / bare-metal provisioning (gateway clusters) |
 
 ### Infrastructure (Terraform)
 

@@ -26,7 +26,7 @@ Clusters follow the `<region>-<role>` convention:
 | Pattern | Example | Role |
 |---------|---------|------|
 | `<region>-prod` | `boa1-prod` | Production workloads |
-| `<region>-gw` | `boa1-gw` | Gateway: bare-metal provisioning, subnet routing |
+| `<region>-gw` | `boa1-gw` | Gateway: subnet routing |
 | `mgmt` | `mgmt` | Management (exception to the naming convention) |
 
 Each cluster maps to exactly one region. Region codes are short datacenter identifiers (e.g. `boa1`).
@@ -60,9 +60,11 @@ CI syncs all machine class files on every push to `main` (`omnictl apply -f infr
 
 ## Bootstrap: adding a new cluster
 
+Machines must be registered with Omni before they can be claimed here — see [Registering new machines with Omni](../operations/registering-machines.md) if the machine isn't in the Omni **Machines** list yet.
+
 1. **Create `clusters/<cluster>/cluster.yaml`** — the Omni cluster template defining Talos/k8s versions and machinesets. Commit and merge this first; CI syncs it to Omni, which creates the cluster and provisions the assigned machines.
 
-   A minimal single-node control plane using the `boa1-metal` machine class:
+   A minimal single-node control plane with a manually appointed machine:
 
    ```yaml
    kind: Cluster
@@ -80,9 +82,8 @@ CI syncs all machine class files on every push to `main` (`omnictl apply -f infr
      - file: patches/allow-scheduling-on-control-plane.yaml
    ---
    kind: ControlPlane
-   machineClass:
-     name: boa1-metal
-     size: 1
+   machines:
+     - <machine-uuid>
    ```
 2. **Create `clusters/<cluster>/apps.yaml`** — the ArgoCD app-of-apps pointing at this repo. Commit this after the cluster is up.
 3. **Add per-cluster overrides** to any `apps/*/app.yaml` that needs cluster-specific config:
@@ -98,8 +99,6 @@ CI syncs all machine class files on every push to `main` (`omnictl apply -f infr
    kubectl apply -f clusters/<cluster>/apps.yaml
    ```
 5. **ArgoCD takes over** — it syncs the app catalog and deploys all enabled apps in sync-wave order
-
-For a gateway cluster, also ensure `omni-infra-provider` is enabled in the app catalog for that cluster (set `deploy: true` in its `app.yaml`).
 
 ## Upgrading Talos or Kubernetes
 
