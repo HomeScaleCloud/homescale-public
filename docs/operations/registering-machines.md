@@ -31,7 +31,8 @@ dd if=<path-to-iso> of=/dev/sdX conv=fdatasync
 
 Boot the target machine from the USB/virtual media (may require a one-time boot-order override in BIOS/UEFI). Talos boots into maintenance mode and the console prints its reachable IP address.
 
-The machine must be able to reach Omni outbound: UDP to the account's WireGuard port, or TCP 443 if using HTTP/2 tunneling. On our network this generally means it needs a route to `REDACTED` — machines in a region without direct connectivity go through that region's `*-gw` cluster (see [Gateway clusters](../architecture/networking.md#gateway-clusters)).
+!!! warning
+    The machine must be able to reach Omni outbound: UDP to the account's WireGuard port, or TCP 443 if using HTTP/2 tunneling. On our network this generally means it needs a route to `REDACTED` — machines in a region without direct connectivity go through that region's `*-gw` cluster (see [Gateway clusters](../architecture/networking.md#gateway-clusters)).
 
 ## 4. Confirm it registered
 

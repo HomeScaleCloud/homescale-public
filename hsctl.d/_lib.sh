@@ -24,3 +24,10 @@ hsctl_omni_output() {
         json) omnictl get "$rtype" "$@" -o yaml | yq -o json ;;
     esac
 }
+
+# Cluster names known to this repo checkout (clusters/<name>/), comma-joined.
+# Used to identify clusterproxy-<name>-... NetBird peers without guessing at
+# Kubernetes' variable-length pod-template-hash suffix.
+hsctl_cluster_names() {
+    find "$HSCTL_REPO_ROOT/clusters" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null | paste -sd, -
+}

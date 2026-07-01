@@ -55,7 +55,7 @@ The shared base credentials must be configured once in Infisical at `/k8s/volsyn
 ### 1. Find the snapshot (optional)
 
 ```bash
-hsctl volsync snapshot list <app>
+hsctl get snapshot <app>
 ```
 
 This lists available restic snapshots with their timestamps and IDs.

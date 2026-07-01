@@ -12,6 +12,7 @@ get_usage() {
     echo "  kubeconfig <cluster>          Write kubeconfig context for a cluster"
     echo "  machines [--cluster <name>]   List all machines; enriches with node name for assigned ones"
     echo "  machine  <id>                 Show details for a specific machine"
+    echo "  snapshot <app>                List restic snapshots for an app"
     exit 1
 }
 
@@ -110,18 +111,77 @@ get_machine() {
     esac
 }
 
+get_snapshot() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { echo "Usage: hsctl get snapshot <app>"; exit 1; }
+
+    local app_yaml="$HSCTL_REPO_ROOT/apps/$app/app.yaml"
+    if [[ ! -f "$app_yaml" ]]; then
+        echo "hsctl: app '$app' not found (expected $app_yaml; override with HSCTL_REPO_ROOT)" >&2
+        exit 1
+    fi
+
+    local namespace secret pod_name tmpfile
+    namespace=$(yq '.namespace' "$app_yaml")
+    secret="${app}-volsync-repo"
+    pod_name="hsctl-restic-${app}"
+
+    # Delete any leftover pod from a previous run
+    kubectl -n "$namespace" delete pod "$pod_name" --ignore-not-found=true 2>/dev/null
+
+    local tmpfile
+    tmpfile=$(mktemp /tmp/hsctl-XXXXXX)
+
+    printf 'apiVersion: v1
+kind: Pod
+metadata:
+  name: %s
+  namespace: %s
+spec:
+  restartPolicy: Never
+  containers:
+  - name: restic
+    image: restic/restic
+    args: ["snapshots"]
+    envFrom:
+    - secretRef:
+        name: %s
+' "$pod_name" "$namespace" "$secret" > "$tmpfile"
+
+    kubectl apply -f "$tmpfile" >/dev/null
+    rm -f "$tmpfile"
+
+    while true; do
+        phase=$(kubectl -n "$namespace" get pod "$pod_name" -o jsonpath='{.status.phase}' 2>/dev/null || echo "Pending")
+        case "$phase" in
+            Succeeded) break ;;
+            Failed)
+                echo "Pod failed — logs:" >&2
+                kubectl -n "$namespace" logs "$pod_name" >&2
+                kubectl -n "$namespace" delete pod "$pod_name" --ignore-not-found=true >/dev/null 2>&1
+                exit 1 ;;
+            *) sleep 2 ;;
+        esac
+    done
+
+    kubectl -n "$namespace" logs "$pod_name"
+    kubectl -n "$namespace" delete pod "$pod_name" --ignore-not-found=true >/dev/null 2>&1
+}
+
 get_clusters() {
-    local netbird_json talos_tsv
+    local netbird_json talos_tsv cluster_names
     netbird_json=$(netbird status --json 2>/dev/null || echo '{}')
     talos_tsv=$(omnictl get clusters -o yaml 2>/dev/null | \
         yq e '[.metadata.id, (.spec.talosversion // "?")] | @tsv' - 2>/dev/null || true)
+    cluster_names=$(hsctl_cluster_names)
 
-    python3 - "$HSCTL_OUTPUT" "$talos_tsv" "$netbird_json" <<'PYEOF'
-import json, sys, re, urllib.request, ssl
+    python3 - "$HSCTL_OUTPUT" "$talos_tsv" "$netbird_json" "$cluster_names" <<'PYEOF'
+import json, sys, urllib.request, ssl
 
-output_fmt   = sys.argv[1]
-talos_tsv    = sys.argv[2]
-netbird_json = sys.argv[3]
+output_fmt    = sys.argv[1]
+talos_tsv     = sys.argv[2]
+netbird_json  = sys.argv[3]
+cluster_names = [c for c in sys.argv[4].split(',') if c]
 
 talos_versions = {}
 for line in talos_tsv.strip().splitlines():
@@ -129,13 +189,23 @@ for line in talos_tsv.strip().splitlines():
     if len(parts) == 2:
         talos_versions[parts[0]] = parts[1]
 
+def match_cluster(fqdn):
+    # clusterproxy-<cluster>-<pod-template-hash>-<pod-suffix>-... — the hash
+    # is a variable-length k8s-generated suffix, so match against known
+    # cluster names (longest first, in case one name prefixes another)
+    # rather than guessing at the hash format/length.
+    best = None
+    for c in cluster_names:
+        if fqdn.startswith(f'clusterproxy-{c}-') and (best is None or len(c) > len(best)):
+            best = c
+    return best
+
 data = json.loads(netbird_json)
 seen = {}
 clusters = []
 for p in data.get('peers', {}).get('details', []):
-    m = re.match(r'^clusterproxy-(.*?)-[0-9a-f]{10}-', p.get('fqdn', ''))
-    if m and m.group(1) not in seen:
-        c = m.group(1)
+    c = match_cluster(p.get('fqdn', ''))
+    if c and c not in seen:
         seen[c] = True
         fqdn = f'k8s.{c}REDACTED'
         ctx = ssl.create_default_context()
@@ -241,6 +311,9 @@ get_main() {
             else
                 get_machines "$@"
             fi
+            ;;
+        snapshot|snapshots)
+            get_snapshot "$@"
             ;;
 *) echo "hsctl get: unknown resource '$resource'" >&2; get_usage ;;
     esac

@@ -21,16 +21,8 @@ switch_main() {
     done <<< "$local_ctx_names"
 
     local live_names
-    live_names=$(netbird status --json 2>/dev/null | python3 -c "
-import json, sys, re
-data = json.load(sys.stdin)
-seen = set()
-for p in data.get('peers', {}).get('details', []):
-    m = re.match(r'^clusterproxy-(.*?)-[0-9a-f]{10}-', p.get('fqdn', ''))
-    if m and m.group(1) not in seen:
-        seen.add(m.group(1))
-        print(m.group(1))
-" 2>/dev/null || true)
+    live_names=$(HSCTL_OUTPUT=json get_clusters 2>/dev/null | \
+        python3 -c "import json, sys; print('\n'.join(c['name'] for c in json.load(sys.stdin)))" 2>/dev/null || true)
 
     while IFS= read -r cluster; do
         [[ -z "$cluster" ]] && continue
