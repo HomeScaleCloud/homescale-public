@@ -14,20 +14,9 @@ clusters:
   boa1-prod:
     deploy: true
     values:
-      replicaCount: 0
       zigbee2mqtt:
-        replicaCount: 0
         config:
           serialPort: "tcp://10.1.241.238:6638"
-      homebridge:
-        replicaCount: 0
-      volsync:
-        restore:
-          enabled: true
-          moverSecurityContext:
-            mqtt-config:
-              runAsUser: 100
-              runAsGroup: 101
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

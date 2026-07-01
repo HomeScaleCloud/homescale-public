@@ -24,7 +24,6 @@ spec:
 {{- end }}
 {{- end }}
 {{- if $restore }}
-{{- $moverSecurityContexts := default (dict) (($.Values.volsync).restore).moverSecurityContext }}
 {{- range $pvcs }}
 ---
 apiVersion: volsync.backube/v1alpha1
@@ -45,9 +44,10 @@ spec:
     {{- if (($.Values.volsync).restore).previous }}
     previous: {{ $.Values.volsync.restore.previous }}
     {{- end }}
-    {{- with index $moverSecurityContexts . }}
+    {{- if eq . "mqtt-config" }}
     moverSecurityContext:
-{{ toYaml . | indent 6 }}
+      runAsUser: 100
+      runAsGroup: 101
     {{- end }}
 {{- end }}
 {{- end }}
