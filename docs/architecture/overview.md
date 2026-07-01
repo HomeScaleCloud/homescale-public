@@ -82,15 +82,20 @@ Prometheus on each cluster retains 2 hours of data and remote-writes everything 
 
 ### Enabling / disabling apps per cluster
 
-Each `app.yaml` has a `defaultDeploy` boolean and optional per-cluster overrides under `clusters.<name>`:
+Each `app.yaml` has a `defaultDeploy` boolean. Deployment overrides live separately, in `clusters/<cluster>/apps.yaml`'s inline Helm values, under an `apps:` map keyed by app name:
 
 ```yaml
+# apps/my-app/app.yaml
 defaultDeploy: false        # don't deploy everywhere by default
-clusters:
-  boa1-prod:
+```
+
+```yaml
+# clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
+apps:
+  my-app:
     deploy: true            # enable only on this cluster
     values:
-      replicaCount: 3       # cluster-specific value override (deep-merged)
+      replicaCount: 3       # deployment override (deep-merged)
 ```
 
 See the [App reference](apps.md) for the full field list.

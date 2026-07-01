@@ -5,9 +5,6 @@ syncWave: -40
 syncOptions:
   - ServerSideApply=true
 defaultDeploy: true
-clusters:
-  mgmt:
-    deploy: false
 values:
   cilium:
     kubeProxyReplacement: true

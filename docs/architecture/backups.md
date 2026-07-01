@@ -10,7 +10,7 @@ Each app that has a `volsync.yaml` template creates a `ReplicationSource` CR in 
 - Snapshots are incremental — only changed blocks are sent
 - Restic credentials are pulled from a Secret named `<app>-volsync-repo`, synced from Infisical at `/k8s/volsync/<cluster-name>/<app>`
 
-When restore mode is enabled via `app.yaml`, the `ReplicationSource` is suppressed and replaced by a one-shot `ReplicationDestination` that restores from a snapshot.
+When restore mode is enabled via `clusters/<cluster>/apps.yaml`, the `ReplicationSource` is suppressed and replaced by a one-shot `ReplicationDestination` that restores from a snapshot.
 
 To override the backup schedule for a specific app:
 
@@ -62,11 +62,12 @@ This lists available restic snapshots with their timestamps and IDs.
 
 ### 2. Scale down and enable restore
 
-Edit `apps/<app>/app.yaml` to scale the app to zero and enable restore mode. For a cluster-specific restore:
+Edit `clusters/<cluster-name>/apps.yaml`'s `apps` source values to scale the app to zero and enable restore mode:
 
 ```yaml
-clusters:
-  <cluster-name>:
+# clusters/<cluster-name>/apps.yaml, spec.sources[1].helm.values
+apps:
+  <app>:
     values:
       myApp:
         replicaCount: 0
@@ -95,7 +96,7 @@ my-app-restore   2024-01-15T10:23:45Z       ...
 
 ### 4. Scale back up and disable restore
 
-Remove both the `replicaCount: 0` override and the `volsync.restore` block from `app.yaml` in a **single commit** and merge. ArgoCD syncs the change:
+Remove both the `replicaCount: 0` override and the `volsync.restore` block from `clusters/<cluster>/apps.yaml` in a **single commit** and merge. ArgoCD syncs the change:
 
 - Deletes the `ReplicationDestination`
 - Recreates the `ReplicationSource` (backups resume)

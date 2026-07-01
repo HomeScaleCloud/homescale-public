@@ -4,9 +4,6 @@ releaseName: longhorn
 syncWave: 0
 podSecurity: privileged
 defaultDeploy: false
-clusters:
-  boa1-prod:
-    deploy: true
 values:
   longhorn:
     metrics:

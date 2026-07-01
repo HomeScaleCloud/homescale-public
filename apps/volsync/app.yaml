@@ -3,9 +3,6 @@ namespace: volsync-system
 releaseName: volsync
 syncWave: -5
 defaultDeploy: true
-clusters:
-  boa1-gw:
-    deploy: false
 values:
   volsync:
     metrics:

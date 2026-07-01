@@ -19,23 +19,22 @@ Apps with both a `Chart.yaml` and a `Dockerfile` under `apps/<name>/` are built 
 
 ### Deployment control
 
-These fields decide which clusters the app lands on.
-
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `defaultDeploy` | bool | `false` | Deploy to every cluster unless overridden |
-| `clusters.<name>.deploy` | bool | — | Per-cluster override of `defaultDeploy`. Set `true` to enable on a cluster where `defaultDeploy: false`, or `false` to skip a cluster where `defaultDeploy: true` |
-| `clusters.<name>.*` | any | — | Any other field placed under a cluster key is deep-merged over the base `app.yaml` for that cluster only (values, syncWave, etc.) |
 
-**Example — deploy only to `boa1-prod`, with a cluster-specific value override:**
+Deployment overrides — enabling/disabling on a specific cluster, or overriding values — are **not** set here. They live in [`clusters/<cluster>/apps.yaml`](../operations/deploying-an-app.md#deployment-overrides) instead, under an `apps:` map keyed by app directory name:
+
 ```yaml
-defaultDeploy: false
-clusters:
-  boa1-prod:
-    deploy: true
+# clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
+apps:
+  my-app:
+    deploy: true            # overrides this app's defaultDeploy, for boa1-prod only
     values:
-      someKey: clusterSpecificValue
+      someKey: clusterSpecificValue   # deep-merged over the base app.yaml, for boa1-prod only
 ```
+
+See [Deployment overrides](../operations/deploying-an-app.md#deployment-overrides) for the full pattern.
 
 ---
 
@@ -214,15 +213,9 @@ values:
     name: "{{ .Values.cluster.name }}"
   image:
     tag: "1.2.3"
-
-clusters:
-  boa1-prod:
-    deploy: true
-    values:
-      replicaCount: 3
-  mgmt:
-    deploy: false
 ```
+
+Deployment overrides for `my-app` go in `clusters/<cluster>/apps.yaml` instead — see [Deployment overrides](../operations/deploying-an-app.md#deployment-overrides).
 
 ---
 

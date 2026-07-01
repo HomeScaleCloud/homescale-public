@@ -5,7 +5,7 @@
 {{- range $path, $_ := $root.Files.Glob "*/app.yaml" }}
 {{- $appName := $path | dir }}
 {{- $appBase := $root.Files.Get $path | fromYaml }}
-{{- $clusterOverride := default (dict) (get (default (dict) $appBase.clusters) $clusterName) }}
+{{- $clusterOverride := default (dict) (get (default (dict) $root.Values.apps) $appName) }}
 {{- $enabled := false }}
 {{- if hasKey $appBase "defaultDeploy" }}{{- $enabled = $appBase.defaultDeploy }}{{- end }}
 {{- if hasKey $clusterOverride "deploy" }}{{- $enabled = $clusterOverride.deploy }}{{- end }}
