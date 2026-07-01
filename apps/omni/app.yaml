@@ -8,9 +8,6 @@ netbird:
       - sources: ["github-actions", "team-infra-plat", "team-sec-plat"]
         protocol: tcp
         ports: ["80", "443"]
-clusters:
-  mgmt:
-    deploy: true
 
 values:
   cluster:

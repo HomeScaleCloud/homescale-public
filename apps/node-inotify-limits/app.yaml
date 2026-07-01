@@ -4,6 +4,3 @@ releaseName: node-inotify-limits
 syncWave: -25
 podSecurity: privileged
 defaultDeploy: false
-clusters:
-  mgmt:
-    deploy: true

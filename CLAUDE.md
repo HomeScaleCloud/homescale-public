@@ -68,12 +68,28 @@ ArgoCD on each cluster watches this repo. Each cluster has a bootstrap `apps.yam
 
 Each `apps/<name>/app.yaml` controls deployment with these fields:
 - `defaultDeploy: true|false` — whether to deploy to all clusters by default
-- `clusters.<cluster-name>.deploy: true|false` — per-cluster override of `defaultDeploy`
-- `clusters.<cluster-name>.*` — any other field merges/overrides the base `app.yaml`
 - `path` — path to the actual Helm chart (required)
 - `namespace` — target namespace (required)
 - `syncWave` — ArgoCD sync wave; bootstrap order is: infisical (-35) → cert-manager/argocd/rbac (-30) → netbird (-20) → external-dns (-10) → apps (0)
 - `values` — Helm values passed through; may use `{{ .Values.cluster.name }}` and `{{ .Values.cluster.region }}` templating
+
+Deployment overrides no longer live in `app.yaml`. Instead, `clusters/<cluster>/apps.yaml` (see below) carries an `apps:` map, keyed by app directory name, in its `apps` source's inline `helm.values` block:
+- `apps.<app-name>.deploy: true|false` — per-cluster override of that app's `defaultDeploy`
+- `apps.<app-name>.*` — any other field deep-merges over that app's base `app.yaml`, for this cluster only
+
+```yaml
+# clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
+cluster:
+  name: boa1-prod
+  region: boa1
+apps:
+  homepage:
+    deploy: true
+  longhorn:
+    deploy: true
+    values:
+      replicaCount: 3
+```
 
 Apps that contain a `Chart.yaml` and `Dockerfile` under `apps/<name>/` are built and pushed to `ghcr.io/homescalecloud/<name>` by CI.
 
@@ -174,10 +190,11 @@ The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a 
    hsctl get snapshot <app>
    ```
 
-2. **Scale down and enable restore** in `apps/<app>/app.yaml` For example, for omni:
+2. **Scale down and enable restore** in `clusters/<cluster>/apps.yaml`'s `apps` source values. For example, for omni on `mgmt`:
    ```yaml
-   clusters:
-     mgmt:
+   # clusters/mgmt/apps.yaml, spec.sources[1].helm.values
+   apps:
+     omni:
        values:
          omni:
            replicaCount: 0
@@ -195,4 +212,4 @@ The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a 
    ```
    Done when `.status.lastSyncTime` is set and conditions show `Reconciled=True`.
 
-5. **Scale back up and disable restore** — remove both the scale down and `volsync.restore` override from `app.yaml` in one commit, push. ArgoCD syncs, deletes the `ReplicationDestination`, creates/recreates the `ReplicationSource`, and scales the deployment back up.
+5. **Scale back up and disable restore** — remove both the scale down and `volsync.restore` override from `clusters/<cluster>/apps.yaml` in one commit, push. ArgoCD syncs, deletes the `ReplicationDestination`, creates/recreates the `ReplicationSource`, and scales the deployment back up.

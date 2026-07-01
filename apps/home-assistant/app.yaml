@@ -10,13 +10,6 @@ netbird:
       - sources: ["owners"]
         protocol: tcp
         ports: ["80", "443"]
-clusters:
-  boa1-prod:
-    deploy: true
-    values:
-      zigbee2mqtt:
-        config:
-          serialPort: "tcp://10.1.241.238:6638"
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

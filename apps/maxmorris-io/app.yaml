@@ -13,6 +13,3 @@ exposePublic:
   port: 80
 
 defaultDeploy: false
-clusters:
-  boa1-prod:
-    deploy: true

@@ -12,9 +12,6 @@ netbird:
       - sources: ["all"]
         protocol: udp
         ports: ["25565"]
-# clusters:
-#   boa1-prod:
-#     deploy: true
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

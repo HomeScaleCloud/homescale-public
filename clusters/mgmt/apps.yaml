@@ -20,6 +20,22 @@ spec:
         values: |
           cluster:
             name: mgmt
+          apps:
+            cilium:
+              deploy: false
+            external-dns:
+              deploy: true
+            external-dns-crs:
+              deploy: true
+            multus:
+              deploy: false
+            netbird-crs:
+              values:
+                kubeApiServer: "https://kubernetes.default.svc/"
+            node-inotify-limits:
+              deploy: true
+            omni:
+              deploy: true
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

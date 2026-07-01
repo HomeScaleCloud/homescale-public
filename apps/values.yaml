@@ -11,6 +11,10 @@ cluster:
   name: ""
   region: ""
 
+# Per-cluster app deploy toggles and value overrides, keyed by app directory
+# name. Set in clusters/<cluster>/apps.yaml, not here.
+apps: {}
+
 destination:
   name: ""
   server: https://kubernetes.default.svc
