@@ -168,9 +168,8 @@ Shared Talos patches from `infra/omni/patches/` are applied alongside each clust
 
 #### 3. `ansible` (after omni, main only)
 
-Runs two Ansible playbooks against the live clusters via NetBird:
+Runs an Ansible playbook against the live clusters via NetBird:
 
-- **`bootstrap-infra-providers.yml`** — creates Omni service accounts for the `omni-infra-provider` app on each gateway cluster
 - **`bootstrap-cluster.yml`** — ensures ArgoCD is bootstrapped on every cluster (idempotent)
 
 ---

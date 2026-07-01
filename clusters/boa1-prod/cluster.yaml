@@ -18,9 +18,10 @@ systemExtensions:
   - siderolabs/util-linux-tools
 ---
 kind: ControlPlane
-machineClass:
-  name: boa1-metal
-  size: 3
+machines:
+  - 4334c000-88da-11ea-8000-ac1f6be32b68
+  - 828a9e00-06f8-11ea-8000-ac1f6bdcdf7c
+  - 1c93d600-fd25-11eb-8000-3cecef8948e0
 patches:
   - name: install-disk
     inline:

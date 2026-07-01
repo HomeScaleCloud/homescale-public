@@ -84,6 +84,18 @@ One directory per cluster: `mgmt`, `boa1-prod`, `boa1-gw`. Cluster names follow 
 - `clusters/<cluster>/apps.yaml` — the bootstrap ArgoCD app-of-apps (applied manually once)
 - `clusters/<cluster>/cluster.yaml` — Omni cluster template (Talos/k8s versions, machine assignments, patches); uses `$CLUSTER_NAME` envsubst substitution at deploy time
 
+#### Registering new machines with Omni
+
+A machine must be registered with Omni before it can be added to a `cluster.yaml` `machines:` list:
+
+1. Log in to Omni (`https://xxx`), click **Download Installation Media**, and build a schematic (arch, system extensions matching the target cluster's `systemExtensions`, Secure Boot on/off).
+2. Write the downloaded ISO to a USB drive (`dd if=<iso> of=/dev/<device> conv=fdatasync`) or mount it as virtual media via the server's BMC (iDRAC/iLO/IPMI).
+3. Boot the machine from it — Talos boots into maintenance mode and needs outbound access to Omni's WireGuard port (or TCP 443 for HTTP/2 tunneling).
+4. It appears in Omni's **Machines** list shortly after boot, identified by its Talos/SMBIOS UUID, in an unallocated state.
+5. Add that UUID to the relevant `machines:` list in `clusters/<cluster>/cluster.yaml` and merge — CI's Omni template sync claims the machine and installs the cluster onto it.
+
+Full walkthrough: `docs/operations/registering-machines.md`.
+
 ### Infrastructure (`infra/`)
 
 - `infra/terraform/` — Terraform for cloud resources (Cloudflare DNS, DigitalOcean, Infisical project setup, NetBird config, mgmt cluster bootstrap). State is in Terraform Cloud (`homescale` org, `homescale` workspace).
@@ -112,8 +124,7 @@ CI jobs connect to internal infrastructure (Omni, Terraform providers) by joinin
 1. A NetBird reverse proxy resource is created pointing at the internal `xxx` FQDN. This gives the service an address under `xxx` (the reverse proxy domain registered in `netbird.tf`).
 2. A Cloudflare `xxx` wildcard CNAME (in `dns.tf`) resolves to the NetBird reverse proxy cluster. Optionally a second Cloudflare CNAME is added for a friendlier public URL.
 
-**Gateway clusters (`*-gw`)** are single-node clusters, one per region. They serve as the regional entry point into the HomeScale mesh and handle three roles:
-- **Bare-metal provisioning** — runs the Omni infra provider (`omni-infra-provider` app) to PXE-boot Talos nodes in the region
+**Gateway clusters (`*-gw`)** are single-node clusters, one per region. They serve as the regional entry point into the HomeScale mesh and handle two roles:
 - **Subnet routing** — runs a NetBird subnet router that exposes the region's BMC and MGMT subnets across the WireGuard mesh
 - **Region ↔ mgmt connectivity** — bridges region-local services to the central `mgmt` cluster and vice versa
 

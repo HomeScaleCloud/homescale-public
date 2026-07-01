@@ -5,7 +5,7 @@ syncWave: 0
 netbird:
   policy:
     rules:
-      - sources: ["github-actions", "app:omni-infra-provider", "team-infra-plat", "team-sec-plat"]
+      - sources: ["github-actions", "team-infra-plat", "team-sec-plat"]
         protocol: tcp
         ports: ["80", "443"]
 clusters:
