@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: {{ .Release.Name }}
 spec:
+  replicas: {{ .Values.replicaCount }}
   strategy:
     type: Recreate
   selector:
@@ -78,6 +79,7 @@ kind: Deployment
 metadata:
   name: homebridge
 spec:
+  replicas: {{ .Values.homebridge.replicaCount }}
   strategy:
     type: Recreate
   selector:
@@ -120,6 +122,7 @@ kind: Deployment
 metadata:
   name: zigbee
 spec:
+  replicas: {{ .Values.zigbee2mqtt.replicaCount }}
   strategy:
     type: Recreate
   selector:
