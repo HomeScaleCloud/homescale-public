@@ -4,6 +4,7 @@ cluster:
       name: none
   proxy:
     disabled: true
+machine:
   files:
     - path: /var/etc/cri/conf.d/20-spegel.part
       op: create
