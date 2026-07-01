@@ -11,7 +11,7 @@ features:
 patches:
   - file: patches/base.yaml
   - file: patches/allow-scheduling-on-control-plane.yaml
-  # - file: patches/kubelet-certs.yaml
+  - file: patches/kubelet-certs.yaml
 ---
 kind: ControlPlane
 machines:
