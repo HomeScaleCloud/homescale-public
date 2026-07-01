@@ -10,7 +10,7 @@ spec:
     schedule: {{ (.Values.volsync).backupSchedule | default "0 */2 * * *" | quote }}
   restic:
     repository: omni-volsync-repo # pragma: allowlist secret
-    copyMethod: Snapshot
+    copyMethod: Direct
     retain:
       daily: 7
       weekly: 4
