@@ -43,10 +43,6 @@ spec:
               deploy: true
             omni:
               deploy: true
-              values:
-                omni:
-                  persistence:
-                    storageClassName: longhorn
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
