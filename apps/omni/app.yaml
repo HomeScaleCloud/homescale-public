@@ -50,8 +50,6 @@ values:
           keyFile: /tls/tls.key
         siderolink:
           useGRPCTunnel: true
-          wireGuard:
-            advertisedEndpoint: "REDACTED:50180"
 
     service:
       wireguard:
