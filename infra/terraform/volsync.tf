@@ -12,6 +12,22 @@ locals {
     for f in fileset("${path.root}/../../clusters", "*/apps.yaml") :
     split("/", f)[0]
   ])
+
+  # clusters/<cluster>/apps.yaml is the bootstrap ArgoCD app-of-apps; its
+  # "apps" source carries an inline Helm values block (a YAML string) that
+  # holds per-cluster app deploy toggles and overrides.
+  volsync_cluster_manifests = {
+    for cluster in local.volsync_cluster_names :
+    cluster => yamldecode(file("${path.root}/../../clusters/${cluster}/apps.yaml"))
+  }
+  volsync_cluster_values = {
+    for cluster, manifest in local.volsync_cluster_manifests :
+    cluster => yamldecode([
+      for s in manifest.spec.sources : s.helm.values
+      if try(s.helm.values, null) != null
+    ][0])
+  }
+
   volsync_deployments = {
     for pair in flatten([
       for app, config in local.volsync_app_configs : [
@@ -20,7 +36,7 @@ locals {
           app     = app
           cluster = cluster
         }
-        if try(config.clusters[cluster].deploy, try(config.defaultDeploy, false))
+        if try(local.volsync_cluster_values[cluster].apps[app].deploy, try(config.defaultDeploy, false))
       ]
     ]) : pair.key => pair
   }

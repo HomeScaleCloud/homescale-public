@@ -34,9 +34,14 @@ Start with the minimal required fields:
 path: apps/my-app
 namespace: my-app
 defaultDeploy: false      # don't accidentally deploy everywhere
+```
 
-clusters:
-  boa1-prod:
+Then enable it on the clusters you want in each `clusters/<cluster>/apps.yaml` (see [Deployment overrides](#deployment-overrides) below):
+
+```yaml
+# clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
+apps:
+  my-app:
     deploy: true
 ```
 
@@ -172,23 +177,30 @@ exposePublic:
 
 Terraform creates the Cloudflare tunnel ingress rule and DNS record on the next apply. See [Networking: external service exposure](../architecture/networking.md#external-service-exposure).
 
-## Cluster-specific overrides
+## Deployment overrides
 
-To vary values per cluster, use the `clusters.<name>.values` deep merge:
+To vary values per cluster, edit the target cluster's `clusters/<cluster>/apps.yaml`. That file is the bootstrap ArgoCD app-of-apps; its `apps` source carries an inline `helm.values` block passed to the `apps/` chart — add an `apps:` map there, keyed by app directory name:
 
 ```yaml
+# apps/my-app/app.yaml
 defaultDeploy: false
 values:
   replicaCount: 1     # base value
-
-clusters:
-  boa1-prod:
-    deploy: true
-    values:
-      replicaCount: 3  # override for prod
 ```
 
-Any field under `clusters.<name>` is deep-merged over the base `app.yaml` before ArgoCD applies it.
+```yaml
+# clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
+cluster:
+  name: boa1-prod
+  region: boa1
+apps:
+  my-app:
+    deploy: true
+    values:
+      replicaCount: 3  # override for prod, deep-merged over the base app.yaml
+```
+
+`apps.<name>.deploy` overrides that app's `defaultDeploy` for this cluster only; any other field under `apps.<name>` (e.g. `values`, `syncWave`) is deep-merged over the base `app.yaml` before ArgoCD applies it.
 
 ## Enabling backups
 

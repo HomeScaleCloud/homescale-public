@@ -3,6 +3,3 @@ namespace: external-dns
 releaseName: external-dns-crs
 syncWave: -20
 defaultDeploy: false
-clusters:
-  mgmt:
-    deploy: true

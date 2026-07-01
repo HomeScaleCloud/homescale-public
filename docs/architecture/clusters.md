@@ -87,10 +87,11 @@ Machines must be registered with Omni before they can be claimed here — see [R
    ```
 2. **Create `clusters/<cluster>/apps.yaml`** — the ArgoCD app-of-apps pointing at this repo.
 
-3. **Add per-cluster overrides** to any `apps/*/app.yaml` that needs cluster-specific config:
+3. **Add deployment overrides**, if needed, to that same `clusters/<cluster>/apps.yaml`'s `apps` source values (see [Deployment overrides](../operations/deploying-an-app.md#deployment-overrides)):
    ```yaml
-   clusters:
-     my-new-cluster:
+   # clusters/my-new-cluster/apps.yaml, spec.sources[1].helm.values
+   apps:
+     my-app:
        deploy: true
        values:
          someKey: clusterSpecificValue
