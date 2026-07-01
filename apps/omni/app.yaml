@@ -52,6 +52,7 @@ values:
           certFile: /tls/tls.crt
           keyFile: /tls/tls.key
         siderolink:
+          useGRPCTunnel: true
           wireGuard:
             advertisedEndpoint: "xxx:50180"
 
