@@ -1,0 +1,76 @@
+{{- if eq .Values.cluster.name "boa1-prod" }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: netbird-operator-rules
+  namespace: metrics
+spec:
+  groups:
+    - name: netbird-operator.rules
+      rules:
+        - alert: NetBirdOperatorDown
+          annotations:
+            summary: "NetBird operator on cluster {{ "{{" }}$labels.cluster{{ "}}" }} is unreachable."
+            description: "The NetBird operator's metrics endpoint on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has not been scraped successfully for 5 minutes. ClusterProxy, NetworkRouter, and NetworkResource objects on this cluster will stop reconciling — NetBird mesh access and DNS registration for this cluster may drift from the desired state."
+            runbook_url: "https://REDACTED/runbooks/netbird-operator-down/"
+            dashboard_url: "https://REDACTED/d/netbird-operator"
+          expr: up{job="netbird-operator"} == 0
+          for: 5m
+          labels:
+            severity: critical
+
+        - alert: NetBirdClusterProxyNotReady
+          annotations:
+            summary: "ClusterProxy {{ "{{" }}$labels.namespace{{ "}}" }}/{{ "{{" }}$labels.name{{ "}}" }} is not Ready."
+            description: "ClusterProxy {{ "{{" }}$labels.namespace{{ "}}" }}/{{ "{{" }}$labels.name{{ "}}" }} on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has not reported a Ready condition for 10 minutes (reason: {{ "{{" }}$labels.reason{{ "}}" }}). The cluster's proxy peer into the NetBird mesh may be down, breaking `k8s`/`cluster-*` group access to this cluster's API server."
+            runbook_url: "https://REDACTED/runbooks/netbird-clusterproxy-not-ready/"
+            dashboard_url: "https://REDACTED/d/netbird-operator"
+          expr: kube_customresource_netbird_clusterproxy_status_condition{condition="Ready", status="false"} == 1
+          for: 10m
+          labels:
+            severity: critical
+
+        - alert: NetBirdNetworkRouterNotReady
+          annotations:
+            summary: "NetworkRouter {{ "{{" }}$labels.namespace{{ "}}" }}/{{ "{{" }}$labels.name{{ "}}" }} is not Ready."
+            description: "NetworkRouter {{ "{{" }}$labels.namespace{{ "}}" }}/{{ "{{" }}$labels.name{{ "}}" }} on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has not reported a Ready condition for 10 minutes (reason: {{ "{{" }}$labels.reason{{ "}}" }}). New or existing NetworkResources routed through this router may not resolve in the cluster's `REDACTED` DNS zone."
+            runbook_url: "https://REDACTED/runbooks/netbird-networkrouter-not-ready/"
+            dashboard_url: "https://REDACTED/d/netbird-operator"
+          expr: kube_customresource_netbird_networkrouter_status_condition{condition="Ready", status="false"} == 1
+          for: 10m
+          labels:
+            severity: critical
+
+        - alert: NetBirdNetworkResourceNotReady
+          annotations:
+            summary: "NetworkResource {{ "{{" }}$labels.namespace{{ "}}" }}/{{ "{{" }}$labels.name{{ "}}" }} is not Ready."
+            description: "NetworkResource {{ "{{" }}$labels.namespace{{ "}}" }}/{{ "{{" }}$labels.name{{ "}}" }} on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has not reported a Ready condition for 15 minutes (reason: {{ "{{" }}$labels.reason{{ "}}" }}). The backing Service is likely unreachable at its `REDACTED` NetBird DNS name."
+            runbook_url: "https://REDACTED/runbooks/netbird-networkresource-not-ready/"
+            dashboard_url: "https://REDACTED/d/netbird-operator"
+          expr: kube_customresource_netbird_networkresource_status_condition{condition="Ready", status="false"} == 1
+          for: 15m
+          labels:
+            severity: warning
+
+        - alert: NetBirdReconcileErrors
+          annotations:
+            summary: "NetBird operator controller {{ "{{" }}$labels.controller{{ "}}" }} on cluster {{ "{{" }}$labels.cluster{{ "}}" }} is failing reconciles."
+            description: "The {{ "{{" }}$labels.controller{{ "}}" }} controller in the NetBird operator on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has logged reconcile errors in the last 15 minutes. Check the operator logs for the underlying cause (commonly a NetBird API auth/rate-limit failure or a stale reference)."
+            runbook_url: "https://REDACTED/runbooks/netbird-reconcile-errors/"
+            dashboard_url: "https://REDACTED/d/netbird-operator"
+          expr: increase(controller_runtime_reconcile_errors_total{job="netbird-operator", controller=~"clusterproxy|networkrouter|networkresource"}[15m]) > 0
+          for: 5m
+          labels:
+            severity: warning
+
+        - alert: NetBirdWorkqueueBacklog
+          annotations:
+            summary: "NetBird operator {{ "{{" }}$labels.name{{ "}}" }} workqueue is backing up on cluster {{ "{{" }}$labels.cluster{{ "}}" }}."
+            description: "The {{ "{{" }}$labels.name{{ "}}" }} controller's workqueue in the NetBird operator on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has held a backlog of items for 15 minutes. Reconciles for ClusterProxy/NetworkRouter/NetworkResource objects may be stuck or falling behind."
+            runbook_url: "https://REDACTED/runbooks/netbird-workqueue-backlog/"
+            dashboard_url: "https://REDACTED/d/netbird-operator"
+          expr: workqueue_depth{job="netbird-operator", name=~"clusterproxy|networkrouter|networkresource"} > 5
+          for: 15m
+          labels:
+            severity: warning
+{{- end }}

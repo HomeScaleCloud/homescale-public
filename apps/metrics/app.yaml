@@ -119,6 +119,72 @@ values:
       enabled: false
     kubeProxy:
       enabled: false
+    kube-state-metrics:
+      rbac:
+        extraRules:
+          - apiGroups: ["netbird.io"]
+            resources: ["clusterproxies", "networkrouters", "networkresources"]
+            verbs: ["list", "watch"]
+      customResourceState:
+        enabled: true
+        config:
+          kind: CustomResourceStateMetrics
+          spec:
+            resources:
+              - groupVersionKind:
+                  group: netbird.io
+                  version: v1alpha1
+                  kind: ClusterProxy
+                labelsFromPath:
+                  name: [metadata, name]
+                  namespace: [metadata, namespace]
+                metrics:
+                  - name: netbird_clusterproxy_status_condition
+                    help: "Status of the Ready condition on a ClusterProxy (1=True, 0=False)"
+                    each:
+                      type: Gauge
+                      gauge:
+                        path: [status, conditions]
+                        labelsFromPath:
+                          condition: [type]
+                          reason: [reason]
+                        valueFrom: [status]
+              - groupVersionKind:
+                  group: netbird.io
+                  version: v1alpha1
+                  kind: NetworkRouter
+                labelsFromPath:
+                  name: [metadata, name]
+                  namespace: [metadata, namespace]
+                metrics:
+                  - name: netbird_networkrouter_status_condition
+                    help: "Status of the Ready condition on a NetworkRouter (1=True, 0=False)"
+                    each:
+                      type: Gauge
+                      gauge:
+                        path: [status, conditions]
+                        labelsFromPath:
+                          condition: [type]
+                          reason: [reason]
+                        valueFrom: [status]
+              - groupVersionKind:
+                  group: netbird.io
+                  version: v1alpha1
+                  kind: NetworkResource
+                labelsFromPath:
+                  name: [metadata, name]
+                  namespace: [metadata, namespace]
+                metrics:
+                  - name: netbird_networkresource_status_condition
+                    help: "Status of the Ready condition on a NetworkResource (1=True, 0=False)"
+                    each:
+                      type: Gauge
+                      gauge:
+                        path: [status, conditions]
+                        labelsFromPath:
+                          condition: [type]
+                          reason: [reason]
+                        valueFrom: [status]
   metrics-server:
     metrics:
       enabled: true

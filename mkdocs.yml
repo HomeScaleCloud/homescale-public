@@ -50,9 +50,15 @@ nav:
           - ApcPduBankNearOverload: runbooks/apc-pdu-bank-near-overload.md
       - VolSync:
           - VolSyncMissedBackupInterval: runbooks/volsync-missed-backup-interval.md
-          - VolSyncOutOfSync: runbooks/volsync-out-of-sync.md
           - VolSyncMoverJobFailed: runbooks/volsync-mover-job-failed.md
           - VolSyncControllerDown: runbooks/volsync-controller-down.md
+      - NetBird:
+          - NetBirdOperatorDown: runbooks/netbird-operator-down.md
+          - NetBirdClusterProxyNotReady: runbooks/netbird-clusterproxy-not-ready.md
+          - NetBirdNetworkRouterNotReady: runbooks/netbird-networkrouter-not-ready.md
+          - NetBirdNetworkResourceNotReady: runbooks/netbird-networkresource-not-ready.md
+          - NetBirdReconcileErrors: runbooks/netbird-reconcile-errors.md
+          - NetBirdWorkqueueBacklog: runbooks/netbird-workqueue-backlog.md
 
 plugins:
   - search
