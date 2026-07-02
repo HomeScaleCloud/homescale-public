@@ -48,6 +48,11 @@ nav:
           - ApcPduVoltageCritical: runbooks/apc-pdu-voltage-critical.md
           - ApcPduBankLoadHigh: runbooks/apc-pdu-bank-load-high.md
           - ApcPduBankNearOverload: runbooks/apc-pdu-bank-near-overload.md
+      - VolSync:
+          - VolSyncMissedBackupInterval: runbooks/volsync-missed-backup-interval.md
+          - VolSyncOutOfSync: runbooks/volsync-out-of-sync.md
+          - VolSyncMoverJobFailed: runbooks/volsync-mover-job-failed.md
+          - VolSyncControllerDown: runbooks/volsync-controller-down.md
 
 plugins:
   - search

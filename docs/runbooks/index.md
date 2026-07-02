@@ -20,3 +20,12 @@ Runbooks for alerts fired by Prometheus. Each alert links back to this page via 
 | [ApcPduBankNearOverload](apc-pdu-bank-near-overload.md) | warning |
 | [ApcPduBankLoadHigh](apc-pdu-bank-load-high.md) | critical |
 | [ApcPduVoltageWarning](apc-pdu-voltage-warning.md) | warning |
+
+## VolSync
+
+| Alert | Severity |
+|-------|----------|
+| [VolSyncMissedBackupInterval](volsync-missed-backup-interval.md) | critical |
+| [VolSyncOutOfSync](volsync-out-of-sync.md) | warning |
+| [VolSyncMoverJobFailed](volsync-mover-job-failed.md) | critical |
+| [VolSyncControllerDown](volsync-controller-down.md) | critical |
