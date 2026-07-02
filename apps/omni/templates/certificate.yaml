@@ -8,8 +8,17 @@ spec:
   issuerRef:
     name: {{ .Values.certIssuer | default "letsencrypt" }}
     kind: ClusterIssuer
+{{- $homescale := default (dict) .Values.homescale }}
+{{- $clusterName := required "cluster.name is required" .Values.cluster.name }}
+{{- /* siderolink/machineAPI plus the old per-cluster names, kept for backwards compatibility */}}
+{{- $staticNames := list
+      (required "siderolinkHostname is required" .Values.siderolinkHostname)
+      (required "machineApiHostname is required" .Values.machineApiHostname)
+      (printf "omni.%REDACTED" $clusterName)
+      (printf "k8s.omni.%REDACTED" $clusterName)
+}}
+{{- $dnsNames := concat (default (list) $homescale.exposePublicFqdns) (default (list) $homescale.netbirdCnameFqdns) $staticNames | uniq }}
   dnsNames:
-    - omni.{{ required "cluster.name is required" .Values.cluster.name }}REDACTED
-    - k8s.omni.{{ required "cluster.name is required" .Values.cluster.name }}REDACTED
-    - {{ required "siderolinkHostname is required" .Values.siderolinkHostname }}
-    - {{ required "machineApiHostname is required" .Values.machineApiHostname }}
+{{- range $dnsNames }}
+    - {{ . }}
+{{- end }}

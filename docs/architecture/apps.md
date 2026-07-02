@@ -206,6 +206,32 @@ exposePublic:
 
 ---
 
+### Using CNAME lists in your chart (`.Values.homescale`)
+
+Unlike the rest of `exposePublic:`/`netbird:`, the flattened list of FQDNs from both blocks *is* forwarded into the chart as regular Helm values — `apps/templates/applications.yaml` computes it from the app's own `app.yaml` (before any per-cluster override) and injects it for every app, so a chart can reference its own hostnames without hardcoding them (e.g. as `Certificate` `dnsNames`):
+
+```yaml
+.Values.homescale.exposePublicFqdns   # list of strings, from this app's exposePublic[].fqdn
+.Values.homescale.netbirdCnameFqdns   # list of strings, from this app's netbird.cname[].fqdn
+```
+
+Both are always present (as empty lists if the app has no entries). A chart template consuming them should still guard against being rendered standalone (e.g. via `helm template apps/<name> apps/<name>/`, which doesn't go through `apps/templates/applications.yaml` and so never sets `.Values.homescale`):
+
+```yaml
+{{- $homescale := default (dict) .Values.homescale }}
+dnsNames:
+{{- range (default (list) $homescale.exposePublicFqdns) }}
+  - {{ . }}
+{{- end }}
+{{- range (default (list) $homescale.netbirdCnameFqdns) }}
+  - {{ . }}
+{{- end }}
+```
+
+See `apps/omni/templates/certificate.yaml` for a real example, including keeping old hostnames around as a static fallback SAN when renaming.
+
+---
+
 ## Sync wave order
 
 See [sync wave order](overview.md#sync-wave-order) in the architecture overview.

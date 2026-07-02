@@ -20,7 +20,16 @@
 {{- $destinationServer := default $root.Values.destination.server $destination.server -}}
 {{- $destinationName := default (default $clusterName $root.Values.destination.name) $destination.name -}}
 {{- $releaseName := default $appName $app.releaseName -}}
+{{- $exposePublicFqdns := list -}}
+{{- range (default (list) $appBase.exposePublic) }}
+{{- $exposePublicFqdns = append $exposePublicFqdns .fqdn -}}
+{{- end }}
+{{- $netbirdCnameFqdns := list -}}
+{{- range (default (list) (dig "netbird" "cname" (list) $appBase)) }}
+{{- $netbirdCnameFqdns = append $netbirdCnameFqdns .fqdn -}}
+{{- end }}
 {{- $valuesObject := default (dict) $app.values -}}
+{{- $valuesObject = mergeOverwrite (deepCopy $valuesObject) (dict "homescale" (dict "exposePublicFqdns" $exposePublicFqdns "netbirdCnameFqdns" $netbirdCnameFqdns)) -}}
 {{- $syncPolicy := mergeOverwrite (deepCopy (default (dict) $root.Values.syncPolicy)) (default (dict) $app.syncPolicy) -}}
 {{- $syncOptions := concat (default (list) $root.Values.syncOptions) (default (list) $app.syncOptions) | uniq -}}
 {{- if and (not (hasKey $namespaces $appNamespace)) (not (has $appNamespace $systemNamespaces)) }}
