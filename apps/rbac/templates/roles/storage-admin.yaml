@@ -13,3 +13,8 @@ rules:
       - storageclasses
       - volumeattachments
     verbs: ["*"]
+  - apiGroups: ["volsync.backube"]
+    resources:
+      - replicationsources
+      - replicationdestinations
+    verbs: ["*"]
