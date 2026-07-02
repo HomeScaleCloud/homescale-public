@@ -30,9 +30,16 @@ spec:
             home-assistant:
               deploy: true
               values:
+                replicaCount: 0
                 zigbee2mqtt:
+                  replicaCount: 0
                   config:
                     serialPort: "tcp://10.1.241.238:6638"
+                homebridge:
+                  replicaCount: 0
+                volsync:
+                  restore:
+                    enabled: true
             homepage:
               deploy: true
             longhorn:
