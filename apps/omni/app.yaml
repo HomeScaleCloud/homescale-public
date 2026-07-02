@@ -8,6 +8,16 @@ netbird:
       - sources: ["github-actions", "team-infra-plat", "team-sec-plat"]
         protocol: tcp
         ports: ["80", "443"]
+  cname:
+    - fqdn: REDACTED
+      cluster: mgmt
+      service: api
+    - fqdn: REDACTED
+      cluster: mgmt
+      service: api
+    - fqdn: REDACTED
+      cluster: mgmt
+      service: k8s
 
 values:
   cluster:
