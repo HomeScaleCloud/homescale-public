@@ -2,7 +2,7 @@ resource "netbird_dns_record" "kubeapi" {
   for_each = netbird_dns_zone.cluster
 
   zone_id = each.value.id
-  name    = "api.k8s.${each.key}REDACTED"
+  name    = "k8s.api.${each.key}REDACTED"
   type    = "CNAME"
   content = "${each.key}REDACTED"
   ttl     = 300
