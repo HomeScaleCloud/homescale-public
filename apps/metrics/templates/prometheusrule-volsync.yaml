@@ -1,0 +1,54 @@
+{{- if eq .Values.cluster.name "boa1-prod" }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: volsync-rules
+  namespace: metrics
+spec:
+  groups:
+    - name: volsync.rules
+      rules:
+        - alert: VolSyncMissedBackupInterval
+          annotations:
+            summary: "VolSync backup for {{ "{{" }}$labels.obj_namespace{{ "}}" }}/{{ "{{" }}$labels.obj_name{{ "}}" }} missed its scheduled interval."
+            description: "VolSync {{ "{{" }}$labels.role{{ "}}" }} {{ "{{" }}$labels.obj_namespace{{ "}}" }}/{{ "{{" }}$labels.obj_name{{ "}}" }} on cluster {{ "{{" }}$labels.cluster{{ "}}" }} did not complete a sync within its scheduled interval. The ReplicationSource may be stuck (e.g. failing to create a VolumeSnapshot) and no backup is being taken."
+            runbook_url: "https://REDACTED/runbooks/volsync-missed-backup-interval/"
+            dashboard_url: "https://REDACTED/d/volsync"
+          expr: increase(volsync_missed_intervals_total[1h]) > 0
+          for: 5m
+          labels:
+            severity: critical
+
+        - alert: VolSyncOutOfSync
+          annotations:
+            summary: "VolSync volume {{ "{{" }}$labels.obj_namespace{{ "}}" }}/{{ "{{" }}$labels.obj_name{{ "}}" }} has been out of sync for 6 hours."
+            description: "VolSync {{ "{{" }}$labels.role{{ "}}" }} {{ "{{" }}$labels.obj_namespace{{ "}}" }}/{{ "{{" }}$labels.obj_name{{ "}}" }} on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has been reporting out-of-sync for 6 hours. Backups are not catching up with the source data."
+            runbook_url: "https://REDACTED/runbooks/volsync-out-of-sync/"
+            dashboard_url: "https://REDACTED/d/volsync"
+          expr: volsync_volume_out_of_sync == 1
+          for: 6h
+          labels:
+            severity: warning
+
+        - alert: VolSyncMoverJobFailed
+          annotations:
+            summary: "VolSync mover job {{ "{{" }}$labels.job_name{{ "}}" }} failed."
+            description: "VolSync mover job {{ "{{" }}$labels.namespace{{ "}}" }}/{{ "{{" }}$labels.job_name{{ "}}" }} on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has failed. The sync or restore it was running for did not complete successfully."
+            runbook_url: "https://REDACTED/runbooks/volsync-mover-job-failed/"
+            dashboard_url: "https://REDACTED/d/volsync"
+          expr: kube_job_status_failed{job_name=~"volsync-.*"} > 0
+          for: 5m
+          labels:
+            severity: critical
+
+        - alert: VolSyncControllerDown
+          annotations:
+            summary: "VolSync controller on cluster {{ "{{" }}$labels.cluster{{ "}}" }} is unreachable."
+            description: "The VolSync controller's metrics endpoint on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has not been scraped successfully for 5 minutes. No backup or restore activity can be observed, and scheduled syncs may not be running."
+            runbook_url: "https://REDACTED/runbooks/volsync-controller-down/"
+            dashboard_url: "https://REDACTED/d/volsync"
+          expr: up{job="volsync-metrics"} == 0
+          for: 5m
+          labels:
+            severity: critical
+{{- end }}
