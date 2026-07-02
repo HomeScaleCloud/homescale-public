@@ -163,7 +163,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "count(netbird_clusterproxy_status_condition{cluster=~\"$cluster\", condition=\"Ready\", status=\"false\"} == 1) or vector(0)",
+          "expr": "count(kube_customresource_netbird_clusterproxy_status_condition{cluster=~\"$cluster\", condition=\"Ready\"} == 0) or vector(0)",
           "instant": true,
           "refId": "A"
         }
@@ -222,7 +222,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "count(netbird_networkrouter_status_condition{cluster=~\"$cluster\", condition=\"Ready\", status=\"false\"} == 1) or vector(0)",
+          "expr": "count(kube_customresource_netbird_networkrouter_status_condition{cluster=~\"$cluster\", condition=\"Ready\"} == 0) or vector(0)",
           "instant": true,
           "refId": "A"
         }
@@ -281,7 +281,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "count(netbird_networkresource_status_condition{cluster=~\"$cluster\", condition=\"Ready\", status=\"false\"} == 1) or vector(0)",
+          "expr": "count(kube_customresource_netbird_networkresource_status_condition{cluster=~\"$cluster\", condition=\"Ready\"} == 0) or vector(0)",
           "instant": true,
           "refId": "A"
         }
@@ -396,7 +396,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "netbird_clusterproxy_status_condition{cluster=~\"$cluster\", condition=\"Ready\"}",
+          "expr": "kube_customresource_netbird_clusterproxy_status_condition{cluster=~\"$cluster\", condition=\"Ready\"}",
           "instant": true,
           "format": "table",
           "refId": "A"
@@ -411,6 +411,9 @@
               "__name__": true,
               "condition": true,
               "container": true,
+              "customresource_group": true,
+              "customresource_kind": true,
+              "customresource_version": true,
               "endpoint": true,
               "instance": true,
               "job": true,
@@ -529,7 +532,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "netbird_networkrouter_status_condition{cluster=~\"$cluster\", condition=\"Ready\"}",
+          "expr": "kube_customresource_netbird_networkrouter_status_condition{cluster=~\"$cluster\", condition=\"Ready\"}",
           "instant": true,
           "format": "table",
           "refId": "A"
@@ -544,6 +547,9 @@
               "__name__": true,
               "condition": true,
               "container": true,
+              "customresource_group": true,
+              "customresource_kind": true,
+              "customresource_version": true,
               "endpoint": true,
               "instance": true,
               "job": true,
@@ -662,7 +668,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "netbird_networkresource_status_condition{cluster=~\"$cluster\", condition=\"Ready\"}",
+          "expr": "kube_customresource_netbird_networkresource_status_condition{cluster=~\"$cluster\", condition=\"Ready\"}",
           "instant": true,
           "format": "table",
           "refId": "A"
@@ -677,6 +683,9 @@
               "__name__": true,
               "condition": true,
               "container": true,
+              "customresource_group": true,
+              "customresource_kind": true,
+              "customresource_version": true,
               "endpoint": true,
               "instance": true,
               "job": true,
