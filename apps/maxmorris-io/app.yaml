@@ -8,8 +8,8 @@ values:
     repository: ghcr.io/homescalecloud/maxmorris-io
     tag: "latest"
 exposePublic:
-  cluster: boa1-prod
-  fqdn: maxmorris.io
-  port: 80
+  - cluster: boa1-prod
+    fqdn: maxmorris.io
+    port: 80
 
 defaultDeploy: false

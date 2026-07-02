@@ -207,7 +207,7 @@ for p in data.get('peers', {}).get('details', []):
     c = match_cluster(p.get('fqdn', ''))
     if c and c not in seen:
         seen[c] = True
-        fqdn = f'k8s.{c}REDACTED'
+        fqdn = f'api.k8s.{c}REDACTED'
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
@@ -237,7 +237,7 @@ get_kubeconfig() {
     [[ -z "$cluster" ]] && { echo "Usage: hsctl get kubeconfig <cluster>"; exit 1; }
 
     local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
-    local fqdn="k8s.${cluster}REDACTED"
+    local fqdn="api.k8s.${cluster}REDACTED"
 
     python3 - "$cluster" "$fqdn" "$kubeconfig" <<'PYEOF'
 import json, sys, ssl, urllib.request

@@ -12,6 +12,19 @@ netbird:
       - sources: ["team-infra-plat", "team-sec-plat", "app:metrics"]
         protocol: tcp
         ports: ["80", "443", "9090", "3100"]
+  cname:
+    - fqdn: REDACTED
+      cluster: boa1-prod
+      service: grafana
+    - fqdn: REDACTED
+      cluster: boa1-prod
+      service: alertmanager
+    - fqdn: REDACTED
+      cluster: boa1-prod
+      service: prometheus
+    - fqdn: REDACTED
+      cluster: boa1-prod
+      service: loki
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

@@ -7,12 +7,15 @@ locals {
   }
 
   public_apps = {
-    for name, y in local.app_yamls :
-    name => merge(y.exposePublic, {
-      release_name = try(y.releaseName, name)
-      namespace    = try(y.namespace, name)
-    })
-    if try(y.exposePublic, null) != null
+    for entry in flatten([
+      for name, y in local.app_yamls : [
+        for e in try(y.exposePublic, []) : merge(e, {
+          app       = name
+          namespace = try(y.namespace, name)
+          service   = try(e.service, try(y.releaseName, name))
+        })
+      ]
+    ]) : entry.fqdn => entry
   }
 
   clusters_with_public_apps = toset([
