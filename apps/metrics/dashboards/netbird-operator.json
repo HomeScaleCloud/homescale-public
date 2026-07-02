@@ -23,6 +23,416 @@
   "panels": [
     {
       "type": "row",
+      "title": "Alerts",
+      "id": 100,
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": [
+        {
+          "type": "state-timeline",
+          "title": "Alert Timeline",
+          "id": 101,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          },
+          "options": {
+            "alignValue": "left",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": {
+                      "color": "yellow",
+                      "index": 0,
+                      "text": "Warning / Pending"
+                    },
+                    "2": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "Critical"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 2
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "(ALERTS{cluster=~\"$cluster\", alertname=~\"NetBird.*\", severity=\"critical\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertname=~\"NetBird.*\", alertstate=~\"firing|pending\"} * 1)",
+              "legendFormat": "{{alertname}} [{{severity}}]",
+              "range": true,
+              "instant": false,
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Active Alerts",
+          "id": 102,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "alertname"
+              }
+            ]
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "alertstate"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 90
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background",
+                      "mode": "basic"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "firing": {
+                            "color": "red",
+                            "index": 0,
+                            "text": "firing"
+                          },
+                          "pending": {
+                            "color": "yellow",
+                            "index": 1,
+                            "text": "pending"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "severity"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background",
+                      "mode": "basic"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "warning": {
+                            "color": "yellow",
+                            "index": 0,
+                            "text": "warning"
+                          },
+                          "critical": {
+                            "color": "red",
+                            "index": 1,
+                            "text": "critical"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "alertname"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 300
+                  }
+                ]
+              }
+            ]
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "ALERTS{cluster=~\"$cluster\", alertname=~\"NetBird.*\", alertstate=~\"firing|pending\"}",
+              "instant": true,
+              "format": "table",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true,
+                  "__name__": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "prometheus": true,
+                  "prometheus_replica": true,
+                  "service": true,
+                  "container": true
+                },
+                "indexByName": {
+                  "alertname": 0,
+                  "alertstate": 1,
+                  "severity": 2,
+                  "cluster": 3
+                },
+                "renameByName": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Logs",
+      "id": 110,
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "panels": [
+        {
+          "type": "logs",
+          "title": "ClusterProxy Pod Logs",
+          "id": 111,
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 2
+          },
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{cluster=~\"$cluster\", namespace=\"netbird\", pod=~\"clusterproxy-.*\"}",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "NetworkRouter Pod Logs",
+          "id": 112,
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 12
+          },
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{cluster=~\"$cluster\", namespace=\"netbird\", pod=~\"networkrouter-.*\"}",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "NetworkResource Reconcile Logs (operator)",
+          "id": 113,
+          "description": "NetworkResource has no dedicated pod \u2014 this is the netbird-operator's own log stream filtered to lines mentioning the networkresource controller.",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 22
+          },
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{cluster=~\"$cluster\", namespace=\"netbird\", pod=~\"netbird-netbird-operator-.*\"} |= \"networkresource\"",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "row",
       "title": "Overview",
       "id": 1,
       "collapsed": false,
@@ -30,7 +440,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 2
       },
       "panels": []
     },
@@ -46,7 +456,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -122,7 +532,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -181,7 +591,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -240,7 +650,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -296,7 +706,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 7
       },
       "panels": []
     },
@@ -312,7 +722,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 6
+        "y": 8
       },
       "options": {
         "cellHeight": "sm",
@@ -448,7 +858,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 6
+        "y": 8
       },
       "options": {
         "cellHeight": "sm",
@@ -584,7 +994,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 6
+        "y": 8
       },
       "options": {
         "cellHeight": "sm",
@@ -709,6 +1119,279 @@
       ]
     },
     {
+      "type": "state-timeline",
+      "title": "ClusterProxy Status Over Time",
+      "id": 20,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "alignValue": "center",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "never",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 70,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "Not Ready"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "Ready"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "kube_customresource_netbird_clusterproxy_status_condition{cluster=~\"$cluster\", condition=\"Ready\"}",
+          "legendFormat": "{{namespace}}/{{name}}",
+          "range": true,
+          "instant": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "state-timeline",
+      "title": "NetworkRouter Status Over Time",
+      "id": 21,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 16
+      },
+      "options": {
+        "alignValue": "center",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "never",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 70,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "Not Ready"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "Ready"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "kube_customresource_netbird_networkrouter_status_condition{cluster=~\"$cluster\", condition=\"Ready\"}",
+          "legendFormat": "{{namespace}}/{{name}}",
+          "range": true,
+          "instant": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "state-timeline",
+      "title": "NetworkResource Status Over Time",
+      "id": 22,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 16
+      },
+      "options": {
+        "alignValue": "center",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "never",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 70,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "Not Ready"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "Ready"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "kube_customresource_netbird_networkresource_status_condition{cluster=~\"$cluster\", condition=\"Ready\"}",
+          "legendFormat": "{{namespace}}/{{name}}",
+          "range": true,
+          "instant": false,
+          "refId": "A"
+        }
+      ]
+    },
+    {
       "type": "row",
       "title": "Reconciler Health",
       "id": 10,
@@ -717,7 +1400,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 24
       },
       "panels": []
     },
@@ -733,7 +1416,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 25
       },
       "options": {
         "tooltip": {
@@ -783,7 +1466,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 25
       },
       "options": {
         "tooltip": {
@@ -833,7 +1516,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 33
       },
       "options": {
         "tooltip": {
@@ -880,7 +1563,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 31
+        "y": 41
       },
       "panels": []
     },
@@ -896,7 +1579,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 42
       },
       "options": {
         "tooltip": {
@@ -946,7 +1629,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 42
       },
       "options": {
         "tooltip": {
