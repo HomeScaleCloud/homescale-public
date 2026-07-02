@@ -27,13 +27,6 @@ spec:
               deploy: true
             external-dns-crs:
               deploy: true
-            longhorn:
-              deploy: true
-              values:
-                longhorn:
-                  persistence:
-                    defaultClass: false
-                    defaultClassReplicaCount: 2
             multus:
               deploy: false
             netbird-crs:
