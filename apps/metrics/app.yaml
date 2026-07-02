@@ -37,6 +37,9 @@ values:
             prometheus: "none"
         podMonitorSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
+        additionalAlertManagerConfigs:
+          - static_configs:
+              - targets: ["REDACTED:80"]
         remoteWrite:
           - name: prometheus-aggregator
             url: "http://REDACTED:9090/api/v1/write"
