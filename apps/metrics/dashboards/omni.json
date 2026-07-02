@@ -40,6 +40,338 @@
   "panels": [
     {
       "type": "row",
+      "title": "Alerts",
+      "id": 200,
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": [
+        {
+          "type": "state-timeline",
+          "title": "Alert Timeline",
+          "id": 201,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          },
+          "options": {
+            "alignValue": "left",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": {
+                      "color": "yellow",
+                      "index": 0,
+                      "text": "Warning / Pending"
+                    },
+                    "2": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "Critical"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 2
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "(ALERTS{alertname=~\"Omni.*\", severity=\"critical\"} * 2) or (ALERTS{alertname=~\"Omni.*\", alertstate=~\"firing|pending\"} * 1)",
+              "legendFormat": "{{alertname}} [{{severity}}]",
+              "range": true,
+              "instant": false,
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Active Alerts",
+          "id": 202,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "alertname"
+              }
+            ]
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "alertstate"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 90
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background",
+                      "mode": "basic"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "firing": {
+                            "color": "red",
+                            "index": 0,
+                            "text": "firing"
+                          },
+                          "pending": {
+                            "color": "yellow",
+                            "index": 1,
+                            "text": "pending"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "severity"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background",
+                      "mode": "basic"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "warning": {
+                            "color": "yellow",
+                            "index": 0,
+                            "text": "warning"
+                          },
+                          "critical": {
+                            "color": "red",
+                            "index": 1,
+                            "text": "critical"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "alertname"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 300
+                  }
+                ]
+              }
+            ]
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "ALERTS{alertname=~\"Omni.*\", alertstate=~\"firing|pending\"}",
+              "instant": true,
+              "format": "table",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true,
+                  "__name__": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "prometheus": true,
+                  "prometheus_replica": true,
+                  "service": true,
+                  "container": true
+                },
+                "indexByName": {
+                  "alertname": 0,
+                  "alertstate": 1,
+                  "severity": 2
+                },
+                "renameByName": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Logs",
+      "id": 210,
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "panels": [
+        {
+          "type": "logs",
+          "title": "Omni Pod Logs",
+          "id": 211,
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 2
+          },
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "expr": "{namespace=\"omni\"} | json",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "row",
       "title": "Overview",
       "id": 1,
       "collapsed": false,
@@ -47,7 +379,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 2
       },
       "panels": []
     },
@@ -63,7 +395,7 @@
         "h": 4,
         "w": 3,
         "x": 0,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -137,7 +469,7 @@
         "h": 4,
         "w": 3,
         "x": 3,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -183,7 +515,7 @@
         "h": 4,
         "w": 3,
         "x": 6,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -242,7 +574,7 @@
         "h": 4,
         "w": 3,
         "x": 9,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -288,7 +620,7 @@
         "h": 4,
         "w": 3,
         "x": 12,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -334,7 +666,7 @@
         "h": 4,
         "w": 3,
         "x": 15,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -380,7 +712,7 @@
         "h": 4,
         "w": 3,
         "x": 18,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -507,7 +839,7 @@
         "h": 4,
         "w": 3,
         "x": 21,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -550,7 +882,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 7
       },
       "panels": []
     },
@@ -566,7 +898,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 6
+        "y": 8
       },
       "options": {
         "tooltip": {
@@ -621,7 +953,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 6
+        "y": 8
       },
       "options": {
         "tooltip": {
@@ -670,7 +1002,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 6
+        "y": 8
       },
       "options": {
         "tooltip": {
@@ -719,7 +1051,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 6
+        "y": 8
       },
       "options": {
         "tooltip": {
@@ -774,7 +1106,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 16
       },
       "panels": []
     },
@@ -790,7 +1122,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 17
       },
       "options": {
         "tooltip": {
@@ -839,7 +1171,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 17
       },
       "options": {
         "tooltip": {
@@ -885,7 +1217,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 25
       },
       "panels": []
     },
@@ -901,7 +1233,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 26
       },
       "options": {
         "tooltip": {
@@ -960,7 +1292,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 26
       },
       "options": {
         "tooltip": {
@@ -1024,7 +1356,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 34
       },
       "panels": []
     },
@@ -1040,7 +1372,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 33
+        "y": 35
       },
       "options": {
         "tooltip": {
@@ -1096,7 +1428,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 43
       },
       "panels": []
     },
@@ -1112,7 +1444,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 42
+        "y": 44
       },
       "options": {
         "tooltip": {
@@ -1170,7 +1502,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 42
+        "y": 44
       },
       "options": {
         "tooltip": {
@@ -1219,7 +1551,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 50
+        "y": 52
       },
       "options": {
         "tooltip": {
@@ -1278,7 +1610,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 50
+        "y": 52
       },
       "options": {
         "tooltip": {
@@ -1325,7 +1657,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 58
+        "y": 60
       },
       "panels": []
     },
@@ -1341,7 +1673,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 59
+        "y": 61
       },
       "options": {
         "tooltip": {
@@ -1396,7 +1728,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 59
+        "y": 61
       },
       "options": {
         "tooltip": {
@@ -1472,7 +1804,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 59
+        "y": 61
       },
       "options": {
         "tooltip": {
@@ -1527,7 +1859,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 67
+        "y": 69
       },
       "panels": []
     },
@@ -1543,7 +1875,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 68
+        "y": 70
       },
       "options": {
         "tooltip": {
@@ -1598,7 +1930,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 68
+        "y": 70
       },
       "options": {
         "tooltip": {
@@ -1647,7 +1979,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 68
+        "y": 70
       },
       "options": {
         "tooltip": {
@@ -1702,7 +2034,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 76
+        "y": 78
       },
       "panels": []
     },
@@ -1718,7 +2050,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 77
+        "y": 79
       },
       "options": {
         "tooltip": {
@@ -1767,7 +2099,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 77
+        "y": 79
       },
       "options": {
         "tooltip": {
@@ -1829,7 +2161,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 77
+        "y": 79
       },
       "options": {
         "tooltip": {
@@ -1893,7 +2225,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 85
+        "y": 87
       },
       "panels": []
     },
@@ -1909,7 +2241,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 86
+        "y": 88
       },
       "options": {
         "tooltip": {
@@ -1985,7 +2317,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 86
+        "y": 88
       },
       "options": {
         "tooltip": {
@@ -2031,7 +2363,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 94
+        "y": 96
       },
       "panels": []
     },
@@ -2047,7 +2379,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 95
+        "y": 97
       },
       "options": {
         "tooltip": {
@@ -2093,7 +2425,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 95
+        "y": 97
       },
       "options": {
         "tooltip": {
@@ -2160,7 +2492,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 95
+        "y": 97
       },
       "options": {
         "tooltip": {
@@ -2193,88 +2525,6 @@
           "refId": "A"
         }
       ]
-    },
-    {
-      "type": "row",
-      "title": "Logs & Alerts",
-      "id": 120,
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 103
-      },
-      "panels": []
-    },
-    {
-      "type": "logs",
-      "title": "Omni Pod Logs",
-      "id": 121,
-      "datasource": {
-        "type": "loki",
-        "uid": "loki"
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 16,
-        "x": 0,
-        "y": 104
-      },
-      "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showLabels": false,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": true
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          },
-          "expr": "{namespace=\"omni\"} | json",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "type": "alertlist",
-      "title": "Omni Alerts",
-      "id": 122,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "-- Grafana --"
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 8,
-        "x": 16,
-        "y": 104
-      },
-      "options": {
-        "alertInstanceLabelFilter": "namespace=omni",
-        "alertName": "",
-        "dashboardAlerts": false,
-        "groupBy": [
-          "alertname"
-        ],
-        "groupMode": "tags",
-        "maxItems": 20,
-        "sortOrder": 1,
-        "stateFilter": {
-          "error": true,
-          "firing": true,
-          "noData": false,
-          "normal": false,
-          "pending": true
-        },
-        "viewMode": "list"
-      }
     }
   ]
 }

@@ -23,6 +23,341 @@
   "panels": [
     {
       "type": "row",
+      "title": "Alerts",
+      "id": 300,
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": [
+        {
+          "type": "state-timeline",
+          "title": "Alert Timeline",
+          "id": 301,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          },
+          "options": {
+            "alignValue": "left",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "1": {
+                      "color": "yellow",
+                      "index": 0,
+                      "text": "Warning / Pending"
+                    },
+                    "2": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "Critical"
+                    }
+                  }
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 2
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "(ALERTS{cluster=~\"$cluster\", alertname=~\"VolSync.*\", severity=\"critical\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertname=~\"VolSync.*\", alertstate=~\"firing|pending\"} * 1)",
+              "legendFormat": "{{alertname}} [{{severity}}]",
+              "range": true,
+              "instant": false,
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Active Alerts",
+          "id": 302,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "alertname"
+              }
+            ]
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "alertstate"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 90
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background",
+                      "mode": "basic"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "firing": {
+                            "color": "red",
+                            "index": 0,
+                            "text": "firing"
+                          },
+                          "pending": {
+                            "color": "yellow",
+                            "index": 1,
+                            "text": "pending"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "severity"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background",
+                      "mode": "basic"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "warning": {
+                            "color": "yellow",
+                            "index": 0,
+                            "text": "warning"
+                          },
+                          "critical": {
+                            "color": "red",
+                            "index": 1,
+                            "text": "critical"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "alertname"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 300
+                  }
+                ]
+              }
+            ]
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "ALERTS{cluster=~\"$cluster\", alertname=~\"VolSync.*\", alertstate=~\"firing|pending\"}",
+              "instant": true,
+              "format": "table",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true,
+                  "__name__": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "prometheus": true,
+                  "prometheus_replica": true,
+                  "service": true,
+                  "container": true
+                },
+                "indexByName": {
+                  "alertname": 0,
+                  "alertstate": 1,
+                  "severity": 2,
+                  "cluster": 3
+                },
+                "renameByName": {}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Logs",
+      "id": 310,
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "panels": [
+        {
+          "type": "logs",
+          "title": "VolSync Pod Logs (controller + mover jobs)",
+          "id": 311,
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 2
+          },
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{cluster=~\"$cluster\", namespace=\"volsync-system\", pod=~\"volsync-.*\"}",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "row",
       "title": "Overview",
       "id": 1,
       "collapsed": false,
@@ -30,7 +365,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 2
       },
       "panels": []
     },
@@ -46,7 +381,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -105,7 +440,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -160,7 +495,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -219,7 +554,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 1
+        "y": 3
       },
       "options": {
         "reduceOptions": {
@@ -282,7 +617,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 7
       },
       "options": {
         "cellHeight": "sm",
@@ -482,7 +817,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 17
       },
       "panels": []
     },
@@ -498,7 +833,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 18
       },
       "options": {
         "tooltip": {
@@ -545,7 +880,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 26
       },
       "panels": []
     },
@@ -562,7 +897,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 27
       },
       "options": {
         "cellHeight": "sm",
@@ -699,7 +1034,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 37
       },
       "panels": []
     },
@@ -715,7 +1050,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 36
+        "y": 38
       },
       "options": {
         "tooltip": {
@@ -762,7 +1097,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 44
+        "y": 46
       },
       "panels": []
     },
@@ -778,7 +1113,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 45
+        "y": 47
       },
       "options": {
         "reduceOptions": {
@@ -854,7 +1189,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 45
+        "y": 47
       },
       "options": {
         "reduceOptions": {
@@ -913,7 +1248,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 49
+        "y": 51
       },
       "options": {
         "tooltip": {
