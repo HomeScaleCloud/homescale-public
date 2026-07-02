@@ -148,25 +148,61 @@ The **destination** is always the app's own NetBird group (`app-<name>`), create
 
 ---
 
-### Public exposure (`exposePublic:`)
+### NetBird private DNS (`netbird.cname:`)
 
 !!! warning "Terraform input — not Helm config"
-    The `exposePublic:` block is read directly by Terraform (`infra/terraform/modules/cloudflare/`). It creates a Cloudflare tunnel ingress rule and a DNS record. Never delete it thinking it's dead config.
+    The `netbird.cname:` block is read directly by Terraform (`infra/terraform/modules/netbird/`). It creates a per-app `netbird_dns_zone` and one `netbird_dns_record` per entry. Never delete it thinking it's dead config.
 
-Exposes an app to the public internet via a Cloudflare Zero Trust Tunnel. See [External service exposure](networking.md#external-service-exposure) for how it works.
+Gives an app a pretty private DNS name on the NetBird mesh, aliasing to its auto-registered `<service>.<namespace>.<cluster>REDACTED` address. The first `netbird.cname` entry for an app causes Terraform to create a dedicated zone named `<app-name>REDACTED`; every entry's `fqdn` must be a subdomain of that zone.
 
 ```yaml
-exposePublic:
-  cluster: boa1-prod   # which cluster's Cloudflare tunnel to route through
-  fqdn: myapp.io       # public hostname (must be in a Cloudflare zone in the HomeScale account)
-  port: 80             # backend service port
+netbird:
+  cname:
+    - fqdn: REDACTED   # must be a subdomain of <app-name>REDACTED
+      cluster: boa1-prod                    # which cluster's k8s Service to alias
+      service: myapp                        # optional, defaults to releaseName (falls back to app dir name)
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `cluster` | string | The cluster whose Cloudflare tunnel this app is routed through |
-| `fqdn` | string | Public fully-qualified domain name. The apex zone must be a Cloudflare-managed zone |
-| `port` | int | Port on the Kubernetes Service (`<releaseName>.<namespace>.svc.cluster.local:<port>`) that receives traffic |
+| `cname` | list | One or more private DNS aliases for this app |
+| `cname[].fqdn` | string | Private hostname; must be a subdomain of the app's auto-created `<app-name>REDACTED` zone |
+| `cname[].cluster` | string | Cluster whose `<service>.<namespace>.<cluster>REDACTED` address this record points to |
+| `cname[].service` | string | Optional. Kubernetes Service name to alias. Defaults to `releaseName` (or the app directory name) |
+
+!!! note "No port field"
+    A NetBird CNAME is a plain DNS alias, not a reverse proxy — it doesn't translate ports the way `exposePublic`'s Cloudflare tunnel does. Callers still connect on the target service's actual port.
+
+Requires a matching [`netbird.policy`](#netbird-access-policy-netbird) rule to actually grant access — the DNS record alone doesn't open the mesh.
+
+!!! warning "Avoid zone-name collisions"
+    An app name that collides with an existing NetBird DNS zone (a cluster name like `boa1-prod`, or `metrics`) will conflict with that zone at `apply` time. Pick app names that don't shadow existing zones.
+
+---
+
+### Public exposure (`exposePublic:`)
+
+!!! warning "Terraform input — not Helm config"
+    The `exposePublic:` block is read directly by Terraform (`infra/terraform/modules/cloudflare/`). It creates a Cloudflare tunnel ingress rule and a DNS record per entry. Never delete it thinking it's dead config.
+
+Exposes one or more Kubernetes Services to the public internet via a Cloudflare Zero Trust Tunnel. See [External service exposure](networking.md#external-service-exposure) for how it works.
+
+```yaml
+exposePublic:
+  - cluster: boa1-prod   # which cluster's Cloudflare tunnel to route through
+    fqdn: myapp.io        # public hostname (must be in a Cloudflare zone in the HomeScale account)
+    port: 80              # backend service port
+    service: myapp        # optional, defaults to releaseName (falls back to app dir name)
+```
+
+`exposePublic` is a list — add multiple entries to expose more than one Service/port/fqdn (even against different clusters) from the same app.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cluster` | string | The cluster whose Cloudflare tunnel this entry is routed through |
+| `fqdn` | string | Public fully-qualified domain name. Must be globally unique across all apps. The apex zone must be a Cloudflare-managed zone |
+| `port` | int | Port on the Kubernetes Service that receives traffic |
+| `service` | string | Optional. Kubernetes Service name (`<service>.<namespace>.svc.cluster.local:<port>`) to route to. Defaults to `releaseName` (or the app directory name) |
 
 ---
 
@@ -202,11 +238,14 @@ netbird:
       - sources: ["team-infra-plat"]
         protocol: tcp
         ports: ["443"]
+  cname:
+    - fqdn: REDACTED
+      cluster: boa1-prod
 
 exposePublic:
-  cluster: boa1-prod
-  fqdn: myapp.example.com
-  port: 80
+  - cluster: boa1-prod
+    fqdn: myapp.example.com
+    port: 80
 
 values:
   cluster:

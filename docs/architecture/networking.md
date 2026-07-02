@@ -30,19 +30,20 @@ No Ingress or LoadBalancer service is needed — the NetBird operator handles DN
 
 ## External service exposure
 
-Public internet exposure goes through Cloudflare Zero Trust Tunnels. Add an `exposePublic:` block to the app's `app.yaml`:
+Public internet exposure goes through Cloudflare Zero Trust Tunnels. Add an `exposePublic:` block to the app's `app.yaml` — it's a list, so one app can expose multiple Services/ports/fqdns:
 
 ```yaml
 exposePublic:
-  cluster: boa1-prod   # which cluster's tunnel to route through
-  fqdn: myapp.io       # public hostname (must be in a Cloudflare zone in the HomeScale account)
-  port: 80             # backend service port
+  - cluster: boa1-prod   # which cluster's tunnel to route through
+    fqdn: myapp.io        # public hostname (must be in a Cloudflare zone in the HomeScale account)
+    port: 80              # backend service port
+    service: myapp        # optional, defaults to releaseName
 ```
 
 Terraform creates:
 - A `cloudflare_zero_trust_tunnel_cloudflared` resource for each cluster that has public apps (one tunnel per cluster, shared across all apps on that cluster)
-- A `cloudflare_zero_trust_tunnel_cloudflared_config` ingress entry for the app pointing at `<releaseName>.<namespace>.svc.cluster.local:<port>`
-- A proxied Cloudflare CNAME record for the FQDN pointing to `<tunnel-id>.cfargotunnel.com`
+- A `cloudflare_zero_trust_tunnel_cloudflared_config` ingress entry for each entry, pointing at `<service>.<namespace>.svc.cluster.local:<port>`
+- A proxied Cloudflare CNAME record for each entry's FQDN pointing to `<tunnel-id>.cfargotunnel.com`
 
 The `cloudflared` app (deployed on the target cluster) maintains the outbound tunnel connection to Cloudflare. Traffic flows:
 
@@ -74,6 +75,27 @@ netbird:
 The **destination** is always the app's own NetBird group (`app-<name>`), created automatically by Terraform for every app directory. If no `netbird:` block is present, **access is denied by default**.
 
 See the [App reference](apps.md#netbird-access-policy-netbird) for the full field reference including valid `sources` values.
+
+## NetBird DNS cnames
+
+The [internal service exposure](#internal-service-exposure) address (`<service>.<namespace>.<cluster>REDACTED`) is functional but not pretty, and ties the name to a specific cluster. Apps that want a stable, friendly private name can add a `netbird.cname:` block:
+
+```yaml
+netbird:
+  cname:
+    - fqdn: REDACTED
+      cluster: boa1-prod
+      service: myapp   # optional, defaults to releaseName
+```
+
+The first `cname` entry for an app causes Terraform to create a dedicated `netbird_dns_zone` named `<app-name>REDACTED`; every entry's `fqdn` must be a subdomain of that zone. Each entry becomes a `netbird_dns_record` (type `CNAME`) whose content is the entry's `<service>.<namespace>.<cluster>REDACTED` address. See `apps/metrics/app.yaml` for a real example — it gives the four Services in its `metrics` namespace (`grafana`, `alertmanager`, `prometheus`, `loki`) friendly names under `REDACTED`.
+
+Unlike `exposePublic`, there's no port translation — a NetBird CNAME is a plain DNS alias, not a reverse proxy, so it needs no `port` field. A `netbird.cname` record only grants a name; reaching it still requires a matching [`netbird.policy`](#netbird-access-policies) rule.
+
+!!! warning "Avoid zone-name collisions"
+    Picking an app name that matches an existing cluster name (each cluster gets its own `<cluster>REDACTED` zone, e.g. `boa1-prod`, `mgmt`) will conflict with that zone at `apply` time.
+
+See the [App reference](apps.md#netbird-private-dns-netbirdcname) for the full field reference.
 
 ## Gateway clusters
 

@@ -72,6 +72,20 @@ locals {
     if try(y.netbird.policy, null) != null
   }
 
+  app_netbird_cnames = {
+    for entry in flatten([
+      for name, y in local.app_yamls : [
+        for e in try(y.netbird.cname, []) : merge(e, {
+          app       = name
+          namespace = try(y.namespace, name)
+          service   = try(e.service, try(y.releaseName, name))
+        })
+      ]
+    ]) : entry.fqdn => entry
+  }
+
+  netbird_cname_apps = toset([for _, e in local.app_netbird_cnames : e.app])
+
   # One entry per rule: single-rule apps use app_name, multi-rule apps use app_name-N
   app_policy_rules = merge([
     for app_name, policy in local.app_policies : {

@@ -20,9 +20,9 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
 
   config = {
     ingress = concat(
-      [for name, app in local.public_apps : {
+      [for fqdn, app in local.public_apps : {
         hostname = app.fqdn
-        service  = "http://${app.release_name}.${app.namespace}.svc.cluster.local:${app.port}"
+        service  = "http://${app.service}.${app.namespace}.svc.cluster.local:${app.port}"
       } if app.cluster == each.key],
       [{ service = "http_status:404" }]
     )

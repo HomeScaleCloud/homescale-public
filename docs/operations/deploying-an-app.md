@@ -162,20 +162,29 @@ Access via NetBird is configured with the `netbird:` block in `app.yaml`. Once m
 <service-name>.<namespace>.<cluster>REDACTED
 ```
 
-for anyone in the specified `sources` groups.
+for anyone in the specified `sources` groups. For a friendlier private name, add a `netbird.cname:` list:
+
+```yaml
+netbird:
+  cname:
+    - fqdn: REDACTED   # must be a subdomain of <app-name>REDACTED
+      cluster: boa1-prod
+```
+
+Terraform creates a dedicated `<app-name>REDACTED` DNS zone and a CNAME record per entry. See [Networking: NetBird DNS cnames](../architecture/networking.md#netbird-dns-cnames).
 
 ### Public internet
 
-Add an `exposePublic:` block to `app.yaml`:
+Add an `exposePublic:` block to `app.yaml` — it's a list, so one app can expose multiple Services/ports/fqdns:
 
 ```yaml
 exposePublic:
-  cluster: boa1-prod      # which cluster's Cloudflare tunnel to route through
-  fqdn: myapp.example.com # must be in a Cloudflare zone in the HomeScale account
-  port: 80                # backend service port
+  - cluster: boa1-prod       # which cluster's Cloudflare tunnel to route through
+    fqdn: myapp.example.com  # must be in a Cloudflare zone in the HomeScale account
+    port: 80                 # backend service port
 ```
 
-Terraform creates the Cloudflare tunnel ingress rule and DNS record on the next apply. See [Networking: external service exposure](../architecture/networking.md#external-service-exposure).
+Terraform creates the Cloudflare tunnel ingress rule and DNS record for each entry on the next apply. See [Networking: external service exposure](../architecture/networking.md#external-service-exposure).
 
 ## Deployment overrides
 
