@@ -48,3 +48,8 @@ rules:
     resources:
       - infisicalsecrets
     verbs: ["*"]
+  - apiGroups: ["volsync.backube"]
+    resources:
+      - replicationsources
+      - replicationdestinations
+    verbs: ["*"]
