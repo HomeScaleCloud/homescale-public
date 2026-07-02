@@ -19,17 +19,6 @@ spec:
           labels:
             severity: critical
 
-        - alert: VolSyncOutOfSync
-          annotations:
-            summary: "VolSync volume {{ "{{" }}$labels.obj_namespace{{ "}}" }}/{{ "{{" }}$labels.obj_name{{ "}}" }} has been out of sync for 6 hours."
-            description: "VolSync {{ "{{" }}$labels.role{{ "}}" }} {{ "{{" }}$labels.obj_namespace{{ "}}" }}/{{ "{{" }}$labels.obj_name{{ "}}" }} on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has been reporting out-of-sync for 6 hours. Backups are not catching up with the source data."
-            runbook_url: "https://REDACTED/runbooks/volsync-out-of-sync/"
-            dashboard_url: "https://REDACTED/d/volsync"
-          expr: volsync_volume_out_of_sync == 1
-          for: 6h
-          labels:
-            severity: warning
-
         - alert: VolSyncMoverJobFailed
           annotations:
             summary: "VolSync mover job {{ "{{" }}$labels.job_name{{ "}}" }} failed."

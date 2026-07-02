@@ -109,7 +109,7 @@ Remove both the `replicaCount: 0` override and the `volsync.restore` block from 
 
 VolSync's controller exports Prometheus metrics (`volsync_volume_out_of_sync`, `volsync_missed_intervals_total`, sync duration) that are scraped in every cluster and forwarded to the central [VolSync Grafana dashboard](https://REDACTED/d/volsync), which also surfaces mover job failures and bound PVCs with no `ReplicationSource`.
 
-Alerting rules (`apps/metrics/templates/prometheusrule-volsync.yaml`) fire if a backup misses its scheduled interval, a volume stays out of sync for 6 hours, a mover job fails, or the controller itself becomes unreachable — see the [VolSync runbooks](../runbooks/index.md#volsync) for each alert.
+Alerting rules (`apps/metrics/templates/prometheusrule-volsync.yaml`) fire if a backup misses its scheduled interval, a mover job fails, or the controller itself becomes unreachable — see the [VolSync runbooks](../runbooks/index.md#volsync) for each alert.
 
 ## Restic repository storage
 

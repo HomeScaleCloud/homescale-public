@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: netbird-operator
+  namespace: netbird
+spec:
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: netbird-operator
+      app.kubernetes.io/instance: netbird
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
