@@ -25,7 +25,7 @@ spec:
             description: "ClusterProxy {{ "{{" }}$labels.namespace{{ "}}" }}/{{ "{{" }}$labels.name{{ "}}" }} on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has not reported a Ready condition for 10 minutes (reason: {{ "{{" }}$labels.reason{{ "}}" }}). The cluster's proxy peer into the NetBird mesh may be down, breaking `k8s`/`cluster-*` group access to this cluster's API server."
             runbook_url: "https://REDACTED/runbooks/netbird-clusterproxy-not-ready/"
             dashboard_url: "https://REDACTED/d/netbird-operator"
-          expr: kube_customresource_netbird_clusterproxy_status_condition{condition="Ready", status="false"} == 1
+          expr: kube_customresource_netbird_clusterproxy_status_condition{condition="Ready"} == 0
           for: 10m
           labels:
             severity: critical
@@ -36,7 +36,7 @@ spec:
             description: "NetworkRouter {{ "{{" }}$labels.namespace{{ "}}" }}/{{ "{{" }}$labels.name{{ "}}" }} on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has not reported a Ready condition for 10 minutes (reason: {{ "{{" }}$labels.reason{{ "}}" }}). New or existing NetworkResources routed through this router may not resolve in the cluster's `REDACTED` DNS zone."
             runbook_url: "https://REDACTED/runbooks/netbird-networkrouter-not-ready/"
             dashboard_url: "https://REDACTED/d/netbird-operator"
-          expr: kube_customresource_netbird_networkrouter_status_condition{condition="Ready", status="false"} == 1
+          expr: kube_customresource_netbird_networkrouter_status_condition{condition="Ready"} == 0
           for: 10m
           labels:
             severity: critical
@@ -47,7 +47,7 @@ spec:
             description: "NetworkResource {{ "{{" }}$labels.namespace{{ "}}" }}/{{ "{{" }}$labels.name{{ "}}" }} on cluster {{ "{{" }}$labels.cluster{{ "}}" }} has not reported a Ready condition for 15 minutes (reason: {{ "{{" }}$labels.reason{{ "}}" }}). The backing Service is likely unreachable at its `REDACTED` NetBird DNS name."
             runbook_url: "https://REDACTED/runbooks/netbird-networkresource-not-ready/"
             dashboard_url: "https://REDACTED/d/netbird-operator"
-          expr: kube_customresource_netbird_networkresource_status_condition{condition="Ready", status="false"} == 1
+          expr: kube_customresource_netbird_networkresource_status_condition{condition="Ready"} == 0
           for: 15m
           labels:
             severity: warning
