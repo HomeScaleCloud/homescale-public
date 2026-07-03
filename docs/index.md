@@ -11,4 +11,5 @@ HomeScale is a GitOps monorepo for private Kubernetes clusters. ArgoCD watches t
 - [App reference](architecture/apps.md) — full `app.yaml` field reference
 - [Clusters](architecture/clusters.md) — adding clusters, bootstrapping, upgrades
 - [Backups](architecture/backups.md) — VolSync backup and restore
+- [hsctl](operations/hsctl.md) — CLI for clusters, machines, kubeconfigs, and snapshots
 - [Runbooks](runbooks/index.md) — alert runbooks

@@ -23,16 +23,19 @@ Apps with both a `Chart.yaml` and a `Dockerfile` under `apps/<name>/` are built 
 |-------|------|---------|-------------|
 | `defaultDeploy` | bool | `false` | Deploy to every cluster unless overridden |
 
-Deployment overrides — enabling/disabling on a specific cluster, or overriding values — are **not** set here. They live in [`clusters/<cluster>/apps.yaml`](../operations/deploying-an-app.md#deployment-overrides) instead, under an `apps:` map keyed by app directory name:
+Deployment overrides — enabling/disabling on a specific cluster, or overriding any other field — are **not** set here. They live in [`clusters/<cluster>/apps.yaml`](../operations/deploying-an-app.md#deployment-overrides) instead, under an `apps:` map keyed by app directory name. The override object is merged directly onto the entire base `app.yaml`, so any top-level key (`values`, `syncWave`, `podSecurity`, `netbird`, `exposePublic`, `ignoreDifferences`, ...) can be overridden per cluster, not just `deploy`/`values`:
 
 ```yaml
 # clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
 apps:
   my-app:
     deploy: true            # overrides this app's defaultDeploy, for boa1-prod only
+    syncWave: 5              # any other top-level app.yaml field also merges, for boa1-prod only
     values:
       someKey: clusterSpecificValue   # deep-merged over the base app.yaml, for boa1-prod only
 ```
+
+The merge is a deep merge on maps, but **lists are replaced wholesale, not concatenated** — overriding `values.someList: [z]` replaces a base `[a, b]` entirely rather than appending to it. This matters for list-valued fields like `ignoreDifferences` or `netbird.policy.rules`.
 
 See [Deployment overrides](../operations/deploying-an-app.md#deployment-overrides) for the full pattern.
 
@@ -45,7 +48,7 @@ See [Deployment overrides](../operations/deploying-an-app.md#deployment-override
 | `releaseName` | string | app directory name | Helm release name |
 | `repoURL` | string | global `repoURL` | Git repo URL; override to point at an external chart repo |
 | `targetRevision` | string | global `targetRevision` (`main`) | Git ref (branch, tag, or SHA) |
-| `values` | object | `{}` | Helm values passed to the chart. Supports Go template expressions `{{ .Values.cluster.name }}` and `{{ .Values.cluster.region }}` |
+| `values` | object | `{}` | Helm values passed to the chart. The whole object is rendered through Helm's `tpl`, so any Go template expression resolvable against the chart's root context works — not just `{{ .Values.cluster.name }}` / `{{ .Values.cluster.region }}`, though those are the common case. `annotations` and `ignoreDifferences` get the same `tpl` treatment |
 | `valueFiles` | list of strings | — | Additional Helm value files to load (paths relative to the chart) |
 | `extraSources` | list of ArgoCD sources | — | Adds extra source entries to the ArgoCD Application, switching it to multi-source mode. The app's own chart is always the first source |
 
@@ -95,11 +98,14 @@ syncPolicy:
 
 When set, the namespace gets `pod-security.kubernetes.io/enforce`, `/warn`, and `/audit` labels all set to the chosen level.
 
+!!! note "Namespace objects are auto-generated, one per distinct namespace"
+    The catalog chart creates a `Namespace` resource for every distinct `namespace` value across all `app.yaml` files (skipping the hardcoded system namespaces `argocd`, `kube-system`, `kube-public`, `kube-node-lease`, `default`). If multiple apps share a namespace, only the first one processed (by file glob order) contributes its `podSecurity` labels. Every generated `Namespace` carries a hardcoded `argocd.argoproj.io/sync-wave: "-35"` annotation regardless of the owning app's own `syncWave`, so the namespace exists before anything else in that namespace tries to sync.
+
 ---
 
 ### ArgoCD destination override
 
-By default, apps deploy to the cluster that is running ArgoCD (determined by cluster name). These fields are rarely needed.
+By default, `destination.server` resolves to `https://kubernetes.default.svc` (the in-cluster API server) for every app, via the global default in `apps/values.yaml` — so in practice every Application deploys to the cluster running ArgoCD. `destination.name` (deploying by cluster name rather than server URL) is only used if `destination.server` is explicitly cleared; no app or cluster does this today. These fields are rarely needed.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -150,8 +156,8 @@ The **destination** is always the app's own NetBird group (`app-<name>`), create
 
 ### NetBird private DNS (`netbird.cname:`)
 
-!!! warning "Terraform input — not Helm config"
-    The `netbird.cname:` block is read directly by Terraform (`infra/terraform/modules/netbird/`). It creates a per-app `netbird_dns_zone` and one `netbird_dns_record` per entry. Never delete it thinking it's dead config.
+!!! warning "Mostly a Terraform input, not Helm config"
+    Terraform (`infra/terraform/modules/netbird/`) reads this block directly to create a per-app `netbird_dns_zone` and one `netbird_dns_record` per entry — that's its real purpose, and it has no other effect on Helm rendering. Never delete it thinking it's dead config. One caveat: the app catalog chart *does* read each entry's `fqdn` (only) to populate `.Values.homescale.netbirdCnameFqdns` — see [below](#using-cname-lists-in-your-chart-valueshomescale).
 
 Gives an app a pretty private DNS name on the NetBird mesh, aliasing to its auto-registered `<service>.<namespace>.<cluster>REDACTED` address. The first `netbird.cname` entry for an app causes Terraform to create a dedicated zone named `<app-name>REDACTED`; every entry's `fqdn` must be a subdomain of that zone.
 
@@ -182,8 +188,8 @@ Requires a matching [`netbird.policy`](#netbird-access-policy-netbird) rule to a
 
 ### Public exposure (`exposePublic:`)
 
-!!! warning "Terraform input — not Helm config"
-    The `exposePublic:` block is read directly by Terraform (`infra/terraform/modules/cloudflare/`). It creates a Cloudflare tunnel ingress rule and a DNS record per entry. Never delete it thinking it's dead config.
+!!! warning "Mostly a Terraform input, not Helm config"
+    Terraform (`infra/terraform/modules/cloudflare/`) reads this block directly to create a Cloudflare tunnel ingress rule and a DNS record per entry — that's its real purpose. Never delete it thinking it's dead config. One caveat: the app catalog chart *does* read each entry's `fqdn` (only) to populate `.Values.homescale.exposePublicFqdns` — see [below](#using-cname-lists-in-your-chart-valueshomescale).
 
 Exposes one or more Kubernetes Services to the public internet via a Cloudflare Zero Trust Tunnel. See [External service exposure](networking.md#external-service-exposure) for how it works.
 

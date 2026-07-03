@@ -17,7 +17,7 @@ Raw Kubernetes manifests placed in `clusters/<cluster>/` are picked up directly 
 
 ### The `mgmt` cluster
 
-`mgmt` is a managed [DigitalOcean Kubernetes](https://docs.digitalocean.com/products/kubernetes/) cluster provisioned by Terraform (`infra/terraform/modules/mgmt_cluster/`). It does **not** have a `cluster.yaml` — Talos and Omni are not involved. Omni itself runs *on* `mgmt`, managing the other clusters.
+`mgmt` is a managed [Vultr Kubernetes Engine](https://www.vultr.com/kubernetes/) cluster provisioned by Terraform (`infra/terraform/modules/mgmt_cluster/`, a single `vultr_kubernetes` resource). It does **not** have a `cluster.yaml` — Talos and Omni are not involved. Omni itself runs *on* `mgmt`, managing the other clusters.
 
 ## Cluster naming
 
@@ -108,7 +108,7 @@ Omni handles the upgrade sequence — control plane nodes first, then workers �
 
 ## Terraform
 
-Cloud resources (Cloudflare DNS, DigitalOcean, Infisical project setup, NetBird configuration, mgmt cluster bootstrap) live in `infra/terraform/`. State is in [Terraform Cloud](https://developer.hashicorp.com/terraform/cloud-docs) (`homescale` org, `homescale` workspace).
+Cloud resources (Cloudflare DNS, Vultr, Infisical project setup, NetBird configuration, mgmt cluster provisioning) live in `infra/terraform/`. State is in [Terraform Cloud](https://developer.hashicorp.com/terraform/cloud-docs) (`homescale` org, `homescale` workspace).
 
 Terraform runs only in CI — it uses GitHub OIDC for Infisical auth and cannot be run locally. On merge to `main`, CI runs `terraform apply` automatically (after `scan` and `build` pass). On PRs, CI runs `terraform plan` and posts the plan as a PR comment.
 
@@ -124,5 +124,6 @@ terraform -chdir=infra/terraform fmt
 |--------|----------------|
 | `modules/netbird/` | NetBird policies and groups — reads `netbird:` blocks from `app.yaml` files via `fileset` |
 | `modules/cloudflare/` | DNS records and Cloudflare Zero Trust Tunnel config — reads `exposePublic:` from `app.yaml` |
-| `modules/infisical/` | Infisical project structure, machine identities, and VolSync secret scaffolding |
-| `modules/mgmt_cluster/` | The `mgmt` DigitalOcean Kubernetes cluster and ArgoCD bootstrap |
+| `modules/infisical/` | Infisical project structure and machine identities. VolSync's per-app secret scaffolding is separate — see `volsync.tf` in the Terraform root |
+| `modules/mgmt_cluster/` | The `mgmt` Vultr Kubernetes cluster and its Infisical kubeconfig secret. Does not bootstrap ArgoCD — the bootstrap `apps.yaml` is applied manually once, per cluster |
+| `modules/region/` | Regional bare-metal/cloud resources (NetBird subnet routing, secrets) — defined but not yet instantiated (commented out in `main.tf`) |
