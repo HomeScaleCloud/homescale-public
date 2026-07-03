@@ -1,0 +1,657 @@
+title: UniFi Network
+uid: unifi-network
+description: UniFi gateway/switch/AP health — interface status, throughput, errors, and device vitals
+tags:
+  - unifi
+  - networking
+  - infrastructure
+editable: true
+graphTooltip: 1
+refresh: 1m
+schemaVersion: 39
+version: 1
+timezone: browser
+time:
+  from: now-6h
+  to: now
+timepicker: {}
+links: []
+annotations:
+  list: []
+templating:
+  list:
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: prometheus
+      definition: label_values(unifi_uptime_seconds, cluster)
+      hide: 0
+      includeAll: false
+      label: Cluster
+      multi: false
+      name: cluster
+      options: []
+      query:
+        query: label_values(unifi_uptime_seconds, cluster)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: ''
+      sort: 1
+      type: query
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: prometheus
+      definition: label_values(unifi_uptime_seconds{cluster="$cluster"}, job)
+      hide: 0
+      includeAll: true
+      label: Device
+      multi: true
+      name: device
+      options: []
+      query:
+        query: label_values(unifi_uptime_seconds{cluster="$cluster"}, job)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: ''
+      sort: 1
+      type: query
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: prometheus
+      definition: label_values(unifi_if_oper_status{cluster="$cluster", job=~"$device"}, if_name)
+      hide: 0
+      includeAll: true
+      label: Interface
+      multi: true
+      name: interface
+      options: []
+      query:
+        query: label_values(unifi_if_oper_status{cluster="$cluster", job=~"$device"}, if_name)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: ''
+      sort: 1
+      type: query
+panels:
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 0
+    id: 1
+    title: Overview
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        mappings:
+          - type: value
+            options:
+              '1':
+                color: green
+                index: 0
+                text: Up
+              '0':
+                color: red
+                index: 1
+                text: Down
+        thresholds:
+          mode: absolute
+          steps:
+            - color: red
+              value: null
+            - color: green
+              value: 1
+      overrides: []
+    gridPos:
+      h: 4
+      w: 5
+      x: 0
+      'y': 1
+    id: 2
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: name
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: up{cluster="$cluster", job=~"$device"}
+        legendFormat: '{{job}}'
+    title: Device Status
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        unit: s
+        decimals: 0
+      overrides: []
+    gridPos:
+      h: 4
+      w: 5
+      x: 5
+      'y': 1
+    id: 3
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: unifi_uptime_seconds{cluster="$cluster", job=~"$device"}
+        legendFormat: '{{job}}'
+    title: Uptime
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: yellow
+              value: 2
+            - color: red
+              value: 4
+        unit: short
+        decimals: 2
+      overrides: []
+    gridPos:
+      h: 4
+      w: 5
+      x: 10
+      'y': 1
+    id: 4
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: unifi_load_average{cluster="$cluster", job=~"$device", period="Load-1"}
+        legendFormat: '{{job}}'
+    title: Load Average (1m)
+    description: Only reported by UDM and UAP firmware — USW does not expose this OID.
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: yellow
+              value: 70
+            - color: red
+              value: 90
+        unit: percent
+        decimals: 0
+        max: 100
+        min: 0
+      overrides: []
+    gridPos:
+      h: 4
+      w: 4
+      x: 15
+      'y': 1
+    id: 5
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: unifi_cpu_load_percent{cluster="$cluster", job=~"$device"}
+        legendFormat: '{{job}} core {{cpu_index}}'
+    title: CPU Load
+    description: Only reported by UAP firmware — UDM and USW do not expose this OID.
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: yellow
+              value: 70
+            - color: red
+              value: 90
+        unit: percent
+        decimals: 0
+        max: 100
+        min: 0
+      overrides: []
+    gridPos:
+      h: 4
+      w: 5
+      x: 19
+      'y': 1
+    id: 6
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: (unifi_memory_total_bytes{cluster="$cluster", job=~"$device"} - unifi_memory_available_bytes{cluster="$cluster", job=~"$device"}) / unifi_memory_total_bytes{cluster="$cluster", job=~"$device"} * 100
+        legendFormat: '{{job}}'
+    title: Memory Used
+    description: Only reported by UDM and UAP firmware — USW does not expose this OID.
+    type: stat
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 5
+    id: 7
+    title: Information
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        custom:
+          align: left
+          displayMode: auto
+      overrides: []
+    gridPos:
+      h: 5
+      w: 24
+      x: 0
+      'y': 6
+    id: 8
+    options:
+      cellHeight: sm
+      footer:
+        show: false
+      showHeader: true
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: up{cluster="$cluster", job=~"$device"}
+        format: table
+        instant: true
+        legendFormat: ''
+    transformations:
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            __name__: true
+            cluster: true
+          indexByName:
+            job: 0
+            device: 1
+            role: 2
+            instance: 3
+            location: 4
+            Value: 5
+          renameByName:
+            job: Job
+            device: Device
+            role: Role
+            instance: IP
+            location: Location
+            Value: Up
+    title: Devices
+    type: table
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 11
+    id: 9
+    title: Interfaces
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        custom:
+          align: left
+          cellOptions:
+            type: auto
+        mappings:
+          - type: value
+            options:
+              '1':
+                color: green
+                index: 0
+                text: Up
+              '2':
+                color: red
+                index: 1
+                text: Down
+              '4':
+                color: yellow
+                index: 2
+                text: Unknown
+              '5':
+                color: yellow
+                index: 3
+                text: Dormant
+              '6':
+                color: '#808080'
+                index: 4
+                text: Not Present
+              '7':
+                color: red
+                index: 5
+                text: Lower Layer Down
+      overrides:
+        - matcher:
+            id: byName
+            options: Status
+          properties:
+            - id: custom.cellOptions
+              value:
+                type: color-background
+                mode: basic
+    gridPos:
+      h: 8
+      w: 24
+      x: 0
+      'y': 12
+    id: 10
+    options:
+      cellHeight: sm
+      footer:
+        show: false
+      showHeader: true
+      sortBy:
+        - desc: false
+          displayName: job
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: unifi_if_oper_status{cluster="$cluster", job=~"$device", if_name=~"$interface"}
+        format: table
+        instant: true
+        legendFormat: ''
+    transformations:
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            __name__: true
+            cluster: true
+            ifIndex: true
+            location: true
+            device: true
+            role: true
+          indexByName:
+            job: 0
+            if_name: 1
+            if_alias: 2
+            Value: 3
+          renameByName:
+            job: Device
+            if_name: Interface
+            if_alias: Description
+            Value: Status
+    title: Interface Status
+    type: table
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          lineWidth: 2
+          fillOpacity: 10
+          spanNulls: false
+        unit: bps
+      overrides: []
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 20
+    id: 11
+    options:
+      tooltip:
+        mode: multi
+        sort: desc
+      legend:
+        displayMode: list
+        placement: bottom
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: rate(unifi_if_in_octets_total{cluster="$cluster", job=~"$device", if_name=~"$interface"}[5m]) * 8
+        legendFormat: '{{job}} — {{if_name}}'
+    title: Inbound Throughput
+    type: timeseries
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          lineWidth: 2
+          fillOpacity: 10
+          spanNulls: false
+        unit: bps
+      overrides: []
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 20
+    id: 12
+    options:
+      tooltip:
+        mode: multi
+        sort: desc
+      legend:
+        displayMode: list
+        placement: bottom
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: rate(unifi_if_out_octets_total{cluster="$cluster", job=~"$device", if_name=~"$interface"}[5m]) * 8
+        legendFormat: '{{job}} — {{if_name}}'
+    title: Outbound Throughput
+    type: timeseries
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          lineWidth: 2
+          fillOpacity: 10
+          spanNulls: false
+        unit: short
+      overrides: []
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 28
+    id: 13
+    options:
+      tooltip:
+        mode: multi
+        sort: desc
+      legend:
+        displayMode: list
+        placement: bottom
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: rate(unifi_if_in_errors_total{cluster="$cluster", job=~"$device", if_name=~"$interface"}[5m])
+        legendFormat: '{{job}} — {{if_name}} in errors'
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: rate(unifi_if_out_errors_total{cluster="$cluster", job=~"$device", if_name=~"$interface"}[5m])
+        legendFormat: '{{job}} — {{if_name}} out errors'
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: rate(unifi_if_in_discards_total{cluster="$cluster", job=~"$device", if_name=~"$interface"}[5m])
+        legendFormat: '{{job}} — {{if_name}} in discards'
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: rate(unifi_if_out_discards_total{cluster="$cluster", job=~"$device", if_name=~"$interface"}[5m])
+        legendFormat: '{{job}} — {{if_name}} out discards'
+    title: Errors & Discards (packets/sec)
+    type: timeseries
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        custom:
+          align: left
+          displayMode: auto
+        unit: bps
+      overrides:
+        - matcher:
+            id: byName
+            options: Device
+          properties:
+            - id: unit
+              value: short
+        - matcher:
+            id: byName
+            options: Interface
+          properties:
+            - id: unit
+              value: short
+        - matcher:
+            id: byName
+            options: Description
+          properties:
+            - id: unit
+              value: short
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 28
+    id: 14
+    options:
+      cellHeight: sm
+      footer:
+        show: false
+      showHeader: true
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: unifi_if_speed_bps{cluster="$cluster", job=~"$device", if_name=~"$interface"}
+        format: table
+        instant: true
+        legendFormat: ''
+    transformations:
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            __name__: true
+            cluster: true
+            ifIndex: true
+            location: true
+            device: true
+            role: true
+          indexByName:
+            job: 0
+            if_name: 1
+            if_alias: 2
+            Value: 3
+          renameByName:
+            job: Device
+            if_name: Interface
+            if_alias: Description
+            Value: Link Speed
+    title: Link Speed
+    type: table
