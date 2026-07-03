@@ -1,0 +1,3219 @@
+title: ArgoCD
+uid: qPkgGHg7k
+description: Official ArgoCD Dashboard as of June 2021
+tags: []
+editable: true
+graphTooltip: 0
+refresh: false
+schemaVersion: 30
+version: 1
+time:
+  from: now-30m
+  to: now
+timepicker:
+  refresh_intervals:
+    - 5s
+    - 10s
+    - 30s
+    - 1m
+    - 5m
+    - 15m
+    - 30m
+    - 1h
+    - 2h
+    - 1d
+  time_options:
+    - 5m
+    - 15m
+    - 1h
+    - 6h
+    - 12h
+    - 24h
+    - 2d
+    - 7d
+    - 30d
+links: []
+annotations:
+  list:
+    - builtIn: 1
+      datasource: -- Grafana --
+      enable: true
+      hide: true
+      iconColor: rgba(0, 211, 255, 1)
+      name: Annotations & Alerts
+      type: dashboard
+templating:
+  list:
+    - current:
+        selected: false
+        text: Prometheus
+        value: Prometheus
+      description: null
+      error: null
+      hide: 0
+      includeAll: false
+      label: null
+      multi: false
+      name: datasource
+      options: []
+      query: prometheus
+      refresh: 1
+      regex: ''
+      skipUrlSync: false
+      type: datasource
+    - auto: true
+      auto_count: 30
+      auto_min: 1m
+      current:
+        selected: false
+        text: auto
+        value: $__auto_interval_interval
+      description: null
+      error: null
+      hide: 0
+      label: null
+      name: interval
+      options:
+        - selected: true
+          text: auto
+          value: $__auto_interval_interval
+        - selected: false
+          text: 1m
+          value: 1m
+        - selected: false
+          text: 5m
+          value: 5m
+        - selected: false
+          text: 10m
+          value: 10m
+        - selected: false
+          text: 30m
+          value: 30m
+        - selected: false
+          text: 1h
+          value: 1h
+        - selected: false
+          text: 2h
+          value: 2h
+        - selected: false
+          text: 4h
+          value: 4h
+        - selected: false
+          text: 8h
+          value: 8h
+      query: 1m,5m,10m,30m,1h,2h,4h,8h
+      refresh: 2
+      skipUrlSync: false
+      type: interval
+    - allValue: ''
+      current:
+        selected: true
+        text: namespace
+        value: namespace
+      description: null
+      error: null
+      hide: 0
+      includeAll: false
+      label: null
+      multi: false
+      name: grouping
+      options:
+        - selected: true
+          text: namespace
+          value: namespace
+        - selected: false
+          text: name
+          value: name
+        - selected: false
+          text: project
+          value: project
+      query: namespace,name,project
+      skipUrlSync: false
+      type: custom
+    - allValue: .*
+      current: {}
+      datasource: $datasource
+      definition: label_values(argocd_cluster_info, cluster)
+      description: null
+      error: null
+      hide: 0
+      includeAll: true
+      label: null
+      multi: false
+      name: cluster
+      options: []
+      query:
+        query: label_values(argocd_cluster_info, cluster)
+        refId: StandardVariableQuery
+      refresh: 1
+      regex: ''
+      skipUrlSync: false
+      sort: 1
+      tagValuesQuery: ''
+      tagsQuery: ''
+      type: query
+      useTags: false
+    - datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(argocd_cluster_info{cluster=~"$cluster"}, server)
+      hide: 2
+      includeAll: true
+      allValue: .*
+      multi: false
+      name: server
+      options: []
+      query:
+        query: label_values(argocd_cluster_info{cluster=~"$cluster"}, server)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: ''
+      sort: 1
+      type: query
+      label: server
+    - allValue: .*
+      current:
+        selected: true
+        text: All
+        value: $__all
+      description: null
+      error: null
+      hide: 0
+      includeAll: true
+      label: null
+      multi: false
+      name: health_status
+      options:
+        - selected: true
+          text: All
+          value: $__all
+        - selected: false
+          text: Healthy
+          value: Healthy
+        - selected: false
+          text: Progressing
+          value: Progressing
+        - selected: false
+          text: Suspended
+          value: Suspended
+        - selected: false
+          text: Missing
+          value: Missing
+        - selected: false
+          text: Degraded
+          value: Degraded
+        - selected: false
+          text: Unknown
+          value: Unknown
+      query: Healthy,Progressing,Suspended,Missing,Degraded,Unknown
+      skipUrlSync: false
+      type: custom
+    - allValue: .*
+      current:
+        selected: true
+        text: All
+        value: $__all
+      description: null
+      error: null
+      hide: 0
+      includeAll: true
+      label: null
+      multi: false
+      name: sync_status
+      options:
+        - selected: true
+          text: All
+          value: $__all
+        - selected: false
+          text: Synced
+          value: Synced
+        - selected: false
+          text: OutOfSync
+          value: OutOfSync
+        - selected: false
+          text: Unknown
+          value: Unknown
+      query: Synced,OutOfSync,Unknown
+      skipUrlSync: false
+      type: custom
+panels:
+  - type: row
+    title: Overview
+    id: 68
+    collapsed: false
+    datasource: $datasource
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 0
+    panels: []
+    fieldConfig:
+      defaults: {}
+      overrides: []
+  - type: text
+    id: 26
+    transparent: true
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 2
+      x: 0
+      'y': 1
+    options:
+      content: '![argoimage](https://avatars1.githubusercontent.com/u/30269780?s=110&v=4)'
+      mode: markdown
+    pluginVersion: 8.0.0
+    links: []
+  - type: stat
+    title: Uptime
+    id: 32
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 3
+      x: 2
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      text: {}
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: dtdurations
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: time() - max(process_start_time_seconds{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics"})
+        format: time_series
+        intervalFactor: 1
+        refId: A
+    cacheTimeout: null
+    interval: null
+    links: []
+    maxDataPoints: 100
+  - type: stat
+    title: Clusters
+    id: 94
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 3
+      x: 5
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      text: {}
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: count(count by (server) (argocd_cluster_info{cluster=~"$cluster",namespace="argocd"}))
+        format: time_series
+        instant: false
+        intervalFactor: 1
+        refId: A
+    cacheTimeout: null
+    interval: null
+    links: []
+    maxDataPoints: 100
+    timeFrom: null
+    timeShift: null
+  - type: stat
+    title: Applications
+    id: 75
+    repeat: null
+    repeatDirection: h
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 3
+      x: 8
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      text: {}
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status=~"$health_status",sync_status=~"$sync_status"})
+        format: time_series
+        instant: false
+        intervalFactor: 1
+        refId: A
+    cacheTimeout: null
+    interval: null
+    links: []
+    maxDataPoints: 100
+    timeFrom: null
+    timeShift: null
+  - type: stat
+    title: Repositories
+    id: 107
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 3
+      x: 11
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      text: {}
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: count(count by (repo) (argocd_app_info{cluster=~"$cluster",namespace="argocd"}))
+        format: time_series
+        instant: false
+        intervalFactor: 1
+        refId: A
+    cacheTimeout: null
+    interval: null
+    links: []
+    maxDataPoints: 100
+    timeFrom: null
+    timeShift: null
+  - type: gauge
+    title: Operations
+    id: 100
+    repeatDirection: h
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 3
+      x: 14
+      'y': 1
+    options:
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showThresholdLabels: false
+      showThresholdMarkers: true
+      text: {}
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        mappings:
+          - id: 0
+            op: '='
+            text: '0'
+            type: 1
+            value: 'null'
+        max: 100
+        min: 0
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",operation!=""})
+        format: time_series
+        instant: true
+        intervalFactor: 1
+        legendFormat: ''
+        refId: A
+    cacheTimeout: null
+    links: []
+    timeFrom: null
+    timeShift: null
+  - type: graph
+    title: Applications
+    id: 28
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 7
+      x: 17
+      'y': 1
+    options:
+      alertThreshold: true
+    fieldConfig:
+      defaults:
+        links: []
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status=~"$health_status",sync_status=~"$sync_status"}) by (namespace)
+        format: time_series
+        instant: false
+        intervalFactor: 1
+        legendFormat: '{{namespace}}'
+        refId: A
+    aliasColors: {}
+    bars: false
+    cacheTimeout: null
+    dashLength: 10
+    dashes: false
+    decimals: null
+    fill: 1
+    fillGradient: 0
+    hiddenSeries: false
+    legend:
+      alignAsTable: true
+      avg: false
+      current: true
+      hideEmpty: true
+      hideZero: true
+      max: false
+      min: false
+      rightSide: true
+      show: true
+      sort: current
+      sortDesc: true
+      total: false
+      values: true
+    lines: true
+    linewidth: 1
+    links: []
+    nullPointMode: connected
+    paceLength: 10
+    percentage: false
+    pointradius: 2
+    points: false
+    renderer: flot
+    seriesOverrides: []
+    spaceLength: 10
+    stack: true
+    steppedLine: false
+    thresholds: []
+    timeFrom: null
+    timeRegions: []
+    timeShift: null
+    tooltip:
+      shared: false
+      sort: 2
+      value_type: individual
+    xaxis:
+      buckets: null
+      mode: time
+      name: null
+      show: true
+      values: []
+    yaxes:
+      - decimals: 0
+        format: short
+        label: null
+        logBase: 1
+        max: null
+        min: null
+        show: true
+      - format: short
+        label: null
+        logBase: 1
+        max: null
+        min: null
+        show: true
+    yaxis:
+      align: false
+      alignLevel: null
+  - type: row
+    title: Application Status
+    id: 77
+    collapsed: true
+    datasource: $datasource
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 5
+    panels:
+      - type: graph
+        title: Health Status
+        id: 105
+        datasource: $datasource
+        gridPos:
+          h: 6
+          w: 12
+          x: 0
+          'y': 6
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status=~"$health_status",sync_status=~"$sync_status",health_status!=""}) by (health_status)
+            format: time_series
+            instant: false
+            intervalFactor: 1
+            legendFormat: '{{health_status}}'
+            refId: A
+        aliasColors:
+          Degraded: semi-dark-red
+          Healthy: green
+          Missing: semi-dark-purple
+          Progressing: semi-dark-blue
+          Suspended: semi-dark-orange
+          Unknown: rgb(255, 255, 255)
+        bars: false
+        cacheTimeout: null
+        dashLength: 10
+        dashes: false
+        decimals: null
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        interval: ''
+        legend:
+          alignAsTable: true
+          avg: false
+          current: true
+          hideEmpty: false
+          hideZero: false
+          max: false
+          min: false
+          rightSide: true
+          show: true
+          sideWidth: null
+          sort: current
+          sortDesc: true
+          total: false
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: null as zero
+        paceLength: 10
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 2
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: Sync Status
+        id: 106
+        datasource: $datasource
+        gridPos:
+          h: 6
+          w: 12
+          x: 12
+          'y': 6
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status=~"$health_status",sync_status=~"$sync_status",health_status!=""}) by (sync_status)
+            format: time_series
+            instant: false
+            intervalFactor: 1
+            legendFormat: '{{sync_status}}'
+            refId: A
+        aliasColors:
+          Degraded: semi-dark-red
+          Healthy: green
+          Missing: semi-dark-purple
+          OutOfSync: semi-dark-yellow
+          Progressing: semi-dark-blue
+          Suspended: semi-dark-orange
+          Synced: semi-dark-green
+          Unknown: rgb(255, 255, 255)
+        bars: false
+        cacheTimeout: null
+        dashLength: 10
+        dashes: false
+        decimals: null
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        interval: ''
+        legend:
+          alignAsTable: true
+          avg: false
+          current: true
+          hideEmpty: false
+          hideZero: false
+          max: false
+          min: false
+          rightSide: true
+          show: true
+          sideWidth: null
+          sort: current
+          sortDesc: true
+          total: false
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: null as zero
+        paceLength: 10
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 2
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+    fieldConfig:
+      defaults: {}
+      overrides: []
+  - type: row
+    title: Sync Stats
+    id: 104
+    collapsed: true
+    datasource: $datasource
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 6
+    panels:
+      - type: graph
+        title: Sync Activity
+        id: 56
+        datasource: $datasource
+        gridPos:
+          h: 6
+          w: 24
+          x: 0
+          'y': 3
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(round(increase(argocd_app_sync_total{cluster=~"$cluster",namespace="argocd",dest_server=~"$server"}[$interval]))) by ($grouping)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{$grouping}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        decimals: null
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        interval: ''
+        legend:
+          alignAsTable: true
+          avg: false
+          current: true
+          hideEmpty: true
+          hideZero: true
+          max: false
+          min: false
+          rightSide: true
+          show: true
+          sort: total
+          sortDesc: true
+          total: true
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        paceLength: 10
+        percentage: false
+        pointradius: 1
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: true
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - decimals: 0
+            format: short
+            label: ''
+            logBase: 1
+            max: null
+            min: '0'
+            show: true
+          - decimals: -12
+            format: short
+            label: ''
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: Sync Failures
+        id: 73
+        datasource: $datasource
+        gridPos:
+          h: 5
+          w: 24
+          x: 0
+          'y': 9
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(round(increase(argocd_app_sync_total{cluster=~"$cluster",namespace="argocd",phase=~"Error|Failed",dest_server=~"$server"}[$interval]))) by ($grouping, phase)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{phase}}: {{$grouping}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        decimals: null
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          alignAsTable: true
+          avg: false
+          current: false
+          hideEmpty: true
+          hideZero: false
+          max: false
+          min: false
+          rightSide: true
+          show: true
+          sort: total
+          sortDesc: true
+          total: true
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        paceLength: 10
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: true
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - decimals: 0
+            format: none
+            label: ''
+            logBase: 1
+            max: null
+            min: '0'
+            show: true
+          - format: short
+            label: ''
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+    fieldConfig:
+      defaults: {}
+      overrides: []
+  - type: row
+    title: Controller Stats
+    id: 64
+    collapsed: true
+    datasource: $datasource
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 7
+    panels:
+      - type: graph
+        title: Reconciliation Activity
+        id: 58
+        datasource: $datasource
+        gridPos:
+          h: 6
+          w: 24
+          x: 0
+          'y': 12
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(increase(argocd_app_reconcile_count{cluster=~"$cluster",namespace="argocd",dest_server=~"$server"}[$interval])) by ($grouping)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{$grouping}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          max: true
+          min: false
+          rightSide: true
+          show: true
+          sort: total
+          sortDesc: true
+          total: true
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        paceLength: 10
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: false
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: heatmap
+        title: Reconciliation Performance
+        id: 60
+        datasource: $datasource
+        gridPos:
+          h: 7
+          w: 24
+          x: 0
+          'y': 18
+        options: {}
+        targets:
+          - expr: sum(increase(argocd_app_reconcile_bucket{cluster=~"$cluster",namespace="argocd"}[$interval])) by (le)
+            format: heatmap
+            instant: false
+            intervalFactor: 10
+            legendFormat: '{{le}}'
+            refId: A
+        cards:
+          cardPadding: null
+          cardRound: null
+        color:
+          cardColor: '#b4ff00'
+          colorScale: sqrt
+          colorScheme: interpolateSpectral
+          exponent: 0.5
+          min: null
+          mode: spectrum
+        dataFormat: tsbuckets
+        heatmap: {}
+        hideZeroBuckets: false
+        highlightCards: true
+        legend:
+          show: true
+        links: []
+        reverseYBuckets: false
+        timeFrom: null
+        timeShift: null
+        tooltip:
+          show: true
+          showHistogram: true
+        tooltipDecimals: 0
+        xAxis:
+          show: true
+        xBucketNumber: null
+        xBucketSize: null
+        yAxis:
+          decimals: null
+          format: short
+          logBase: 1
+          max: null
+          min: null
+          show: true
+          splitFactor: null
+        yBucketBound: auto
+        yBucketNumber: null
+        yBucketSize: null
+      - type: graph
+        title: K8s API Activity
+        id: 80
+        datasource: $datasource
+        gridPos:
+          h: 6
+          w: 24
+          x: 0
+          'y': 25
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(increase(argocd_app_k8s_request_total{cluster=~"$cluster",namespace="argocd",server=~"$server"}[$interval])) by (verb, resource_kind)
+            format: time_series
+            instant: false
+            intervalFactor: 1
+            legendFormat: '{{verb}} {{resource_kind}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideEmpty: true
+          hideZero: true
+          max: false
+          min: false
+          rightSide: true
+          show: true
+          sideWidth: null
+          sort: current
+          sortDesc: true
+          total: false
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: null as zero
+        paceLength: 10
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: Workqueue Depth
+        id: 96
+        datasource: $datasource
+        gridPos:
+          h: 7
+          w: 12
+          x: 0
+          'y': 31
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(workqueue_depth{cluster=~"$cluster",namespace="argocd",name=~"app_.*"}) by (name)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{name}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideZero: true
+          max: true
+          min: false
+          rightSide: false
+          show: true
+          sideWidth: null
+          total: false
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: '0'
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: '0'
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: Pending kubectl run
+        id: 98
+        datasource: $datasource
+        gridPos:
+          h: 7
+          w: 12
+          x: 12
+          'y': 31
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(argocd_kubectl_exec_pending{cluster=~"$cluster",namespace="argocd"}) by (command)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{command}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        decimals: null
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideZero: false
+          max: true
+          min: false
+          show: true
+          total: false
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - decimals: 0
+            format: short
+            label: ''
+            logBase: 1
+            max: null
+            min: '0'
+            show: true
+          - decimals: 0
+            format: short
+            label: ''
+            logBase: 1
+            max: null
+            min: '0'
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+    fieldConfig:
+      defaults: {}
+      overrides: []
+  - type: row
+    title: Controller Telemetry
+    id: 102
+    collapsed: true
+    datasource: $datasource
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 8
+    panels:
+      - type: graph
+        title: Memory Usage
+        id: 34
+        datasource: $datasource
+        gridPos:
+          h: 7
+          w: 24
+          x: 0
+          'y': 26
+        options:
+          dataLinks: []
+        targets:
+          - expr: go_memstats_heap_alloc_bytes{cluster=~"$cluster",namespace="argocd",job="argocd-metrics"}
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{namespace}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          max: true
+          min: false
+          rightSide: true
+          show: true
+          sort: current
+          sortDesc: true
+          total: false
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: connected
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: false
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: bytes
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: CPU Usage
+        id: 108
+        datasource: $datasource
+        gridPos:
+          h: 7
+          w: 24
+          x: 0
+          'y': 33
+        options:
+          dataLinks: []
+        targets:
+          - expr: irate(process_cpu_seconds_total{cluster=~"$cluster",namespace="argocd",job="argocd-metrics"}[1m])
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{namespace}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideEmpty: true
+          hideZero: true
+          max: true
+          min: false
+          rightSide: true
+          show: true
+          sort: avg
+          sortDesc: true
+          total: false
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: connected
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: false
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - decimals: 1
+            format: none
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: Goroutines
+        id: 62
+        datasource: $datasource
+        gridPos:
+          h: 7
+          w: 24
+          x: 0
+          'y': 40
+        options:
+          dataLinks: []
+        targets:
+          - expr: go_goroutines{cluster=~"$cluster",namespace="argocd",job="argocd-metrics"}
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{namespace}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideEmpty: false
+          hideZero: false
+          max: true
+          min: false
+          rightSide: true
+          show: true
+          sort: current
+          sortDesc: true
+          total: false
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: false
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+    fieldConfig:
+      defaults: {}
+      overrides: []
+  - type: row
+    title: Cluster Stats
+    id: 88
+    collapsed: true
+    datasource: $datasource
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 9
+    panels:
+      - type: graph
+        title: Resource Objects Count
+        id: 90
+        datasource: $datasource
+        gridPos:
+          h: 7
+          w: 24
+          x: 0
+          'y': 27
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(argocd_cluster_api_resource_objects{cluster=~"$cluster",namespace="argocd",server=~"$server"}) by (server)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{server}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          alignAsTable: true
+          avg: false
+          current: true
+          max: false
+          min: false
+          rightSide: true
+          show: true
+          sort: current
+          sortDesc: true
+          total: false
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: false
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: API Resources Count
+        id: 92
+        datasource: $datasource
+        gridPos:
+          h: 6
+          w: 24
+          x: 0
+          'y': 34
+        options:
+          dataLinks: []
+        targets:
+          - expr: '  sum(argocd_cluster_api_resources{cluster=~"$cluster",namespace="argocd",server=~"$server"}) by (server)'
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{server}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          alignAsTable: true
+          avg: false
+          current: true
+          hideEmpty: true
+          max: false
+          min: false
+          rightSide: true
+          show: true
+          sort: current
+          sortDesc: true
+          total: false
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: false
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: Cluster Events Count
+        id: 86
+        datasource: $datasource
+        gridPos:
+          h: 7
+          w: 24
+          x: 0
+          'y': 40
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(increase(argocd_cluster_events_total{cluster=~"$cluster",namespace="argocd",server=~"$server"}[$interval])) by (server)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{server}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          max: false
+          min: false
+          rightSide: true
+          show: true
+          sort: current
+          sortDesc: true
+          total: false
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: false
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+    fieldConfig:
+      defaults: {}
+      overrides: []
+  - type: row
+    title: Repo Server Stats
+    id: 70
+    collapsed: true
+    datasource: $datasource
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 10
+    panels:
+      - type: graph
+        title: Git Requests (ls-remote)
+        id: 82
+        datasource: $datasource
+        gridPos:
+          h: 8
+          w: 12
+          x: 0
+          'y': 7
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(increase(argocd_git_request_total{cluster=~"$cluster",namespace="argocd",request_type="ls-remote"}[10m])) by (namespace)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{namespace}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          avg: false
+          current: false
+          max: false
+          min: false
+          show: false
+          total: false
+          values: false
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: Git Requests (checkout)
+        id: 84
+        datasource: $datasource
+        gridPos:
+          h: 8
+          w: 12
+          x: 12
+          'y': 7
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(increase(argocd_git_request_total{cluster=~"$cluster",namespace="argocd",request_type="fetch"}[10m])) by (namespace)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{namespace}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          avg: false
+          current: false
+          max: false
+          min: false
+          show: false
+          total: false
+          values: false
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: ''
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: heatmap
+        title: Git Fetch Performance
+        id: 114
+        datasource: $datasource
+        gridPos:
+          h: 8
+          w: 12
+          x: 0
+          'y': 15
+        options: {}
+        targets:
+          - expr: sum(increase(argocd_git_request_duration_seconds_bucket{cluster=~"$cluster",namespace="argocd",request_type="fetch"}[$interval])) by (le)
+            format: heatmap
+            intervalFactor: 10
+            legendFormat: '{{le}}'
+            refId: A
+        cards:
+          cardPadding: null
+          cardRound: null
+        color:
+          cardColor: '#b4ff00'
+          colorScale: sqrt
+          colorScheme: interpolateSpectral
+          exponent: 0.5
+          mode: spectrum
+        dataFormat: tsbuckets
+        heatmap: {}
+        hideZeroBuckets: false
+        highlightCards: true
+        legend:
+          show: false
+        reverseYBuckets: false
+        timeFrom: null
+        timeShift: null
+        tooltip:
+          show: true
+          showHistogram: false
+        xAxis:
+          show: true
+        xBucketNumber: null
+        xBucketSize: null
+        yAxis:
+          decimals: null
+          format: short
+          logBase: 1
+          max: null
+          min: null
+          show: true
+          splitFactor: null
+        yBucketBound: auto
+        yBucketNumber: null
+        yBucketSize: null
+      - type: heatmap
+        title: Git Ls-Remote Performance
+        id: 116
+        datasource: $datasource
+        gridPos:
+          h: 8
+          w: 12
+          x: 12
+          'y': 15
+        options: {}
+        targets:
+          - expr: sum(increase(argocd_git_request_duration_seconds_bucket{cluster=~"$cluster",namespace="argocd",request_type="ls-remote"}[$interval])) by (le)
+            format: heatmap
+            intervalFactor: 10
+            legendFormat: '{{le}}'
+            refId: A
+        cards:
+          cardPadding: null
+          cardRound: null
+        color:
+          cardColor: '#b4ff00'
+          colorScale: sqrt
+          colorScheme: interpolateSpectral
+          exponent: 0.5
+          mode: spectrum
+        dataFormat: tsbuckets
+        heatmap: {}
+        hideZeroBuckets: false
+        highlightCards: true
+        legend:
+          show: false
+        reverseYBuckets: false
+        timeFrom: null
+        timeShift: null
+        tooltip:
+          show: true
+          showHistogram: false
+        xAxis:
+          show: true
+        xBucketNumber: null
+        xBucketSize: null
+        yAxis:
+          decimals: null
+          format: short
+          logBase: 1
+          max: null
+          min: null
+          show: true
+          splitFactor: null
+        yBucketBound: auto
+        yBucketNumber: null
+        yBucketSize: null
+      - type: graph
+        title: Memory Used
+        id: 71
+        datasource: $datasource
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 23
+        options:
+          dataLinks: []
+        targets:
+          - expr: go_memstats_heap_alloc_bytes{cluster=~"$cluster",namespace="argocd",job="argocd-repo-server"}
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{pod}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          avg: false
+          current: false
+          max: false
+          min: false
+          show: false
+          total: false
+          values: false
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: connected
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: bytes
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: Goroutines
+        id: 72
+        datasource: $datasource
+        gridPos:
+          h: 7
+          w: 24
+          x: 0
+          'y': 31
+        options:
+          dataLinks: []
+        targets:
+          - expr: go_goroutines{cluster=~"$cluster",namespace="argocd",job="argocd-repo-server"}
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{pod}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          avg: false
+          current: false
+          max: false
+          min: false
+          show: false
+          total: false
+          values: false
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+    fieldConfig:
+      defaults: {}
+      overrides: []
+  - type: row
+    title: Server Stats
+    id: 66
+    collapsed: true
+    datasource: $datasource
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 11
+    panels:
+      - type: graph
+        title: Memory Used
+        id: 61
+        datasource: $datasource
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 89
+        targets:
+          - expr: go_memstats_heap_alloc_bytes{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics"}
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{pod}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        legend:
+          avg: false
+          current: false
+          max: false
+          min: false
+          show: false
+          total: false
+          values: false
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: connected
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: bytes
+            label: null
+            logBase: 1
+            max: null
+            min: '0'
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: Goroutines
+        id: 36
+        datasource: $datasource
+        gridPos:
+          h: 9
+          w: 24
+          x: 0
+          'y': 97
+        targets:
+          - expr: go_goroutines{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics"}
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{pod}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        legend:
+          avg: false
+          current: false
+          max: false
+          min: false
+          show: false
+          total: false
+          values: false
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: 'null'
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: GC Time Quantiles
+        id: 38
+        datasource: $datasource
+        gridPos:
+          h: 9
+          w: 24
+          x: 0
+          'y': 106
+        targets:
+          - expr: go_gc_duration_seconds{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics", quantile="1"}
+            format: time_series
+            intervalFactor: 2
+            legendFormat: '{{pod}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        legend:
+          avg: false
+          current: false
+          max: false
+          min: false
+          show: true
+          total: false
+          values: false
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: connected
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 0
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: text
+        title: ''
+        id: 54
+        transparent: true
+        gridPos:
+          h: 2
+          w: 24
+          x: 0
+          'y': 115
+        content: '#### gRPC Services:'
+        links: []
+        mode: markdown
+      - type: graph
+        title: ApplicationService Requests
+        id: 40
+        datasource: $datasource
+        gridPos:
+          h: 9
+          w: 12
+          x: 0
+          'y': 117
+        targets:
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="application.ApplicationService"}[$interval])) by (grpc_code, grpc_method)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{grpc_code}},{{grpc_method}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        decimals: null
+        fill: 1
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideEmpty: true
+          hideZero: true
+          max: false
+          min: false
+          rightSide: false
+          show: true
+          sort: total
+          sortDesc: true
+          total: true
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: null as zero
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: false
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: ClusterService Requests
+        id: 42
+        datasource: $datasource
+        gridPos:
+          h: 9
+          w: 12
+          x: 12
+          'y': 117
+        targets:
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="cluster.ClusterService"}[$interval])) by (grpc_code, grpc_method)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{grpc_code}},{{grpc_method}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideEmpty: true
+          hideZero: true
+          max: false
+          min: false
+          rightSide: false
+          show: true
+          total: true
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: null as zero
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: false
+          sort: 2
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: ProjectService Requests
+        id: 44
+        datasource: $datasource
+        gridPos:
+          h: 9
+          w: 12
+          x: 0
+          'y': 126
+        targets:
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="project.ProjectService"}[$interval])) by (grpc_code, grpc_method)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{grpc_code}},{{grpc_method}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideEmpty: true
+          hideZero: true
+          max: false
+          min: false
+          rightSide: false
+          show: true
+          total: true
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: null as zero
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 0
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: RepositoryService Requests
+        id: 46
+        datasource: $datasource
+        gridPos:
+          h: 9
+          w: 12
+          x: 12
+          'y': 126
+        targets:
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="repository.RepositoryService"}[$interval])) by (grpc_code, grpc_method)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{grpc_code}},{{grpc_method}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideEmpty: true
+          hideZero: true
+          max: false
+          min: false
+          show: true
+          total: true
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: null as zero
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds:
+          - colorMode: critical
+            fill: true
+            line: true
+            op: gt
+            yaxis: left
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 0
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: SessionService Requests
+        id: 48
+        datasource: $datasource
+        gridPos:
+          h: 9
+          w: 12
+          x: 0
+          'y': 135
+        targets:
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="session.SessionService"}[$interval])) by (grpc_code, grpc_method)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{grpc_code}},{{grpc_method}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideEmpty: true
+          hideZero: true
+          max: false
+          min: false
+          show: true
+          total: true
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: null as zero
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 0
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: VersionService Requests
+        id: 49
+        datasource: $datasource
+        gridPos:
+          h: 9
+          w: 12
+          x: 12
+          'y': 135
+        targets:
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="version.VersionService"}[$interval])) by (grpc_code, grpc_method)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{grpc_code}},{{grpc_method}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideEmpty: true
+          hideZero: true
+          max: false
+          min: false
+          show: true
+          total: true
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: null as zero
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 0
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: AccountService Requests
+        id: 50
+        datasource: $datasource
+        gridPos:
+          h: 9
+          w: 12
+          x: 0
+          'y': 144
+        targets:
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="account.AccountService"}[$interval])) by (grpc_code, grpc_method)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{grpc_code}},{{grpc_method}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideEmpty: true
+          hideZero: true
+          max: false
+          min: false
+          show: true
+          total: true
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: null as zero
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 0
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+      - type: graph
+        title: SettingsService Requests
+        id: 99
+        datasource: $datasource
+        gridPos:
+          h: 9
+          w: 12
+          x: 12
+          'y': 144
+        targets:
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="settings.SettingsService"}[$interval])) by (grpc_code, grpc_method)
+            format: time_series
+            intervalFactor: 1
+            legendFormat: '{{grpc_code}},{{grpc_method}}'
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        legend:
+          alignAsTable: true
+          avg: true
+          current: true
+          hideEmpty: true
+          hideZero: true
+          max: false
+          min: false
+          show: true
+          total: true
+          values: true
+        lines: true
+        linewidth: 1
+        links: []
+        nullPointMode: null as zero
+        paceLength: 10
+        percentage: false
+        pointradius: 5
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 0
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+    fieldConfig:
+      defaults: {}
+      overrides: []
+  - type: row
+    title: Redis Stats
+    id: 110
+    collapsed: true
+    datasource: null
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 12
+    panels:
+      - type: graph
+        title: Requests by result
+        id: 112
+        datasource: null
+        gridPos:
+          h: 7
+          w: 24
+          x: 0
+          'y': 9
+        options:
+          dataLinks: []
+        targets:
+          - expr: sum(increase(argocd_redis_request_total{cluster=~"$cluster",namespace="argocd"}[$interval])) by (failed)
+            refId: A
+        aliasColors: {}
+        bars: false
+        dashLength: 10
+        dashes: false
+        fill: 1
+        fillGradient: 0
+        hiddenSeries: false
+        legend:
+          avg: false
+          current: false
+          max: false
+          min: false
+          show: true
+          total: false
+          values: false
+        lines: true
+        linewidth: 1
+        nullPointMode: 'null'
+        percentage: false
+        pointradius: 2
+        points: false
+        renderer: flot
+        seriesOverrides: []
+        spaceLength: 10
+        stack: false
+        steppedLine: false
+        thresholds: []
+        timeFrom: null
+        timeRegions: []
+        timeShift: null
+        tooltip:
+          shared: true
+          sort: 0
+          value_type: individual
+        xaxis:
+          buckets: null
+          mode: time
+          name: null
+          show: true
+          values: []
+        yaxes:
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+          - format: short
+            label: null
+            logBase: 1
+            max: null
+            min: null
+            show: true
+        yaxis:
+          align: false
+          alignLevel: null
+    fieldConfig:
+      defaults: {}
+      overrides: []

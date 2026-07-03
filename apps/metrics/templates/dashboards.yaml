@@ -7,10 +7,6 @@ metadata:
   name: grafana-dashboards-{{ $folder }}
   namespace: metrics
 data:
-{{- range $path, $_ := $.Files.Glob (printf "dashboards/%s/*.json" $folder) }}
-  {{ base $path }}: |
-    {{ $.Files.Get $path | nindent 4 }}
-{{- end }}
 {{- range $path, $_ := $.Files.Glob (printf "dashboards/%s/*.yaml" $folder) }}
   {{ base $path | trimSuffix ".yaml" }}.json: |
     {{ $.Files.Get $path | fromYaml | toJson | nindent 4 }}
