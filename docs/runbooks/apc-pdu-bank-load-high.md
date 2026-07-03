@@ -8,7 +8,7 @@
 
 A PDU bank's current draw has exceeded **70% of its near-overload threshold** for 5 minutes. The alert fires per bank (`$labels.bank_index`). The alert value is the load as a percentage of the near-overload threshold.
 
-This is a warning to act before the bank reaches the near-overload state (`ApcPduBankNearOverload`). At 70% of the near-overload threshold there is still headroom, but adding more load or losing a circuit could push it over.
+This fires early, before the bank reaches the near-overload state (`ApcPduBankNearOverload`), so it can be acted on before the PDU itself reports a near-overload/overload condition. At 70% of the near-overload threshold there is still headroom, but adding more load or losing a circuit could push it over.
 
 Check the PDU Health dashboard to see which bank is elevated and the load trend over time.
 

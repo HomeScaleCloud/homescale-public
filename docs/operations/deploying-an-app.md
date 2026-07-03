@@ -109,7 +109,7 @@ See [Secrets management](../architecture/secrets.md) for full details.
 
 ```bash
 # Lint the chart
-helm template apps/my-app apps/my-app/
+helm template my-app apps/my-app/
 
 # Render the full catalog including the new app
 helm template apps -f apps/values.yaml --set cluster.name=boa1-prod

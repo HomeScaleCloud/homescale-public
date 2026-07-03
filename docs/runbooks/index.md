@@ -17,7 +17,7 @@ Runbooks for alerts fired by Prometheus. Each alert links back to this page via 
 |-------|----------|
 | [ApcPduOffline](apc-pdu-offline.md) | critical |
 | [ApcPduVoltageCritical](apc-pdu-voltage-critical.md) | critical |
-| [ApcPduBankNearOverload](apc-pdu-bank-near-overload.md) | warning |
+| [ApcPduBankNearOverload](apc-pdu-bank-near-overload.md) | critical |
 | [ApcPduBankLoadHigh](apc-pdu-bank-load-high.md) | critical |
 | [ApcPduVoltageWarning](apc-pdu-voltage-warning.md) | warning |
 
@@ -39,3 +39,18 @@ Runbooks for alerts fired by Prometheus. Each alert links back to this page via 
 | [NetBirdNetworkResourceNotReady](netbird-networkresource-not-ready.md) | warning |
 | [NetBirdReconcileErrors](netbird-reconcile-errors.md) | warning |
 | [NetBirdWorkqueueBacklog](netbird-workqueue-backlog.md) | warning |
+
+## Longhorn
+
+| Alert | Severity |
+|-------|----------|
+| [LonghornVolumeFaulted](longhorn-volume-faulted.md) | critical |
+| [LonghornVolumeDegraded](longhorn-volume-degraded.md) | warning |
+| [LonghornVolumeSpaceFilling](longhorn-volume-space-filling.md) | warning |
+| [LonghornDiskFailed](longhorn-disk-failed.md) | critical |
+| [LonghornDiskNotReady](longhorn-disk-not-ready.md) | critical |
+| [LonghornDiskStorageWarning](longhorn-disk-storage-warning.md) | warning |
+| [LonghornDiskStorageCritical](longhorn-disk-storage-critical.md) | critical |
+| [LonghornNodeDown](longhorn-node-down.md) | critical |
+| [LonghornNodeNotReady](longhorn-node-not-ready.md) | critical |
+| [LonghornNodeStorageWarning](longhorn-node-storage-warning.md) | warning |
