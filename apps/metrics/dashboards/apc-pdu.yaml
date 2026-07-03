@@ -1,0 +1,756 @@
+title: PDU Health
+uid: pdu-health
+description: Rack PDU health — input voltage, bank load, outlet states, and device identity
+tags:
+  - pdu
+  - power
+  - infrastructure
+editable: true
+graphTooltip: 1
+refresh: 1m
+schemaVersion: 39
+version: 5
+timezone: browser
+time:
+  from: now-6h
+  to: now
+timepicker: {}
+links: []
+annotations:
+  list: []
+templating:
+  list:
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: prometheus
+      definition: label_values(apc_rpdu_input_voltage_volts, cluster)
+      hide: 0
+      includeAll: false
+      label: Cluster
+      multi: false
+      name: cluster
+      options: []
+      query:
+        query: label_values(apc_rpdu_input_voltage_volts, cluster)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: ''
+      sort: 1
+      type: query
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: prometheus
+      definition: label_values(apc_rpdu_input_voltage_volts{cluster="$cluster"}, job)
+      hide: 0
+      includeAll: true
+      label: PDU
+      multi: true
+      name: job
+      options: []
+      query:
+        query: label_values(apc_rpdu_input_voltage_volts{cluster="$cluster"}, job)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: ''
+      sort: 1
+      type: query
+panels:
+  - collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 0
+    id: 13
+    title: Alerts
+    type: row
+    panels:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        fieldConfig:
+          defaults:
+            color:
+              mode: thresholds
+            custom:
+              fillOpacity: 70
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineWidth: 0
+              spanNulls: false
+            mappings:
+              - type: value
+                options:
+                  '1':
+                    color: yellow
+                    index: 0
+                    text: Warning / Pending
+                  '2':
+                    color: red
+                    index: 1
+                    text: Critical
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: null
+                - color: yellow
+                  value: 1
+                - color: red
+                  value: 2
+          overrides: []
+        gridPos:
+          h: 5
+          w: 24
+          x: 0
+          'y': 1
+        id: 14
+        options:
+          alignValue: left
+          legend:
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          mergeValues: true
+          rowHeight: 0.9
+          showValue: auto
+          tooltip:
+            mode: single
+            sort: none
+        targets:
+          - datasource:
+              type: prometheus
+              uid: prometheus
+            expr: (ALERTS{cluster=~"$cluster", alertname=~"ApcPdu.*", severity="critical"} * 2) or (ALERTS{cluster=~"$cluster", alertname=~"ApcPdu.*", alertstate=~"firing|pending"} * 1)
+            legendFormat: '{{alertname}} ({{job}})'
+            range: true
+            instant: false
+            refId: A
+        title: Alert Timeline
+        type: state-timeline
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        fieldConfig:
+          defaults:
+            custom:
+              align: auto
+              cellOptions:
+                type: auto
+              inspect: false
+          overrides:
+            - matcher:
+                id: byName
+                options: alertname
+              properties:
+                - id: custom.width
+                  value: 280
+            - matcher:
+                id: byName
+                options: alertstate
+              properties:
+                - id: custom.width
+                  value: 90
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        firing:
+                          color: red
+                          index: 0
+                          text: firing
+                        pending:
+                          color: yellow
+                          index: 1
+                          text: pending
+            - matcher:
+                id: byName
+                options: severity
+              properties:
+                - id: custom.width
+                  value: 100
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        warning:
+                          color: yellow
+                          index: 0
+                          text: warning
+                        critical:
+                          color: red
+                          index: 1
+                          text: critical
+            - matcher:
+                id: byName
+                options: job
+              properties:
+                - id: custom.width
+                  value: 140
+            - matcher:
+                id: byName
+                options: instance
+              properties:
+                - id: custom.width
+                  value: 120
+            - matcher:
+                id: byName
+                options: bank_index
+              properties:
+                - id: custom.width
+                  value: 90
+        gridPos:
+          h: 6
+          w: 24
+          x: 0
+          'y': 6
+        id: 15
+        options:
+          cellHeight: sm
+          footer:
+            show: false
+          showHeader: true
+          sortBy:
+            - desc: false
+              displayName: alertname
+        targets:
+          - datasource:
+              type: prometheus
+              uid: prometheus
+            expr: ALERTS{cluster=~"$cluster", alertname=~"ApcPdu.*", alertstate=~"firing|pending"}
+            instant: true
+            format: table
+            legendFormat: ''
+            refId: A
+        transformations:
+          - id: organize
+            options:
+              excludeByName:
+                Time: true
+                Value: true
+                __name__: true
+                cluster: true
+                endpoint: true
+                prometheus: true
+                prometheus_replica: true
+                service: true
+              indexByName:
+                alertname: 0
+                alertstate: 1
+                severity: 2
+                job: 3
+                instance: 4
+                bank_index: 5
+              renameByName: {}
+        title: Active Alerts
+        type: table
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 1
+    id: 1
+    title: Overview
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: red
+              value: null
+            - color: yellow
+              value: 190
+            - color: green
+              value: 198
+            - color: yellow
+              value: 218
+            - color: red
+              value: 225
+        mappings:
+          - type: range
+            options:
+              from: 198
+              to: 217.9
+              result:
+                text: Normal
+                index: 0
+          - type: range
+            options:
+              from: 190
+              to: 197.9
+              result:
+                text: Warning
+                index: 1
+          - type: range
+            options:
+              from: 218
+              to: 224.9
+              result:
+                text: Warning
+                index: 2
+          - type: range
+            options:
+              from: 0
+              to: 189.9
+              result:
+                text: Critical
+                index: 3
+          - type: range
+            options:
+              from: 225
+              to: 300
+              result:
+                text: Critical
+                index: 4
+        unit: volt
+      overrides: []
+    gridPos:
+      h: 4
+      w: 5
+      x: 0
+      'y': 2
+    id: 2
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_input_voltage_volts{cluster="$cluster", job=~"$job"}
+        legendFormat: '{{job}}'
+    title: Input Voltage
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: yellow
+              value: 70
+            - color: red
+              value: 90
+        mappings: []
+        unit: percent
+        decimals: 0
+        max: 100
+        min: 0
+      overrides: []
+    gridPos:
+      h: 4
+      w: 5
+      x: 5
+      'y': 2
+    id: 3
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_bank_load_deciamps{cluster="$cluster", job=~"$job"} / 10 / apc_rpdu_bank_near_overload_threshold_amps{cluster="$cluster", job=~"$job"} * 100
+        legendFormat: '{{job}} bank {{bank_index}}'
+    title: Bank Load (% of near-overload threshold)
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: yellow
+              value: 60
+            - color: red
+              value: 80
+        mappings: []
+        unit: percent
+        decimals: 0
+        max: 100
+        min: 0
+      overrides: []
+    gridPos:
+      h: 4
+      w: 5
+      x: 10
+      'y': 2
+    id: 9
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_bank_load_deciamps{cluster="$cluster", job=~"$job"} / 10 / on(cluster, job) group_left() apc_rpdu_device_rated_amps{cluster="$cluster", job=~"$job"} * 100
+        legendFormat: '{{job}}'
+    title: Bank Load (% of rated capacity)
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        unit: s
+        decimals: 0
+      overrides: []
+    gridPos:
+      h: 4
+      w: 9
+      x: 15
+      'y': 2
+    id: 10
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_uptime_seconds{cluster="$cluster", job=~"$job"}
+        legendFormat: '{{job}}'
+    title: Uptime
+    type: stat
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 6
+    id: 11
+    title: Information
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        custom:
+          align: left
+          displayMode: auto
+      overrides:
+        - matcher:
+            id: byName
+            options: Rated Amps
+          properties:
+            - id: custom.width
+              value: 100
+    gridPos:
+      h: 5
+      w: 24
+      x: 0
+      'y': 7
+    id: 12
+    options:
+      cellHeight: sm
+      footer:
+        show: false
+      showHeader: true
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_device_rated_amps{cluster="$cluster", job=~"$job"}
+        format: table
+        instant: true
+        legendFormat: ''
+    transformations:
+      - id: labelsToFields
+        options:
+          mode: columns
+          valueLabel: job
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            __name__: true
+            cluster: true
+            prometheus: true
+            prometheus_replica: true
+          renameByName:
+            Value: Rated Amps
+            firmware_version: Firmware
+            hardware_rev: Hardware Rev
+            model: Model
+            serial: Serial
+            instance: IP
+            job: PDU
+          indexByName:
+            job: 0
+            instance: 1
+            model: 2
+            firmware_version: 3
+            hardware_rev: 4
+            serial: 5
+            Value: 6
+    title: Info
+    type: table
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 12
+    id: 4
+    title: Trends
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          lineWidth: 2
+          fillOpacity: 10
+          spanNulls: false
+        unit: amp
+        decimals: 1
+      overrides:
+        - matcher:
+            id: byFrameRefID
+            options: warning
+          properties:
+            - id: color
+              value:
+                fixedColor: yellow
+                mode: fixed
+            - id: custom.lineStyle
+              value:
+                dash:
+                  - 8
+                  - 4
+                fill: dash
+            - id: custom.lineWidth
+              value: 1
+            - id: custom.fillOpacity
+              value: 0
+        - matcher:
+            id: byFrameRefID
+            options: threshold
+          properties:
+            - id: color
+              value:
+                fixedColor: orange
+                mode: fixed
+            - id: custom.lineStyle
+              value:
+                dash:
+                  - 8
+                  - 4
+                fill: dash
+            - id: custom.lineWidth
+              value: 1
+            - id: custom.fillOpacity
+              value: 0
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 13
+    id: 5
+    options:
+      tooltip:
+        mode: multi
+        sort: none
+      legend:
+        displayMode: list
+        placement: bottom
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_bank_load_deciamps{cluster="$cluster", job=~"$job"} / 10
+        legendFormat: '{{job}}'
+        refId: load
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_bank_near_overload_threshold_amps{cluster="$cluster", job=~"$job"} * 0.7
+        legendFormat: '{{job}} warning threshold (70%)'
+        refId: warning
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_bank_near_overload_threshold_amps{cluster="$cluster", job=~"$job"}
+        legendFormat: '{{job}} near-overload threshold'
+        refId: threshold
+    title: Bank Load (Amps)
+    type: timeseries
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          lineWidth: 2
+          fillOpacity: 10
+          spanNulls: false
+          thresholdsStyle:
+            mode: line
+        unit: volt
+        decimals: 0
+        thresholds:
+          mode: absolute
+          steps:
+            - color: transparent
+              value: null
+            - color: red
+              value: 190
+            - color: yellow
+              value: 198
+            - color: transparent
+              value: 218
+            - color: yellow
+              value: 218
+            - color: red
+              value: 225
+      overrides: []
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 13
+    id: 6
+    options:
+      tooltip:
+        mode: multi
+        sort: none
+      legend:
+        displayMode: list
+        placement: bottom
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_input_voltage_volts{cluster="$cluster", job=~"$job"}
+        legendFormat: '{{job}}'
+    title: Input Voltage
+    type: timeseries
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 21
+    id: 7
+    title: Outlets
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 2
+        mappings:
+          - type: value
+            options:
+              '1':
+                text: 'On'
+                index: 0
+              '2':
+                text: 'Off'
+                index: 1
+      overrides: []
+    gridPos:
+      h: 8
+      w: 24
+      x: 0
+      'y': 22
+    id: 8
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_outlet_state{cluster="$cluster", job=~"$job"}
+        legendFormat: '{{job}} — {{outlet_name}}'
+    title: Outlet States
+    type: stat
