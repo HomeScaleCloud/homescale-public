@@ -142,7 +142,7 @@
                     "2": {
                       "color": "red",
                       "index": 1,
-                      "text": "Critical"
+                      "text": "Critical (Firing)"
                     }
                   }
                 }
@@ -173,7 +173,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "(ALERTS{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", severity=\"critical\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertstate=~\"firing|pending\", namespace=~\"$namespace\", pod=~\"$pod\"} * 1)",
+              "expr": "max without (alertstate) ((ALERTS{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", severity=\"critical\", alertstate=\"firing\"} * 2) or (ALERTS{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", alertstate=\"pending\"} * 1) or (ALERTS{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", severity=\"warning\"} * 1))",
               "legendFormat": "{{alertname}} [{{severity}}]",
               "range": true,
               "instant": false,
@@ -3408,7 +3408,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Kubernetes / Views / Pods",
+  "title": "Views / Pods",
   "uid": "k8s_views_pods",
   "version": 39,
   "weekStart": ""

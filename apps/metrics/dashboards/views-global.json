@@ -137,7 +137,7 @@
                     "2": {
                       "color": "red",
                       "index": 1,
-                      "text": "Critical"
+                      "text": "Critical (Firing)"
                     }
                   }
                 }
@@ -168,7 +168,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "(ALERTS{cluster=~\"$cluster\", severity=\"critical\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertstate=~\"firing|pending\"} * 1)",
+              "expr": "max without (alertstate) ((ALERTS{cluster=~\"$cluster\", severity=\"critical\", alertstate=\"firing\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertstate=\"pending\"} * 1) or (ALERTS{cluster=~\"$cluster\", severity=\"warning\"} * 1))",
               "legendFormat": "{{alertname}} [{{severity}}]",
               "range": true,
               "instant": false,
@@ -3933,7 +3933,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Kubernetes / Views / Global",
+  "title": "Views / Global",
   "uid": "k8s_views_global",
   "version": 45,
   "weekStart": ""

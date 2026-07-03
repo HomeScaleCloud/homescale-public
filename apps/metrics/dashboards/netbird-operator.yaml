@@ -99,7 +99,7 @@ panels:
                   '2':
                     color: red
                     index: 1
-                    text: Critical
+                    text: Critical (Firing)
             thresholds:
               mode: absolute
               steps:
@@ -114,7 +114,7 @@ panels:
           - datasource:
               type: prometheus
               uid: ${datasource}
-            expr: (ALERTS{cluster=~"$cluster", alertname=~"NetBird.*", severity="critical"} * 2) or (ALERTS{cluster=~"$cluster", alertname=~"NetBird.*", alertstate=~"firing|pending"} * 1)
+            expr: max without (alertstate) ((ALERTS{cluster=~"$cluster", alertname=~"NetBird.*", severity="critical", alertstate="firing"} * 2) or (ALERTS{cluster=~"$cluster", alertname=~"NetBird.*", alertstate="pending"} * 1) or (ALERTS{cluster=~"$cluster", alertname=~"NetBird.*", severity="warning"} * 1))
             legendFormat: '{{alertname}} [{{severity}}]'
             range: true
             instant: false
