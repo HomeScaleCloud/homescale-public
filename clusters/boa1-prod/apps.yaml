@@ -102,17 +102,67 @@ spec:
                       dashboardproviders.yaml:
                         apiVersion: 1
                         providers:
-                          - name: default
+                          - name: views
                             orgId: 1
-                            folder: ''
+                            folder: 'Views'
                             type: file
                             disableDeletion: false
                             allowUiUpdates: false
                             updateIntervalSeconds: 30
                             options:
-                              path: /var/lib/grafana/dashboards/default
+                              path: /var/lib/grafana/dashboards/views
+                          - name: system
+                            orgId: 1
+                            folder: 'System'
+                            type: file
+                            disableDeletion: false
+                            allowUiUpdates: false
+                            updateIntervalSeconds: 30
+                            options:
+                              path: /var/lib/grafana/dashboards/system
+                          - name: storage
+                            orgId: 1
+                            folder: 'Storage'
+                            type: file
+                            disableDeletion: false
+                            allowUiUpdates: false
+                            updateIntervalSeconds: 30
+                            options:
+                              path: /var/lib/grafana/dashboards/storage
+                          - name: networking
+                            orgId: 1
+                            folder: 'Networking'
+                            type: file
+                            disableDeletion: false
+                            allowUiUpdates: false
+                            updateIntervalSeconds: 30
+                            options:
+                              path: /var/lib/grafana/dashboards/networking
+                          - name: platform
+                            orgId: 1
+                            folder: 'Platform'
+                            type: file
+                            disableDeletion: false
+                            allowUiUpdates: false
+                            updateIntervalSeconds: 30
+                            options:
+                              path: /var/lib/grafana/dashboards/platform
+                          - name: environment
+                            orgId: 1
+                            folder: 'Environment'
+                            type: file
+                            disableDeletion: false
+                            allowUiUpdates: false
+                            updateIntervalSeconds: 30
+                            options:
+                              path: /var/lib/grafana/dashboards/environment
                     dashboardsConfigMaps:
-                      default: grafana-dashboards
+                      views: grafana-dashboards-views
+                      system: grafana-dashboards-system
+                      storage: grafana-dashboards-storage
+                      networking: grafana-dashboards-networking
+                      platform: grafana-dashboards-platform
+                      environment: grafana-dashboards-environment
                     datasources:
                       datasources.yaml:
                         apiVersion: 1

@@ -3408,7 +3408,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Views / Pods",
+  "title": "Pods",
   "uid": "k8s_views_pods",
   "version": 39,
   "weekStart": ""
