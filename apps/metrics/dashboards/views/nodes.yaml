@@ -1,0 +1,3293 @@
+title: Nodes
+uid: k8s_views_nodes
+description: 'This is a modern ''Nodes View'' dashboard for your Kubernetes cluster(s). Made for kube-prometheus-stack and take advantage of the latest Grafana features. GitHub repository: https://github.com/dotdc/grafana-dashboards-kubernetes'
+tags:
+  - Kubernetes
+  - Prometheus
+editable: true
+graphTooltip: 1
+refresh: 30s
+schemaVersion: 39
+version: 40
+time:
+  from: now-1h
+  to: now
+timepicker: {}
+fiscalYearStartMonth: 0
+links: []
+annotations:
+  list:
+    - builtIn: 1
+      datasource:
+        type: datasource
+        uid: grafana
+      enable: true
+      hide: true
+      iconColor: rgba(0, 211, 255, 1)
+      name: Annotations & Alerts
+      target:
+        limit: 100
+        matchAny: false
+        tags: []
+        type: dashboard
+      type: dashboard
+templating:
+  list:
+    - current: {}
+      hide: 0
+      includeAll: false
+      multi: false
+      name: datasource
+      options: []
+      query: prometheus
+      queryValue: ''
+      refresh: 1
+      regex: ''
+      skipUrlSync: false
+      type: datasource
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(kube_node_info,cluster)
+      hide: 0
+      includeAll: true
+      multi: false
+      name: cluster
+      options: []
+      query:
+        qryType: 1
+        query: label_values(kube_node_info,cluster)
+        refId: PrometheusVariableQueryEditor-VariableQuery
+      refresh: 1
+      regex: ''
+      skipUrlSync: false
+      sort: 1
+      type: query
+    - current:
+        selected: false
+        text: 30s
+        value: 30s
+      hide: 0
+      includeAll: false
+      multi: false
+      name: resolution
+      options:
+        - selected: false
+          text: 1s
+          value: 1s
+        - selected: false
+          text: 15s
+          value: 15s
+        - selected: true
+          text: 30s
+          value: 30s
+        - selected: false
+          text: 1m
+          value: 1m
+        - selected: false
+          text: 3m
+          value: 3m
+        - selected: false
+          text: 5m
+          value: 5m
+      query: 1s, 15s, 30s, 1m, 3m, 5m
+      queryValue: ''
+      skipUrlSync: false
+      type: custom
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(kube_node_info{cluster=~"$cluster"}, node)
+      hide: 0
+      includeAll: false
+      multi: false
+      name: node
+      options: []
+      query:
+        query: label_values(kube_node_info{cluster=~"$cluster"}, node)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: ''
+      skipUrlSync: false
+      sort: 1
+      type: query
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(node_uname_info{nodename=~"(?i:($node)(\\.[a-z0-9.-]+)?)", cluster=~"$cluster"}, instance)
+      hide: 2
+      includeAll: false
+      multi: false
+      name: instance
+      options: []
+      query:
+        query: label_values(node_uname_info{nodename=~"(?i:($node)(\\.[a-z0-9.-]+)?)", cluster=~"$cluster"}, instance)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: ''
+      skipUrlSync: false
+      sort: 1
+      type: query
+panels:
+  - type: row
+    title: Alerts
+    id: 69
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 0
+    panels:
+      - type: state-timeline
+        title: Alert Timeline
+        id: 70
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 1
+        options:
+          alignValue: left
+          legend:
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          mergeValues: true
+          rowHeight: 0.9
+          showValue: auto
+          tooltip:
+            mode: single
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: thresholds
+            custom:
+              fillOpacity: 70
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineWidth: 0
+              spanNulls: false
+            mappings:
+              - type: value
+                options:
+                  '1':
+                    color: yellow
+                    index: 0
+                    text: Warning / Pending
+                  '2':
+                    color: red
+                    index: 1
+                    text: Critical (Firing)
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: null
+                - color: yellow
+                  value: 1
+                - color: red
+                  value: 2
+          overrides: []
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${datasource}
+            expr: max without (alertstate) ((ALERTS{cluster=~"$cluster", node=~"$node", severity="critical", alertstate="firing"} * 2) or (ALERTS{cluster=~"$cluster", node=~"$node", alertstate="pending"} * 1) or (ALERTS{cluster=~"$cluster", node=~"$node", severity="warning"} * 1))
+            legendFormat: '{{alertname}} [{{severity}}]'
+            range: true
+            instant: false
+            refId: A
+      - type: table
+        title: Active Alerts
+        id: 71
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 9
+        options:
+          cellHeight: sm
+          footer:
+            countRows: false
+            fields: ''
+            reducer:
+              - sum
+            show: false
+          showHeader: true
+          sortBy:
+            - desc: false
+              displayName: alertname
+        fieldConfig:
+          defaults:
+            custom:
+              align: auto
+              cellOptions:
+                type: auto
+              inspect: false
+          overrides:
+            - matcher:
+                id: byName
+                options: cluster
+              properties:
+                - id: custom.width
+                  value: 140
+            - matcher:
+                id: byName
+                options: alertname
+              properties:
+                - id: custom.width
+                  value: 300
+            - matcher:
+                id: byName
+                options: alertstate
+              properties:
+                - id: custom.width
+                  value: 90
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        firing:
+                          color: red
+                          index: 0
+                          text: firing
+                        pending:
+                          color: yellow
+                          index: 1
+                          text: pending
+            - matcher:
+                id: byName
+                options: severity
+              properties:
+                - id: custom.width
+                  value: 100
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        warning:
+                          color: yellow
+                          index: 0
+                          text: warning
+                        critical:
+                          color: red
+                          index: 1
+                          text: critical
+                        info:
+                          color: blue
+                          index: 2
+                          text: info
+            - matcher:
+                id: byName
+                options: namespace
+              properties:
+                - id: links
+                  value:
+                    - title: Namespace details
+                      url: /d/k8s_views_ns/kubernetes-views-namespaces?${datasource:queryparam}&${cluster:queryparam}&var-namespace=${__value.text}&${resolution:queryparam}&${__url_time_range}
+                      targetBlank: true
+            - matcher:
+                id: byName
+                options: pod
+              properties:
+                - id: links
+                  value:
+                    - title: Pod details
+                      url: /d/k8s_views_pods/kubernetes-views-pods?${datasource:queryparam}&${cluster:queryparam}&var-namespace=${__data.fields.namespace}&var-pod=${__value.text}&${resolution:queryparam}&${__url_time_range}
+                      targetBlank: true
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${datasource}
+            expr: ALERTS{cluster=~"$cluster", alertstate=~"firing|pending", node=~"$node"}
+            instant: true
+            format: table
+            legendFormat: ''
+            refId: A
+        transformations:
+          - id: organize
+            options:
+              excludeByName:
+                Time: true
+                Value: true
+                __name__: true
+                endpoint: true
+                instance: true
+                job: true
+                prometheus: true
+                prometheus_replica: true
+                service: true
+                container: true
+              indexByName:
+                alertname: 0
+                alertstate: 1
+                severity: 2
+                namespace: 3
+                pod: 4
+                cluster: 5
+                node: 6
+                Time: 7
+                Value: 8
+                __name__: 9
+                endpoint: 10
+                instance: 11
+                job: 12
+                prometheus: 13
+                prometheus_replica: 14
+                service: 15
+                container: 16
+              renameByName: {}
+  - type: row
+    title: Logs
+    id: 68
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 1
+    panels:
+      - type: logs
+        title: Kubernetes Events
+        id: 67
+        datasource:
+          type: loki
+          uid: loki
+        gridPos:
+          h: 12
+          w: 24
+          x: 0
+          'y': 132
+        options:
+          dedupStrategy: none
+          enableLogDetails: true
+          prettifyLogMessage: false
+          showCommonLabels: false
+          showLabels: false
+          showTime: true
+          sortOrder: Descending
+          wrapLogMessage: true
+        targets:
+          - datasource:
+              type: loki
+              uid: loki
+            editorMode: code
+            expr: '{cluster=~"$cluster", job="integrations/kubernetes/eventhandler"} | logfmt | kind=`Node` | name=~`$node`'
+            queryType: range
+            refId: A
+  - type: row
+    title: Overview
+    id: 40
+    collapsed: false
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 2
+    panels: []
+  - type: gauge
+    title: CPU  Usage
+    id: 7
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 4
+      x: 0
+      'y': 3
+    options:
+      minVizHeight: 75
+      minVizWidth: 75
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showThresholdLabels: false
+      showThresholdMarkers: true
+      sizing: auto
+      text: {}
+    fieldConfig:
+      defaults:
+        decimals: 2
+        mappings: []
+        max: 1
+        min: 0
+        thresholds:
+          mode: percentage
+          steps:
+            - color: green
+              value: null
+            - color: orange
+              value: 50
+            - color: red
+              value: 70
+        unit: percentunit
+      overrides: []
+    pluginVersion: 11.2.0
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: false
+        expr: avg(sum by (cpu) (rate(node_cpu_seconds_total{mode!~"idle|iowait|steal", instance="$instance", cluster=~"$cluster"}[$__rate_interval])))
+        instant: true
+        interval: $resolution
+        legendFormat: ''
+        refId: A
+  - type: gauge
+    title: RAM Usage
+    id: 13
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 4
+      x: 4
+      'y': 3
+    options:
+      minVizHeight: 75
+      minVizWidth: 75
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showThresholdLabels: false
+      showThresholdMarkers: true
+      sizing: auto
+      text: {}
+    fieldConfig:
+      defaults:
+        decimals: 2
+        mappings: []
+        max: 1
+        min: 0
+        thresholds:
+          mode: percentage
+          steps:
+            - color: green
+              value: null
+            - color: orange
+              value: 50
+            - color: red
+              value: 70
+        unit: percentunit
+      overrides: []
+    pluginVersion: 11.2.0
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: false
+        expr: sum(node_memory_MemTotal_bytes{instance="$instance", cluster=~"$cluster"} - node_memory_MemAvailable_bytes{instance="$instance", cluster=~"$cluster"}) / sum(node_memory_MemTotal_bytes{instance="$instance", cluster=~"$cluster"})
+        instant: true
+        interval: $resolution
+        legendFormat: ''
+        refId: A
+  - type: stat
+    title: Pods on node
+    id: 24
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 4
+      x: 8
+      'y': 3
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      text: {}
+      textMode: value
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: blue
+              value: null
+      overrides: []
+    pluginVersion: 11.2.0
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(kube_pod_info{node="$node", cluster=~"$cluster"})
+        interval: ''
+        legendFormat: ''
+        refId: A
+  - type: table
+    title: List of pods on node ($node)
+    id: 5
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 11
+      w: 12
+      x: 12
+      'y': 3
+    options:
+      cellHeight: sm
+      footer:
+        countRows: false
+        fields: ''
+        reducer:
+          - sum
+        show: false
+      showHeader: true
+      sortBy: []
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        custom:
+          align: auto
+          cellOptions:
+            type: auto
+          inspect: false
+        links:
+          - targetBlank: true
+            title: Pod details
+            url: /d/k8s_views_pods/kubernetes-views-pods?${datasource:queryparam}&var-namespace=${__data.fields.namespace}&${cluster:queryparam}&var-pod=${__data.fields.pod}&${resolution:queryparam}&${__url_time_range}
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+      overrides:
+        - matcher:
+            id: byName
+            options: cluster
+          properties:
+            - id: custom.width
+              value: 140
+        - matcher:
+            id: byName
+            options: pod
+          properties:
+            - id: custom.width
+              value: 416
+        - matcher:
+            id: byName
+            options: priority_class
+          properties:
+            - id: custom.width
+              value: 176
+        - matcher:
+            id: byName
+            options: pod_ip
+          properties:
+            - id: custom.width
+              value: 157
+        - matcher:
+            id: byName
+            options: created_by_kind
+          properties:
+            - id: custom.width
+              value: 205
+        - matcher:
+            id: byName
+            options: namespace
+          properties:
+            - id: custom.width
+              value: 263
+    pluginVersion: 11.2.0
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: kube_pod_info{node="$node", cluster=~"$cluster"}
+        format: table
+        interval: ''
+        legendFormat: ''
+        refId: A
+    transformations:
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            Value: true
+            __name__: true
+            container: true
+            created_by_kind: false
+            created_by_name: true
+            endpoint: true
+            env: true
+            host_ip: true
+            host_network: true
+            instance: true
+            job: true
+            node: true
+            project: true
+            prometheus_replica: true
+            service: true
+            uid: true
+          indexByName:
+            pod: 0
+            namespace: 1
+            created_by_kind: 2
+            cluster: 3
+            pod_ip: 4
+            priority_class: 5
+            host_ip: 6
+            Time: 7
+            Value: 8
+            __name__: 9
+            container: 10
+            created_by_name: 11
+            endpoint: 12
+            env: 13
+            host_network: 14
+            instance: 15
+            job: 16
+            node: 17
+            project: 18
+            prometheus_replica: 19
+            service: 20
+            uid: 21
+          renameByName: {}
+      - id: groupBy
+        options:
+          fields:
+            created_by_kind:
+              aggregations: []
+              operation: groupby
+            host_ip:
+              aggregations: []
+              operation: groupby
+            namespace:
+              aggregations:
+                - last
+              operation: groupby
+            pod:
+              aggregations: []
+              operation: groupby
+            pod_ip:
+              aggregations: []
+              operation: groupby
+            priority_class:
+              aggregations: []
+              operation: groupby
+            cluster:
+              aggregations: []
+              operation: groupby
+  - type: stat
+    title: CPU Used
+    id: 9
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 2
+      x: 0
+      'y': 11
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      text: {}
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        decimals: 3
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 11.2.0
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: false
+        expr: sum(rate(node_cpu_seconds_total{mode!~"idle|iowait|steal", instance="$instance", cluster=~"$cluster"}[$__rate_interval]))
+        instant: true
+        interval: $resolution
+        legendFormat: ''
+        refId: A
+  - type: stat
+    title: CPU Total
+    id: 11
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 2
+      x: 2
+      'y': 11
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      text: {}
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 11.2.0
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(machine_cpu_cores{node="$node", cluster=~"$cluster"})
+        interval: $resolution
+        legendFormat: ''
+        refId: A
+  - type: stat
+    title: RAM Used
+    id: 15
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 2
+      x: 4
+      'y': 11
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      text: {}
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: null
+        unit: bytes
+      overrides: []
+    pluginVersion: 11.2.0
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: false
+        expr: sum(node_memory_MemTotal_bytes{instance="$instance", cluster=~"$cluster"} - node_memory_MemAvailable_bytes{instance="$instance", cluster=~"$cluster"})
+        instant: true
+        interval: ''
+        legendFormat: ''
+        refId: A
+  - type: stat
+    title: RAM Total
+    id: 17
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 2
+      x: 6
+      'y': 11
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      text: {}
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: null
+        unit: bytes
+      overrides: []
+    pluginVersion: 11.2.0
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(machine_memory_bytes{node="$node", cluster=~"$cluster"})
+        instant: false
+        interval: ''
+        legendFormat: ''
+        refId: A
+  - type: stat
+    title: uptime
+    id: 18
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 4
+      x: 8
+      'y': 11
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      text: {}
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: '#EAB839'
+              value: 25228800
+            - color: red
+              value: 31536000
+        unit: s
+      overrides: []
+    pluginVersion: 11.2.0
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(node_time_seconds{instance="$instance", cluster=~"$cluster"} - node_boot_time_seconds{instance="$instance", cluster=~"$cluster"})
+        instant: false
+        interval: ''
+        legendFormat: ''
+        refId: A
+  - type: row
+    title: Resources
+    id: 38
+    collapsed: false
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 14
+    panels: []
+  - type: timeseries
+    title: CPU Usage
+    id: 2
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 9
+      w: 12
+      x: 0
+      'y': 15
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        max: 100
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: percent
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: avg(rate(node_cpu_seconds_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval]) * 100) by (mode)
+        hide: false
+        instant: false
+        interval: $resolution
+        legendFormat: '{{ mode }}'
+        refId: A
+  - type: timeseries
+    title: Memory Usage
+    id: 3
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 9
+      w: 12
+      x: 12
+      'y': 15
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: bytes
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: node_memory_MemTotal_bytes{instance="$instance", cluster=~"$cluster"} - node_memory_MemFree_bytes{instance="$instance", cluster=~"$cluster"} - (node_memory_Cached_bytes{instance="$instance", cluster=~"$cluster"} + node_memory_Buffers_bytes{instance="$instance", cluster=~"$cluster"})
+        instant: false
+        interval: $resolution
+        legendFormat: RAM Used
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: node_memory_MemTotal_bytes{instance="$instance", cluster=~"$cluster"}
+        hide: false
+        interval: $resolution
+        legendFormat: RAM Total
+        refId: B
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: node_memory_Cached_bytes{instance="$instance", cluster=~"$cluster"}
+        hide: false
+        interval: $resolution
+        legendFormat: RAM Cache
+        refId: C
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: node_memory_Buffers_bytes{instance="$instance", cluster=~"$cluster"}
+        hide: false
+        interval: $resolution
+        legendFormat: RAM Buffer
+        refId: D
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: node_memory_MemFree_bytes{instance="$instance", cluster=~"$cluster"}
+        hide: false
+        interval: $resolution
+        legendFormat: RAM Free
+        refId: E
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: node_memory_SwapTotal_bytes{instance="$instance", cluster=~"$cluster"} - node_memory_SwapFree_bytes{instance="$instance", cluster=~"$cluster"}
+        hide: false
+        interval: $resolution
+        legendFormat: SWAP Used
+        refId: F
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: node_memory_SwapTotal_bytes{instance="$instance", cluster=~"$cluster"}
+        hide: false
+        interval: $resolution
+        legendFormat: SWAP Total
+        refId: G
+  - type: timeseries
+    title: CPU usage by Pod
+    id: 26
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 24
+    options:
+      legend:
+        calcs: []
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        mode: single
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: CPU Cores
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(rate(container_cpu_usage_seconds_total{node="$node", image!="", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        interval: $resolution
+        legendFormat: '{{ pod }}'
+        refId: A
+  - type: timeseries
+    title: Memory usage by Pod
+    id: 28
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 24
+    options:
+      legend:
+        calcs: []
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        mode: single
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: bytes
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(container_memory_working_set_bytes{node="$node", image!="", cluster=~"$cluster"}) by (pod)
+        interval: $resolution
+        legendFormat: '{{ pod }}'
+        refId: A
+  - type: timeseries
+    title: Number of CPU Core Throttled
+    description: Number of times a CPU core has been throttled on an instance.
+    id: 66
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 32
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: table
+        placement: right
+        showLegend: true
+        sortBy: Max
+        sortDesc: true
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: CPU CORES
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(node_cpu_core_throttles_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval]))
+        interval: $resolution
+        legendFormat: Nb of cpu core throttles
+        range: true
+        refId: A
+  - type: row
+    title: System
+    id: 44
+    collapsed: false
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 40
+    panels: []
+  - type: timeseries
+    title: System Load
+    id: 48
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 41
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: node_load1{instance="$instance", cluster=~"$cluster"}
+        interval: $resolution
+        legendFormat: 1m
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: node_load5{instance="$instance", cluster=~"$cluster"}
+        hide: false
+        interval: $resolution
+        legendFormat: 5m
+        range: true
+        refId: B
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: node_load15{instance="$instance", cluster=~"$cluster"}
+        hide: false
+        interval: $resolution
+        legendFormat: 15m
+        range: true
+        refId: C
+  - type: timeseries
+    title: Context Switches & Interrupts
+    id: 46
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 41
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: rate(node_context_switches_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval])
+        interval: $resolution
+        intervalFactor: 1
+        legendFormat: Context switches
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: rate(node_intr_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval])
+        hide: false
+        interval: $resolution
+        legendFormat: Interrupts
+        range: true
+        refId: B
+  - type: timeseries
+    title: File Descriptors
+    id: 49
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 49
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: node_filefd_maximum{instance="$instance", cluster=~"$cluster"}
+        instant: false
+        interval: $resolution
+        legendFormat: Maximum file descriptors
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: node_filefd_allocated{instance="$instance", cluster=~"$cluster"}
+        hide: false
+        instant: false
+        interval: $resolution
+        legendFormat: Allocated file descriptors
+        refId: B
+  - type: timeseries
+    title: Time Sync
+    id: 50
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 49
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: s
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: node_timex_estimated_error_seconds{instance="$instance", cluster=~"$cluster"}
+        instant: false
+        interval: $resolution
+        intervalFactor: 1
+        legendFormat: Estimated error in seconds
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: node_timex_maxerror_seconds{instance="$instance", cluster=~"$cluster"}
+        hide: false
+        interval: $resolution
+        intervalFactor: 1
+        legendFormat: Maximum error in seconds
+        range: true
+        refId: B
+  - type: row
+    title: Network
+    id: 36
+    collapsed: false
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 57
+    panels: []
+  - type: timeseries
+    title: Network usage (bytes/s)
+    id: 20
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 58
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: BANDWIDTH
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: linear
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: binBps
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(node_network_receive_bytes_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval]))
+        interval: $resolution
+        legendFormat: In
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: '- sum(rate(node_network_transmit_bytes_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval]))'
+        interval: $resolution
+        legendFormat: Out
+        range: true
+        refId: B
+  - type: timeseries
+    title: Network errors
+    id: 61
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 58
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(rate(node_network_receive_errs_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval]))
+        interval: $resolution
+        legendFormat: In
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: '- sum(rate(node_network_transmit_errs_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval]))'
+        interval: $resolution
+        legendFormat: Out
+        range: true
+        refId: B
+  - type: timeseries
+    title: Network usage (packet/s)
+    id: 62
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 66
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: pps
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(node_network_receive_packets_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval]))
+        interval: $resolution
+        legendFormat: In
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: '- sum(rate(node_network_transmit_packets_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval]))'
+        interval: $resolution
+        legendFormat: Out
+        range: true
+        refId: B
+  - type: timeseries
+    title: Network total drops
+    id: 64
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 66
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(rate(node_network_receive_drop_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval]))
+        hide: false
+        interval: $resolution
+        legendFormat: In
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: '- sum(rate(node_network_transmit_drop_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval]))'
+        hide: false
+        interval: $resolution
+        legendFormat: Out
+        refId: B
+  - type: timeseries
+    title: TCP Currently Established
+    id: 60
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 74
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: node_netstat_Tcp_CurrEstab{instance="$instance", cluster=~"$cluster"}
+        instant: false
+        interval: $resolution
+        legendFormat: TCP Currently Established
+        refId: A
+  - type: timeseries
+    title: NF Conntrack
+    id: 63
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 74
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides:
+        - matcher:
+            id: byName
+            options: NF Conntrack limit
+          properties:
+            - id: color
+              value:
+                fixedColor: red
+                mode: fixed
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: node_nf_conntrack_entries{instance="$instance", cluster=~"$cluster"}
+        instant: false
+        interval: $resolution
+        legendFormat: NF Conntrack entries
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: node_nf_conntrack_entries_limit{instance="$instance", cluster=~"$cluster"}
+        hide: false
+        interval: $resolution
+        legendFormat: NF Conntrack limit
+        range: true
+        refId: B
+  - type: state-timeline
+    title: Network Interface Link Status
+    id: 72
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 24
+      x: 0
+      'y': 82
+    options:
+      alignValue: left
+      legend:
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      mergeValues: true
+      rowHeight: 0.9
+      showValue: always
+      tooltip:
+        mode: single
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        custom:
+          fillOpacity: 70
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineWidth: 0
+          spanNulls: false
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: red
+              value: null
+            - color: '#EAB839'
+              value: 2000000000
+            - color: green
+              value: 4000000000
+        unit: bps
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: 'node_network_carrier{cluster=~"$cluster", instance="$instance", device=~"bond[0-9]+"}
+
+          *
+
+          node_network_speed_bytes{cluster=~"$cluster", instance="$instance", device=~"bond[0-9]+"} * 8'
+        legendFormat: '{{device}}'
+        range: true
+        instant: false
+        refId: A
+  - type: row
+    title: Kubernetes Storage
+    id: 54
+    collapsed: false
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 90
+    panels: []
+  - type: timeseries
+    title: Persistent Volumes - Usage in %
+    id: 30
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 91
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: percentunit
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: max(kubelet_volume_stats_used_bytes{node="$node", cluster=~"$cluster"}) by (persistentvolumeclaim, namespace) / max(kubelet_volume_stats_capacity_bytes{node="$node", cluster=~"$cluster"}) by (persistentvolumeclaim, namespace)
+        interval: $resolution
+        legendFormat: '{{ namespace }} - {{ persistentvolumeclaim }}'
+        range: true
+        refId: A
+  - type: table
+    title: Persistent Volumes - Usage in GB
+    id: 34
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 16
+      w: 12
+      x: 12
+      'y': 91
+    options:
+      cellHeight: sm
+      footer:
+        countRows: false
+        fields: ''
+        reducer:
+          - sum
+        show: false
+      showHeader: true
+      sortBy: []
+    fieldConfig:
+      defaults:
+        color:
+          mode: continuous-GrYlRd
+        custom:
+          align: auto
+          cellOptions:
+            type: auto
+          filterable: false
+          inspect: false
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: bytes
+      overrides:
+        - matcher:
+            id: byName
+            options: Used
+          properties:
+            - id: custom.width
+              value: 146
+        - matcher:
+            id: byName
+            options: Total
+          properties:
+            - id: custom.width
+              value: 167
+    pluginVersion: 11.2.0
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: max(kubelet_volume_stats_used_bytes{node="$node", cluster=~"$cluster"}) by (persistentvolumeclaim, namespace)
+        format: table
+        hide: false
+        interval: ''
+        legendFormat: ''
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: max(kubelet_volume_stats_capacity_bytes{node="$node", cluster=~"$cluster"}) by (persistentvolumeclaim, namespace)
+        format: table
+        hide: false
+        interval: ''
+        legendFormat: ''
+        refId: B
+    transformations:
+      - id: groupBy
+        options:
+          fields:
+            Value:
+              aggregations:
+                - lastNotNull
+              operation: aggregate
+            'Value #A':
+              aggregations:
+                - lastNotNull
+              operation: aggregate
+            'Value #B':
+              aggregations:
+                - lastNotNull
+              operation: aggregate
+            persistentvolumeclaim:
+              aggregations: []
+              operation: groupby
+      - id: seriesToColumns
+        options:
+          byField: persistentvolumeclaim
+      - id: organize
+        options:
+          excludeByName: {}
+          indexByName: {}
+          renameByName:
+            'Value #A (lastNotNull)': Used
+            'Value #B (lastNotNull)': Total
+            persistentvolumeclaim: Persistent Volume Claim
+  - type: timeseries
+    title: Persistent Volumes - Inodes
+    id: 32
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 99
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: percent
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(kubelet_volume_stats_inodes_used{node="$node", cluster=~"$cluster"}) by (persistentvolumeclaim) / sum(kubelet_volume_stats_inodes{node="$node", cluster=~"$cluster"}) by (persistentvolumeclaim) * 100
+        interval: $resolution
+        legendFormat: '{{ persistentvolumeclaim }}'
+        range: true
+        refId: A
+  - type: row
+    title: Node Storage
+    id: 42
+    collapsed: false
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 107
+    panels: []
+  - type: state-timeline
+    title: Physical Storage Media Detected
+    id: 74
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 24
+      x: 0
+      'y': 108
+    options:
+      alignValue: left
+      legend:
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      mergeValues: true
+      rowHeight: 0.9
+      showValue: auto
+      tooltip:
+        mode: single
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        custom:
+          fillOpacity: 70
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineWidth: 0
+          spanNulls: false
+        mappings:
+          - type: value
+            options:
+              '1':
+                color: green
+                index: 0
+                text: Detected
+        thresholds:
+          mode: absolute
+          steps:
+            - color: red
+              value: null
+            - color: green
+              value: 1
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: node_disk_info{cluster=~"$cluster", instance="$instance", device=~"sd[a-z]+|nvme[0-9]+n[0-9]+|hd[a-z]+"}
+        legendFormat: '{{device}}'
+        range: true
+        instant: false
+        refId: A
+  - type: timeseries
+    title: FS usage in %
+    id: 33
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 116
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: percent
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: 100 - ((node_filesystem_avail_bytes{instance="$instance", cluster=~"$cluster"} * 100) / node_filesystem_size_bytes{instance="$instance", cluster=~"$cluster"})
+        hide: false
+        interval: $resolution
+        legendFormat: '{{ mountpoint }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: FS inode usage in %
+    id: 59
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 116
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: percent
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: 100 - (node_filesystem_files_free{instance="$instance", cluster=~"$cluster"} / node_filesystem_files{instance="$instance", cluster=~"$cluster"} * 100)
+        hide: false
+        interval: $resolution
+        legendFormat: '{{ mountpoint }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Reads by disk (bytes)
+    id: 52
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 124
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: bytes
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: rate(node_disk_read_bytes_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval])
+        interval: $resolution
+        legendFormat: '{{device}}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Writes by disk (bytes)
+    id: 57
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 124
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: bytes
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: rate(node_disk_written_bytes_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval])
+        hide: false
+        interval: $resolution
+        legendFormat: '{{device}}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Completed reads by disk
+    id: 51
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 132
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: read/s
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: rate(node_disk_reads_completed_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval])
+        interval: $resolution
+        legendFormat: '{{device}}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Completed writes by disk
+    id: 56
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 132
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: write/s
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: rate(node_disk_writes_completed_total{instance="$instance", cluster=~"$cluster"}[$__rate_interval])
+        hide: false
+        interval: $resolution
+        legendFormat: '{{device}}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Disk(s) io/s
+    id: 58
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 140
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: io/s
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: 'rate(node_disk_io_now{instance="$instance", cluster=~"$cluster"}[$__rate_interval]) '
+        interval: $resolution
+        legendFormat: '{{device}}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: FS - Device Errors
+    id: 55
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 140
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(node_filesystem_device_error{instance="$instance", cluster=~"$cluster"}) by (mountpoint)
+        interval: $resolution
+        legendFormat: '{{ mountpoint }}'
+        range: true
+        refId: A

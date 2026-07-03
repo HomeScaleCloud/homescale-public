@@ -1,0 +1,993 @@
+title: Kubernetes API Server
+uid: k8s_system_apisrv
+description: 'This is a modern API Server dashboard for your Kubernetes cluster(s). Made for kube-prometheus-stack and take advantage of the latest Grafana features. GitHub repository: https://github.com/dotdc/grafana-dashboards-kubernetes'
+tags:
+  - Kubernetes
+  - Prometheus
+editable: true
+graphTooltip: 1
+refresh: 30s
+schemaVersion: 38
+version: 21
+time:
+  from: now-1h
+  to: now
+timepicker: {}
+fiscalYearStartMonth: 0
+links: []
+annotations:
+  list:
+    - builtIn: 1
+      datasource:
+        type: datasource
+        uid: grafana
+      enable: true
+      hide: true
+      iconColor: rgba(0, 211, 255, 1)
+      name: Annotations & Alerts
+      target:
+        limit: 100
+        matchAny: false
+        tags: []
+        type: dashboard
+      type: dashboard
+templating:
+  list:
+    - current:
+        selected: false
+        text: Prometheus
+        value: Prometheus
+      hide: 0
+      includeAll: false
+      label: ''
+      multi: false
+      name: datasource
+      options: []
+      query: prometheus
+      queryValue: ''
+      refresh: 1
+      regex: ''
+      skipUrlSync: false
+      type: datasource
+    - current:
+        isNone: true
+        selected: false
+        text: None
+        value: ''
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(kube_node_info,cluster)
+      hide: 0
+      includeAll: true
+      multi: false
+      name: cluster
+      options: []
+      query:
+        qryType: 1
+        query: label_values(kube_node_info,cluster)
+        refId: PrometheusVariableQueryEditor-VariableQuery
+      refresh: 1
+      regex: ''
+      skipUrlSync: false
+      sort: 1
+      type: query
+    - current:
+        selected: true
+        text: 30s
+        value: 30s
+      hide: 0
+      includeAll: false
+      multi: false
+      name: resolution
+      options:
+        - selected: false
+          text: 1s
+          value: 1s
+        - selected: false
+          text: 15s
+          value: 15s
+        - selected: true
+          text: 30s
+          value: 30s
+        - selected: false
+          text: 1m
+          value: 1m
+        - selected: false
+          text: 3m
+          value: 3m
+        - selected: false
+          text: 5m
+          value: 5m
+      query: 1s, 15s, 30s, 1m, 3m, 5m
+      queryValue: ''
+      skipUrlSync: false
+      type: custom
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(apiserver_request_total{cluster=~"$cluster"}, job)
+      hide: 0
+      includeAll: false
+      multi: true
+      name: job
+      options: []
+      query:
+        qryType: 1
+        query: label_values(apiserver_request_total{cluster=~"$cluster"}, job)
+        refId: PrometheusVariableQueryEditor-VariableQuery
+      refresh: 1
+      regex: ''
+      skipUrlSync: false
+      sort: 1
+      type: query
+panels:
+  - type: stat
+    title: API Server - Health Status
+    id: 42
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 0
+    options:
+      colorMode: background
+      graphMode: none
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: value_and_name
+    fieldConfig:
+      defaults:
+        mappings:
+          - options:
+              '0':
+                text: DOWN
+              '1':
+                text: UP
+            type: value
+        thresholds:
+          mode: absolute
+          steps:
+            - color: red
+              value: null
+            - color: green
+              value: 1
+      overrides: []
+    pluginVersion: 10.0.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: up{cluster=~"$cluster", job=~"$job"}
+        interval: ''
+        legendFormat: '{{ instance }}'
+        refId: A
+  - type: table
+    title: Deprecated Kubernetes Resources
+    id: 60
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 0
+    options:
+      cellHeight: sm
+      footer:
+        countRows: false
+        fields: ''
+        reducer:
+          - sum
+        show: false
+      showHeader: true
+      sortBy:
+        - desc: false
+          displayName: removed_release
+    fieldConfig:
+      defaults:
+        custom:
+          align: auto
+          cellOptions:
+            type: auto
+          inspect: false
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+      overrides:
+        - matcher:
+            id: byName
+            options: cluster
+          properties:
+            - id: custom.width
+              value: 140
+        - matcher:
+            id: byName
+            options: __name__
+          properties:
+            - id: custom.width
+              value: 188
+    pluginVersion: 10.0.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: apiserver_requested_deprecated_apis{cluster=~"$cluster"}
+        interval: ''
+        legendFormat: ''
+        refId: A
+    transformations:
+      - id: labelsToFields
+        options:
+          keepLabels:
+            - cluster
+            - group
+            - job
+            - removed_release
+            - resource
+            - version
+            - name
+          mode: columns
+      - id: merge
+        options: {}
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            Value: true
+            job: true
+          indexByName:
+            namespace: 0
+            cluster: 1
+            group: 2
+            version: 3
+            resource: 4
+            removed_release: 5
+            Time: 6
+            Value: 7
+            job: 8
+          renameByName: {}
+      - id: groupBy
+        options:
+          fields:
+            group:
+              aggregations:
+                - lastNotNull
+              operation: groupby
+            job:
+              aggregations: []
+              operation: groupby
+            namespace:
+              aggregations:
+                - lastNotNull
+              operation: groupby
+            removed_release:
+              aggregations: []
+              operation: groupby
+            resource:
+              aggregations:
+                - lastNotNull
+              operation: groupby
+            version:
+              aggregations: []
+              operation: groupby
+            cluster:
+              aggregations:
+                - lastNotNull
+              operation: groupby
+  - type: timeseries
+    title: API Server - HTTP Requests by code
+    id: 38
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 8
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum by (code) (rate(apiserver_request_total{cluster=~"$cluster"}[$__rate_interval]))
+        interval: $resolution
+        legendFormat: '{{ code }}'
+        refId: A
+  - type: timeseries
+    title: API Server - HTTP Requests by verb
+    id: 39
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 8
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum by (verb) (rate(apiserver_request_total{cluster=~"$cluster"}[$__rate_interval]))
+        interval: $resolution
+        legendFormat: '{{ verb}}'
+        refId: A
+  - type: timeseries
+    title: API Server - HTTP Requests Latency by instance
+    id: 53
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 16
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: single
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: ms
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: 'sum(rate(apiserver_request_duration_seconds_sum{cluster=~"$cluster", job=~"$job"}[$__rate_interval])) by (instance)
+
+          /
+
+          sum(rate(apiserver_request_duration_seconds_count{cluster=~"$cluster", job=~"$job"}[$__rate_interval])) by (instance)'
+        interval: $resolution
+        legendFormat: '{{ instance }}'
+        refId: A
+  - type: timeseries
+    title: API Server - HTTP Requests Latency by verb
+    id: 54
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 16
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: ms
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: 'sum(rate(apiserver_request_duration_seconds_sum{cluster=~"$cluster", job=~"$job"}[$__rate_interval])) by (verb)
+
+          /
+
+          sum(rate(apiserver_request_duration_seconds_count{cluster=~"$cluster", job=~"$job"}[$__rate_interval])) by (verb)'
+        interval: $resolution
+        legendFormat: '{{ verb }}'
+        refId: A
+  - type: timeseries
+    title: API Server - Errors by Instance
+    id: 50
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 24
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: single
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: "sum by(instance) (rate(apiserver_request_total{code=~\"5..\", cluster=~\"$cluster\", job=~\"$job\"}[$__rate_interval]))\n / (sum by(instance) (rate(apiserver_request_total{cluster=~\"$cluster\", job=~\"$job\"}[$__rate_interval])) > 0)"
+        interval: $resolution
+        legendFormat: '{{ instance }}'
+        refId: A
+  - type: timeseries
+    title: API Server - Errors by verb
+    id: 51
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 24
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: "sum by(verb) (rate(apiserver_request_total{code=~\"5..\", cluster=~\"$cluster\", job=~\"$job\"}[$__rate_interval]))\n / (sum by(verb) (rate(apiserver_request_total{cluster=~\"$cluster\", job=~\"$job\"}[$__rate_interval])) > 0)"
+        interval: $resolution
+        legendFormat: '{{ verb }}'
+        refId: A
+  - type: timeseries
+    title: API Server - Stacked HTTP Requests by instance
+    id: 40
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 32
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: single
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: normal
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(rate(apiserver_request_total{cluster=~"$cluster"}[$__rate_interval])) by (instance)
+        interval: $resolution
+        legendFormat: '{{ instance }}'
+        refId: A
+  - type: timeseries
+    title: API Server - Work Queue by instance
+    id: 56
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 32
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: single
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(workqueue_depth{cluster=~"$cluster", job=~"$job"}) by (instance)
+        interval: $resolution
+        legendFormat: '{{ instance }}'
+        refId: A
+  - type: timeseries
+    title: API Server - CPU Usage by instance
+    id: 47
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 40
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: single
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: percent
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: rate(process_cpu_seconds_total{cluster=~"$cluster", job=~"$job"}[$__rate_interval])
+        interval: $resolution
+        legendFormat: '{{ instance }}'
+        refId: A
+  - type: timeseries
+    title: API Server - Memory Usage by instance
+    id: 48
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 40
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        mode: single
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: bytes
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: process_resident_memory_bytes{cluster=~"$cluster", job=~"$job"}
+        interval: $resolution
+        legendFormat: '{{ instance }}'
+        refId: A

@@ -1,0 +1,2286 @@
+title: Prometheus
+uid: k8s_addons_prometheus
+description: 'This is a modern ''Prometheus'' dashboard for your Kubernetes cluster(s). Made for kube-prometheus-stack and take advantage of the latest Grafana features. GitHub repository: https://github.com/dotdc/grafana-dashboards-kubernetes'
+tags:
+  - Kubernetes
+  - Prometheus
+editable: true
+graphTooltip: 1
+refresh: 30s
+schemaVersion: 38
+version: 9
+time:
+  from: now-15m
+  to: now
+timepicker: {}
+fiscalYearStartMonth: 0
+links: []
+annotations:
+  list:
+    - builtIn: 1
+      datasource:
+        type: datasource
+        uid: grafana
+      enable: true
+      hide: true
+      iconColor: rgba(0, 211, 255, 1)
+      name: Annotations & Alerts
+      target:
+        limit: 100
+        matchAny: false
+        tags: []
+        type: dashboard
+      type: dashboard
+templating:
+  list:
+    - current:
+        selected: true
+        text: Prometheus
+        value: Prometheus
+      hide: 0
+      includeAll: false
+      multi: false
+      name: datasource
+      options: []
+      query: prometheus
+      queryValue: ''
+      refresh: 1
+      regex: ''
+      skipUrlSync: false
+      type: datasource
+    - current:
+        isNone: true
+        selected: false
+        text: None
+        value: ''
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(kube_node_info,cluster)
+      hide: 0
+      includeAll: true
+      multi: false
+      name: cluster
+      options: []
+      query:
+        qryType: 1
+        query: label_values(kube_node_info,cluster)
+        refId: PrometheusVariableQueryEditor-VariableQuery
+      refresh: 1
+      regex: ''
+      skipUrlSync: false
+      sort: 1
+      type: query
+    - allValue: .*
+      current:
+        selected: false
+        text: All
+        value: $__all
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(prometheus_build_info{cluster=~"$cluster"}, pod)
+      hide: 0
+      includeAll: true
+      multi: false
+      name: pod
+      options: []
+      query:
+        query: label_values(prometheus_build_info{cluster=~"$cluster"}, pod)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: ''
+      skipUrlSync: false
+      sort: 1
+      tagValuesQuery: ''
+      tagsQuery: ''
+      type: query
+      useTags: false
+    - current:
+        selected: false
+        text: 30s
+        value: 30s
+      hide: 0
+      includeAll: false
+      multi: false
+      name: resolution
+      options:
+        - selected: false
+          text: 1s
+          value: 1s
+        - selected: false
+          text: 15s
+          value: 15s
+        - selected: true
+          text: 30s
+          value: 30s
+        - selected: false
+          text: 1m
+          value: 1m
+        - selected: false
+          text: 3m
+          value: 3m
+        - selected: false
+          text: 5m
+          value: 5m
+      query: 1s, 15s, 30s, 1m, 3m, 5m
+      queryValue: ''
+      skipUrlSync: false
+      type: custom
+panels:
+  - type: row
+    title: Information
+    id: 89
+    collapsed: false
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 0
+    panels: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        refId: A
+  - type: stat
+    title: Prometheus version
+    id: 78
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 6
+      x: 0
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - last
+        fields: ''
+        values: false
+      text: {}
+      textMode: name
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '?'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: orange
+              value: null
+      overrides: []
+    pluginVersion: 10.0.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: prometheus_build_info{pod=~"$pod", cluster=~"$cluster"}
+        instant: true
+        interval: ''
+        legendFormat: '{{ version }}'
+        range: false
+        refId: A
+  - type: stat
+    title: Instance Down
+    id: 92
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 6
+      x: 6
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - last
+        fields: ''
+        values: false
+      text: {}
+      textMode: value
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 1
+      overrides: []
+    pluginVersion: 10.0.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: up{pod=~"$pod", cluster=~"$cluster"} < 1
+        instant: true
+        interval: ''
+        legendFormat: __auto
+        range: false
+        refId: A
+  - type: stat
+    title: TSDB Head Series
+    id: 72
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 6
+      x: 12
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: auto
+      reduceOptions:
+        calcs: []
+        fields: ''
+        values: false
+      text: {}
+      textMode: value
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: text
+              value: null
+      overrides: []
+    pluginVersion: 10.0.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: sum(prometheus_tsdb_head_series{pod=~"$pod", cluster=~"$cluster"}) by (pod)
+        interval: ''
+        legendFormat: __auto
+        range: true
+        refId: A
+  - type: stat
+    title: Discovered Targets
+    id: 94
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 6
+      x: 18
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - last
+        fields: ''
+        values: false
+      text: {}
+      textMode: value
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: blue
+              value: null
+      overrides: []
+    pluginVersion: 10.0.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: sum(prometheus_sd_discovered_targets{pod=~"$pod", cluster=~"$cluster"}) by (pod)
+        instant: true
+        interval: ''
+        legendFormat: __auto
+        range: false
+        refId: A
+  - type: row
+    title: Prometheus
+    id: 64
+    collapsed: false
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 5
+    panels: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        refId: A
+  - type: timeseries
+    title: Liveness by pod
+    id: 93
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 6
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: up{pod=~"$pod", cluster=~"$cluster"}
+        interval: ''
+        legendFormat: '{{ pod }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Config - Last Successful Reload by pod
+    id: 96
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 6
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(prometheus_config_last_reload_successful{pod=~"$pod", cluster=~"$cluster"}) by (pod)
+        interval: ''
+        legendFormat: '{{ pod }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Target Scrapes Errors by pod
+    id: 74
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 14
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(prometheus_target_scrapes_exceeded_body_size_limit_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        interval: ''
+        legendFormat: '{{ pod }} - Exceeded body size limit'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: sum(rate(prometheus_target_scrapes_exceeded_sample_limit_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        hide: false
+        legendFormat: '{{ pod }} - Exceeded sample limit'
+        range: true
+        refId: B
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: sum(rate(prometheus_target_scrapes_sample_duplicate_timestamp_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        hide: false
+        legendFormat: '{{ pod }} - Duplicate timestamp'
+        range: true
+        refId: C
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: sum(rate(prometheus_target_scrapes_sample_out_of_bounds_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        hide: false
+        legendFormat: '{{ pod }} - Sample out of bounds'
+        range: true
+        refId: D
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: sum(rate(prometheus_target_scrapes_sample_out_of_order_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        hide: false
+        legendFormat: '{{ pod }} - Sample out of order'
+        range: true
+        refId: E
+  - type: timeseries
+    title: Number of Targets by pod
+    id: 84
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 14
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(prometheus_sd_discovered_targets{pod=~"$pod", cluster=~"$cluster"}) by (pod)
+        interval: ''
+        legendFormat: '{{ pod }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Target Sync by pod, scrape_job
+    id: 75
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 22
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: ms
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(prometheus_target_sync_length_seconds_sum{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod, scrape_job) * 1000
+        interval: ''
+        legendFormat: '{{ pod }} - {{ scrape_job }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Average Scrape Interval by pod
+    id: 85
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 22
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: s
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: round(sum(rate(prometheus_target_interval_length_seconds_sum{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval]) / rate(prometheus_target_interval_length_seconds_count{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod))
+        interval: ''
+        legendFormat: '{{ pod }}'
+        range: true
+        refId: A
+  - type: row
+    title: Prometheus TSDB / Query Engine
+    id: 98
+    collapsed: false
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 30
+    panels: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        refId: A
+  - type: timeseries
+    title: TSDB Head Series & Chunks by pod
+    id: 59
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 31
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(prometheus_tsdb_head_series{pod=~"$pod", cluster=~"$cluster"}) by (pod)
+        interval: ''
+        legendFormat: '{{ pod }} - Head Series'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: sum(prometheus_tsdb_head_chunks{pod=~"$pod", cluster=~"$cluster"}) by (pod)
+        hide: false
+        legendFormat: '{{ pod }} - Head Chunks'
+        range: true
+        refId: B
+  - type: timeseries
+    title: TSDB Head samples appended - rate by pod
+    id: 60
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 31
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(prometheus_tsdb_head_samples_appended_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        interval: ''
+        legendFormat: '{{ pod }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: TSDB Blocks Loaded by pod
+    id: 101
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 39
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(prometheus_tsdb_blocks_loaded{pod=~"$pod", cluster=~"$cluster"}) by (pod)
+        interval: ''
+        legendFormat: '{{ pod }} - Head Series'
+        range: true
+        refId: A
+  - type: timeseries
+    title: TSDB Rate of Compactions by pod
+    id: 102
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 39
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(prometheus_tsdb_compactions_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        interval: ''
+        legendFormat: '{{ pod }} - Total Compactions'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: sum(rate(prometheus_tsdb_compactions_triggered_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        hide: false
+        legendFormat: '{{ pod }} - Triggered Compactions'
+        range: true
+        refId: B
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: sum(rate(prometheus_tsdb_compactions_skipped_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        hide: false
+        legendFormat: '{{ pod }} - Skipped Compactions'
+        range: true
+        refId: C
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: sum(rate(prometheus_tsdb_compactions_failed_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        hide: false
+        legendFormat: '{{ pod }} - Failed Compactions'
+        range: true
+        refId: D
+  - type: timeseries
+    title: TSDB Reload Failures by pod
+    id: 90
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 47
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(prometheus_tsdb_reloads_failures_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        interval: ''
+        legendFormat: '{{ pod }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: TSDB Created & Deleted series by pod
+    id: 95
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 47
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: short
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(prometheus_tsdb_head_series_created_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        interval: ''
+        legendFormat: '{{ pod }} - Created series'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        expr: sum(rate(prometheus_tsdb_head_series_removed_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        hide: false
+        legendFormat: '{{ pod }} - Deleted series'
+        range: true
+        refId: B
+  - type: timeseries
+    title: Engine Query Count by pod
+    id: 73
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 55
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(prometheus_engine_query_duration_seconds_count{pod=~"$pod", slice="inner_eval", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        interval: ''
+        legendFormat: '{{ pod }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Engine Query Duration by pod, slice
+    id: 86
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 55
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: ms
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: max(prometheus_engine_query_duration_seconds{pod=~"$pod", cluster=~"$cluster"}) by (pod, slice) * 1000
+        interval: ''
+        legendFormat: '{{ pod }} - {{ slice }}'
+        range: true
+        refId: A
+  - type: row
+    title: Resources
+    id: 47
+    collapsed: false
+    datasource:
+      type: datasource
+      uid: grafana
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 63
+    panels: []
+    targets:
+      - datasource:
+          type: datasource
+          uid: grafana
+        refId: A
+  - type: timeseries
+    title: CPU Usage by pod, container
+    id: 29
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 64
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: table
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: CPU Cores
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: true
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 4
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: none
+      overrides:
+        - matcher:
+            id: byName
+            options: limit
+          properties:
+            - id: color
+              value:
+                fixedColor: '#F2495C'
+                mode: fixed
+            - id: custom.fillOpacity
+              value: 0
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(container_cpu_usage_seconds_total{pod=~"$pod", image!="", container!="", cluster=~"$cluster"}[$__rate_interval])) by (pod, container)
+        interval: $resolution
+        legendFormat: '{{ pod }} - {{ container }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Memory Usage by container
+    id: 51
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 64
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: table
+        placement: right
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: Bytes
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: true
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: bytes
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(container_memory_working_set_bytes{pod=~"$pod", image!="", container!="", cluster=~"$cluster"}) by (pod, container)
+        interval: ''
+        legendFormat: '{{ pod }} - {{ container }}'
+        range: true
+        refId: A
+  - type: row
+    title: Storage
+    id: 66
+    collapsed: false
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 72
+    panels: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        refId: A
+  - type: timeseries
+    title: Persistent Volumes - Capacity and usage in %
+    id: 62
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 73
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: true
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: percentunit
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: max(kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".*prom.*", cluster=~"$cluster"}) by (persistentvolumeclaim, namespace) / max(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~".*prom.*", cluster=~"$cluster"}) by (persistentvolumeclaim, namespace)
+        interval: ''
+        legendFormat: '{{ namespace }} - {{ persistentvolumeclaim }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Persistent Volumes - Capacity and usage in bytes
+    id: 87
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 73
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: true
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: bytes
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: max(kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".*prom.*", cluster=~"$cluster"}) by (persistentvolumeclaim, namespace)
+        interval: ''
+        legendFormat: '{{ namespace }} - {{ persistentvolumeclaim }} - Used'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: max(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~".*prom.*", cluster=~"$cluster"}) by (persistentvolumeclaim, namespace)
+        hide: false
+        legendFormat: '{{ namespace }} - {{ persistentvolumeclaim }} - Capacity'
+        range: true
+        refId: B
+  - type: timeseries
+    title: Persistent Volumes - Inodes
+    id: 68
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 81
+    options:
+      legend:
+        calcs: []
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: true
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        links: []
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: percentunit
+      overrides: []
+    pluginVersion: 8.3.4
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: 1 - (sum(kubelet_volume_stats_inodes_used{persistentvolumeclaim=~".*prom.*", cluster=~"$cluster"}) by (persistentvolumeclaim) / sum(kubelet_volume_stats_inodes{persistentvolumeclaim=~".*prom.*", cluster=~"$cluster"}) by (persistentvolumeclaim))
+        format: time_series
+        interval: ''
+        intervalFactor: 1
+        legendFormat: '{{ persistentvolumeclaim }}'
+        range: true
+        refId: A
+        step: 240
+    links: []
+  - type: row
+    title: Network
+    id: 45
+    collapsed: false
+    datasource:
+      type: datasource
+      uid: grafana
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 89
+    panels: []
+    targets:
+      - datasource:
+          type: datasource
+          uid: grafana
+        refId: A
+  - type: timeseries
+    title: Network - Bandwidth by pod
+    id: 31
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 90
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: true
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: bytes
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(container_network_receive_bytes_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        interval: $resolution
+        legendFormat: '{{ pod }} - Received'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: '- sum(rate(container_network_transmit_bytes_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)'
+        interval: $resolution
+        legendFormat: '{{ pod }} - Transmitted'
+        range: true
+        refId: B
+  - type: timeseries
+    title: Network - Packets rate by pod
+    id: 34
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 90
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: true
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: pps
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(container_network_receive_packets_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        interval: $resolution
+        legendFormat: '{{ pod }} - Received'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: '- sum(rate(container_network_transmit_packets_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)'
+        interval: $resolution
+        legendFormat: '{{ pod }} - Transmitted'
+        range: true
+        refId: B
+  - type: timeseries
+    title: Network - Packets Dropped by pod
+    id: 36
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 98
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: true
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: pps
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(container_network_receive_packets_dropped_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        interval: $resolution
+        legendFormat: '{{ pod }} - Received'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: '- sum(rate(container_network_transmit_packets_dropped_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)'
+        interval: $resolution
+        legendFormat: '{{ pod }} - Transmitted'
+        range: true
+        refId: B
+  - type: timeseries
+    title: Network - Errors by pod
+    id: 37
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 98
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: false
+      tooltip:
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: true
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: pps
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(container_network_receive_errors_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)
+        interval: $resolution
+        legendFormat: '{{ pod }} - Received'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: '- sum(rate(container_network_transmit_errors_total{pod=~"$pod", cluster=~"$cluster"}[$__rate_interval])) by (pod)'
+        interval: $resolution
+        legendFormat: '{{ pod }} - Transmitted'
+        range: true
+        refId: B

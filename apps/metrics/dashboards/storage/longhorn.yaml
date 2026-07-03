@@ -1,0 +1,1957 @@
+title: Longhorn Monitoring
+uid: ozk-lh-mon
+description: An example dashboard for Longhorn. Updated by ONZACK AG (Robin Hermann)
+tags:
+  - Storage
+  - K8s
+  - Longhorn
+editable: true
+graphTooltip: 0
+refresh: 5m
+schemaVersion: 41
+version: 31
+time:
+  from: now-6h
+  to: now
+timepicker: {}
+fiscalYearStartMonth: 0
+links: []
+annotations:
+  list:
+    - builtIn: 1
+      datasource:
+        type: datasource
+        uid: grafana
+      enable: true
+      hide: true
+      iconColor: rgba(0, 211, 255, 1)
+      name: Annotations & Alerts
+      target:
+        limit: 100
+        matchAny: false
+        tags: []
+        type: dashboard
+      type: dashboard
+templating:
+  list:
+    - current: {}
+      includeAll: false
+      label: Datasource
+      name: datasource
+      options: []
+      query: prometheus
+      refresh: 1
+      regex: ''
+      type: datasource
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(up, cluster)
+      hide: 0
+      includeAll: true
+      label: Cluster
+      multi: false
+      name: cluster
+      options: []
+      query:
+        query: label_values(kube_node_info, cluster)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: ''
+      sort: 1
+      type: query
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(longhorn_volume_state{cluster=~"$cluster"},volume)
+      includeAll: true
+      label: Volume
+      multi: true
+      name: volume
+      options: []
+      query:
+        query: label_values(longhorn_volume_state{cluster=~"$cluster"},volume)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: ''
+      sort: 1
+      type: query
+panels:
+  - type: row
+    title: Alerts
+    id: 400
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 0
+    panels:
+      - type: state-timeline
+        title: Alert Timeline
+        id: 401
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 1
+        options:
+          alignValue: left
+          legend:
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          mergeValues: true
+          rowHeight: 0.9
+          showValue: auto
+          tooltip:
+            mode: single
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: thresholds
+            custom:
+              fillOpacity: 70
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineWidth: 0
+              spanNulls: false
+            mappings:
+              - type: value
+                options:
+                  '1':
+                    color: yellow
+                    index: 0
+                    text: Warning / Pending
+                  '2':
+                    color: red
+                    index: 1
+                    text: Critical (Firing)
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: null
+                - color: yellow
+                  value: 1
+                - color: red
+                  value: 2
+          overrides: []
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${datasource}
+            expr: max without (alertstate) ((ALERTS{cluster=~"$cluster", alertname=~"Longhorn.*", severity="critical", alertstate="firing"} * 2) or (ALERTS{cluster=~"$cluster", alertname=~"Longhorn.*", alertstate="pending"} * 1) or (ALERTS{cluster=~"$cluster", alertname=~"Longhorn.*", severity="warning"} * 1))
+            legendFormat: '{{alertname}} [{{severity}}]'
+            range: true
+            instant: false
+            refId: A
+      - type: table
+        title: Active Alerts
+        description: Empty until Longhorn-specific PrometheusRules are added (see https://longhorn.io/docs/1.3.1/monitoring/alert-rules-example/).
+        id: 402
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 9
+        options:
+          cellHeight: sm
+          footer:
+            countRows: false
+            fields: ''
+            reducer:
+              - sum
+            show: false
+          showHeader: true
+          sortBy:
+            - desc: false
+              displayName: alertname
+        fieldConfig:
+          defaults:
+            custom:
+              align: auto
+              cellOptions:
+                type: auto
+              inspect: false
+          overrides:
+            - matcher:
+                id: byName
+                options: alertstate
+              properties:
+                - id: custom.width
+                  value: 90
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        firing:
+                          color: red
+                          index: 0
+                          text: firing
+                        pending:
+                          color: yellow
+                          index: 1
+                          text: pending
+            - matcher:
+                id: byName
+                options: severity
+              properties:
+                - id: custom.width
+                  value: 100
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        warning:
+                          color: yellow
+                          index: 0
+                          text: warning
+                        critical:
+                          color: red
+                          index: 1
+                          text: critical
+            - matcher:
+                id: byName
+                options: alertname
+              properties:
+                - id: custom.width
+                  value: 300
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${datasource}
+            expr: ALERTS{cluster=~"$cluster", alertname=~"Longhorn.*", alertstate=~"firing|pending"}
+            instant: true
+            format: table
+            legendFormat: ''
+            refId: A
+        transformations:
+          - id: organize
+            options:
+              excludeByName:
+                Time: true
+                Value: true
+                __name__: true
+                endpoint: true
+                instance: true
+                job: true
+                prometheus: true
+                prometheus_replica: true
+                service: true
+                container: true
+              indexByName:
+                alertname: 0
+                alertstate: 1
+                severity: 2
+                cluster: 3
+              renameByName: {}
+  - type: row
+    title: Logs
+    id: 410
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 1
+    panels:
+      - type: logs
+        title: Longhorn Manager Pod Logs
+        id: 411
+        datasource:
+          type: loki
+          uid: loki
+        gridPos:
+          h: 14
+          w: 24
+          x: 0
+          'y': 2
+        options:
+          dedupStrategy: none
+          enableLogDetails: true
+          prettifyLogMessage: false
+          showCommonLabels: false
+          showLabels: false
+          showTime: true
+          sortOrder: Descending
+          wrapLogMessage: true
+        targets:
+          - datasource:
+              type: loki
+              uid: loki
+            editorMode: code
+            expr: '{cluster=~"$cluster", namespace="longhorn-system", pod=~"longhorn-manager-.*"}'
+            queryType: range
+            refId: A
+  - type: row
+    title: Volumes
+    id: 40
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 2
+    panels: []
+  - type: stat
+    title: Total Number Of Volumes
+    description: The total number of volumes in the Longhorn storage system
+    id: 8
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 6
+      w: 4
+      x: 0
+      'y': 3
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - last
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+      overrides: []
+    pluginVersion: 12.1.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${DS_PROMETHEUS}
+        editorMode: code
+        expr: count(longhorn_volume_capacity_bytes{volume=~"$volume"}) OR on() vector(0)
+        interval: ''
+        legendFormat: ''
+        range: true
+        refId: A
+  - type: stat
+    title: Number Of Healthy Volumes
+    description: Healthy volumes are volumes that are attaching to a node and have the number of healthy replicas equals to the expected number of replicas.
+    id: 13
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 6
+      w: 4
+      x: 4
+      'y': 3
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - last
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: red
+              value: 0
+            - color: green
+              value: 1
+      overrides: []
+    pluginVersion: 12.1.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${DS_PROMETHEUS}
+        editorMode: code
+        expr: "count(\r\n  (longhorn_volume_robustness{volume=~\"$volume\"} == 1)\r\n  or\r\n  (longhorn_volume_robustness{volume=~\"$volume\", robustness=\"healthy\"} == 1)\r\n) OR on() vector(0)"
+        interval: ''
+        legendFormat: ''
+        range: true
+        refId: A
+  - type: timeseries
+    title: Volume Actual Size
+    description: 'Note that Longhorn volume actual size is not the size of the filesystem inside a Longhorn volume.  See more at : https://longhorn.io/docs/1.0.2/volumes-and-nodes/volume-size/#volume-actual-size'
+    id: 12
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 9
+      w: 16
+      x: 8
+      'y': 3
+    options:
+      legend:
+        calcs:
+          - lastNotNull
+        displayMode: table
+        placement: right
+        showLegend: true
+        sortBy: Last *
+        sortDesc: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 10
+          gradientMode: none
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 1
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: true
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: line+area
+        displayName: ${__field.labels.volume}
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: transparent
+              value: 0
+            - color: red
+              value: 90
+        unit: percent
+      overrides: []
+    pluginVersion: 12.1.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${DS_PROMETHEUS}
+        editorMode: code
+        exemplar: true
+        expr: ( (avg by (volume) (longhorn_volume_actual_size_bytes{volume=~"$volume"}))/ (avg by (volume) (longhorn_volume_capacity_bytes{volume=~"$volume"})) ) *100
+        interval: ''
+        legendFormat: ''
+        range: true
+        refId: A
+  - type: stat
+    title: Number Of Degraded Volumes
+    description: Degraded volumes are volumes that have the number of healthy replicas smaller than the expected number of replicas. e.g. User creates a volume with 2 replicas but 1 replicas is failed.
+    id: 15
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 6
+      w: 4
+      x: 0
+      'y': 9
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - last
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: orange
+              value: 1
+      overrides: []
+    pluginVersion: 12.1.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${DS_PROMETHEUS}
+        editorMode: code
+        expr: "count(\r\n  (longhorn_volume_robustness{volume=~\"$volume\"} == 2)\r\n  or\r\n  (longhorn_volume_robustness{volume=~\"$volume\", robustness=\"degraded\"} == 1)\r\n) OR on() vector(0)"
+        interval: ''
+        legendFormat: ''
+        range: true
+        refId: A
+  - type: stat
+    title: Number Of Fault Volumes
+    description: Fault volumes are volumes that doesn't have any healthy replica.
+    id: 16
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 6
+      w: 4
+      x: 4
+      'y': 9
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - last
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 1
+      overrides: []
+    pluginVersion: 12.1.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${DS_PROMETHEUS}
+        editorMode: code
+        expr: "count(\r\n  (longhorn_volume_robustness{volume=~\"$volume\"} == 3)\r\n  or\r\n  (longhorn_volume_robustness{volume=~\"$volume\", robustness=\"faulted\"} == 1)\r\n) OR on() vector(0)"
+        interval: ''
+        legendFormat: ''
+        range: true
+        refId: A
+  - type: table
+    title: Volume Capacity
+    description: The capacity of each Longhorn volume
+    id: 10
+    datasource:
+      default: false
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 9
+      w: 16
+      x: 8
+      'y': 12
+    options:
+      cellHeight: sm
+      footer:
+        countRows: false
+        fields: ''
+        reducer:
+          - sum
+        show: false
+      frameIndex: 4
+      showHeader: true
+      sortBy:
+        - desc: true
+          displayName: Usage
+    fieldConfig:
+      defaults:
+        custom:
+          align: auto
+          cellOptions:
+            type: auto
+          inspect: false
+        decimals: 1
+        mappings:
+          - options:
+              ? ''
+              : text: ''
+            type: value
+        min: 0
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: '#EAB839'
+              value: 75
+            - color: red
+              value: 90
+        unit: bytes
+      overrides:
+        - matcher:
+            id: byName
+            options: cluster
+          properties:
+            - id: custom.width
+              value: 140
+        - matcher:
+            id: byName
+            options: Usage
+          properties:
+            - id: custom.cellOptions
+              value:
+                mode: basic
+                type: gauge
+                valueDisplayMode: color
+        - matcher:
+            id: byName
+            options: Usage
+          properties:
+            - id: unit
+              value: percent
+            - id: min
+              value: 0
+            - id: max
+              value: 100
+        - matcher:
+            id: byName
+            options: Volume
+          properties:
+            - id: custom.width
+              value: 344
+    pluginVersion: 12.1.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${DS_PROMETHEUS}
+        editorMode: code
+        expr: avg by (pvc_namespace, pvc, volume) (longhorn_volume_capacity_bytes{volume=~"$volume"})
+        format: table
+        hide: false
+        instant: true
+        interval: ''
+        intervalFactor: 1
+        legendFormat: '{{volume}}'
+        refId: capacity
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: label_replace(label_replace(avg by(volume, namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes{cluster=~"$cluster"}),"pvc","$1","persistentvolumeclaim","(.*)"),"pvc_namespace","$1","namespace","(.*)")
+        format: table
+        hide: false
+        instant: true
+        legendFormat: '{{volume}}'
+        range: false
+        refId: used
+      - datasource:
+          type: prometheus
+          uid: ${DS_PROMETHEUS}
+        editorMode: code
+        exemplar: false
+        expr: "100 *\r\n  label_replace(\r\n    avg by (volume, namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes),\r\n    \"pvc\", \"$1\", \"persistentvolumeclaim\", \"(.*)\"\r\n  )\r\n/ on (namespace, pvc)\r\n  (\r\n    label_replace(\r\n      avg by (pvc_namespace, pvc, volume) (longhorn_volume_capacity_bytes{volume=~\"$volume\"}),\r\n      \"namespace\", \"$1\", \"pvc_namespace\", \"(.*)\"\r\n    )\r\n    and on (volume)\r\n      (\r\n        (longhorn_volume_state != 3)\r\n        or\r\n        (longhorn_volume_state{state!=\"detached\"} == 1)\r\n      )\r\n  )"
+        format: table
+        hide: false
+        instant: true
+        legendFormat: '{{volume}}'
+        range: false
+        refId: usage-percentage
+    transformations:
+      - id: merge
+        options: {}
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            namespace: true
+            persistentvolumeclaim: true
+          includeByName: {}
+          indexByName:
+            volume: 0
+            pvc: 1
+            pvc_namespace: 2
+            cluster: 3
+            'Value #used': 4
+            'Value #capacity': 5
+            'Value #usage-percentage': 6
+            Time: 7
+            namespace: 8
+            persistentvolumeclaim: 9
+          renameByName:
+            Value: Capacity
+            'Value #A': Usage
+            'Value #B': Used
+            'Value #capacity': Capacity
+            'Value #usage-percentage': Usage
+            'Value #used': Used
+            name: Persistent Volume Claim
+            pvc: PVC
+            pvc_namespace: Namespace
+            volume: Volume
+      - id: filterByValue
+        options:
+          filters:
+            - config:
+                id: isNull
+                options: {}
+              fieldName: Volume
+          match: any
+          type: exclude
+  - type: stat
+    title: Number Of Attached Volumes
+    description: Attached volumes are volumes that are currently attaching to a node
+    id: 34
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 6
+      w: 4
+      x: 0
+      'y': 15
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - last
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: red
+              value: 0
+            - color: green
+              value: 1
+      overrides: []
+    pluginVersion: 12.1.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${DS_PROMETHEUS}
+        editorMode: code
+        expr: "count(\r\n  (longhorn_volume_state{volume=~\"$volume\"} == 2)\r\n  or\r\n  (longhorn_volume_state{volume=~\"$volume\", state=\"attached\"} == 1)\r\n) OR on() vector(0)"
+        interval: ''
+        legendFormat: ''
+        range: true
+        refId: A
+  - type: stat
+    title: Number Of Detached Volumes
+    description: Detached volumes are volumes that aren't currently attaching to a node
+    id: 14
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 6
+      w: 4
+      x: 4
+      'y': 15
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - last
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: yellow
+              value: 1
+      overrides: []
+    pluginVersion: 12.1.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${DS_PROMETHEUS}
+        editorMode: code
+        expr: "count(\r\n  (longhorn_volume_state{volume=~\"$volume\"} == 3)\r\n  or\r\n  (longhorn_volume_state{volume=~\"$volume\", state=\"detached\"} == 1)\r\n) OR on() vector(0)"
+        interval: ''
+        legendFormat: ''
+        range: true
+        refId: A
+  - type: row
+    title: Nodes
+    id: 42
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 21
+    panels:
+      - type: stat
+        title: Total Number Of Nodes
+        description: The total number of nodes in the Longhorn storage system
+        id: 18
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 6
+          w: 4
+          x: 0
+          'y': 20
+        options:
+          colorMode: value
+          graphMode: area
+          justifyMode: auto
+          orientation: auto
+          percentChangeColorMode: standard
+          reduceOptions:
+            calcs:
+              - last
+            fields: ''
+            values: false
+          showPercentChange: false
+          textMode: auto
+          wideLayout: true
+        fieldConfig:
+          defaults:
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: 0
+          overrides: []
+        pluginVersion: 12.1.1
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            expr: avg(longhorn_node_count_total{cluster=~"$cluster"}) OR on() vector(0)
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: stat
+        title: Number Of Disabled Nodes
+        description: Disabled nodes are nodes that are disabled by the user.  When users disable a node, Longhorn will not use the node's storage for replica scheduling. Note that Longhorn can still attach a volume to disabled nodes because the actual data of the volume could be on a different node.
+        id: 21
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 6
+          w: 4
+          x: 4
+          'y': 20
+        options:
+          colorMode: value
+          graphMode: area
+          justifyMode: auto
+          orientation: auto
+          percentChangeColorMode: standard
+          reduceOptions:
+            calcs:
+              - last
+            fields: ''
+            values: false
+          showPercentChange: false
+          textMode: auto
+          wideLayout: true
+        fieldConfig:
+          defaults:
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: 0
+                - color: yellow
+                  value: 1
+          overrides: []
+        pluginVersion: 12.1.1
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            expr: count(longhorn_node_status{cluster=~"$cluster", condition="allowScheduling"}==0) OR on() vector(0)
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: timeseries
+        title: Node Storage Usage
+        description: ''
+        id: 24
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 10
+          w: 16
+          x: 8
+          'y': 20
+        options:
+          legend:
+            calcs:
+              - lastNotNull
+            displayMode: table
+            placement: right
+            showLegend: true
+            sortBy: Last *
+            sortDesc: true
+          tooltip:
+            hideZeros: false
+            mode: multi
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: palette-classic
+            custom:
+              axisBorderShow: false
+              axisCenteredZero: false
+              axisColorMode: text
+              axisLabel: ''
+              axisPlacement: auto
+              barAlignment: 0
+              barWidthFactor: 0.6
+              drawStyle: line
+              fillOpacity: 10
+              gradientMode: none
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              insertNulls: false
+              lineInterpolation: smooth
+              lineWidth: 1
+              pointSize: 5
+              scaleDistribution:
+                type: linear
+              showPoints: never
+              spanNulls: true
+              stacking:
+                group: A
+                mode: none
+              thresholdsStyle:
+                mode: 'off'
+            displayName: ${__field.labels.node}
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: 0
+                - color: red
+                  value: 80
+            unit: percent
+          overrides: []
+        pluginVersion: 12.1.1
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            exemplar: true
+            expr: (longhorn_node_storage_usage_bytes{cluster=~"$cluster"}/longhorn_node_storage_capacity_bytes{cluster=~"$cluster"}) * 100
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: stat
+        title: Number Of Schedulable Nodes
+        description: Schedulable nodes are nodes that Longhorn can use their storage for replica scheduling.
+        id: 20
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 6
+          w: 4
+          x: 0
+          'y': 26
+        options:
+          colorMode: value
+          graphMode: area
+          justifyMode: auto
+          orientation: auto
+          percentChangeColorMode: standard
+          reduceOptions:
+            calcs:
+              - last
+            fields: ''
+            values: false
+          showPercentChange: false
+          textMode: auto
+          wideLayout: true
+        fieldConfig:
+          defaults:
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: red
+                  value: 0
+                - color: green
+                  value: 1
+          overrides: []
+        pluginVersion: 12.1.1
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            expr: (count(longhorn_node_status{cluster=~"$cluster", condition="schedulable"}==1) OR on() vector(0)) - (count(longhorn_node_status{cluster=~"$cluster", condition="allowScheduling"}==0) OR on() vector(0))
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: stat
+        title: Number Of Failed Nodes
+        description: 'Failed Nodes are nodes that Longhorn cannot attach volumes to and cannot schedule replicas onto. e.g: when the nodes went down.'
+        id: 22
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 6
+          w: 4
+          x: 4
+          'y': 26
+        options:
+          colorMode: value
+          graphMode: area
+          justifyMode: auto
+          orientation: auto
+          percentChangeColorMode: standard
+          reduceOptions:
+            calcs:
+              - last
+            fields: ''
+            values: false
+          showPercentChange: false
+          textMode: auto
+          wideLayout: true
+        fieldConfig:
+          defaults:
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: 0
+                - color: red
+                  value: 1
+          overrides: []
+        pluginVersion: 12.1.1
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            expr: (avg(longhorn_node_count_total{cluster=~"$cluster"}) OR on() vector(0)) - (count(longhorn_node_status{condition="ready"}==1) OR on() vector(0))
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: table
+        title: Node Capacity
+        description: ''
+        id: 23
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 10
+          w: 16
+          x: 8
+          'y': 30
+        options:
+          cellHeight: sm
+          footer:
+            countRows: false
+            fields: ''
+            reducer:
+              - sum
+            show: false
+          showHeader: true
+          sortBy:
+            - desc: false
+              displayName: Storage Capacity
+        fieldConfig:
+          defaults:
+            custom:
+              align: auto
+              cellOptions:
+                type: auto
+              inspect: false
+            decimals: 1
+            mappings: []
+            min: 0
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: 0
+            unit: bytes
+          overrides:
+            - matcher:
+                id: byName
+                options: cluster
+              properties:
+                - id: custom.width
+                  value: 140
+            - matcher:
+                id: byName
+                options: Storage Capacity
+              properties:
+                - id: custom.cellOptions
+                  value:
+                    mode: basic
+                    type: gauge
+        pluginVersion: 12.1.1
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            expr: longhorn_node_storage_capacity_bytes{cluster=~"$cluster"}
+            format: table
+            instant: true
+            interval: ''
+            legendFormat: '{{node}}'
+            refId: A
+        transformations:
+          - id: organize
+            options:
+              excludeByName:
+                Time: true
+                __name__: true
+                endpoint: true
+                instance: true
+                job: true
+                namespace: true
+                pod: false
+                service: true
+              indexByName:
+                node: 0
+                cluster: 1
+                container: 2
+                pod: 3
+                Value: 4
+                Time: 5
+                __name__: 6
+                endpoint: 7
+                instance: 8
+                job: 9
+                namespace: 10
+                service: 11
+              renameByName:
+                Value: Storage Capacity
+                pod: ''
+      - type: timeseries
+        title: Number of Volumes Per Node
+        id: 26
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 8
+          w: 8
+          x: 0
+          'y': 32
+        options:
+          legend:
+            calcs: []
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          tooltip:
+            hideZeros: false
+            mode: multi
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: palette-classic
+            custom:
+              axisBorderShow: false
+              axisCenteredZero: false
+              axisColorMode: text
+              axisLabel: ''
+              axisPlacement: auto
+              barAlignment: 0
+              barWidthFactor: 0.6
+              drawStyle: line
+              fillOpacity: 10
+              gradientMode: none
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              insertNulls: false
+              lineInterpolation: smooth
+              lineWidth: 1
+              pointSize: 5
+              scaleDistribution:
+                type: linear
+              showPoints: never
+              spanNulls: true
+              stacking:
+                group: A
+                mode: none
+              thresholdsStyle:
+                mode: 'off'
+            decimals: 0
+            displayName: ${__field.labels.node}
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: 0
+                - color: red
+                  value: 80
+            unit: short
+          overrides: []
+        pluginVersion: 12.1.1
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            exemplar: true
+            expr: "count by (node) (\r\n  (longhorn_volume_state{cluster=~\"$cluster\"} == 2)\r\n  or\r\n  (longhorn_volume_state{cluster=~\"$cluster\", state=\"attached\"} == 1)\r\n)"
+            interval: ''
+            legendFormat: ''
+            refId: A
+  - type: row
+    title: Disks
+    id: 44
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 22
+    panels:
+      - type: timeseries
+        title: Disk Space Usage
+        description: The capacity of each Longhorn volume
+        id: 32
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 10
+          w: 12
+          x: 0
+          'y': 41
+        options:
+          legend:
+            calcs:
+              - lastNotNull
+            displayMode: table
+            placement: right
+            showLegend: true
+          tooltip:
+            mode: multi
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: palette-classic
+            custom:
+              axisCenteredZero: false
+              axisColorMode: text
+              axisLabel: ''
+              axisPlacement: auto
+              barAlignment: 0
+              drawStyle: line
+              fillOpacity: 10
+              gradientMode: none
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineInterpolation: smooth
+              lineWidth: 1
+              pointSize: 5
+              scaleDistribution:
+                type: linear
+              showPoints: never
+              spanNulls: true
+              stacking:
+                group: A
+                mode: none
+              thresholdsStyle:
+                mode: 'off'
+            displayName: ${__field.labels.disk}
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                - color: red
+                  value: 80
+            unit: percent
+          overrides: []
+        pluginVersion: 8.4.2
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            exemplar: true
+            expr: (longhorn_disk_usage_bytes{cluster=~"$cluster"}/longhorn_disk_capacity_bytes{cluster=~"$cluster"})*100
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: table
+        title: Disk Capacity
+        description: ''
+        id: 33
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 10
+          w: 12
+          x: 12
+          'y': 41
+        options:
+          footer:
+            fields: ''
+            reducer:
+              - sum
+            show: false
+          showHeader: true
+        fieldConfig:
+          defaults:
+            custom:
+              align: auto
+              cellOptions:
+                type: auto
+              inspect: false
+            decimals: 1
+            mappings: []
+            min: 0
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+            unit: bytes
+          overrides:
+            - matcher:
+                id: byName
+                options: cluster
+              properties:
+                - id: custom.width
+                  value: 140
+            - matcher:
+                id: byName
+                options: Capacity
+              properties:
+                - id: custom.cellOptions
+                  value:
+                    mode: lcd
+                    type: gauge
+        pluginVersion: 9.1.5
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            expr: longhorn_disk_capacity_bytes{cluster=~"$cluster"}
+            format: table
+            instant: true
+            interval: ''
+            legendFormat: '{{disk}}'
+            refId: A
+        transformations:
+          - id: organize
+            options:
+              excludeByName:
+                Time: true
+                Value: false
+                __name__: true
+                disk: false
+                endpoint: true
+                instance: true
+                job: true
+                namespace: true
+                pod: true
+                service: true
+              indexByName:
+                node: 0
+                cluster: 1
+                disk: 2
+                Value: 3
+                Time: 4
+                __name__: 5
+                container: 6
+                endpoint: 7
+                instance: 8
+                job: 9
+                namespace: 10
+                pod: 11
+                service: 12
+              renameByName:
+                Value: Capacity
+  - type: row
+    title: CPU & Memory
+    id: 46
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 23
+    panels:
+      - type: timeseries
+        title: Node CPU Usage
+        description: ''
+        id: 36
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 10
+          w: 12
+          x: 0
+          'y': 42
+        options:
+          legend:
+            calcs: []
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          tooltip:
+            mode: multi
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: palette-classic
+            custom:
+              axisCenteredZero: false
+              axisColorMode: text
+              axisLabel: ''
+              axisPlacement: auto
+              barAlignment: 0
+              drawStyle: line
+              fillOpacity: 10
+              gradientMode: none
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineInterpolation: smooth
+              lineWidth: 1
+              pointSize: 5
+              scaleDistribution:
+                type: linear
+              showPoints: never
+              spanNulls: true
+              stacking:
+                group: A
+                mode: none
+              thresholdsStyle:
+                mode: line+area
+            decimals: 0
+            displayName: ${__field.labels.node}
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: transparent
+                - color: red
+                  value: 80
+            unit: percent
+          overrides: []
+        pluginVersion: 8.4.2
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            exemplar: true
+            expr: (longhorn_node_cpu_usage_millicpu{cluster=~"$cluster"} / longhorn_node_cpu_capacity_millicpu{cluster=~"$cluster"}) * 100
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: timeseries
+        title: Node Memory Usage
+        description: ''
+        id: 38
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 10
+          w: 12
+          x: 12
+          'y': 42
+        options:
+          legend:
+            calcs: []
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          tooltip:
+            mode: multi
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: palette-classic
+            custom:
+              axisCenteredZero: false
+              axisColorMode: text
+              axisLabel: ''
+              axisPlacement: auto
+              barAlignment: 0
+              drawStyle: line
+              fillOpacity: 10
+              gradientMode: none
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineInterpolation: smooth
+              lineWidth: 1
+              pointSize: 5
+              scaleDistribution:
+                type: linear
+              showPoints: never
+              spanNulls: true
+              stacking:
+                group: A
+                mode: none
+              thresholdsStyle:
+                mode: line+area
+            decimals: 0
+            displayName: ${__field.labels.node}
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: transparent
+                - color: red
+                  value: 80
+            unit: percent
+          overrides: []
+        pluginVersion: 8.4.2
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            exemplar: true
+            expr: ( longhorn_node_memory_usage_bytes{cluster=~"$cluster"} / longhorn_node_memory_capacity_bytes{cluster=~"$cluster"} ) * 100
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: timeseries
+        title: Instance Manager CPU Usage
+        description: 'Instance managers are pods that contains the engine and replica processes of Longhorn volumes. See more at https://longhorn.io/docs/1.0.2/concepts/#11-the-longhorn-manager-and-the-longhorn-engine '
+        id: 28
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 10
+          w: 8
+          x: 0
+          'y': 52
+        options:
+          legend:
+            calcs: []
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          tooltip:
+            mode: multi
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: palette-classic
+            custom:
+              axisCenteredZero: false
+              axisColorMode: text
+              axisLabel: ''
+              axisPlacement: auto
+              barAlignment: 0
+              drawStyle: line
+              fillOpacity: 10
+              gradientMode: none
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineInterpolation: smooth
+              lineWidth: 1
+              pointSize: 5
+              scaleDistribution:
+                type: linear
+              showPoints: never
+              spanNulls: true
+              stacking:
+                group: A
+                mode: none
+              thresholdsStyle:
+                mode: 'off'
+            decimals: 0
+            displayName: ${__field.labels.instance_manager}
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                - color: red
+                  value: 80
+            unit: milicpu
+          overrides: []
+        pluginVersion: 8.4.2
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            exemplar: true
+            expr: longhorn_instance_manager_cpu_usage_millicpu{cluster=~"$cluster"}
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: timeseries
+        title: Instance Manager CPU Used from Request
+        description: 'Instance managers are pods that contains the engine and replica processes of Longhorn volumes. See more at https://longhorn.io/docs/1.0.2/concepts/#11-the-longhorn-manager-and-the-longhorn-engine '
+        id: 30
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 10
+          w: 8
+          x: 8
+          'y': 52
+        options:
+          legend:
+            calcs: []
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          tooltip:
+            mode: multi
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: palette-classic
+            custom:
+              axisCenteredZero: false
+              axisColorMode: text
+              axisLabel: ''
+              axisPlacement: auto
+              barAlignment: 0
+              drawStyle: line
+              fillOpacity: 10
+              gradientMode: none
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineInterpolation: smooth
+              lineWidth: 1
+              pointSize: 5
+              scaleDistribution:
+                type: linear
+              showPoints: never
+              spanNulls: true
+              stacking:
+                group: A
+                mode: none
+              thresholdsStyle:
+                mode: line+area
+            decimals: 0
+            displayName: ${__field.labels.instance_manager}
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: transparent
+                - color: red
+                  value: 100
+            unit: percent
+          overrides: []
+        pluginVersion: 8.4.2
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            exemplar: true
+            expr: (longhorn_instance_manager_cpu_usage_millicpu{cluster=~"$cluster"}/longhorn_instance_manager_cpu_requests_millicpu{cluster=~"$cluster"})*100
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: timeseries
+        title: Instance Manager Memory Usage
+        description: 'Instance managers are pods that contains the engine and replica processes of Longhorn volumes. See more at https://longhorn.io/docs/1.0.2/concepts/#11-the-longhorn-manager-and-the-longhorn-engine '
+        id: 29
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 10
+          w: 8
+          x: 16
+          'y': 52
+        options:
+          legend:
+            calcs: []
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          tooltip:
+            mode: multi
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: palette-classic
+            custom:
+              axisCenteredZero: false
+              axisColorMode: text
+              axisLabel: ''
+              axisPlacement: auto
+              barAlignment: 0
+              drawStyle: line
+              fillOpacity: 10
+              gradientMode: none
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineInterpolation: smooth
+              lineWidth: 1
+              pointSize: 5
+              scaleDistribution:
+                type: linear
+              showPoints: never
+              spanNulls: true
+              stacking:
+                group: A
+                mode: none
+              thresholdsStyle:
+                mode: 'off'
+            displayName: ${__field.labels.instance_manager}
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                - color: red
+                  value: 80
+            unit: bytes
+          overrides: []
+        pluginVersion: 8.4.2
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            exemplar: true
+            expr: longhorn_instance_manager_memory_usage_bytes{cluster=~"$cluster"}
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: timeseries
+        title: Longhorn Manager CPU Usage
+        description: Longhorn manager pods manage the control plane of the Longhorn system. e.g. Volume scheduling, attaching, detaching, backup, etc,..
+        id: 2
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 9
+          w: 12
+          x: 0
+          'y': 62
+        options:
+          legend:
+            calcs: []
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          tooltip:
+            mode: multi
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: palette-classic
+            custom:
+              axisCenteredZero: false
+              axisColorMode: text
+              axisLabel: ''
+              axisPlacement: auto
+              barAlignment: 0
+              drawStyle: line
+              fillOpacity: 10
+              gradientMode: none
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineInterpolation: smooth
+              lineWidth: 1
+              pointSize: 5
+              scaleDistribution:
+                type: linear
+              showPoints: never
+              spanNulls: true
+              stacking:
+                group: A
+                mode: none
+              thresholdsStyle:
+                mode: 'off'
+            decimals: 0
+            displayName: ${__field.labels.manager}
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                - color: red
+                  value: 80
+            unit: milicpu
+          overrides: []
+        pluginVersion: 8.4.2
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            exemplar: true
+            expr: longhorn_manager_cpu_usage_millicpu{cluster=~"$cluster"}
+            interval: ''
+            legendFormat: ''
+            refId: A
+      - type: timeseries
+        title: Longhorn Manager Memory Usage
+        description: Longhorn manager pods manage the control plane of the Longhorn system. e.g. Volume scheduling, attaching, detaching, backup, etc,..
+        id: 31
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 9
+          w: 12
+          x: 12
+          'y': 62
+        options:
+          legend:
+            calcs: []
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          tooltip:
+            mode: multi
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: palette-classic
+            custom:
+              axisCenteredZero: false
+              axisColorMode: text
+              axisLabel: ''
+              axisPlacement: auto
+              barAlignment: 0
+              drawStyle: line
+              fillOpacity: 10
+              gradientMode: none
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineInterpolation: smooth
+              lineWidth: 1
+              pointSize: 5
+              scaleDistribution:
+                type: linear
+              showPoints: never
+              spanNulls: true
+              stacking:
+                group: A
+                mode: none
+              thresholdsStyle:
+                mode: 'off'
+            displayName: ${__field.labels.manager}
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                - color: red
+                  value: 80
+            unit: bytes
+          overrides: []
+        pluginVersion: 8.4.2
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${DS_PROMETHEUS}
+            exemplar: true
+            expr: longhorn_manager_memory_usage_bytes{cluster=~"$cluster"}
+            interval: ''
+            legendFormat: ''
+            refId: A

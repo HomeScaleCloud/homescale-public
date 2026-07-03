@@ -1,0 +1,685 @@
+title: Alertmanager
+uid: alertmanager
+tags:
+  - alertmanager
+  - prometheus
+editable: true
+graphTooltip: 1
+refresh: 1m
+schemaVersion: 38
+version: 1
+time:
+  from: now-6h
+  to: now
+timepicker: {}
+fiscalYearStartMonth: 0
+links: []
+annotations:
+  list: []
+templating:
+  list:
+    - current: {}
+      hide: 0
+      includeAll: false
+      multi: false
+      name: datasource
+      options: []
+      query: prometheus
+      refresh: 1
+      regex: ''
+      type: datasource
+panels:
+  - type: row
+    title: Alerts
+    id: 200
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 0
+    panels:
+      - type: state-timeline
+        title: Alert Timeline
+        id: 201
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 1
+        options:
+          alignValue: left
+          legend:
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          mergeValues: true
+          rowHeight: 0.9
+          showValue: auto
+          tooltip:
+            mode: single
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: thresholds
+            custom:
+              fillOpacity: 70
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineWidth: 0
+              spanNulls: false
+            mappings:
+              - type: value
+                options:
+                  '1':
+                    color: yellow
+                    index: 0
+                    text: Warning / Pending
+                  '2':
+                    color: red
+                    index: 1
+                    text: Critical (Firing)
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: null
+                - color: yellow
+                  value: 1
+                - color: red
+                  value: 2
+          overrides: []
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${datasource}
+            expr: max without (alertstate) ((ALERTS{alertname=~"Alertmanager.*", severity="critical", alertstate="firing"} * 2) or (ALERTS{alertname=~"Alertmanager.*", alertstate="pending"} * 1) or (ALERTS{alertname=~"Alertmanager.*", severity="warning"} * 1))
+            legendFormat: '{{alertname}} [{{severity}}]'
+            range: true
+            instant: false
+            refId: A
+      - type: table
+        title: Active Alerts
+        id: 202
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 9
+        options:
+          cellHeight: sm
+          footer:
+            countRows: false
+            fields: ''
+            reducer:
+              - sum
+            show: false
+          showHeader: true
+          sortBy:
+            - desc: false
+              displayName: alertname
+        fieldConfig:
+          defaults:
+            custom:
+              align: auto
+              cellOptions:
+                type: auto
+              inspect: false
+          overrides:
+            - matcher:
+                id: byName
+                options: alertstate
+              properties:
+                - id: custom.width
+                  value: 90
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        firing:
+                          color: red
+                          index: 0
+                          text: firing
+                        pending:
+                          color: yellow
+                          index: 1
+                          text: pending
+            - matcher:
+                id: byName
+                options: severity
+              properties:
+                - id: custom.width
+                  value: 100
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        warning:
+                          color: yellow
+                          index: 0
+                          text: warning
+                        critical:
+                          color: red
+                          index: 1
+                          text: critical
+            - matcher:
+                id: byName
+                options: alertname
+              properties:
+                - id: custom.width
+                  value: 300
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${datasource}
+            expr: ALERTS{alertname=~"Alertmanager.*", alertstate=~"firing|pending"}
+            instant: true
+            format: table
+            legendFormat: ''
+            refId: A
+        transformations:
+          - id: organize
+            options:
+              excludeByName:
+                Time: true
+                Value: true
+                __name__: true
+                endpoint: true
+                instance: true
+                job: true
+                prometheus: true
+                prometheus_replica: true
+                service: true
+                container: true
+              indexByName:
+                alertname: 0
+                alertstate: 1
+                severity: 2
+              renameByName: {}
+  - type: row
+    title: Logs
+    id: 210
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 1
+    panels:
+      - type: logs
+        title: Alertmanager Pod Logs
+        id: 211
+        datasource:
+          type: loki
+          uid: loki
+        gridPos:
+          h: 14
+          w: 24
+          x: 0
+          'y': 2
+        options:
+          dedupStrategy: none
+          enableLogDetails: true
+          prettifyLogMessage: false
+          showCommonLabels: false
+          showLabels: false
+          showTime: true
+          sortOrder: Descending
+          wrapLogMessage: true
+        targets:
+          - datasource:
+              type: loki
+              uid: loki
+            expr: '{namespace="metrics", pod=~"alertmanager.*"} | json'
+            refId: A
+  - type: row
+    title: Overview
+    id: 1
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 2
+    panels: []
+  - type: stat
+    title: Config Reload OK
+    id: 2
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 0
+      'y': 3
+    options:
+      reduceOptions:
+        calcs:
+          - lastNotNull
+      colorMode: background
+      graphMode: none
+      justifyMode: center
+      textMode: auto
+    fieldConfig:
+      defaults:
+        unit: short
+        mappings:
+          - type: value
+            options:
+              '0':
+                text: FAILED
+                color: red
+              '1':
+                text: OK
+                color: green
+        thresholds:
+          mode: absolute
+          steps:
+            - color: red
+              value: null
+            - color: green
+              value: 1
+        color:
+          mode: thresholds
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: min(alertmanager_config_last_reload_successful{namespace="metrics"})
+        instant: true
+        refId: A
+  - type: stat
+    title: Cluster Members
+    id: 3
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 4
+      'y': 3
+    options:
+      reduceOptions:
+        calcs:
+          - lastNotNull
+      colorMode: none
+      graphMode: area
+      justifyMode: center
+      textMode: auto
+    fieldConfig:
+      defaults:
+        unit: short
+        color:
+          mode: palette-classic
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: max(alertmanager_cluster_members{namespace="metrics"})
+        instant: true
+        refId: A
+  - type: stat
+    title: Cluster Failed Peers
+    id: 4
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 8
+      'y': 3
+    options:
+      reduceOptions:
+        calcs:
+          - lastNotNull
+      colorMode: background
+      graphMode: none
+      justifyMode: center
+      textMode: auto
+    fieldConfig:
+      defaults:
+        unit: short
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 1
+        color:
+          mode: thresholds
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: sum(alertmanager_cluster_failed_peers{namespace="metrics"})
+        instant: true
+        refId: A
+  - type: stat
+    title: Active Alerts
+    id: 5
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 12
+      'y': 3
+    options:
+      reduceOptions:
+        calcs:
+          - lastNotNull
+      colorMode: none
+      graphMode: area
+      justifyMode: center
+      textMode: auto
+    fieldConfig:
+      defaults:
+        unit: short
+        color:
+          mode: palette-classic
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: sum(alertmanager_alerts{namespace="metrics", state="active"})
+        instant: true
+        refId: A
+  - type: stat
+    title: Suppressed Alerts
+    id: 6
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 16
+      'y': 3
+    options:
+      reduceOptions:
+        calcs:
+          - lastNotNull
+      colorMode: none
+      graphMode: area
+      justifyMode: center
+      textMode: auto
+    fieldConfig:
+      defaults:
+        unit: short
+        color:
+          mode: palette-classic
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: sum(alertmanager_alerts{namespace="metrics", state="suppressed"})
+        instant: true
+        refId: A
+  - type: stat
+    title: Active Silences
+    id: 7
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 20
+      'y': 3
+    options:
+      reduceOptions:
+        calcs:
+          - lastNotNull
+      colorMode: none
+      graphMode: area
+      justifyMode: center
+      textMode: auto
+    fieldConfig:
+      defaults:
+        unit: short
+        color:
+          mode: palette-classic
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: sum(alertmanager_silences{namespace="metrics", state="active"})
+        instant: true
+        refId: A
+  - type: row
+    title: Notifications
+    id: 20
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 7
+    panels: []
+  - type: timeseries
+    title: Notifications Sent Rate by Integration
+    id: 21
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 8
+    options:
+      tooltip:
+        mode: multi
+        sort: desc
+      legend:
+        displayMode: table
+        placement: bottom
+        calcs:
+          - lastNotNull
+    fieldConfig:
+      defaults:
+        unit: reqps
+        custom:
+          lineWidth: 1
+          fillOpacity: 5
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: sum by (integration) (rate(alertmanager_notifications_total{namespace="metrics"}[5m]))
+        legendFormat: '{{integration}}'
+        refId: A
+  - type: timeseries
+    title: Notifications Failed Rate by Integration
+    id: 22
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 8
+    options:
+      tooltip:
+        mode: multi
+        sort: desc
+      legend:
+        displayMode: table
+        placement: bottom
+        calcs:
+          - lastNotNull
+    fieldConfig:
+      defaults:
+        unit: reqps
+        custom:
+          lineWidth: 1
+          fillOpacity: 10
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 0.01
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: sum by (integration) (rate(alertmanager_notifications_failed_total{namespace="metrics"}[5m]))
+        legendFormat: '{{integration}}'
+        refId: A
+  - type: timeseries
+    title: Notification Latency (p50 / p90 / p99)
+    id: 23
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 24
+      x: 0
+      'y': 16
+    options:
+      tooltip:
+        mode: multi
+        sort: desc
+      legend:
+        displayMode: table
+        placement: bottom
+        calcs:
+          - lastNotNull
+    fieldConfig:
+      defaults:
+        unit: s
+        custom:
+          lineWidth: 1
+          fillOpacity: 5
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: histogram_quantile(0.50, sum by (le, integration) (rate(alertmanager_notification_latency_seconds_bucket{namespace="metrics"}[5m])))
+        legendFormat: p50 {{integration}}
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: histogram_quantile(0.90, sum by (le, integration) (rate(alertmanager_notification_latency_seconds_bucket{namespace="metrics"}[5m])))
+        legendFormat: p90 {{integration}}
+        refId: B
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: histogram_quantile(0.99, sum by (le, integration) (rate(alertmanager_notification_latency_seconds_bucket{namespace="metrics"}[5m])))
+        legendFormat: p99 {{integration}}
+        refId: C
+  - type: row
+    title: Resources
+    id: 30
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 24
+    panels: []
+  - type: timeseries
+    title: CPU Usage by Pod
+    id: 31
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 25
+    options:
+      tooltip:
+        mode: multi
+        sort: desc
+      legend:
+        displayMode: table
+        placement: bottom
+        calcs:
+          - lastNotNull
+    fieldConfig:
+      defaults:
+        unit: short
+        custom:
+          lineWidth: 1
+          fillOpacity: 5
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="metrics", pod=~"alertmanager.*", container="alertmanager"}[5m]))
+        legendFormat: '{{pod}}'
+        refId: A
+  - type: timeseries
+    title: Memory Usage by Pod
+    id: 32
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 25
+    options:
+      tooltip:
+        mode: multi
+        sort: desc
+      legend:
+        displayMode: table
+        placement: bottom
+        calcs:
+          - lastNotNull
+    fieldConfig:
+      defaults:
+        unit: bytes
+        custom:
+          lineWidth: 1
+          fillOpacity: 5
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: sum by (pod) (container_memory_working_set_bytes{namespace="metrics", pod=~"alertmanager.*", container="alertmanager"})
+        legendFormat: '{{pod}}'
+        refId: A

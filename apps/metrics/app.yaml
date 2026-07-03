@@ -39,6 +39,256 @@ values:
       enabled: false
     alertmanager:
       enabled: false
+    customRules:
+      NodeBondingDegraded:
+        severity: critical
+    defaultRules:
+      # Maps each built-in kube-prometheus-stack alert to the Grafana dashboard
+      # most relevant to diagnosing it, surfaced via dashboard_url in Slack.
+      additionalRuleAnnotations:
+        # Node hardware / kubelet health -> Nodes dashboard
+        NodeFilesystemSpaceFillingUp:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeFilesystemAlmostOutOfSpace:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeFilesystemFilesFillingUp:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeFilesystemAlmostOutOfFiles:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeNetworkReceiveErrs:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeNetworkTransmitErrs:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeHighNumberConntrackEntriesUsed:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeTextFileCollectorScrapeError:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeClockSkewDetected:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeClockNotSynchronising:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeRAIDDegraded:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeRAIDDiskFailure:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeFileDescriptorLimit:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeCPUHighUsage:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeSystemSaturation:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeMemoryMajorPagesFaults:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeMemoryHighUtilization:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeDiskIOSaturation:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeSystemdServiceFailed:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeSystemdServiceCrashlooping:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeBondingDegraded:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        NodeNetworkInterfaceFlapping:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeNodeNotReady:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeNodePressure:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeNodeUnreachable:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeletTooManyPods:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeNodeReadinessFlapping:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeNodeEviction:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeletPlegDurationHigh:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeletPodStartUpLatencyHigh:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeletClientCertificateExpiration:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeletServerCertificateExpiration:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeletClientCertificateRenewalErrors:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeletServerCertificateRenewalErrors:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeletInstanceUnreachable:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+        KubeletDown:
+          dashboard_url: "https://REDACTED/d/k8s_views_nodes"
+
+        # Workload / pod health -> Pods dashboard
+        KubePodCrashLooping:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubePodNotReady:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeDeploymentGenerationMismatch:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeDeploymentReplicasMismatch:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeDeploymentRolloutStuck:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeStatefulSetReplicasMismatch:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeStatefulSetGenerationMismatch:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeStatefulSetUpdateNotRolledOut:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeDaemonSetRolloutStuck:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeContainerWaiting:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeDaemonSetNotScheduled:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeDaemonSetMisScheduled:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeJobNotCompleted:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeJobFailed:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeHpaReplicasMismatch:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubeHpaMaxedOut:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        KubePdbNotEnoughHealthyPods:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+        CPUThrottlingHigh:
+          dashboard_url: "https://REDACTED/d/k8s_views_pods"
+
+        # Namespace-level resource quota -> Namespaces dashboard
+        KubeCPUQuotaOvercommit:
+          dashboard_url: "https://REDACTED/d/k8s_views_ns"
+        KubeMemoryQuotaOvercommit:
+          dashboard_url: "https://REDACTED/d/k8s_views_ns"
+        KubeQuotaAlmostFull:
+          dashboard_url: "https://REDACTED/d/k8s_views_ns"
+        KubeQuotaFullyUsed:
+          dashboard_url: "https://REDACTED/d/k8s_views_ns"
+        KubeQuotaExceeded:
+          dashboard_url: "https://REDACTED/d/k8s_views_ns"
+
+        # Cluster-wide capacity / identity -> Global dashboard
+        KubeCPUOvercommit:
+          dashboard_url: "https://REDACTED/d/k8s_views_global"
+        KubeMemoryOvercommit:
+          dashboard_url: "https://REDACTED/d/k8s_views_global"
+        TargetDown:
+          dashboard_url: "https://REDACTED/d/k8s_views_global"
+        KubeVersionMismatch:
+          dashboard_url: "https://REDACTED/d/k8s_views_global"
+
+        # API server health -> API Server dashboard
+        KubeAPIErrorBudgetBurn:
+          dashboard_url: "https://REDACTED/d/k8s_system_apisrv"
+        KubeClientCertificateExpiration:
+          dashboard_url: "https://REDACTED/d/k8s_system_apisrv"
+        KubeAggregatedAPIErrors:
+          dashboard_url: "https://REDACTED/d/k8s_system_apisrv"
+        KubeAggregatedAPIDown:
+          dashboard_url: "https://REDACTED/d/k8s_system_apisrv"
+        KubeAPIDown:
+          dashboard_url: "https://REDACTED/d/k8s_system_apisrv"
+        KubeAPIInstanceUnreachable:
+          dashboard_url: "https://REDACTED/d/k8s_system_apisrv"
+        KubeAPITerminatedRequests:
+          dashboard_url: "https://REDACTED/d/k8s_system_apisrv"
+        KubeClientErrors:
+          dashboard_url: "https://REDACTED/d/k8s_system_apisrv"
+
+        # PV/PVC issues -> all storage classes are Longhorn, so Longhorn dashboard
+        KubePersistentVolumeFillingUp:
+          dashboard_url: "https://REDACTED/d/ozk-lh-mon"
+        KubePersistentVolumeInodesFillingUp:
+          dashboard_url: "https://REDACTED/d/ozk-lh-mon"
+        KubePersistentVolumeErrors:
+          dashboard_url: "https://REDACTED/d/ozk-lh-mon"
+
+        # Alertmanager health -> Alertmanager dashboard
+        AlertmanagerFailedReload:
+          dashboard_url: "https://REDACTED/d/alertmanager"
+        AlertmanagerMembersInconsistent:
+          dashboard_url: "https://REDACTED/d/alertmanager"
+        AlertmanagerFailedToSendAlerts:
+          dashboard_url: "https://REDACTED/d/alertmanager"
+        AlertmanagerClusterFailedToSendAlerts:
+          dashboard_url: "https://REDACTED/d/alertmanager"
+        AlertmanagerConfigInconsistent:
+          dashboard_url: "https://REDACTED/d/alertmanager"
+        AlertmanagerClusterDown:
+          dashboard_url: "https://REDACTED/d/alertmanager"
+        AlertmanagerClusterCrashlooping:
+          dashboard_url: "https://REDACTED/d/alertmanager"
+        AlertmanagerClusterFailedPeers:
+          dashboard_url: "https://REDACTED/d/alertmanager"
+
+        # Prometheus / operator / config-reloader internals -> Prometheus dashboard
+        PrometheusBadConfig:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusSDRefreshFailure:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusKubernetesListWatchFailures:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusNotificationQueueRunningFull:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusErrorSendingAlertsToSomeAlertmanagers:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusNotConnectedToAlertmanagers:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusTSDBReloadsFailing:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusTSDBCompactionsFailing:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusNotIngestingSamples:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusDuplicateTimestamps:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusOutOfOrderTimestamps:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusRemoteStorageFailures:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusRemoteWriteBehind:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusRemoteWriteDesiredShards:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusRuleFailures:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusMissingRuleEvaluations:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusTargetLimitHit:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusLabelLimitHit:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusScrapeBodySizeLimitHit:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusScrapeSampleLimitHit:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusTargetSyncFailure:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusHighQueryLoad:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusErrorSendingAlertsToAnyAlertmanager:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusOperatorListErrors:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusOperatorWatchErrors:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusOperatorSyncFailed:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusOperatorReconcileErrors:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusOperatorStatusUpdateErrors:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusOperatorNodeLookupErrors:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusOperatorNotReady:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        PrometheusOperatorRejectedResources:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+        ConfigReloaderSidecarErrors:
+          dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
     prometheus:
       prometheusSpec:
         retention: 2h
