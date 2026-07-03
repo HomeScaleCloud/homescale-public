@@ -92,7 +92,7 @@ panels:
                   '2':
                     color: red
                     index: 1
-                    text: Critical
+                    text: Critical (Firing)
             thresholds:
               mode: absolute
               steps:
@@ -125,7 +125,7 @@ panels:
           - datasource:
               type: prometheus
               uid: prometheus
-            expr: (ALERTS{cluster=~"$cluster", alertname=~"ApcPdu.*", severity="critical"} * 2) or (ALERTS{cluster=~"$cluster", alertname=~"ApcPdu.*", alertstate=~"firing|pending"} * 1)
+            expr: max without (alertstate) ((ALERTS{cluster=~"$cluster", alertname=~"ApcPdu.*", severity="critical", alertstate="firing"} * 2) or (ALERTS{cluster=~"$cluster", alertname=~"ApcPdu.*", alertstate="pending"} * 1) or (ALERTS{cluster=~"$cluster", alertname=~"ApcPdu.*", severity="warning"} * 1))
             legendFormat: '{{alertname}} ({{job}})'
             range: true
             instant: false

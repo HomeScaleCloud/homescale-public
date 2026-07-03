@@ -113,7 +113,7 @@ panels:
                   '2':
                     color: red
                     index: 1
-                    text: Critical
+                    text: Critical (Firing)
             thresholds:
               mode: absolute
               steps:
@@ -128,7 +128,7 @@ panels:
           - datasource:
               type: prometheus
               uid: ${datasource}
-            expr: (ALERTS{cluster=~"$cluster", alertname=~"VolSync.*", severity="critical"} * 2) or (ALERTS{cluster=~"$cluster", alertname=~"VolSync.*", alertstate=~"firing|pending"} * 1)
+            expr: max without (alertstate) ((ALERTS{cluster=~"$cluster", alertname=~"VolSync.*", severity="critical", alertstate="firing"} * 2) or (ALERTS{cluster=~"$cluster", alertname=~"VolSync.*", alertstate="pending"} * 1) or (ALERTS{cluster=~"$cluster", alertname=~"VolSync.*", severity="warning"} * 1))
             legendFormat: '{{alertname}} [{{severity}}]'
             range: true
             instant: false

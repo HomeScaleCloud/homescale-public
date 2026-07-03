@@ -111,6 +111,12 @@ values:
                 mountPath: /var/run/netbird
               - name: netbird-lib
                 mountPath: /var/lib/netbird
+    prometheus-node-exporter:
+      prometheus:
+        monitor:
+          relabelings:
+            - sourceLabels: ["__meta_kubernetes_pod_node_name"]
+              targetLabel: node
     kubeControllerManager:
       enabled: false
     kubeScheduler:

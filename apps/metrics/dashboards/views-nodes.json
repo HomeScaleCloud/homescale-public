@@ -143,7 +143,7 @@
                     "2": {
                       "color": "red",
                       "index": 1,
-                      "text": "Critical"
+                      "text": "Critical (Firing)"
                     }
                   }
                 }
@@ -174,7 +174,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "(ALERTS{cluster=~\"$cluster\", node=~\"$node\", severity=\"critical\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertstate=~\"firing|pending\", node=~\"$node\"} * 1)",
+              "expr": "max without (alertstate) ((ALERTS{cluster=~\"$cluster\", node=~\"$node\", severity=\"critical\", alertstate=\"firing\"} * 2) or (ALERTS{cluster=~\"$cluster\", node=~\"$node\", alertstate=\"pending\"} * 1) or (ALERTS{cluster=~\"$cluster\", node=~\"$node\", severity=\"warning\"} * 1))",
               "legendFormat": "{{alertname}} [{{severity}}]",
               "range": true,
               "instant": false,
@@ -3050,6 +3050,163 @@
       "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 70,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 0,
+                  "text": "Down / <1Gbps"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "Up / \u22651Gbps"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 82
+      },
+      "id": 72,
+      "options": {
+        "alignValue": "left",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "auto",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "(node_network_carrier{cluster=~\"$cluster\", instance=\"$instance\", device!~\"lo|veth.+|docker.+|br-.+|cali.+|cilium.+|lxc.+|dummy.+|tunl.+|sit.+|erspan.+|gre.+|gretap.+|ip6.+|kube-ipvs.+\"} == bool 1)\n*\n(node_network_speed_bytes{cluster=~\"$cluster\", instance=\"$instance\", device!~\"lo|veth.+|docker.+|br-.+|cali.+|cilium.+|lxc.+|dummy.+|tunl.+|sit.+|erspan.+|gre.+|gretap.+|ip6.+|kube-ipvs.+\"} >= bool 125000000)",
+          "legendFormat": "{{device}}",
+          "range": true,
+          "instant": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Network Interface Link Status",
+      "type": "state-timeline"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 90
+      },
+      "id": 73,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "node_network_speed_bytes{cluster=~\"$cluster\", instance=\"$instance\", device!~\"lo|veth.+|docker.+|br-.+|cali.+|cilium.+|lxc.+|dummy.+|tunl.+|sit.+|erspan.+|gre.+|gretap.+|ip6.+|kube-ipvs.+\"} * 8",
+          "legendFormat": "{{device}}",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Network Interface Speed",
+      "type": "stat"
+    },
+    {
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
@@ -3059,7 +3216,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 82
+        "y": 98
       },
       "id": 54,
       "panels": [],
@@ -3132,7 +3289,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 83
+        "y": 99
       },
       "id": 30,
       "options": {
@@ -3231,7 +3388,7 @@
         "h": 16,
         "w": 12,
         "x": 12,
-        "y": 83
+        "y": 99
       },
       "id": 34,
       "options": {
@@ -3394,7 +3551,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 91
+        "y": 107
       },
       "id": 32,
       "options": {
@@ -3438,7 +3595,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 99
+        "y": 115
       },
       "id": 42,
       "panels": [],
@@ -3511,7 +3668,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 100
+        "y": 116
       },
       "id": 33,
       "options": {
@@ -3612,7 +3769,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 100
+        "y": 116
       },
       "id": 59,
       "options": {
@@ -3713,7 +3870,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 108
+        "y": 124
       },
       "id": 52,
       "options": {
@@ -3813,7 +3970,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 108
+        "y": 124
       },
       "id": 57,
       "options": {
@@ -3914,7 +4071,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 116
+        "y": 132
       },
       "id": 51,
       "options": {
@@ -4014,7 +4171,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 116
+        "y": 132
       },
       "id": 56,
       "options": {
@@ -4115,7 +4272,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 124
+        "y": 140
       },
       "id": 58,
       "options": {
@@ -4215,7 +4372,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 124
+        "y": 140
       },
       "id": 55,
       "options": {
@@ -4394,7 +4551,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Kubernetes / Views / Nodes",
+  "title": "Views / Nodes",
   "uid": "k8s_views_nodes",
   "version": 40,
   "weekStart": ""

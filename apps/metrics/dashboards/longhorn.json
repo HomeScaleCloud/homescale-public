@@ -145,7 +145,7 @@
                     "2": {
                       "color": "red",
                       "index": 1,
-                      "text": "Critical"
+                      "text": "Critical (Firing)"
                     }
                   }
                 }
@@ -176,7 +176,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "(ALERTS{cluster=~\"$cluster\", alertname=~\"Longhorn.*\", severity=\"critical\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertname=~\"Longhorn.*\", alertstate=~\"firing|pending\"} * 1)",
+              "expr": "max without (alertstate) ((ALERTS{cluster=~\"$cluster\", alertname=~\"Longhorn.*\", severity=\"critical\", alertstate=\"firing\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertname=~\"Longhorn.*\", alertstate=\"pending\"} * 1) or (ALERTS{cluster=~\"$cluster\", alertname=~\"Longhorn.*\", severity=\"warning\"} * 1))",
               "legendFormat": "{{alertname}} [{{severity}}]",
               "range": true,
               "instant": false,

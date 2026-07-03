@@ -85,7 +85,7 @@ panels:
                   '2':
                     color: red
                     index: 1
-                    text: Critical
+                    text: Critical (Firing)
             thresholds:
               mode: absolute
               steps:
@@ -100,7 +100,7 @@ panels:
           - datasource:
               type: prometheus
               uid: ${datasource}
-            expr: (ALERTS{alertname=~"Omni.*", severity="critical"} * 2) or (ALERTS{alertname=~"Omni.*", alertstate=~"firing|pending"} * 1)
+            expr: max without (alertstate) ((ALERTS{alertname=~"Omni.*", severity="critical", alertstate="firing"} * 2) or (ALERTS{alertname=~"Omni.*", alertstate="pending"} * 1) or (ALERTS{alertname=~"Omni.*", severity="warning"} * 1))
             legendFormat: '{{alertname}} [{{severity}}]'
             range: true
             instant: false

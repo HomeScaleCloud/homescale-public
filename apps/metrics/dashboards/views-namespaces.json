@@ -137,7 +137,7 @@
                     "2": {
                       "color": "red",
                       "index": 1,
-                      "text": "Critical"
+                      "text": "Critical (Firing)"
                     }
                   }
                 }
@@ -168,7 +168,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "(ALERTS{cluster=~\"$cluster\", namespace=~\"$namespace\", severity=\"critical\"} * 2) or (ALERTS{cluster=~\"$cluster\", alertstate=~\"firing|pending\", namespace=~\"$namespace\"} * 1)",
+              "expr": "max without (alertstate) ((ALERTS{cluster=~\"$cluster\", namespace=~\"$namespace\", severity=\"critical\", alertstate=\"firing\"} * 2) or (ALERTS{cluster=~\"$cluster\", namespace=~\"$namespace\", alertstate=\"pending\"} * 1) or (ALERTS{cluster=~\"$cluster\", namespace=~\"$namespace\", severity=\"warning\"} * 1))",
               "legendFormat": "{{alertname}} [{{severity}}]",
               "range": true,
               "instant": false,
@@ -3576,7 +3576,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Kubernetes / Views / Namespaces",
+  "title": "Views / Namespaces",
   "uid": "k8s_views_ns",
   "version": 46,
   "weekStart": ""
