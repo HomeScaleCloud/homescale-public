@@ -17,7 +17,8 @@ Raw Kubernetes manifests placed in `clusters/<cluster>/` are picked up directly 
 
 ### The `mgmt` cluster
 
-`mgmt` is a managed [Vultr Kubernetes Engine](https://www.vultr.com/kubernetes/) cluster provisioned by Terraform (`infra/terraform/modules/mgmt_cluster/`, a single `vultr_kubernetes` resource). It does **not** have a `cluster.yaml` — Talos and Omni are not involved. Omni itself runs *on* `mgmt`, managing the other clusters.
+`mgmt` is a managed [Vultr Kubernetes Engine](https://www.vultr.com/kubernetes/) cluster provisioned by Terraform (`infra/terraform/modules/mgmt_cluster/`, a single `vultr_kubernetes` resource). It does **not** have a `cluster.yaml` — Talos and Omni are not involved. Omni itself runs *on* `mgmt`, managing all
+ other clusters.
 
 ## Cluster naming
 

@@ -108,7 +108,7 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 
 | Type | Kind | Role |
 |------|------|------|
-| `mgmt` | DigitalOcean Kubernetes (DOKS) | Single management cluster. Hosts Omni, ArgoCD, Infisical operator, and shared infrastructure. Provisioned by DigitalOcean via Terraform. |
+| `mgmt` | Vultr Kubernetes Engine (VKE) | Single management cluster. Hosts Omni, ArgoCD, Infisical operator, and shared infrastructure. Provisioned by Vultr via Terraform. |
 | `<region>-gw` | Talos (Omni-managed) | One per region. Gateway cluster for bare-metal provisioning and subnet routing. |
 | `<region>-*` | Talos (Omni-managed) | General compute clusters for production workloads. |
 
