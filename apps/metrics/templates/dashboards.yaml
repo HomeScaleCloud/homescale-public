@@ -1,17 +1,19 @@
 {{- if eq .Values.cluster.name "boa1-prod" }}
+{{- range $folder := list "views" "system" "storage" "networking" "platform" "environment" }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana-dashboards
+  name: grafana-dashboards-{{ $folder }}
   namespace: metrics
 data:
-{{- range $path, $_ := .Files.Glob "dashboards/*.json" }}
+{{- range $path, $_ := $.Files.Glob (printf "dashboards/%s/*.json" $folder) }}
   {{ base $path }}: |
     {{ $.Files.Get $path | nindent 4 }}
 {{- end }}
-{{- range $path, $_ := .Files.Glob "dashboards/*.yaml" }}
+{{- range $path, $_ := $.Files.Glob (printf "dashboards/%s/*.yaml" $folder) }}
   {{ base $path | trimSuffix ".yaml" }}.json: |
     {{ $.Files.Get $path | fromYaml | toJson | nindent 4 }}
+{{- end }}
 {{- end }}
 {{- end }}
