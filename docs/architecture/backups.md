@@ -8,7 +8,7 @@ Each app that has a `volsync.yaml` template creates a `ReplicationSource` CR in 
 
 - The `ReplicationSource` runs on a cron schedule, snapshotting the app's PVC into a restic repository
 - Snapshots are incremental — only changed blocks are sent
-- Restic credentials are pulled from a Secret named `<app>-volsync-repo`, synced from Infisical at `/k8s/volsync/<cluster-name>/<app>`
+- Restic credentials are pulled from a Secret named `<app>-volsync-repo`, synced from a shared Infisical path (`/k8s/volsync`) with the per-app repository suffix computed in the Helm template — see [VolSync secrets](secrets.md#volsync-secrets) for the exact mechanism
 
 When restore mode is enabled via `clusters/<cluster>/apps.yaml`, the `ReplicationSource` is suppressed and replaced by a one-shot `ReplicationDestination` that restores from a snapshot.
 
@@ -23,16 +23,12 @@ values:
 
 ## Enabling backups for a new app
 
-Per-app Infisical credentials are **managed automatically by Terraform** (`infra/terraform/volsync.tf`). Whenever Terraform detects an app with a `volsync.yaml` template it creates the Infisical folder at `/k8s/volsync/<cluster>/<app>/` and populates it with Infisical reference expressions that derive from shared base credentials at `/k8s/volsync/`:
+No per-app Infisical setup is needed — every app's `InfisicalSecret` CR reads the same shared credentials at `/k8s/volsync` and computes its own repository suffix at Helm-template time (`RESTIC_REPOSITORY: "{{ .RESTIC_REPOSITORY.Value }}/{{ .Values.cluster.name }}/<app>"`). See [VolSync secrets](secrets.md#volsync-secrets) for the exact CR pattern.
 
-| Derived key | Source |
-|-------------|--------|
-| `RESTIC_REPOSITORY` | `<shared-base-url>/<cluster>/<app>` |
-| `RESTIC_PASSWORD` | Shared from `/k8s/volsync/RESTIC_PASSWORD` |
-| `AWS_ACCESS_KEY_ID` | Shared from `/k8s/volsync/AWS_ACCESS_KEY_ID` |
-| `AWS_SECRET_ACCESS_KEY` | Shared from `/k8s/volsync/AWS_SECRET_ACCESS_KEY` |
+The shared base credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) must be configured once in Infisical at `/k8s/volsync`.
 
-The shared base credentials must be configured once in Infisical at `/k8s/volsync/`. No per-app secret management is needed.
+!!! note "Terraform also scaffolds a per-app path that isn't consumed"
+    `infra/terraform/volsync.tf` additionally creates a per-app folder at `/k8s/volsync/<cluster>/<app>/` with derived reference-expression secrets. No shipped app actually points its `InfisicalSecret` at that path — this is worth knowing about but isn't part of the working setup flow below.
 
 1. **Add a `volsync.yaml` template** to the app's Helm chart. Follow the pattern from an existing app (e.g. `apps/home-assistant/templates/volsync.yaml`). The template gates on `{{ .Values.volsync.enabled }}` and creates:
    - An `InfisicalSecret` CR to sync the restic credentials
@@ -58,7 +54,7 @@ The shared base credentials must be configured once in Infisical at `/k8s/volsyn
 hsctl get snapshot <app>
 ```
 
-This lists available restic snapshots with their timestamps and IDs.
+This lists available restic snapshots with their timestamps and IDs. See the [hsctl reference](../operations/hsctl.md) for other subcommands.
 
 ### 2. Scale down and enable restore
 
@@ -119,13 +115,13 @@ HomeScale uses Backblaze B2 via its S3-compatible API. Each app gets its own pre
 <RESTIC_REPOSITORY>/<cluster>/<app>
 ```
 
-where `RESTIC_REPOSITORY` is the shared base URL stored in Infisical at `/k8s/volsync/RESTIC_REPOSITORY`. Terraform derives per-app repository paths automatically — no manual path configuration is needed when adding a new app.
+`RESTIC_REPOSITORY` is the shared base URL stored in Infisical at `/k8s/volsync`; the `/<cluster>/<app>` suffix is appended by each app's Helm chart at template time (via `managedKubeSecretReferences[].template.data`), not by Terraform — see [VolSync secrets](secrets.md#volsync-secrets).
 
-Credentials are stored in Infisical at `/k8s/volsync/` and synced per-app to `/k8s/volsync/<cluster>/<app>/`:
+Credentials are stored in Infisical at `/k8s/volsync` and read directly (via `includeAllSecrets: true`) by every app's `InfisicalSecret` CR:
 
 | Secret | Description |
 |---|---|
-| `RESTIC_REPOSITORY` | Full B2 S3-compatible URL + `/<cluster>/<app>` suffix |
+| `RESTIC_REPOSITORY` | Base B2 S3-compatible URL, without a per-app suffix |
 | `RESTIC_PASSWORD` | Shared restic encryption passphrase |
 | `AWS_ACCESS_KEY_ID` | Backblaze B2 application key ID |
 | `AWS_SECRET_ACCESS_KEY` | Backblaze B2 application key |

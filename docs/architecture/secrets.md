@@ -22,22 +22,19 @@ The Infisical operator watches `InfisicalSecret` CRs and keeps the corresponding
 
 ## Secret path convention
 
-Secrets in Infisical follow a consistent path structure:
+Most apps' secrets live at a simple per-app path, with an optional subpath for a specific secret within that app:
 
 ```
-/k8s/<purpose>/<cluster-name>/<app>
+/k8s/<app>[/<subpath>]
 ```
 
-| Segment | Example | Notes |
-|---------|---------|-------|
-| `/k8s/` | — | Prefix for all secrets synced to Kubernetes |
-| `<purpose>` | `volsync`, `app` | Logical category |
-| `<cluster-name>` | `<region>-prod`, `mgmt` | Cluster the secret is used on |
-| `<app>` | `home-assistant` | App or component name |
+Examples (all real, from `apps/*/templates/secret.yaml`):
+- `/k8s/omni` — the omni app's secrets
+- `/k8s/argocd` — ArgoCD's SAML and notifications secrets
+- `/k8s/argocd/deploy-key` — ArgoCD's Git deploy key, split out as its own path
+- `/k8s/metrics/grafana`, `/k8s/metrics/alertmanager` — per-component secrets under the `metrics` app
 
-Examples:
-- `/k8s/volsync/<cluster>/home-assistant` — VolSync restic credentials for the home-assistant app on a given cluster
-- `/k8s/app/mgmt/argocd` — ArgoCD-specific credentials on the management cluster
+VolSync is the one exception: every app's restic credentials are read from a single shared path, `/k8s/volsync` (not a per-app or per-cluster path) — see [VolSync secrets](#volsync-secrets) below.
 
 ## InfisicalSecret CR
 
@@ -47,26 +44,28 @@ Each app that needs secrets includes a `templates/secret.yaml` in its Helm chart
 apiVersion: secrets.infisical.com/v1alpha1
 kind: InfisicalSecret
 metadata:
-  name: my-app
+  name: k8s-my-app
   namespace: my-app
 spec:
-  hostAPI: https://app.infisical.com/api
-  resyncInterval: 60  # seconds
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       secretsScope:
-        projectSlug: homescale
-        envSlug: prod
-        secretsPath: /k8s/app/{{ .Values.cluster.name }}/my-app
+        projectSlug: "homescale"
+        envSlug: "prod"
+        secretsPath: "/k8s/my-app"
       credentialsRef:
-        secretName: infisical-universal-auth
+        secretName: infisical-operator-auth
         secretNamespace: infisical
-  managedSecretReference:
-    secretName: my-app-secrets
-    secretNamespace: my-app
+  managedKubeSecretReferences:
+    - secretName: my-app-secrets
+      secretNamespace: my-app
+      creationPolicy: Owner
+      secretType: Opaque
 ```
 
-The `credentialsRef` points at a bootstrap secret (`infisical-universal-auth`) that is created manually once per cluster during initial setup. All other secrets flow from there.
+`managedKubeSecretReferences` is a list — an app can sync multiple Kubernetes Secrets from different Infisical subpaths in one CR (see `apps/argocd/templates/secret.yaml` for an app with two). The `credentialsRef` points at `infisical-operator-auth`, a bootstrap secret created manually once per cluster during initial setup. All other secrets flow from there.
 
 See the [Infisical Kubernetes operator docs](https://infisical.com/docs/integrations/platforms/kubernetes) for full CR reference.
 
@@ -80,19 +79,36 @@ If the app doesn't have an `InfisicalSecret` CR yet, add `templates/secret.yaml`
 
 ## VolSync secrets
 
-VolSync restic credentials are a special case. Each app that uses VolSync needs a secret at:
+VolSync restic credentials are a special case: every app reads from the same shared Infisical path, `/k8s/volsync`, rather than a per-app path:
 
 ```
-/k8s/volsync/<cluster-name>/<app>
+/k8s/volsync
 ```
 
 containing:
 
 | Key | Value |
 |-----|-------|
-| `RESTIC_REPOSITORY` | Restic repo URL (e.g. `s3:https://…/bucket/app`) |
-| `RESTIC_PASSWORD` | Restic encryption passphrase |
+| `RESTIC_REPOSITORY` | Base restic repo URL (e.g. `s3:https://…/bucket`), *without* a per-app suffix |
+| `RESTIC_PASSWORD` | Restic encryption passphrase, shared across all apps |
 | `AWS_ACCESS_KEY_ID` | S3 access key (if using S3-compatible storage) |
 | `AWS_SECRET_ACCESS_KEY` | S3 secret key |
 
-The `volsync.yaml` template in the app's Helm chart creates the `InfisicalSecret` CR that syncs this into a Secret named `<app>-volsync-repo`.
+The app's `volsync.yaml` template creates an `InfisicalSecret` CR that pulls `includeAllSecrets: true` from `/k8s/volsync`, then overrides just `RESTIC_REPOSITORY` in its `template.data` to append `/<cluster>/<app>` at render time — so the actual per-app repository path is computed in the Helm template, not stored in Infisical:
+
+```yaml
+managedKubeSecretReferences:
+  - secretName: my-app-volsync-repo
+    secretNamespace: my-app
+    creationPolicy: Owner
+    secretType: Opaque
+    template:
+      includeAllSecrets: true
+      data:
+        RESTIC_REPOSITORY: "{{ .RESTIC_REPOSITORY.Value }}/{{ .Values.cluster.name }}/my-app"
+```
+
+See `apps/home-assistant/templates/secret.yaml` or `apps/omni/templates/secret.yaml` for real examples. The resulting Secret is named `<app>-volsync-repo`.
+
+!!! note "Terraform also provisions a per-app Infisical folder that goes unused"
+    `infra/terraform/volsync.tf` creates a folder at `/k8s/volsync/<cluster>/<app>/` with reference-expression secrets deriving from the shared base. No shipped app's `InfisicalSecret` CR actually points at that path today — they all read `/k8s/volsync` directly and do their own suffixing as shown above. Worth knowing if you're investigating why that per-app folder looks empty or unreferenced.

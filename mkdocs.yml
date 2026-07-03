@@ -35,6 +35,7 @@ nav:
   - Operations:
       - Deploying an App: operations/deploying-an-app.md
       - Registering Machines: operations/registering-machines.md
+      - hsctl: operations/hsctl.md
   - Runbooks:
       - Overview: runbooks/index.md
       - Omni:

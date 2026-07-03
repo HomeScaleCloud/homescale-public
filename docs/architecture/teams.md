@@ -32,7 +32,7 @@ CODEOWNERS is configured in `.github/CODEOWNERS`. All paths default to Infrastru
 | App / Path | What it does |
 |------------|-------------|
 | `argocd` | Continuous delivery engine |
-| `.github/workflows/` | CI/CD pipelines (scan, build, deploy) |
+| `.github/` | CI/CD pipelines (scan, build, deploy) and repo automation (CODEOWNERS owns the whole directory, not just `workflows/`) |
 
 ### Networking & ingress
 
@@ -84,8 +84,14 @@ Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS conf
 |--------|----------------|
 | `infra/terraform/modules/cloudflare/` | Cloudflare DNS records and tunnels |
 | `infra/terraform/modules/netbird/` | NetBird mesh, groups, DNS, and access policies (sourced from `app.yaml` `netbird:` blocks) |
-| `infra/terraform/modules/mgmt_cluster/` | DigitalOcean mgmt cluster (DOKS) — co-owned with Security Platforms for cloud security review |
+| `infra/terraform/modules/mgmt_cluster/` | Vultr mgmt cluster (VKE) — co-owned with Security Platforms for cloud security review |
 | `infra/terraform/modules/region/` | Regional bare-metal and cloud resources — co-owned with Security Platforms for cloud security review |
+
+### App catalog machinery
+
+| Path | What it does |
+|------|-------------|
+| `apps/Chart.yaml`, `apps/values.yaml`, `apps/templates/` | The Helm chart that reads every `apps/*/app.yaml` and generates one ArgoCD `Application` per enabled app per cluster |
 
 ---
 
@@ -113,7 +119,7 @@ Security Platforms is responsible for the security posture of all public cloud a
 
 | Module | What it manages |
 |--------|----------------|
-| `infra/terraform/modules/mgmt_cluster/` | DigitalOcean mgmt cluster (DOKS) — co-owned with Infrastructure Platforms |
+| `infra/terraform/modules/mgmt_cluster/` | Vultr mgmt cluster (VKE) — co-owned with Infrastructure Platforms |
 | `infra/terraform/modules/region/` | Regional cloud/bare-metal resources — co-owned with Infrastructure Platforms |
 
 ### Infrastructure (Terraform)

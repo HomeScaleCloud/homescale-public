@@ -20,7 +20,7 @@ PR merged to main
               │
               ├─► terraform apply ── Cloudflare DNS, NetBird policies/groups,
               │                      Infisical project structure, VolSync secret paths,
-              │                      DigitalOcean (mgmt cluster)
+              │                      Vultr (mgmt cluster)
               │
               └─► omni sync ──────── cluster.yaml → Omni (Talos node config,
                                      k8s version, machine assignments)
@@ -125,8 +125,8 @@ See [Gateway clusters](networking.md#gateway-clusters) for how gateway clusters 
 | -40 | `cilium` | CNI must be ready before any other pod can schedule |
 | -35 | `infisical`, `multus` | Secrets operator must be ready so other apps can pull secrets; Multus for multi-homed pods |
 | -30 | `cert-manager`, `argocd`, `rbac` | TLS, GitOps and access control |
-| -25 | `generic-device-plugin-tun` | Node resource registration before consumers |
-| -20 | `netbird`, `cert-manager-crs`, `spegel` | Mesh access and certificate issuers before services need them |
+| -25 | `generic-device-plugin-tun`, `node-inotify-limits` | Node resource registration and sysctl tuning before consumers |
+| -20 | `netbird`, `cert-manager-crs`, `spegel`, `external-dns-crs` | Mesh access, certificate issuers, and DNS CRDs before services need them |
 | -10 | `external-dns`, `netbird-crs`, `kubelet-serving-cert-approver` | DNS registration and network routing before apps |
 | -5 | `volsync` | Backup operator ready before app PVCs need it |
 | 0 | everything else | Default wave |
@@ -153,16 +153,16 @@ Runs on every PR and push:
 
 ### `deploy` — infrastructure and cluster sync/bootstrap
 
-Runs on every PR and push to `main` (after `scan` and `build` pass). CI connects to internal infrastructure by joining the NetBird mesh with an ephemeral setup key that is revoked at the end of the run. It has three sequential jobs:
+Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has three sequential jobs — `terraform` → `omni` → `ansible` (main only) — and each job independently joins the NetBird mesh with its own ephemeral setup key, revoked when that job ends (not one shared connection for the whole run).
 
 #### 1. `terraform`
 
 - **On PR**: runs `terraform plan` and posts the plan diff as a PR comment
-- **On merge to `main`**: runs `terraform apply` — manages Cloudflare DNS, DigitalOcean, Infisical project structure, NetBird policies and groups, VolSync secret paths, etc
+- **On merge to `main`**: runs `terraform apply` (gated by a GitHub Environment) — manages Cloudflare DNS, Vultr, Infisical project structure, NetBird policies and groups, VolSync secret paths, etc
 
 #### 2. `omni` (after terraform)
 
-Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files.
+Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files. First checks that Omni is reachable (`REDACTED/healthz`) — if it isn't, the plan/sync steps are skipped entirely rather than failing.
 
 - **On PR**: dry-runs each changed cluster template and machine class with `omnictl ... --dry-run`, posts results as PR comments
 - **On merge to `main`**: runs `omnictl cluster template sync` for all clusters and `omnictl apply` for all machine classes
@@ -174,7 +174,7 @@ Shared Talos patches from `infra/omni/patches/` are applied alongside each clust
 Runs two Ansible playbooks in sequence against the live clusters via NetBird:
 
 - **`bootstrap-mgmt.yml`** — bootstraps the `mgmt` cluster specifically (reads its kubeconfig from Infisical)
-- **`bootstrap-cluster.yml`** — ensures ArgoCD is bootstrapped on every cluster (idempotent)
+- **`bootstrap-cluster.yml`** — ensures every cluster has its `cluster-secrets`, `cilium`, and `argocd` roles applied (idempotent)
 
 ---
 
