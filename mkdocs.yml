@@ -59,6 +59,17 @@ nav:
           - NetBirdNetworkResourceNotReady: runbooks/netbird-networkresource-not-ready.md
           - NetBirdReconcileErrors: runbooks/netbird-reconcile-errors.md
           - NetBirdWorkqueueBacklog: runbooks/netbird-workqueue-backlog.md
+      - Longhorn:
+          - LonghornVolumeFaulted: runbooks/longhorn-volume-faulted.md
+          - LonghornVolumeDegraded: runbooks/longhorn-volume-degraded.md
+          - LonghornVolumeSpaceFilling: runbooks/longhorn-volume-space-filling.md
+          - LonghornDiskFailed: runbooks/longhorn-disk-failed.md
+          - LonghornDiskNotReady: runbooks/longhorn-disk-not-ready.md
+          - LonghornDiskStorageWarning: runbooks/longhorn-disk-storage-warning.md
+          - LonghornDiskStorageCritical: runbooks/longhorn-disk-storage-critical.md
+          - LonghornNodeDown: runbooks/longhorn-node-down.md
+          - LonghornNodeNotReady: runbooks/longhorn-node-not-ready.md
+          - LonghornNodeStorageWarning: runbooks/longhorn-node-storage-warning.md
 
 plugins:
   - search

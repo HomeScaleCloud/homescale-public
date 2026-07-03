@@ -134,7 +134,7 @@ See [Gateway clusters](networking.md#gateway-clusters) for how gateway clusters 
 
 ## CI/CD pipeline
 
-Three reusable workflows are called from `.github/workflows/ci.yaml`:
+Four reusable workflows are called from `.github/workflows/ci.yaml`: `scan`, `build`, `deploy`, and `mirror` (mirrors the repo to a public read-only remote on push; not covered further here).
 
 ### `scan` — security and lint
 
@@ -142,15 +142,13 @@ Runs on every PR and push:
 
 - [`pre-commit`](https://pre-commit.com/) — YAML lint, trailing whitespace, detect-secrets, Helm lint
 - PR title validation against [Conventional Commits](https://www.conventionalcommits.org/) (enforced by a regex check; only runs on PRs)
-- [CodeQL](https://codeql.github.com/) — static analysis of GitHub Actions workflow files
-- [Trivy](https://trivy.dev/) — config scan for misconfigurations in Kubernetes manifests (results uploaded to GitHub Security)
+- [Trivy](https://trivy.dev/) — config scan for misconfigurations in Kubernetes manifests (table output in the job log; CRITICAL/HIGH findings fail the job)
 
 ### `build` — Docker images and docs
 
 - Detects which `apps/*/` directories changed (on PRs); builds all on push to `main`
 - Builds the `Dockerfile` if present, tags with both `<git-sha>` and `latest`, pushes to `ghcr.io/homescalecloud/<name>`
 - Runs a Trivy vulnerability scan on each built image (CRITICAL/HIGH, blocks on failure)
-- Lints all Helm charts under `apps/`
 - **Deploys this documentation site** to GitHub Pages (`mkdocs gh-deploy`) on every push to `main`
 
 ### `deploy` — infrastructure and cluster sync/bootstrap
@@ -173,8 +171,9 @@ Shared Talos patches from `infra/omni/patches/` are applied alongside each clust
 
 #### 3. `ansible` (after omni, main only)
 
-Runs an Ansible playbook against the live clusters via NetBird:
+Runs two Ansible playbooks in sequence against the live clusters via NetBird:
 
+- **`bootstrap-mgmt.yml`** — bootstraps the `mgmt` cluster specifically (reads its kubeconfig from Infisical)
 - **`bootstrap-cluster.yml`** — ensures ArgoCD is bootstrapped on every cluster (idempotent)
 
 ---

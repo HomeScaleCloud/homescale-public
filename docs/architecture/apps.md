@@ -215,7 +215,7 @@ Unlike the rest of `exposePublic:`/`netbird:`, the flattened list of FQDNs from 
 .Values.homescale.netbirdCnameFqdns   # list of strings, from this app's netbird.cname[].fqdn
 ```
 
-Both are always present (as empty lists if the app has no entries). A chart template consuming them should still guard against being rendered standalone (e.g. via `helm template apps/<name> apps/<name>/`, which doesn't go through `apps/templates/applications.yaml` and so never sets `.Values.homescale`):
+Both are always present (as empty lists if the app has no entries). A chart template consuming them should still guard against being rendered standalone (e.g. via `helm template <name> apps/<name>/`, which doesn't go through `apps/templates/applications.yaml` and so never sets `.Values.homescale`):
 
 ```yaml
 {{- $homescale := default (dict) .Values.homescale }}
@@ -288,7 +288,7 @@ Deployment overrides for `my-app` go in `clusters/<cluster>/apps.yaml` instead â
 
 ```bash
 # Render a specific app chart
-helm template apps/<app-name> apps/<app-name>/
+helm template <app-name> apps/<app-name>/
 
 # Render the full app catalog for a cluster
 helm template apps -f apps/values.yaml --set cluster.name=mgmt

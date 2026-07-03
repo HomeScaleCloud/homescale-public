@@ -10,7 +10,7 @@ A GitOps monorepo for **HomeScale** — private Kubernetes clusters for personal
 
 The `docs/` directory is published to GitHub Pages via MkDocs Material to https://REDACTED. **Update the docs whenever you make a change that affects user-facing behavior**, including:
 
-- Adding, removing, or changing any field in `app.yaml` (reference lives in `docs/operations/apps.md`)
+- Adding, removing, or changing any field in `app.yaml` (reference lives in `docs/architecture/apps.md`)
 - Adding a new app or cluster
 - Changing networking, secrets, or backup behavior
 - Adding new `hsctl` commands or subcommands
@@ -38,13 +38,13 @@ terraform -chdir=infra/terraform fmt
 pre-commit run --all-files
 
 # Helm template render (validate a specific app chart)
-helm template apps/<app-name> apps/<app-name>/
+helm template <app-name> apps/<app-name>/
 
 # Render the top-level app catalog (requires cluster.name)
 helm template apps -f apps/values.yaml --set cluster.name=mgmt
 ```
 
-Pre-commit runs automatically on commit. CI runs pre-commit, yamllint, detect-secrets, terraform fmt, CodeQL, and Trivy on every PR.
+Pre-commit runs automatically on commit (includes yamllint and detect-secrets among its hooks). CI runs pre-commit and a Trivy config scan on every PR.
 
 ## Commit Convention
 
