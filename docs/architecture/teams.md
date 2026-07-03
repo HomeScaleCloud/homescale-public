@@ -115,7 +115,7 @@ Entra ID is HomeScale's identity provider. Security Platforms owns the Entra ID 
 
 ### Public cloud security
 
-Security Platforms is responsible for the security posture of all public cloud and compute deployments (currently DigitalOcean; Azure if/when added). This means Security Platforms must review any Terraform change that provisions, modifies, or destroys cloud compute, networking, or IAM resources.
+Security Platforms is responsible for the security posture of all public cloud and compute deployments (currently Vultr; Azure if/when added). This means Security Platforms must review any Terraform change that provisions, modifies, or destroys cloud compute, networking, or IAM resources.
 
 | Module | What it manages |
 |--------|----------------|

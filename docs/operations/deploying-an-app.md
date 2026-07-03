@@ -77,30 +77,32 @@ For a chart with hand-written templates, omit `dependencies`.
 
 ### 4. Set up secrets (if needed)
 
-1. Add the secret keys and values to Infisical at `/k8s/app/<cluster-name>/my-app`
+1. Add the secret keys and values to Infisical at `/k8s/my-app`
 2. Add `templates/secret.yaml` to the chart:
 
 ```yaml
 apiVersion: secrets.infisical.com/v1alpha1
 kind: InfisicalSecret
 metadata:
-  name: my-app
+  name: k8s-my-app
   namespace: my-app
 spec:
-  hostAPI: https://app.infisical.com/api
-  resyncInterval: 60
+  syncConfig:
+    resyncInterval: 60s
   authentication:
     universalAuth:
       secretsScope:
         projectSlug: homescale
         envSlug: prod
-        secretsPath: /k8s/app/{{ "{{" }} .Values.cluster.name {{ "}}" }}/my-app
+        secretsPath: "/k8s/my-app"
       credentialsRef:
-        secretName: infisical-universal-auth
+        secretName: infisical-operator-auth
         secretNamespace: infisical
-  managedSecretReference:
-    secretName: my-app-secrets
-    secretNamespace: my-app
+  managedKubeSecretReferences:
+    - secretName: my-app-secrets
+      secretNamespace: my-app
+      creationPolicy: Owner
+      secretType: Opaque
 ```
 
 See [Secrets management](../architecture/secrets.md) for full details.
@@ -249,7 +251,7 @@ values:
 
 ### Using cluster name in values
 
-The `{{ .Values.cluster.name }}` and `{{ .Values.cluster.region }}` Go template expressions are available in `app.yaml` values:
+The `{{ .Values.cluster.name }}` Go template expression is available in `app.yaml` values:
 
 ```yaml
 values:
@@ -258,7 +260,7 @@ values:
     url: "https://myapp.{{ .Values.cluster.name }}REDACTED"
 ```
 
-These are rendered by the `apps/` chart at sync time.
+These are rendered by the `apps/` chart at sync time. `.Values.cluster.region` is also plumbed through from `apps/values.yaml`, but no shipped app reads it yet.
 
 ### Server-side apply
 

@@ -48,7 +48,7 @@ See [Deployment overrides](../operations/deploying-an-app.md#deployment-override
 | `releaseName` | string | app directory name | Helm release name |
 | `repoURL` | string | global `repoURL` | Git repo URL; override to point at an external chart repo |
 | `targetRevision` | string | global `targetRevision` (`main`) | Git ref (branch, tag, or SHA) |
-| `values` | object | `{}` | Helm values passed to the chart. The whole object is rendered through Helm's `tpl`, so any Go template expression resolvable against the chart's root context works — not just `{{ .Values.cluster.name }}` / `{{ .Values.cluster.region }}`, though those are the common case. `annotations` and `ignoreDifferences` get the same `tpl` treatment |
+| `values` | object | `{}` | Helm values passed to the chart. The whole object is rendered through Helm's `tpl`, so any Go template expression resolvable against the chart's root context works — not just `{{ .Values.cluster.name }}`, though that's the common case (`.Values.cluster.region` is also plumbed through from `apps/values.yaml` but isn't read by any shipped app today). `annotations` and `ignoreDifferences` get the same `tpl` treatment |
 | `valueFiles` | list of strings | — | Additional Helm value files to load (paths relative to the chart) |
 | `extraSources` | list of ArgoCD sources | — | Adds extra source entries to the ArgoCD Application, switching it to multi-source mode. The app's own chart is always the first source |
 
