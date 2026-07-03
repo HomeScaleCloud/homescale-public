@@ -10,6 +10,9 @@ data:
       snmpv1_public:
         community: {{ .Values.snmpExporter.community }}
         version: 1
+      snmpv2_unifi:
+        community: {{ .Values.snmpExporter.unifiCommunity }}
+        version: 2
 
     modules:
       apc_rpdu:
@@ -102,5 +105,164 @@ data:
                 labelname: outlet_name
                 oid: 1.3.6.1.4.1.318.1.1.12.3.3.1.1.2
                 type: DisplayString
+
+      # Generic IF-MIB/MIB-II module for UniFi network gear (gateway, switch, AP).
+      # Uses standard IETF OIDs (RFC 1213 / RFC 2863) plus UCD-SNMP-MIB/HOST-RESOURCES-MIB
+      # where the device's net-snmp agent exposes them, rather than any UniFi-private
+      # MIB, so it applies to all three device roles unmodified. Requires SNMPv2c
+      # (snmpv2_unifi auth) because ifHCIn/OutOctets are Counter64, which SNMPv1
+      # cannot encode. All OIDs below confirmed via snmpwalk against the actual
+      # devices (UDM-Pro, US-24-G1, U6-Enterprise) on 2026-07-03. Memory/load/CPU
+      # coverage differs by device firmware — see help text per metric; missing
+      # OIDs on a given device simply produce no series for that metric, not an error.
+      if_mib:
+        walk:
+          - 1.3.6.1.2.1.1.3          # sysUpTime
+          - 1.3.6.1.2.1.2.2.1.7      # ifAdminStatus
+          - 1.3.6.1.2.1.2.2.1.8      # ifOperStatus
+          - 1.3.6.1.2.1.2.2.1.13     # ifInDiscards
+          - 1.3.6.1.2.1.2.2.1.14     # ifInErrors
+          - 1.3.6.1.2.1.2.2.1.19     # ifOutDiscards
+          - 1.3.6.1.2.1.2.2.1.20     # ifOutErrors
+          - 1.3.6.1.2.1.31.1.1.1.1   # ifName
+          - 1.3.6.1.2.1.31.1.1.1.6   # ifHCInOctets
+          - 1.3.6.1.2.1.31.1.1.1.10  # ifHCOutOctets
+          - 1.3.6.1.2.1.31.1.1.1.15  # ifHighSpeed (Mbps)
+          - 1.3.6.1.2.1.31.1.1.1.18  # ifAlias
+          - 1.3.6.1.4.1.2021.4.5     # memTotalReal (UCD-SNMP-MIB; UDM, UAP only)
+          - 1.3.6.1.4.1.2021.4.6     # memAvailReal (UCD-SNMP-MIB; UDM, UAP only)
+          - 1.3.6.1.4.1.2021.10.1.2  # laNames (UCD-SNMP-MIB; UDM, UAP only)
+          - 1.3.6.1.4.1.2021.10.1.5  # laLoadInt (UCD-SNMP-MIB; UDM, UAP only)
+          - 1.3.6.1.2.1.25.3.3.1.2   # hrProcessorLoad (HOST-RESOURCES-MIB; UAP only)
+        metrics:
+          - name: unifi_uptime_seconds
+            oid: 1.3.6.1.2.1.1.3
+            type: gauge
+            help: "Device uptime in seconds (sysUpTime converted from centiseconds)"
+            scale: 0.01
+
+          - name: unifi_if_admin_status
+            oid: 1.3.6.1.2.1.2.2.1.7
+            type: gauge
+            help: "Interface administrative status: 1=up 2=down 3=testing"
+            indexes:
+              - labelname: ifIndex
+                type: gauge
+            lookups: &if_lookups
+              - labels: [ifIndex]
+                labelname: if_name
+                oid: 1.3.6.1.2.1.31.1.1.1.1
+                type: DisplayString
+              - labels: [ifIndex]
+                labelname: if_alias
+                oid: 1.3.6.1.2.1.31.1.1.1.18
+                type: DisplayString
+
+          - name: unifi_if_oper_status
+            oid: 1.3.6.1.2.1.2.2.1.8
+            type: gauge
+            help: "Interface operational status: 1=up 2=down 3=testing 4=unknown 5=dormant 6=notPresent 7=lowerLayerDown"
+            indexes:
+              - labelname: ifIndex
+                type: gauge
+            lookups: *if_lookups
+
+          - name: unifi_if_speed_bps
+            oid: 1.3.6.1.2.1.31.1.1.1.15
+            type: gauge
+            help: "Interface link speed in bits/sec (ifHighSpeed, reported in Mbps, scaled to bps)"
+            scale: 1000000
+            indexes:
+              - labelname: ifIndex
+                type: gauge
+            lookups: *if_lookups
+
+          - name: unifi_if_in_octets_total
+            oid: 1.3.6.1.2.1.31.1.1.1.6
+            type: counter
+            help: "Interface inbound octets (ifHCInOctets, 64-bit)"
+            indexes:
+              - labelname: ifIndex
+                type: gauge
+            lookups: *if_lookups
+
+          - name: unifi_if_out_octets_total
+            oid: 1.3.6.1.2.1.31.1.1.1.10
+            type: counter
+            help: "Interface outbound octets (ifHCOutOctets, 64-bit)"
+            indexes:
+              - labelname: ifIndex
+                type: gauge
+            lookups: *if_lookups
+
+          - name: unifi_if_in_errors_total
+            oid: 1.3.6.1.2.1.2.2.1.14
+            type: counter
+            help: "Interface inbound error packets"
+            indexes:
+              - labelname: ifIndex
+                type: gauge
+            lookups: *if_lookups
+
+          - name: unifi_if_out_errors_total
+            oid: 1.3.6.1.2.1.2.2.1.20
+            type: counter
+            help: "Interface outbound error packets"
+            indexes:
+              - labelname: ifIndex
+                type: gauge
+            lookups: *if_lookups
+
+          - name: unifi_if_in_discards_total
+            oid: 1.3.6.1.2.1.2.2.1.13
+            type: counter
+            help: "Interface inbound discarded packets"
+            indexes:
+              - labelname: ifIndex
+                type: gauge
+            lookups: *if_lookups
+
+          - name: unifi_if_out_discards_total
+            oid: 1.3.6.1.2.1.2.2.1.19
+            type: counter
+            help: "Interface outbound discarded packets"
+            indexes:
+              - labelname: ifIndex
+                type: gauge
+            lookups: *if_lookups
+
+          - name: unifi_memory_total_bytes
+            oid: 1.3.6.1.4.1.2021.4.5
+            type: gauge
+            help: "Total real memory in bytes (UCD-SNMP-MIB memTotalReal, reported in kB, scaled to bytes). Present on UDM and UAP; not exposed by the USW switch firmware."
+            scale: 1024
+
+          - name: unifi_memory_available_bytes
+            oid: 1.3.6.1.4.1.2021.4.6
+            type: gauge
+            help: "Available real memory in bytes (UCD-SNMP-MIB memAvailReal, reported in kB, scaled to bytes). Present on UDM and UAP; not exposed by the USW switch firmware."
+            scale: 1024
+
+          - name: unifi_load_average
+            oid: 1.3.6.1.4.1.2021.10.1.5
+            type: gauge
+            help: "System load average (UCD-SNMP-MIB laLoadInt, integer x100, scaled back to a decimal). Present on UDM and UAP; not exposed by the USW switch firmware."
+            scale: 0.01
+            indexes:
+              - labelname: la_index
+                type: gauge
+            lookups:
+              - labels: [la_index]
+                labelname: period
+                oid: 1.3.6.1.4.1.2021.10.1.2
+                type: DisplayString
+
+          - name: unifi_cpu_load_percent
+            oid: 1.3.6.1.2.1.25.3.3.1.2
+            type: gauge
+            help: "Per-core CPU load percent (HOST-RESOURCES-MIB hrProcessorLoad). Present on UAP only; not exposed by UDM or USW firmware."
+            indexes:
+              - labelname: cpu_index
+                type: gauge
 
 {{- end }}
