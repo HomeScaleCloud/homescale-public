@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app: snmp-exporter
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/snmp-exporter-configmap.yaml") . | sha256sum }}
     spec:
       securityContext:
         runAsNonRoot: true
