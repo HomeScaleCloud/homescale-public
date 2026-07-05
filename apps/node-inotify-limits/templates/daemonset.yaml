@@ -18,7 +18,7 @@ spec:
         - operator: Exists
       initContainers:
         - name: sysctl
-          image: alpine:3.23.3
+          image: alpine:3.24.1
           command:
             - sysctl
             - -w
@@ -28,7 +28,7 @@ spec:
             privileged: true
       containers:
         - name: pause
-          image: alpine:3.23.3
+          image: alpine:3.24.1
           command: ["sleep", "infinity"]
           resources:
             requests:
