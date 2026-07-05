@@ -32,7 +32,7 @@ spec:
               values:
                 zigbee2mqtt:
                   config:
-                    serialPort: "tcp://10.1.241.238:6638"
+                    serialPort: "tcp://10.1.246.11:6638"
             homepage:
               deploy: true
             longhorn:
