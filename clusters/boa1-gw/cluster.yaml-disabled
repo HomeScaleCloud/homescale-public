@@ -1,0 +1,40 @@
+# kind: Cluster
+# name: boa1-gw
+# kubernetes:
+#   version: v1.36.2
+# talos:
+#   version: v1.13.5
+# features:
+#   useEmbeddedDiscoveryService: true
+#   backupConfiguration:
+#     interval: 1h
+# patches:
+#   - file: patches/base.yaml
+#   - file: patches/allow-scheduling-on-control-plane.yaml
+#   - file: patches/kubelet-certs.yaml
+# ---
+# kind: ControlPlane
+# machines:
+#   - 11a9fe00-3f45-11ed-8000-3cecefaab010
+# patches:
+#   - name: install-disk
+#     inline:
+#       machine:
+#         install:
+#           diskSelector:
+#             model: 'INTEL SSDPEKNW512G8H'
+#   - name: nics
+#     inline:
+#       machine:
+#         network:
+#           interfaces:
+#             - interface: bond0
+#               dhcp: true
+#               bond:
+#                 mode: 802.3ad
+#                 lacpRate: fast
+#                 xmitHashPolicy: layer3+4
+#                 miimon: 100
+#                 interfaces:
+#                   - eno1
+#                   - eno2

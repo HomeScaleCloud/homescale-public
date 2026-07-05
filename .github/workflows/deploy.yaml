@@ -211,14 +211,28 @@ jobs:
             git fetch --no-tags origin "${{ github.base_ref }}" --depth=1
             range="origin/${{ github.base_ref }}...${{ github.sha }}"
             clusters=$(
-              git diff --name-only "$range" \
+              git diff --name-only --diff-filter=d "$range" \
                 | { grep -E '^clusters/[^/]+/cluster\.yaml$' || true; } \
                 | cut -d/ -f2 \
                 | sort -u \
                 | jq -Rsc 'split("\n") | map(select(length > 0))'
             )
             machineclasses=$(
-              git diff --name-only "$range" \
+              git diff --name-only --diff-filter=d "$range" \
+                | { grep -E '^infra/omni/machineclasses/[^/]+\.yaml$' || true; } \
+                | sed 's|.*/||; s|\.yaml$||' \
+                | sort -u \
+                | jq -Rsc 'split("\n") | map(select(length > 0))'
+            )
+            deleted_clusters=$(
+              git diff --name-only --diff-filter=D "$range" \
+                | { grep -E '^clusters/[^/]+/cluster\.yaml$' || true; } \
+                | cut -d/ -f2 \
+                | sort -u \
+                | jq -Rsc 'split("\n") | map(select(length > 0))'
+            )
+            deleted_machineclasses=$(
+              git diff --name-only --diff-filter=D "$range" \
                 | { grep -E '^infra/omni/machineclasses/[^/]+\.yaml$' || true; } \
                 | sed 's|.*/||; s|\.yaml$||' \
                 | sort -u \
@@ -237,6 +251,8 @@ jobs:
                 | sort -u \
                 | jq -Rsc 'split("\n") | map(select(length > 0))'
             )
+            deleted_clusters='[]'
+            deleted_machineclasses='[]'
           fi
           echo "clusters=${clusters}" >> "$GITHUB_OUTPUT"
           echo "CLUSTERS=${clusters}" >> "$GITHUB_ENV"
@@ -244,6 +260,10 @@ jobs:
           echo "machineclasses=${machineclasses}" >> "$GITHUB_OUTPUT"
           echo "MACHINECLASSES=${machineclasses}" >> "$GITHUB_ENV"
           echo "Machine classes detected: ${machineclasses}"
+          echo "deleted_clusters=${deleted_clusters}" >> "$GITHUB_OUTPUT"
+          echo "Deleted clusters detected: ${deleted_clusters}"
+          echo "deleted_machineclasses=${deleted_machineclasses}" >> "$GITHUB_OUTPUT"
+          echo "Deleted machine classes detected: ${deleted_machineclasses}"
 
       - name: Import Secrets
         if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
@@ -383,11 +403,13 @@ jobs:
           done
 
       - name: Post plan results as PR comments
-        if: always() && github.event_name == 'pull_request' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
+        if: always() && github.event_name == 'pull_request' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]' || steps.detect.outputs.deleted_clusters != '[]' || steps.detect.outputs.deleted_machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
           CLUSTERS: ${{ steps.detect.outputs.clusters }}
           MACHINECLASSES: ${{ steps.detect.outputs.machineclasses }}
+          DELETED_CLUSTERS: ${{ steps.detect.outputs.deleted_clusters }}
+          DELETED_MACHINECLASSES: ${{ steps.detect.outputs.deleted_machineclasses }}
         with:
           script: |
             const fs = require('fs');
@@ -452,6 +474,34 @@ jobs:
                 '```',
                 output || '(no output)',
                 '```',
+                '',
+                `> commit \`${{ github.sha }}\``,
+              ].join('\n');
+              await upsertComment(marker, body);
+            }
+
+            const deletedClusters = JSON.parse(process.env.DELETED_CLUSTERS);
+            for (const cluster of deletedClusters) {
+              const marker = `<!-- omni-cluster-sync-${cluster} -->`;
+              const body = [
+                marker,
+                `## 🗑️ Omni cluster template plan — \`${cluster}\` (removed)`,
+                '',
+                `\`clusters/${cluster}/cluster.yaml\` was removed in this PR, so no automated sync will run for it. If the cluster still exists in Omni, it must be torn down manually.`,
+                '',
+                `> commit \`${{ github.sha }}\``,
+              ].join('\n');
+              await upsertComment(marker, body);
+            }
+
+            const deletedMachineclasses = JSON.parse(process.env.DELETED_MACHINECLASSES);
+            for (const mc of deletedMachineclasses) {
+              const marker = `<!-- omni-machineclass-${mc} -->`;
+              const body = [
+                marker,
+                `## 🗑️ Omni machine class plan — \`${mc}\` (removed)`,
+                '',
+                `\`infra/omni/machineclasses/${mc}.yaml\` was removed in this PR, so no automated sync will run for it. Remove it manually in Omni if it still exists.`,
                 '',
                 `> commit \`${{ github.sha }}\``,
               ].join('\n');
