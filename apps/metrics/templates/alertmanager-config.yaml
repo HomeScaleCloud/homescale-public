@@ -13,7 +13,7 @@ spec:
     repeatInterval: 4h
     matchers:
       - name: alertname
-        value: "Watchdog"  # pipe-separate to exclude more: "Watchdog|InfoInhibitor|..."
+        value: "Watchdog|InfoInhibitor"  # pipe-separate to exclude more
         matchType: "!~"
   receivers:
     - name: infra-plat
