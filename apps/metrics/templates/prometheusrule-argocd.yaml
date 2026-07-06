@@ -1,0 +1,21 @@
+{{- if eq .Values.cluster.name "boa1-prod" }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: argocd-rules
+  namespace: metrics
+spec:
+  groups:
+    - name: argocd.rules
+      rules:
+        - alert: ArgoAppStuck
+          annotations:
+            summary: "ArgoCD app {{ "{{" }}$labels.name{{ "}}" }} is unhealthy on {{ "{{" }}$value{{ "}}" }} clusters."
+            description: "ArgoCD application {{ "{{" }}$labels.name{{ "}}" }} has been reporting a non-Healthy status on {{ "{{" }}$value{{ "}}" }} clusters for 15 minutes. The same app failing across multiple independent clusters points to an issue with the app itself (bad image, manifest, or chart change) rather than a single cluster's environment."
+            runbook_url: "https://REDACTED/runbooks/argo-app-stuck/"
+            dashboard_url: "https://REDACTED/d/qPkgGHg7k"
+          expr: count by (name) (argocd_app_info{namespace="argocd", health_status!="Healthy", health_status!=""}) >= 2
+          for: 15m
+          labels:
+            severity: warning
+{{- end }}

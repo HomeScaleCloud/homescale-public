@@ -11,6 +11,12 @@ Runbooks for alerts fired by Prometheus. Each alert links back to this page via 
 | [OmniNoMachines](omni-no-machines.md) | critical |
 | [OmniSecureBootDisabled](omni-secure-boot-disabled.md) | warning |
 
+## ArgoCD
+
+| Alert | Severity |
+|-------|----------|
+| [ArgoAppStuck](argo-app-stuck.md) | warning |
+
 ## PDU
 
 | Alert | Severity |

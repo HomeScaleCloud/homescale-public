@@ -43,6 +43,8 @@ nav:
           - OmniNoConnectedMachines: runbooks/omni-no-connected-machines.md
           - OmniNoMachines: runbooks/omni-no-machines.md
           - OmniSecureBootDisabled: runbooks/omni-secure-boot-disabled.md
+      - ArgoCD:
+          - ArgoAppStuck: runbooks/argo-app-stuck.md
       - PDU:
           - ApcPduOffline: runbooks/apc-pdu-offline.md
           - ApcPduVoltageWarning: runbooks/apc-pdu-voltage-warning.md
