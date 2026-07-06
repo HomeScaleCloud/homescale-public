@@ -56,8 +56,8 @@ values:
       availabilityEnabled: "true"
   matter:
     image:
-      repository: ghcr.io/matter-js/python-matter-server
-      tag: "stable"
+      repository: ghcr.io/matter-js/matterjs-server
+      tag: "1.1.7"
     pvc:
       size: 1Gi
   homebridge:
