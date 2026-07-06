@@ -61,75 +61,6 @@ templating:
       regex: ''
       skipUrlSync: false
       type: datasource
-    - auto: true
-      auto_count: 30
-      auto_min: 1m
-      current:
-        selected: false
-        text: auto
-        value: $__auto_interval_interval
-      description: null
-      error: null
-      hide: 0
-      label: null
-      name: interval
-      options:
-        - selected: true
-          text: auto
-          value: $__auto_interval_interval
-        - selected: false
-          text: 1m
-          value: 1m
-        - selected: false
-          text: 5m
-          value: 5m
-        - selected: false
-          text: 10m
-          value: 10m
-        - selected: false
-          text: 30m
-          value: 30m
-        - selected: false
-          text: 1h
-          value: 1h
-        - selected: false
-          text: 2h
-          value: 2h
-        - selected: false
-          text: 4h
-          value: 4h
-        - selected: false
-          text: 8h
-          value: 8h
-      query: 1m,5m,10m,30m,1h,2h,4h,8h
-      refresh: 2
-      skipUrlSync: false
-      type: interval
-    - allValue: ''
-      current:
-        selected: true
-        text: namespace
-        value: namespace
-      description: null
-      error: null
-      hide: 0
-      includeAll: false
-      label: null
-      multi: false
-      name: grouping
-      options:
-        - selected: true
-          text: namespace
-          value: namespace
-        - selected: false
-          text: name
-          value: name
-        - selected: false
-          text: project
-          value: project
-      query: namespace,name,project
-      skipUrlSync: false
-      type: custom
     - allValue: .*
       current: {}
       datasource: $datasource
@@ -399,7 +330,7 @@ panels:
       overrides: []
     pluginVersion: 8.0.0
     targets:
-      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Healthy"})
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Healthy"}) or vector(0)
         format: time_series
         instant: false
         intervalFactor: 1
@@ -446,7 +377,7 @@ panels:
       overrides: []
     pluginVersion: 8.0.0
     targets:
-      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Progressing"})
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Progressing"}) or vector(0)
         format: time_series
         instant: false
         intervalFactor: 1
@@ -493,7 +424,7 @@ panels:
       overrides: []
     pluginVersion: 8.0.0
     targets:
-      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Suspended"})
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Suspended"}) or vector(0)
         format: time_series
         instant: false
         intervalFactor: 1
@@ -540,7 +471,7 @@ panels:
       overrides: []
     pluginVersion: 8.0.0
     targets:
-      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Missing"})
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Missing"}) or vector(0)
         format: time_series
         instant: false
         intervalFactor: 1
@@ -587,7 +518,7 @@ panels:
       overrides: []
     pluginVersion: 8.0.0
     targets:
-      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Degraded"})
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Degraded"}) or vector(0)
         format: time_series
         instant: false
         intervalFactor: 1
@@ -634,7 +565,54 @@ panels:
       overrides: []
     pluginVersion: 8.0.0
     targets:
-      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Unknown"})
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Unknown"}) or vector(0)
+        format: time_series
+        instant: false
+        intervalFactor: 1
+        refId: A
+    cacheTimeout: null
+    interval: null
+    links: []
+    maxDataPoints: 100
+    timeFrom: null
+    timeShift: null
+  - type: stat
+    title: OutOfSync
+    id: 207
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 2
+      x: 20
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      text: {}
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: fixed
+          fixedColor: semi-dark-yellow
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",sync_status="OutOfSync"}) or vector(0)
         format: time_series
         instant: false
         intervalFactor: 1
@@ -786,19 +764,13 @@ panels:
             intervalFactor: 1
             legendFormat: '{{cluster}}/{{name}}: {{health_status}}'
             refId: A
-        aliasColors:
-          Degraded: semi-dark-red
-          Healthy: green
-          Missing: semi-dark-purple
-          Progressing: semi-dark-blue
-          Suspended: semi-dark-orange
-          Unknown: rgb(255, 255, 255)
+        aliasColors: {}
         bars: false
         cacheTimeout: null
         dashLength: 10
         dashes: false
         decimals: null
-        fill: 1
+        fill: 0
         fillGradient: 0
         hiddenSeries: false
         interval: ''
@@ -818,7 +790,7 @@ panels:
           total: false
           values: true
         lines: true
-        linewidth: 1
+        linewidth: 2
         links: []
         nullPointMode: null as zero
         paceLength: 10
@@ -826,7 +798,20 @@ panels:
         pointradius: 2
         points: false
         renderer: flot
-        seriesOverrides: []
+        seriesOverrides:
+          - alias: '/: Healthy$/'
+            color: green
+          - alias: '/: Progressing$/'
+            color: semi-dark-blue
+          - alias: '/: Suspended$/'
+            color: semi-dark-orange
+          - alias: '/: Missing$/'
+            color: semi-dark-purple
+          - alias: '/: Degraded$/'
+            color: semi-dark-red
+            linewidth: 3
+          - alias: '/: Unknown$/'
+            color: rgb(255, 255, 255)
         spaceLength: 10
         stack: false
         steppedLine: false
@@ -878,21 +863,13 @@ panels:
             intervalFactor: 1
             legendFormat: '{{cluster}}/{{name}}: {{sync_status}}'
             refId: A
-        aliasColors:
-          Degraded: semi-dark-red
-          Healthy: green
-          Missing: semi-dark-purple
-          OutOfSync: semi-dark-yellow
-          Progressing: semi-dark-blue
-          Suspended: semi-dark-orange
-          Synced: semi-dark-green
-          Unknown: rgb(255, 255, 255)
+        aliasColors: {}
         bars: false
         cacheTimeout: null
         dashLength: 10
         dashes: false
         decimals: null
-        fill: 1
+        fill: 0
         fillGradient: 0
         hiddenSeries: false
         interval: ''
@@ -912,7 +889,7 @@ panels:
           total: false
           values: true
         lines: true
-        linewidth: 1
+        linewidth: 2
         links: []
         nullPointMode: null as zero
         paceLength: 10
@@ -920,7 +897,14 @@ panels:
         pointradius: 2
         points: false
         renderer: flot
-        seriesOverrides: []
+        seriesOverrides:
+          - alias: '/: Synced$/'
+            color: semi-dark-green
+          - alias: '/: OutOfSync$/'
+            color: semi-dark-yellow
+            linewidth: 3
+          - alias: '/: Unknown$/'
+            color: rgb(255, 255, 255)
         spaceLength: 10
         stack: false
         steppedLine: false
@@ -980,10 +964,10 @@ panels:
         options:
           dataLinks: []
         targets:
-          - expr: sum(round(increase(argocd_app_sync_total{cluster=~"$cluster",namespace="argocd",dest_server=~"$server"}[$interval]))) by ($grouping)
+          - expr: sum(round(increase(argocd_app_sync_total{cluster=~"$cluster",namespace="argocd",dest_server=~"$server"}[$__rate_interval]))) by (name)
             format: time_series
             intervalFactor: 1
-            legendFormat: '{{$grouping}}'
+            legendFormat: '{{name}}'
             refId: A
         aliasColors: {}
         bars: false
@@ -1065,10 +1049,10 @@ panels:
         options:
           dataLinks: []
         targets:
-          - expr: sum(round(increase(argocd_app_sync_total{cluster=~"$cluster",namespace="argocd",phase=~"Error|Failed",dest_server=~"$server"}[$interval]))) by ($grouping, phase)
+          - expr: sum(round(increase(argocd_app_sync_total{cluster=~"$cluster",namespace="argocd",phase=~"Error|Failed",dest_server=~"$server"}[$__rate_interval]))) by (name, phase)
             format: time_series
             intervalFactor: 1
-            legendFormat: '{{phase}}: {{$grouping}}'
+            legendFormat: '{{phase}}: {{name}}'
             refId: A
         aliasColors: {}
         bars: false
@@ -1162,10 +1146,10 @@ panels:
         options:
           dataLinks: []
         targets:
-          - expr: sum(increase(argocd_app_reconcile_count{cluster=~"$cluster",namespace="argocd",dest_server=~"$server"}[$interval])) by ($grouping)
+          - expr: sum(increase(argocd_app_reconcile_count{cluster=~"$cluster",namespace="argocd",dest_server=~"$server"}[$__rate_interval])) by (name)
             format: time_series
             intervalFactor: 1
-            legendFormat: '{{$grouping}}'
+            legendFormat: '{{name}}'
             refId: A
         aliasColors: {}
         bars: false
@@ -1240,7 +1224,7 @@ panels:
           'y': 18
         options: {}
         targets:
-          - expr: sum(increase(argocd_app_reconcile_bucket{cluster=~"$cluster",namespace="argocd"}[$interval])) by (le)
+          - expr: sum(increase(argocd_app_reconcile_bucket{cluster=~"$cluster",namespace="argocd"}[$__rate_interval])) by (le)
             format: heatmap
             instant: false
             intervalFactor: 10
@@ -1297,7 +1281,7 @@ panels:
         options:
           dataLinks: []
         targets:
-          - expr: sum(increase(argocd_app_k8s_request_total{cluster=~"$cluster",namespace="argocd",server=~"$server"}[$interval])) by (verb, resource_kind)
+          - expr: sum(increase(argocd_app_k8s_request_total{cluster=~"$cluster",namespace="argocd",server=~"$server"}[$__rate_interval])) by (verb, resource_kind)
             format: time_series
             instant: false
             intervalFactor: 1
@@ -1964,7 +1948,7 @@ panels:
         options:
           dataLinks: []
         targets:
-          - expr: sum(increase(argocd_cluster_events_total{cluster=~"$cluster",namespace="argocd",server=~"$server"}[$interval])) by (server)
+          - expr: sum(increase(argocd_cluster_events_total{cluster=~"$cluster",namespace="argocd",server=~"$server"}[$__rate_interval])) by (server)
             format: time_series
             intervalFactor: 1
             legendFormat: '{{server}}'
@@ -2203,7 +2187,7 @@ panels:
           'y': 15
         options: {}
         targets:
-          - expr: sum(increase(argocd_git_request_duration_seconds_bucket{cluster=~"$cluster",namespace="argocd",request_type="fetch"}[$interval])) by (le)
+          - expr: sum(increase(argocd_git_request_duration_seconds_bucket{cluster=~"$cluster",namespace="argocd",request_type="fetch"}[$__rate_interval])) by (le)
             format: heatmap
             intervalFactor: 10
             legendFormat: '{{le}}'
@@ -2255,7 +2239,7 @@ panels:
           'y': 15
         options: {}
         targets:
-          - expr: sum(increase(argocd_git_request_duration_seconds_bucket{cluster=~"$cluster",namespace="argocd",request_type="ls-remote"}[$interval])) by (le)
+          - expr: sum(increase(argocd_git_request_duration_seconds_bucket{cluster=~"$cluster",namespace="argocd",request_type="ls-remote"}[$__rate_interval])) by (le)
             format: heatmap
             intervalFactor: 10
             legendFormat: '{{le}}'
@@ -2695,7 +2679,7 @@ panels:
           x: 0
           'y': 117
         targets:
-          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="application.ApplicationService"}[$interval])) by (grpc_code, grpc_method)
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="application.ApplicationService"}[$__rate_interval])) by (grpc_code, grpc_method)
             format: time_series
             intervalFactor: 1
             legendFormat: '{{grpc_code}},{{grpc_method}}'
@@ -2773,7 +2757,7 @@ panels:
           x: 12
           'y': 117
         targets:
-          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="cluster.ClusterService"}[$interval])) by (grpc_code, grpc_method)
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="cluster.ClusterService"}[$__rate_interval])) by (grpc_code, grpc_method)
             format: time_series
             intervalFactor: 1
             legendFormat: '{{grpc_code}},{{grpc_method}}'
@@ -2848,7 +2832,7 @@ panels:
           x: 0
           'y': 126
         targets:
-          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="project.ProjectService"}[$interval])) by (grpc_code, grpc_method)
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="project.ProjectService"}[$__rate_interval])) by (grpc_code, grpc_method)
             format: time_series
             intervalFactor: 1
             legendFormat: '{{grpc_code}},{{grpc_method}}'
@@ -2923,7 +2907,7 @@ panels:
           x: 12
           'y': 126
         targets:
-          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="repository.RepositoryService"}[$interval])) by (grpc_code, grpc_method)
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="repository.RepositoryService"}[$__rate_interval])) by (grpc_code, grpc_method)
             format: time_series
             intervalFactor: 1
             legendFormat: '{{grpc_code}},{{grpc_method}}'
@@ -3002,7 +2986,7 @@ panels:
           x: 0
           'y': 135
         targets:
-          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="session.SessionService"}[$interval])) by (grpc_code, grpc_method)
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="session.SessionService"}[$__rate_interval])) by (grpc_code, grpc_method)
             format: time_series
             intervalFactor: 1
             legendFormat: '{{grpc_code}},{{grpc_method}}'
@@ -3076,7 +3060,7 @@ panels:
           x: 12
           'y': 135
         targets:
-          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="version.VersionService"}[$interval])) by (grpc_code, grpc_method)
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="version.VersionService"}[$__rate_interval])) by (grpc_code, grpc_method)
             format: time_series
             intervalFactor: 1
             legendFormat: '{{grpc_code}},{{grpc_method}}'
@@ -3150,7 +3134,7 @@ panels:
           x: 0
           'y': 144
         targets:
-          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="account.AccountService"}[$interval])) by (grpc_code, grpc_method)
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="account.AccountService"}[$__rate_interval])) by (grpc_code, grpc_method)
             format: time_series
             intervalFactor: 1
             legendFormat: '{{grpc_code}},{{grpc_method}}'
@@ -3224,7 +3208,7 @@ panels:
           x: 12
           'y': 144
         targets:
-          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="settings.SettingsService"}[$interval])) by (grpc_code, grpc_method)
+          - expr: sum(increase(grpc_server_handled_total{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics",grpc_service="settings.SettingsService"}[$__rate_interval])) by (grpc_code, grpc_method)
             format: time_series
             intervalFactor: 1
             legendFormat: '{{grpc_code}},{{grpc_method}}'
@@ -3314,7 +3298,7 @@ panels:
         options:
           dataLinks: []
         targets:
-          - expr: sum(increase(argocd_redis_request_total{cluster=~"$cluster",namespace="argocd"}[$interval])) by (failed)
+          - expr: sum(increase(argocd_redis_request_total{cluster=~"$cluster",namespace="argocd"}[$__rate_interval])) by (failed)
             refId: A
         aliasColors: {}
         bars: false
