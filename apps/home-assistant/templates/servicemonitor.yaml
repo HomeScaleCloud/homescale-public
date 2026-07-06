@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: home-assistant
+  namespace: home-assistant
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: home-assistant
+  endpoints:
+    - port: https
+      scheme: https
+      path: /api/prometheus
+      interval: 60s
