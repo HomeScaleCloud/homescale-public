@@ -311,54 +311,6 @@ panels:
     links: []
     maxDataPoints: 100
   - type: stat
-    title: Clusters
-    id: 94
-    datasource: $datasource
-    gridPos:
-      h: 4
-      w: 3
-      x: 5
-      'y': 1
-    options:
-      colorMode: value
-      graphMode: area
-      justifyMode: auto
-      orientation: horizontal
-      reduceOptions:
-        calcs:
-          - lastNotNull
-        fields: ''
-        values: false
-      text: {}
-      textMode: auto
-    fieldConfig:
-      defaults:
-        color:
-          mode: thresholds
-        mappings: []
-        thresholds:
-          mode: absolute
-          steps:
-            - color: green
-              value: null
-            - color: red
-              value: 80
-        unit: none
-      overrides: []
-    pluginVersion: 8.0.0
-    targets:
-      - expr: count(count by (server) (argocd_cluster_info{cluster=~"$cluster",namespace="argocd"}))
-        format: time_series
-        instant: false
-        intervalFactor: 1
-        refId: A
-    cacheTimeout: null
-    interval: null
-    links: []
-    maxDataPoints: 100
-    timeFrom: null
-    timeShift: null
-  - type: stat
     title: Applications
     id: 75
     repeat: null
@@ -367,7 +319,7 @@ panels:
     gridPos:
       h: 4
       w: 3
-      x: 8
+      x: 5
       'y': 1
     options:
       colorMode: value
@@ -415,7 +367,7 @@ panels:
     gridPos:
       h: 4
       w: 3
-      x: 11
+      x: 8
       'y': 1
     options:
       colorMode: value
@@ -456,149 +408,6 @@ panels:
     maxDataPoints: 100
     timeFrom: null
     timeShift: null
-  - type: gauge
-    title: Operations
-    id: 100
-    repeatDirection: h
-    datasource: $datasource
-    gridPos:
-      h: 4
-      w: 3
-      x: 14
-      'y': 1
-    options:
-      orientation: horizontal
-      reduceOptions:
-        calcs:
-          - lastNotNull
-        fields: ''
-        values: false
-      showThresholdLabels: false
-      showThresholdMarkers: true
-      text: {}
-    fieldConfig:
-      defaults:
-        color:
-          mode: thresholds
-        mappings:
-          - id: 0
-            op: '='
-            text: '0'
-            type: 1
-            value: 'null'
-        max: 100
-        min: 0
-        thresholds:
-          mode: absolute
-          steps:
-            - color: green
-              value: null
-            - color: red
-              value: 80
-        unit: none
-      overrides: []
-    pluginVersion: 8.0.0
-    targets:
-      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",operation!=""})
-        format: time_series
-        instant: true
-        intervalFactor: 1
-        legendFormat: ''
-        refId: A
-    cacheTimeout: null
-    links: []
-    timeFrom: null
-    timeShift: null
-  - type: graph
-    title: Applications
-    id: 28
-    datasource: $datasource
-    gridPos:
-      h: 4
-      w: 7
-      x: 17
-      'y': 1
-    options:
-      alertThreshold: true
-    fieldConfig:
-      defaults:
-        links: []
-      overrides: []
-    pluginVersion: 8.0.0
-    targets:
-      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status=~"$health_status",sync_status=~"$sync_status"}) by (namespace)
-        format: time_series
-        instant: false
-        intervalFactor: 1
-        legendFormat: '{{namespace}}'
-        refId: A
-    aliasColors: {}
-    bars: false
-    cacheTimeout: null
-    dashLength: 10
-    dashes: false
-    decimals: null
-    fill: 1
-    fillGradient: 0
-    hiddenSeries: false
-    legend:
-      alignAsTable: true
-      avg: false
-      current: true
-      hideEmpty: true
-      hideZero: true
-      max: false
-      min: false
-      rightSide: true
-      show: true
-      sort: current
-      sortDesc: true
-      total: false
-      values: true
-    lines: true
-    linewidth: 1
-    links: []
-    nullPointMode: connected
-    paceLength: 10
-    percentage: false
-    pointradius: 2
-    points: false
-    renderer: flot
-    seriesOverrides: []
-    spaceLength: 10
-    stack: true
-    steppedLine: false
-    thresholds: []
-    timeFrom: null
-    timeRegions: []
-    timeShift: null
-    tooltip:
-      shared: false
-      sort: 2
-      value_type: individual
-    xaxis:
-      buckets: null
-      mode: time
-      name: null
-      show: true
-      values: []
-    yaxes:
-      - decimals: 0
-        format: short
-        label: null
-        logBase: 1
-        max: null
-        min: null
-        show: true
-      - format: short
-        label: null
-        logBase: 1
-        max: null
-        min: null
-        show: true
-    yaxis:
-      align: false
-      alignLevel: null
   - type: row
     title: Application Status
     id: 77
@@ -610,6 +419,115 @@ panels:
       x: 0
       'y': 5
     panels:
+      - type: table
+        title: Application List
+        id: 200
+        datasource: $datasource
+        gridPos:
+          h: 10
+          w: 24
+          x: 0
+          'y': 6
+        options:
+          showHeader: true
+          sortBy:
+            - desc: false
+              displayName: Application
+        targets:
+          - expr: argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status=~"$health_status",sync_status=~"$sync_status",health_status!=""}
+            format: table
+            instant: true
+            intervalFactor: 1
+            refId: A
+        transformations:
+          - id: organize
+            options:
+              excludeByName:
+                Time: true
+                Value: true
+                __name__: true
+                job: true
+                instance: true
+                namespace: true
+                dest_server: true
+                repo: true
+                project: true
+                operation: true
+              indexByName: {}
+              renameByName:
+                name: Application
+                cluster: Cluster
+                health_status: Health
+                sync_status: Sync
+        fieldConfig:
+          defaults:
+            custom:
+              align: auto
+              displayMode: auto
+            mappings: []
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: null
+          overrides:
+            - matcher:
+                id: byName
+                options: Application
+              properties:
+                - id: links
+                  value:
+                    - title: Open in ArgoCD
+                      url: 'https://argocd-server.argocd.${__data.fields.Cluster}REDACTED/applications/${__data.fields.Application}'
+                      targetBlank: true
+            - matcher:
+                id: byName
+                options: Health
+              properties:
+                - id: custom.displayMode
+                  value: color-background
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        Healthy:
+                          color: green
+                          index: 0
+                        Progressing:
+                          color: blue
+                          index: 1
+                        Suspended:
+                          color: orange
+                          index: 2
+                        Missing:
+                          color: purple
+                          index: 3
+                        Degraded:
+                          color: red
+                          index: 4
+                        Unknown:
+                          color: white
+                          index: 5
+            - matcher:
+                id: byName
+                options: Sync
+              properties:
+                - id: custom.displayMode
+                  value: color-background
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        Synced:
+                          color: green
+                          index: 0
+                        OutOfSync:
+                          color: yellow
+                          index: 1
+                        Unknown:
+                          color: white
+                          index: 2
+        pluginVersion: 8.0.0
       - type: graph
         title: Health Status
         id: 105
@@ -618,7 +536,7 @@ panels:
           h: 6
           w: 12
           x: 0
-          'y': 6
+          'y': 16
         options:
           dataLinks: []
         targets:
@@ -710,7 +628,7 @@ panels:
           h: 6
           w: 12
           x: 12
-          'y': 6
+          'y': 16
         options:
           dataLinks: []
         targets:
