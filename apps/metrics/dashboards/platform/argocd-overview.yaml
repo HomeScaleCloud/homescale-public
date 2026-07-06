@@ -266,51 +266,6 @@ panels:
     pluginVersion: 8.0.0
     links: []
   - type: stat
-    title: Uptime
-    id: 32
-    datasource: $datasource
-    gridPos:
-      h: 4
-      w: 3
-      x: 2
-      'y': 1
-    options:
-      colorMode: value
-      graphMode: none
-      justifyMode: auto
-      orientation: horizontal
-      reduceOptions:
-        calcs:
-          - lastNotNull
-        fields: ''
-        values: false
-      text: {}
-      textMode: auto
-    fieldConfig:
-      defaults:
-        color:
-          mode: thresholds
-        mappings: []
-        thresholds:
-          mode: absolute
-          steps:
-            - color: green
-              value: null
-            - color: red
-              value: 80
-        unit: dtdurations
-      overrides: []
-    pluginVersion: 8.0.0
-    targets:
-      - expr: time() - max(process_start_time_seconds{cluster=~"$cluster",namespace="argocd",job="argocd-server-metrics"})
-        format: time_series
-        intervalFactor: 1
-        refId: A
-    cacheTimeout: null
-    interval: null
-    links: []
-    maxDataPoints: 100
-  - type: stat
     title: Applications
     id: 75
     repeat: null
@@ -319,7 +274,7 @@ panels:
     gridPos:
       h: 4
       w: 3
-      x: 5
+      x: 2
       'y': 1
     options:
       colorMode: value
@@ -367,7 +322,7 @@ panels:
     gridPos:
       h: 4
       w: 3
-      x: 8
+      x: 5
       'y': 1
     options:
       colorMode: value
@@ -398,6 +353,288 @@ panels:
     pluginVersion: 8.0.0
     targets:
       - expr: count(count by (repo) (argocd_app_info{cluster=~"$cluster",namespace="argocd"}))
+        format: time_series
+        instant: false
+        intervalFactor: 1
+        refId: A
+    cacheTimeout: null
+    interval: null
+    links: []
+    maxDataPoints: 100
+    timeFrom: null
+    timeShift: null
+  - type: stat
+    title: Healthy
+    id: 201
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 2
+      x: 8
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      text: {}
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: fixed
+          fixedColor: green
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Healthy"})
+        format: time_series
+        instant: false
+        intervalFactor: 1
+        refId: A
+    cacheTimeout: null
+    interval: null
+    links: []
+    maxDataPoints: 100
+    timeFrom: null
+    timeShift: null
+  - type: stat
+    title: Progressing
+    id: 202
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 2
+      x: 10
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      text: {}
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: fixed
+          fixedColor: semi-dark-blue
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Progressing"})
+        format: time_series
+        instant: false
+        intervalFactor: 1
+        refId: A
+    cacheTimeout: null
+    interval: null
+    links: []
+    maxDataPoints: 100
+    timeFrom: null
+    timeShift: null
+  - type: stat
+    title: Suspended
+    id: 203
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 2
+      x: 12
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      text: {}
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: fixed
+          fixedColor: semi-dark-orange
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Suspended"})
+        format: time_series
+        instant: false
+        intervalFactor: 1
+        refId: A
+    cacheTimeout: null
+    interval: null
+    links: []
+    maxDataPoints: 100
+    timeFrom: null
+    timeShift: null
+  - type: stat
+    title: Missing
+    id: 204
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 2
+      x: 14
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      text: {}
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: fixed
+          fixedColor: semi-dark-purple
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Missing"})
+        format: time_series
+        instant: false
+        intervalFactor: 1
+        refId: A
+    cacheTimeout: null
+    interval: null
+    links: []
+    maxDataPoints: 100
+    timeFrom: null
+    timeShift: null
+  - type: stat
+    title: Degraded
+    id: 205
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 2
+      x: 16
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      text: {}
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: fixed
+          fixedColor: semi-dark-red
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Degraded"})
+        format: time_series
+        instant: false
+        intervalFactor: 1
+        refId: A
+    cacheTimeout: null
+    interval: null
+    links: []
+    maxDataPoints: 100
+    timeFrom: null
+    timeShift: null
+  - type: stat
+    title: Unknown
+    id: 206
+    datasource: $datasource
+    gridPos:
+      h: 4
+      w: 2
+      x: 18
+      'y': 1
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      text: {}
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: fixed
+          fixedColor: white
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 8.0.0
+    targets:
+      - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status="Unknown"})
         format: time_series
         instant: false
         intervalFactor: 1
@@ -440,20 +677,23 @@ panels:
             intervalFactor: 1
             refId: A
         transformations:
+          - id: filterFieldsByName
+            options:
+              include:
+                names:
+                  - name
+                  - cluster
+                  - health_status
+                  - sync_status
+                  - autosync_enabled
           - id: organize
             options:
-              excludeByName:
-                Time: true
-                Value: true
-                __name__: true
-                job: true
-                instance: true
-                namespace: true
-                dest_server: true
-                repo: true
-                project: true
-                operation: true
-              indexByName: {}
+              indexByName:
+                name: 0
+                cluster: 1
+                health_status: 2
+                sync_status: 3
+                autosync_enabled: 4
               renameByName:
                 name: Application
                 cluster: Cluster
@@ -540,11 +780,11 @@ panels:
         options:
           dataLinks: []
         targets:
-          - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status=~"$health_status",sync_status=~"$sync_status",health_status!=""}) by (health_status)
+          - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status=~"$health_status",sync_status=~"$sync_status",health_status!=""}) by (cluster, name, health_status)
             format: time_series
             instant: false
             intervalFactor: 1
-            legendFormat: '{{health_status}}'
+            legendFormat: '{{cluster}}/{{name}}: {{health_status}}'
             refId: A
         aliasColors:
           Degraded: semi-dark-red
@@ -632,11 +872,11 @@ panels:
         options:
           dataLinks: []
         targets:
-          - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status=~"$health_status",sync_status=~"$sync_status",health_status!=""}) by (sync_status)
+          - expr: sum(argocd_app_info{cluster=~"$cluster",namespace="argocd",dest_server=~"$server",health_status=~"$health_status",sync_status=~"$sync_status",health_status!=""}) by (cluster, name, sync_status)
             format: time_series
             instant: false
             intervalFactor: 1
-            legendFormat: '{{sync_status}}'
+            legendFormat: '{{cluster}}/{{name}}: {{sync_status}}'
             refId: A
         aliasColors:
           Degraded: semi-dark-red
