@@ -1,0 +1,905 @@
+title: Overview
+uid: environment-overview
+description: Rack environment overview — combined PDU health and rack climate sensor readings
+tags:
+  - pdu
+  - power
+  - infrastructure
+  - climate
+  - rack
+editable: true
+graphTooltip: 1
+refresh: 1m
+schemaVersion: 39
+version: 1
+timezone: browser
+time:
+  from: now-6h
+  to: now
+timepicker: {}
+links: []
+annotations:
+  list: []
+templating:
+  list:
+    - current: {}
+      datasource:
+        type: prometheus
+        uid: prometheus
+      definition: label_values({__name__=~"apc_rpdu_input_voltage_volts|homeassistant_entity_available"}, cluster)
+      hide: 0
+      includeAll: false
+      label: Region
+      multi: false
+      name: region
+      options: []
+      query:
+        query: label_values({__name__=~"apc_rpdu_input_voltage_volts|homeassistant_entity_available"}, cluster)
+        refId: StandardVariableQuery
+      refresh: 2
+      regex: '/^([^-]+)-/'
+      sort: 1
+      type: query
+panels:
+  - collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 0
+    id: 1
+    title: Alerts
+    type: row
+    panels:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        fieldConfig:
+          defaults:
+            color:
+              mode: thresholds
+            custom:
+              fillOpacity: 70
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineWidth: 0
+              spanNulls: false
+            mappings:
+              - type: value
+                options:
+                  '1':
+                    color: yellow
+                    index: 0
+                    text: Warning / Pending
+                  '2':
+                    color: red
+                    index: 1
+                    text: Critical (Firing)
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: null
+                - color: yellow
+                  value: 1
+                - color: red
+                  value: 2
+          overrides: []
+        gridPos:
+          h: 5
+          w: 24
+          x: 0
+          'y': 1
+        id: 2
+        options:
+          alignValue: left
+          legend:
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          mergeValues: true
+          rowHeight: 0.9
+          showValue: auto
+          tooltip:
+            mode: single
+            sort: none
+        targets:
+          - datasource:
+              type: prometheus
+              uid: prometheus
+            expr: max without (alertstate) ((ALERTS{cluster=~"$region-.*", alertname=~"ApcPdu.*", severity="critical", alertstate="firing"} * 2) or (ALERTS{cluster=~"$region-.*", alertname=~"ApcPdu.*", alertstate="pending"} * 1) or (ALERTS{cluster=~"$region-.*", alertname=~"ApcPdu.*", severity="warning"} * 1))
+            legendFormat: '{{alertname}} ({{cluster}} - {{job}})'
+            range: true
+            instant: false
+            refId: A
+        title: Alert Timeline
+        type: state-timeline
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        fieldConfig:
+          defaults:
+            custom:
+              align: auto
+              cellOptions:
+                type: auto
+              inspect: false
+          overrides:
+            - matcher:
+                id: byName
+                options: alertname
+              properties:
+                - id: custom.width
+                  value: 280
+            - matcher:
+                id: byName
+                options: alertstate
+              properties:
+                - id: custom.width
+                  value: 90
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        firing:
+                          color: red
+                          index: 0
+                          text: firing
+                        pending:
+                          color: yellow
+                          index: 1
+                          text: pending
+            - matcher:
+                id: byName
+                options: severity
+              properties:
+                - id: custom.width
+                  value: 100
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        warning:
+                          color: yellow
+                          index: 0
+                          text: warning
+                        critical:
+                          color: red
+                          index: 1
+                          text: critical
+            - matcher:
+                id: byName
+                options: cluster
+              properties:
+                - id: custom.width
+                  value: 100
+            - matcher:
+                id: byName
+                options: job
+              properties:
+                - id: custom.width
+                  value: 140
+            - matcher:
+                id: byName
+                options: instance
+              properties:
+                - id: custom.width
+                  value: 120
+            - matcher:
+                id: byName
+                options: bank_index
+              properties:
+                - id: custom.width
+                  value: 90
+        gridPos:
+          h: 6
+          w: 24
+          x: 0
+          'y': 6
+        id: 3
+        options:
+          cellHeight: sm
+          footer:
+            show: false
+          showHeader: true
+          sortBy:
+            - desc: false
+              displayName: alertname
+        targets:
+          - datasource:
+              type: prometheus
+              uid: prometheus
+            expr: ALERTS{cluster=~"$region-.*", alertname=~"ApcPdu.*", alertstate=~"firing|pending"}
+            instant: true
+            format: table
+            legendFormat: ''
+            refId: A
+        transformations:
+          - id: organize
+            options:
+              excludeByName:
+                Time: true
+                Value: true
+                __name__: true
+                endpoint: true
+                prometheus: true
+                prometheus_replica: true
+                service: true
+              indexByName:
+                alertname: 0
+                alertstate: 1
+                severity: 2
+                cluster: 3
+                job: 4
+                instance: 5
+                bank_index: 6
+              renameByName: {}
+        title: Active Alerts
+        type: table
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 1
+    id: 4
+    title: Overview
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: red
+              value: null
+            - color: yellow
+              value: 190
+            - color: green
+              value: 198
+            - color: yellow
+              value: 218
+            - color: red
+              value: 225
+        mappings:
+          - type: range
+            options:
+              from: 198
+              to: 217.9
+              result:
+                text: Normal
+                index: 0
+          - type: range
+            options:
+              from: 190
+              to: 197.9
+              result:
+                text: Warning
+                index: 1
+          - type: range
+            options:
+              from: 218
+              to: 224.9
+              result:
+                text: Warning
+                index: 2
+          - type: range
+            options:
+              from: 0
+              to: 189.9
+              result:
+                text: Critical
+                index: 3
+          - type: range
+            options:
+              from: 225
+              to: 300
+              result:
+                text: Critical
+                index: 4
+        unit: volt
+      overrides: []
+    gridPos:
+      h: 4
+      w: 4
+      x: 0
+      'y': 2
+    id: 5
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_input_voltage_volts{cluster=~"$region-.*"}
+        legendFormat: '{{cluster}} - {{job}}'
+    title: Input Voltage
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: yellow
+              value: 60
+            - color: red
+              value: 80
+        mappings: []
+        unit: percent
+        decimals: 0
+        max: 100
+        min: 0
+      overrides: []
+    gridPos:
+      h: 4
+      w: 4
+      x: 4
+      'y': 2
+    id: 6
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_bank_load_deciamps{cluster=~"$region-.*"} / 10 / on(cluster, job) group_left() apc_rpdu_device_rated_amps{cluster=~"$region-.*"} * 100
+        legendFormat: '{{cluster}} - {{job}}'
+    title: Bank Load (% of rated capacity)
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        mappings: []
+        unit: s
+        decimals: 0
+      overrides: []
+    gridPos:
+      h: 4
+      w: 4
+      x: 8
+      'y': 2
+    id: 7
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_uptime_seconds{cluster=~"$region-.*"}
+        legendFormat: '{{cluster}} - {{job}}'
+    title: PDU Uptime
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        mappings: []
+        unit: celsius
+        decimals: 1
+      overrides: []
+    gridPos:
+      h: 4
+      w: 4
+      x: 12
+      'y': 2
+    id: 8
+    options:
+      colorMode: value
+      graphMode: none
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: homeassistant_sensor_temperature_celsius{cluster=~"$region-.*", entity="sensor.rack_climate_sensor_temperature"}
+        legendFormat: '{{cluster}}'
+    title: Temperature
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        mappings: []
+        unit: percent
+        decimals: 1
+        max: 100
+        min: 0
+      overrides: []
+    gridPos:
+      h: 4
+      w: 4
+      x: 16
+      'y': 2
+    id: 9
+    options:
+      colorMode: value
+      graphMode: none
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: homeassistant_sensor_humidity_percent{cluster=~"$region-.*", entity="sensor.rack_climate_sensor_humidity"}
+        legendFormat: '{{cluster}}'
+    title: Humidity
+    type: stat
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+        mappings: []
+        unit: s
+        decimals: 0
+      overrides: []
+    gridPos:
+      h: 4
+      w: 4
+      x: 20
+      'y': 2
+    id: 10
+    options:
+      colorMode: value
+      graphMode: none
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: time() - homeassistant_last_updated_time_seconds{cluster=~"$region-.*", entity="sensor.rack_climate_sensor_temperature"}
+        legendFormat: '{{cluster}}'
+    title: Climate Sensor — Time Since Last Report
+    type: stat
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 6
+    id: 11
+    title: PDU Info
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        custom:
+          align: left
+          displayMode: auto
+      overrides:
+        - matcher:
+            id: byName
+            options: Rated Amps
+          properties:
+            - id: custom.width
+              value: 100
+    gridPos:
+      h: 5
+      w: 24
+      x: 0
+      'y': 7
+    id: 12
+    options:
+      cellHeight: sm
+      footer:
+        show: false
+      showHeader: true
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_device_rated_amps{cluster=~"$region-.*"}
+        format: table
+        instant: true
+        legendFormat: ''
+    transformations:
+      - id: labelsToFields
+        options:
+          mode: columns
+          valueLabel: job
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            __name__: true
+            prometheus: true
+            prometheus_replica: true
+          renameByName:
+            Value: Rated Amps
+            firmware_version: Firmware
+            hardware_rev: Hardware Rev
+            model: Model
+            serial: Serial
+            instance: IP
+            job: PDU
+            cluster: Cluster
+          indexByName:
+            cluster: 0
+            job: 1
+            instance: 2
+            model: 3
+            firmware_version: 4
+            hardware_rev: 5
+            serial: 6
+            Value: 7
+    title: Info
+    type: table
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 12
+    id: 13
+    title: Power Trends
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          lineWidth: 2
+          fillOpacity: 10
+          spanNulls: false
+        unit: amp
+        decimals: 1
+      overrides:
+        - matcher:
+            id: byFrameRefID
+            options: warning
+          properties:
+            - id: color
+              value:
+                fixedColor: yellow
+                mode: fixed
+            - id: custom.lineStyle
+              value:
+                dash:
+                  - 8
+                  - 4
+                fill: dash
+            - id: custom.lineWidth
+              value: 1
+            - id: custom.fillOpacity
+              value: 0
+        - matcher:
+            id: byFrameRefID
+            options: threshold
+          properties:
+            - id: color
+              value:
+                fixedColor: orange
+                mode: fixed
+            - id: custom.lineStyle
+              value:
+                dash:
+                  - 8
+                  - 4
+                fill: dash
+            - id: custom.lineWidth
+              value: 1
+            - id: custom.fillOpacity
+              value: 0
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 13
+    id: 14
+    options:
+      tooltip:
+        mode: multi
+        sort: none
+      legend:
+        displayMode: list
+        placement: bottom
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_bank_load_deciamps{cluster=~"$region-.*"} / 10
+        legendFormat: '{{cluster}} - {{job}}'
+        refId: load
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_bank_near_overload_threshold_amps{cluster=~"$region-.*"} * 0.7
+        legendFormat: '{{cluster}} - {{job}} warning threshold (70%)'
+        refId: warning
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_bank_near_overload_threshold_amps{cluster=~"$region-.*"}
+        legendFormat: '{{cluster}} - {{job}} near-overload threshold'
+        refId: threshold
+    title: Bank Load (Amps)
+    type: timeseries
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          lineWidth: 2
+          fillOpacity: 10
+          spanNulls: false
+          thresholdsStyle:
+            mode: line
+        unit: volt
+        decimals: 0
+        thresholds:
+          mode: absolute
+          steps:
+            - color: transparent
+              value: null
+            - color: red
+              value: 190
+            - color: yellow
+              value: 198
+            - color: transparent
+              value: 218
+            - color: yellow
+              value: 218
+            - color: red
+              value: 225
+      overrides: []
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 13
+    id: 15
+    options:
+      tooltip:
+        mode: multi
+        sort: none
+      legend:
+        displayMode: list
+        placement: bottom
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_input_voltage_volts{cluster=~"$region-.*"}
+        legendFormat: '{{cluster}} - {{job}}'
+    title: Input Voltage
+    type: timeseries
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 21
+    id: 16
+    title: Climate Trends
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          lineWidth: 2
+          fillOpacity: 10
+          spanNulls: false
+        unit: celsius
+        decimals: 1
+      overrides: []
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 22
+    id: 17
+    options:
+      tooltip:
+        mode: multi
+        sort: none
+      legend:
+        displayMode: list
+        placement: bottom
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: homeassistant_sensor_temperature_celsius{cluster=~"$region-.*", entity="sensor.rack_climate_sensor_temperature"}
+        legendFormat: '{{cluster}}'
+    title: Temperature
+    type: timeseries
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          lineWidth: 2
+          fillOpacity: 10
+          spanNulls: false
+        unit: percent
+        decimals: 1
+        max: 100
+        min: 0
+      overrides: []
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 22
+    id: 18
+    options:
+      tooltip:
+        mode: multi
+        sort: none
+      legend:
+        displayMode: list
+        placement: bottom
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: homeassistant_sensor_humidity_percent{cluster=~"$region-.*", entity="sensor.rack_climate_sensor_humidity"}
+        legendFormat: '{{cluster}}'
+    title: Humidity
+    type: timeseries
+  - collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 30
+    id: 19
+    title: PDU Outlets
+    type: row
+  - datasource:
+      type: prometheus
+      uid: prometheus
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 2
+        mappings:
+          - type: value
+            options:
+              '1':
+                text: 'On'
+                index: 0
+              '2':
+                text: 'Off'
+                index: 1
+      overrides: []
+    gridPos:
+      h: 8
+      w: 24
+      x: 0
+      'y': 31
+    id: 20
+    options:
+      colorMode: background
+      graphMode: none
+      orientation: horizontal
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      textMode: auto
+    targets:
+      - datasource:
+          type: prometheus
+          uid: prometheus
+        expr: apc_rpdu_outlet_state{cluster=~"$region-.*"}
+        legendFormat: '{{cluster}} {{job}} — {{outlet_name}}'
+    title: Outlet States
+    type: stat
