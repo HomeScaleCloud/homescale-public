@@ -12,3 +12,5 @@ spec:
       scheme: https
       path: /api/prometheus
       interval: 60s
+      tlsConfig:
+        insecureSkipVerify: true
