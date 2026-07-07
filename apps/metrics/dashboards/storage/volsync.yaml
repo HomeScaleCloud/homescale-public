@@ -278,7 +278,7 @@ panels:
               type: loki
               uid: loki
             editorMode: code
-            expr: '{cluster=~"$cluster", namespace="volsync-system", pod=~"volsync-.*"}'
+            expr: '{cluster=~"$cluster", namespace="volsync-system", pod=~"volsync-.*", pod!~"volsync-dst-.*"}'
             queryType: range
             refId: A
   - type: row
@@ -327,7 +327,7 @@ panels:
       - datasource:
           type: prometheus
           uid: ${datasource}
-        expr: count(volsync_volume_out_of_sync{cluster=~"$cluster", obj_namespace=~"$namespace"} == 1) or vector(0)
+        expr: count(volsync_volume_out_of_sync{cluster=~"$cluster", obj_namespace=~"$namespace", role="source"} == 1) or vector(0)
         instant: true
         refId: A
   - type: stat
@@ -364,7 +364,7 @@ panels:
       - datasource:
           type: prometheus
           uid: ${datasource}
-        expr: count(volsync_volume_out_of_sync{cluster=~"$cluster", obj_namespace=~"$namespace"}) or vector(0)
+        expr: count(volsync_volume_out_of_sync{cluster=~"$cluster", obj_namespace=~"$namespace", role="source"}) or vector(0)
         instant: true
         refId: A
   - type: stat
@@ -403,7 +403,7 @@ panels:
       - datasource:
           type: prometheus
           uid: ${datasource}
-        expr: sum(volsync_missed_intervals_total{cluster=~"$cluster", obj_namespace=~"$namespace"}) or vector(0)
+        expr: sum(volsync_missed_intervals_total{cluster=~"$cluster", obj_namespace=~"$namespace", role="source"}) or vector(0)
         instant: true
         refId: A
   - type: stat
@@ -444,7 +444,7 @@ panels:
       - datasource:
           type: prometheus
           uid: ${datasource}
-        expr: avg(volsync_sync_duration_seconds_sum{cluster=~"$cluster", obj_namespace=~"$namespace"} / volsync_sync_duration_seconds_count{cluster=~"$cluster", obj_namespace=~"$namespace"} > 0) or vector(0)
+        expr: avg(volsync_sync_duration_seconds_sum{cluster=~"$cluster", obj_namespace=~"$namespace", role="source"} / volsync_sync_duration_seconds_count{cluster=~"$cluster", obj_namespace=~"$namespace", role="source"} > 0) or vector(0)
         instant: true
         refId: A
   - type: table
@@ -493,12 +493,6 @@ panels:
               value: 180
         - matcher:
             id: byName
-            options: role
-          properties:
-            - id: custom.width
-              value: 100
-        - matcher:
-            id: byName
             options: method
           properties:
             - id: custom.width
@@ -537,7 +531,7 @@ panels:
       - datasource:
           type: prometheus
           uid: ${datasource}
-        expr: volsync_volume_out_of_sync{cluster=~"$cluster", obj_namespace=~"$namespace"}
+        expr: volsync_volume_out_of_sync{cluster=~"$cluster", obj_namespace=~"$namespace", role="source"}
         instant: true
         format: table
         refId: A
@@ -553,21 +547,22 @@ panels:
             prometheus: true
             prometheus_replica: true
             service: true
+            role: true
           indexByName:
             obj_name: 0
             obj_namespace: 1
             cluster: 2
-            role: 3
-            method: 4
-            Value: 5
-            Time: 6
-            __name__: 7
-            endpoint: 8
-            instance: 9
-            job: 10
-            prometheus: 11
-            prometheus_replica: 12
-            service: 13
+            method: 3
+            Value: 4
+            Time: 5
+            __name__: 6
+            endpoint: 7
+            instance: 8
+            job: 9
+            prometheus: 10
+            prometheus_replica: 11
+            service: 12
+            role: 13
           renameByName:
             Value: Status
   - type: row
@@ -612,8 +607,8 @@ panels:
       - datasource:
           type: prometheus
           uid: ${datasource}
-        expr: rate(volsync_sync_duration_seconds_sum{cluster=~"$cluster", obj_namespace=~"$namespace"}[$__rate_interval]) / rate(volsync_sync_duration_seconds_count{cluster=~"$cluster", obj_namespace=~"$namespace"}[$__rate_interval]) > 0
-        legendFormat: '{{obj_name}} / {{obj_namespace}} ({{role}})'
+        expr: rate(volsync_sync_duration_seconds_sum{cluster=~"$cluster", obj_namespace=~"$namespace", role="source"}[$__rate_interval]) / rate(volsync_sync_duration_seconds_count{cluster=~"$cluster", obj_namespace=~"$namespace", role="source"}[$__rate_interval]) > 0
+        legendFormat: '{{obj_name}} / {{obj_namespace}}'
         refId: A
   - type: row
     title: PVC Coverage
@@ -759,8 +754,8 @@ panels:
       - datasource:
           type: prometheus
           uid: ${datasource}
-        expr: increase(volsync_missed_intervals_total{cluster=~"$cluster", obj_namespace=~"$namespace"}[$__rate_interval])
-        legendFormat: '{{obj_name}} / {{obj_namespace}} ({{role}})'
+        expr: increase(volsync_missed_intervals_total{cluster=~"$cluster", obj_namespace=~"$namespace", role="source"}[$__rate_interval])
+        legendFormat: '{{obj_name}} / {{obj_namespace}}'
         refId: A
   - type: row
     title: Controller & Job Health
@@ -858,7 +853,7 @@ panels:
       - datasource:
           type: prometheus
           uid: ${datasource}
-        expr: sum(max_over_time(kube_job_status_failed{job_name=~"volsync-.*", cluster=~"$cluster"}[24h])) or vector(0)
+        expr: sum(max_over_time(kube_job_status_failed{job_name=~"volsync-src-.*", cluster=~"$cluster"}[24h])) or vector(0)
         instant: true
         refId: A
   - type: timeseries
@@ -893,6 +888,6 @@ panels:
       - datasource:
           type: prometheus
           uid: ${datasource}
-        expr: kube_job_status_failed{job_name=~"volsync-.*", cluster=~"$cluster"} == 1
+        expr: kube_job_status_failed{job_name=~"volsync-src-.*", cluster=~"$cluster"} == 1
         legendFormat: '{{job_name}} / {{namespace}} ({{cluster}})'
         refId: A
