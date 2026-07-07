@@ -21,6 +21,12 @@ spec:
       weekly: 4
       monthly: 3
     pruneIntervalDays: 7
+    {{- if eq . "matter" }}
+    moverSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    {{- end }}
 {{- end }}
 {{- end }}
 {{- if $restore }}
@@ -49,6 +55,12 @@ spec:
       runAsUser: 100
       runAsGroup: 101
       fsGroup: 101
+    {{- end }}
+    {{- if eq . "matter" }}
+    moverSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
     {{- end }}
 {{- end }}
 {{- end }}
