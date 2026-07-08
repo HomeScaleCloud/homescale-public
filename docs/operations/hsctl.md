@@ -24,11 +24,9 @@ Output format defaults to `table`; pass `-o yaml` or `-o json` for scripting.
 |----------|-------|-------------|
 | `clusters` | `hsctl get clusters` | List Kubernetes clusters reachable via NetBird |
 | `kubeconfig` | `hsctl get kubeconfig <cluster>` | Write a kubeconfig context for `<cluster>` (points at the cluster's NetBird-internal API server) |
-| `machines` | `hsctl get machines [--cluster <name>]` | List all Omni machines, enriched with node name, cluster, and role for machines already assigned to a cluster. Filter to one cluster with `--cluster`/`-c` |
+| `machines` | `hsctl get machines [--cluster <name>]` | List all Omni machines with power state, enriched with node name, cluster, and role for machines already assigned to a cluster. Filter to one cluster with `--cluster`/`-c` |
 | `machine` | `hsctl get machine <id\|node-name>` | Show details for a single machine, by Omni machine ID or Kubernetes node name |
 | `snapshot` | `hsctl get snapshot <app>` | List restic snapshots for an app's VolSync-backed PVC, with timestamps and IDs — see [Backups: restore procedure](../architecture/backups.md#restore-procedure) |
-
-`machines`/`machine` join Omni's `MachineStatus` (network addresses, reachability) with `ClusterMachineIdentity` (node name, cluster, role) — see the underlying `omnictl get machinestatus` / `omnictl get clustermachineidentity` resources for the raw data.
 
 ## `hsctl argocd`
 
