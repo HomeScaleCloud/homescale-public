@@ -40,20 +40,23 @@ Both resolve to `argocd-server.argocd.<cluster>REDACTED` — the [NetBird intern
 ## `hsctl machine`
 
 ```
-hsctl machine power on|off|reset <id|node-name>
+hsctl machine power on|off|reset [--force] <id|node-name>
 ```
 
-Takes action directly against a physical machine's BMC over IPMI (via [`ipmitool`](https://github.com/ipmitool/ipmitool), `brew install ipmitool`) — unlike `hsctl get`, this changes real hardware state. Accepts an Omni machine ID or a Kubernetes node name (resolved the same way as `hsctl get machine`).
+Takes action directly against a physical machine — unlike `hsctl get`, this changes real hardware state. Accepts an Omni machine ID or a Kubernetes node name (resolved the same way as `hsctl get machine`).
 
-| Action | `ipmitool chassis power` | Effect |
-|--------|---------------------------|--------|
-| `on` | `on` | Power on |
-| `off` | `off` | Immediate hard power off |
-| `reset` | `reset` | Warm reset (equivalent to the physical reset button) |
+| Action | Mechanism | Effect |
+|--------|-----------|--------|
+| `on` | `ipmitool chassis power on` | Power on |
+| `off` | `talosctl shutdown` | Graceful OS shutdown (cordon/drain, then power off) |
+| `off --force` | `ipmitool chassis power off` | Immediate hard power off, bypassing Talos |
+| `reset` | `ipmitool chassis power reset` | Warm reset (equivalent to the physical reset button) |
 
-Redfish was tried first, but this fleet's Supermicro BMCs gate every Redfish endpoint behind a paid `SUM DCMS OOB` license regardless of auth method — IPMI-over-LAN works unlicensed with the same credentials.
+`off` requires [`talosctl`](https://www.talos.dev/latest/introduction/getting-started/#talosctl) (`brew install talosctl`). If a graceful shutdown isn't possible or desired, pass `--force` to hard-cut power via IPMI instead — the previous behavior for `off`.
 
-BMC connection info (`IP`, `VENDOR_USERNAME`, `VENDOR_PASSWORD`) is fetched at runtime from Infisical at `/bmc/<machine-id>` — this path must be populated per-machine before `hsctl machine power` will work for it. Progress and outcome are reported via timestamped `INFO`/`ACTION`/`OK`/`ERROR` log lines (`hsctl_log_*` in `_lib.sh`) — the logging convention every future hsctl command that *takes action* (rather than just displaying data) should use.
+`on` and `reset` (and `off --force`) go over the BMC via IPMI (via [`ipmitool`](https://github.com/ipmitool/ipmitool), `brew install ipmitool`). Redfish was tried first, but this fleet's Supermicro BMCs gate every Redfish endpoint behind a paid `SUM DCMS OOB` license regardless of auth method — IPMI-over-LAN works unlicensed with the same credentials.
+
+BMC connection info (`IP`, `VENDOR_USERNAME`, `VENDOR_PASSWORD`) is fetched at runtime from Infisical at `/bmc/<machine-id>` — this path must be populated per-machine before an IPMI-backed `hsctl machine power` action will work for it. Progress and outcome are reported via timestamped `INFO`/`ACTION`/`OK`/`ERROR` log lines (`hsctl_log_*` in `_lib.sh`) — the logging convention every future hsctl command that *takes action* (rather than just displaying data) should use.
 
 ## `hsctl switch`
 
