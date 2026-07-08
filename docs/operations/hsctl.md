@@ -1,6 +1,6 @@
 # hsctl
 
-`hsctl` is a small bash CLI for day-to-day operator tasks against the HomeScale fleet — listing clusters and machines, fetching kubeconfigs, browsing restic snapshots, and jumping into ArgoCD. It talks to Omni and each cluster's API server over NetBird, so it requires an active NetBird connection.
+`hsctl` is a small bash CLI for day-to-day operator tasks against the HomeScale fleet — listing clusters and machines, fetching kubeconfigs, browsing restic snapshots, power-cycling machines, and jumping into ArgoCD. It talks to Omni and each cluster's API server over NetBird, so it requires an active NetBird connection.
 
 Source: `hsctl` (entrypoint) and `hsctl.d/*.sh` (one file per top-level command) at the repo root.
 
@@ -38,6 +38,24 @@ hsctl argocd open <cluster>    # open that cluster's ArgoCD UI in the browser
 ```
 
 Both resolve to `argocd-server.argocd.<cluster>REDACTED` — the [NetBird internal service address](../architecture/networking.md#internal-service-exposure) for ArgoCD on that cluster.
+
+## `hsctl machine`
+
+```
+hsctl machine power on|off|reset <id|node-name>
+```
+
+Takes action directly against a physical machine's BMC over IPMI (via [`ipmitool`](https://github.com/ipmitool/ipmitool), `brew install ipmitool`) — unlike `hsctl get`, this changes real hardware state. Accepts an Omni machine ID or a Kubernetes node name (resolved the same way as `hsctl get machine`).
+
+| Action | `ipmitool chassis power` | Effect |
+|--------|---------------------------|--------|
+| `on` | `on` | Power on |
+| `off` | `off` | Immediate hard power off |
+| `reset` | `reset` | Warm reset (equivalent to the physical reset button) |
+
+Redfish was tried first, but this fleet's Supermicro BMCs gate every Redfish endpoint behind a paid `SUM DCMS OOB` license regardless of auth method — IPMI-over-LAN works unlicensed with the same credentials.
+
+BMC connection info (`IP`, `VENDOR_USERNAME`, `VENDOR_PASSWORD`) is fetched at runtime from Infisical at `/bmc/<machine-id>` — this path must be populated per-machine before `hsctl machine power` will work for it. Progress and outcome are reported via timestamped `INFO`/`ACTION`/`OK`/`ERROR` log lines (`hsctl_log_*` in `_lib.sh`) — the logging convention every future hsctl command that *takes action* (rather than just displaying data) should use.
 
 ## `hsctl switch`
 
