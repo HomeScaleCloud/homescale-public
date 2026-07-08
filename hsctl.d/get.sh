@@ -10,14 +10,24 @@ get_usage() {
     echo "Resources:"
     echo "  clusters                      List Kubernetes clusters reachable via NetBird"
     echo "  kubeconfig <cluster>          Write kubeconfig context for a cluster"
-    echo "  machines [--cluster <name>]   List all machines; enriches with node name for assigned ones"
+    echo "  machines [--cluster <name>]   List all machines with power state; enriches with node name for assigned ones"
     echo "  machine  <id>                 Show details for a specific machine"
     echo "  snapshot <app>                List restic snapshots for an app"
     exit 1
 }
 
+# Maps MachineStatus .spec.connected (true/false) to a power state label.
+# Omni doesn't track physical power state directly — a connected agent is the
+# closest signal it has, so "off" here really means "not connected" (which
+# includes powered off, but also e.g. a network-unreachable machine).
+_machine_power_state() {
+    [[ "$1" == "true" ]] && echo "on" || echo "off"
+}
+
 # Reads ClusterMachineIdentity YAML from stdin, prints table rows (no header)
+# power: pre-resolved power state string for this machine (see _machine_power_state)
 _machine_table_rows() {
+    local power="$1"
     yq e '[
       .metadata.id,
       (.spec.nodename // "-"),
@@ -26,7 +36,7 @@ _machine_table_rows() {
       (.spec.nodeips // [] | join(","))
     ] | @tsv' | \
     while IFS=$'\t' read -r id nodename cluster role ips; do
-        printf "%-38s  %-16s  %-20s  %-14s  %s\n" "$id" "$nodename" "$cluster" "$role" "$ips"
+        printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "$id" "$nodename" "$cluster" "$role" "$power" "$ips"
     done
 }
 
@@ -39,12 +49,13 @@ get_machines() {
         esac
     done
 
-    # status_tsv: id, IPv4 addresses — from MachineStatus, exists for all connected machines
+    # status_tsv: id, connected (power state proxy), IPv4 addresses — from MachineStatus, exists for all connected machines
     # Note: no 2>&1 here so omnictl's stderr reaches the terminal (auth flow, errors)
     local status_tsv identity_tsv
     status_tsv=$(omnictl get machinestatus -o yaml | \
         yq e '[
           .metadata.id,
+          (.spec.connected // false),
           (.spec.network.addresses // [] | map(select(test("^[0-9]"))) | map(sub("/[0-9]+$"; "")) | join(","))
         ] | @tsv' 2>/dev/null || true)
     # identity_tsv: id, nodename, cluster, role — assigned machines only
@@ -58,17 +69,18 @@ get_machines() {
 
     case "$HSCTL_OUTPUT" in
         table)
-            printf "%-38s  %-16s  %-20s  %-14s  %s\n" "MACHINE ID" "NODE NAME" "CLUSTER" "ROLE" "NODE IPs"
-            while IFS=$'\t' read -r machine_id ips; do
+            printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "MACHINE ID" "NODE NAME" "CLUSTER" "ROLE" "POWER" "NODE IPs"
+            while IFS=$'\t' read -r machine_id connected ips; do
+                power=$(_machine_power_state "$connected")
                 identity_row=""
                 [[ -n "$identity_tsv" ]] && identity_row=$(awk -F'\t' -v id="$machine_id" '$1==id{print;exit}' <<< "$identity_tsv")
                 if [[ -n "$identity_row" ]]; then
                     IFS=$'\t' read -r _ nodename cluster role <<< "$identity_row"
                     [[ -n "$cluster_filter" && "$cluster" != "$cluster_filter" ]] && continue
-                    printf "%-38s  %-16s  %-20s  %-14s  %s\n" "$machine_id" "$nodename" "$cluster" "$role" "$ips"
+                    printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "$machine_id" "$nodename" "$cluster" "$role" "$power" "$ips"
                 else
                     [[ -n "$cluster_filter" ]] && continue
-                    printf "%-38s  %-16s  %-20s  %-14s  %s\n" "$machine_id" "-" "-" "-" "$ips"
+                    printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "$machine_id" "-" "-" "-" "$power" "$ips"
                 fi
             done <<< "$status_tsv"
             ;;
@@ -90,15 +102,18 @@ get_machine() {
 
     case "$HSCTL_OUTPUT" in
         table)
-            printf "%-38s  %-16s  %-20s  %-14s  %s\n" "MACHINE ID" "NODE NAME" "CLUSTER" "ROLE" "NODE IPs"
+            printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "MACHINE ID" "NODE NAME" "CLUSTER" "ROLE" "POWER" "NODE IPs"
+            local connected power
+            connected=$(omnictl get machinestatus "$id" -o yaml | yq e '.spec.connected // false')
+            power=$(_machine_power_state "$connected")
             local identity_yaml
             identity_yaml=$(omnictl get clustermachineidentity "$id" -o yaml)
             if printf '%s\n' "$identity_yaml" | grep -q "^metadata:"; then
-                printf '%s\n' "$identity_yaml" | _machine_table_rows
+                printf '%s\n' "$identity_yaml" | _machine_table_rows "$power"
             else
                 local mgmt_addr
                 mgmt_addr=$(omnictl get machine "$id" -o yaml | yq e '.spec.managementaddress // "-"')
-                printf "%-38s  %-16s  %-20s  %-14s  %s\n" "$id" "-" "-" "-" "$mgmt_addr"
+                printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "$id" "-" "-" "-" "$power" "$mgmt_addr"
             fi
             ;;
         yaml|json) hsctl_omni_output "$HSCTL_OUTPUT" machine "$id" ;;
