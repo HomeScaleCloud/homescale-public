@@ -24,8 +24,8 @@ jobs:
 
       - name: Rewrite history — scrub internal FQDNs
         run: |
-          # Any FQDN ending in REDACTED → xxx, across every blob in every commit
-          printf 'regex:([a-zA-Z0-9*._-]+\\.)?homescale\\.cloud==>xxx\n' > /tmp/replacements.txt
+          # Any FQDN ending in REDACTED → REDACTED, across every blob in every commit
+          printf 'regex:([a-zA-Z0-9*._-]+\\.)?homescale\\.cloud==>REDACTED\n' > /tmp/replacements.txt
           # --force: needed because we didn't clone from an empty repo
           git filter-repo --replace-text /tmp/replacements.txt --force
 
