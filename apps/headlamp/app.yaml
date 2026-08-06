@@ -2,7 +2,6 @@ path: apps/headlamp
 namespace: headlamp
 releaseName: headlamp
 syncWave: 0
-targetRevision: dev-headlamp
 defaultDeploy: false
 netbird:
   policy:
