@@ -17,6 +17,13 @@ Runbooks for alerts fired by Prometheus. Each alert links back to this page via 
 |-------|----------|
 | [ArgoAppStuck](argo-app-stuck.md) | warning |
 
+## Metrics Aggregator
+
+| Alert | Severity |
+|-------|----------|
+| [MetricsAggregatorIngestionStopped](metrics-aggregator-ingestion-stopped.md) | critical |
+| [ClusterMetricsMissing](cluster-metrics-missing.md) | critical |
+
 ## PDU
 
 | Alert | Severity |

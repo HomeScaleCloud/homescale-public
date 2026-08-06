@@ -1,0 +1,40 @@
+{{- if eq .Values.cluster.name "boa1-prod" }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: metrics-aggregator-rules
+  namespace: metrics
+spec:
+  groups:
+    - name: metrics-aggregator.rules
+      rules:
+        - alert: MetricsAggregatorIngestionStopped
+          annotations:
+            summary: "The metrics aggregator has stopped receiving data from every cluster."
+            description: "No cluster has remote-written any samples to the aggregator Prometheus for 15 minutes. This points at the aggregator itself (remote-write receiver down, PVC full, pod crash-looping) or a shared networking path (NetBird mesh, DNS for REDACTED) rather than any single cluster."
+            runbook_url: "https://REDACTED/runbooks/metrics-aggregator-ingestion-stopped/"
+            dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+          expr: absent_over_time(up[10m])
+          for: 5m
+          labels:
+            severity: critical
+
+        - alert: ClusterMetricsMissing
+          annotations:
+            summary: "Cluster {{ "{{" }}$labels.cluster{{ "}}" }} has stopped reporting metrics to the aggregator."
+            description: "Cluster {{ "{{" }}$labels.cluster{{ "}}" }} reported metrics to the aggregator at some point in the last 6 hours but has not remote-written any samples recently, while at least one other cluster is still reporting normally. This points at that cluster's local Prometheus or its NetBird path to the aggregator rather than the aggregator itself — this happened once with the mgmt cluster's Prometheus pod silently wedging."
+            runbook_url: "https://REDACTED/runbooks/cluster-metrics-missing/"
+            dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
+          expr: |
+            (
+              count by (cluster) (max_over_time(up[6h]))
+              unless
+              count by (cluster) (up)
+            )
+            and on() (
+              count(count by (cluster) (up)) > 0
+            )
+          for: 10m
+          labels:
+            severity: critical
+{{- end }}
