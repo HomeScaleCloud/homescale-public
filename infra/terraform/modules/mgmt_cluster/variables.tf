@@ -30,3 +30,27 @@ variable "infisical_workspace_id" {
   description = "Infisical project/workspace UUID"
   type        = string
 }
+
+variable "oidc_issuer_url" {
+  description = "OIDC issuer URL trusted by the cluster's kube-apiserver for authenticating users"
+  type        = string
+  default     = ""
+}
+
+variable "oidc_client_id" {
+  description = "OIDC client ID (audience) trusted by the cluster's kube-apiserver"
+  type        = string
+  default     = ""
+}
+
+variable "oidc_username_claim" {
+  description = "OIDC token claim used as the Kubernetes username"
+  type        = string
+  default     = "email"
+}
+
+variable "oidc_groups_claim" {
+  description = "OIDC token claim used as the Kubernetes group membership"
+  type        = string
+  default     = "groups"
+}
