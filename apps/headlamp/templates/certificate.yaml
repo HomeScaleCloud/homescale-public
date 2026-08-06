@@ -1,0 +1,17 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: headlamp-tls
+  namespace: headlamp
+spec:
+  secretName: headlamp-tls
+  issuerRef:
+    name: {{ .Values.certIssuer | default "letsencrypt" }}
+    kind: ClusterIssuer
+{{- $homescale := default (dict) .Values.homescale }}
+{{- $clusterName := required "cluster.name is required" .Values.cluster.name }}
+{{- $dnsNames := concat (list (printf "headlamp.headlamp.%REDACTED" $clusterName)) (default (list) $homescale.netbirdCnameFqdns) | uniq }}
+  dnsNames:
+{{- range $dnsNames }}
+    - {{ . }}
+{{- end }}

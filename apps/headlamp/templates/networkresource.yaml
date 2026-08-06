@@ -1,0 +1,14 @@
+apiVersion: netbird.io/v1alpha1
+kind: NetworkResource
+metadata:
+  name: headlamp
+  namespace: headlamp
+spec:
+  networkRouterRef:
+    name: '{{ required "cluster.name is required" .Values.cluster.name }}'
+    namespace: netbird
+  serviceRef:
+    name: headlamp
+  groups:
+    - name: app-headlamp
+    - name: cluster-{{ required "cluster.name is required" .Values.cluster.name }}

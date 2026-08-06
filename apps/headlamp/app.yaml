@@ -1,0 +1,35 @@
+path: apps/headlamp
+namespace: headlamp
+releaseName: headlamp
+syncWave: 0
+targetRevision: dev-headlamp
+defaultDeploy: false
+netbird:
+  policy:
+    rules:
+      - sources: ["team-infra-plat", "team-sec-plat"]
+        protocol: tcp
+        ports: ["443"]
+  cname:
+    - fqdn: REDACTED
+      cluster: mgmt
+values:
+  cluster:
+    name: "{{ .Values.cluster.name }}"
+  headlamp:
+    replicaCount: 1
+    service:
+      port: 443
+    config:
+      tlsCertPath: /headlamp-tls/tls.crt
+      tlsKeyPath: /headlamp-tls/tls.key
+    probes:
+      scheme: HTTPS
+    volumes:
+      - name: headlamp-tls
+        secret:
+          secretName: headlamp-tls
+    volumeMounts:
+      - name: headlamp-tls
+        mountPath: /headlamp-tls
+        readOnly: true

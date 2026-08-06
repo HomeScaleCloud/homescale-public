@@ -1,0 +1,9 @@
+apiVersion: v2
+name: headlamp
+description: Helm chart for Headlamp (Kubernetes web UI)
+type: application
+version: 0.1.0
+dependencies:
+  - name: headlamp
+    version: 0.43.0
+    repository: https://kubernetes-sigs.github.io/headlamp/

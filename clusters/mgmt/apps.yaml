@@ -27,6 +27,8 @@ spec:
               deploy: true
             external-dns-crs:
               deploy: true
+            headlamp:
+              deploy: true
             multus:
               deploy: false
             netbird-crs:
