@@ -45,6 +45,9 @@ nav:
           - OmniSecureBootDisabled: runbooks/omni-secure-boot-disabled.md
       - ArgoCD:
           - ArgoAppStuck: runbooks/argo-app-stuck.md
+      - Metrics Aggregator:
+          - MetricsAggregatorIngestionStopped: runbooks/metrics-aggregator-ingestion-stopped.md
+          - ClusterMetricsMissing: runbooks/cluster-metrics-missing.md
       - PDU:
           - ApcPduOffline: runbooks/apc-pdu-offline.md
           - ApcPduVoltageWarning: runbooks/apc-pdu-voltage-warning.md
