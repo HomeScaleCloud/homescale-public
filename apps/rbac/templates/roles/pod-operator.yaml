@@ -11,3 +11,7 @@ rules:
     resources:
       - pods/log
     verbs: ["get"]
+  - apiGroups: [""]
+    resources:
+      - pods/eviction
+    verbs: ["create"]

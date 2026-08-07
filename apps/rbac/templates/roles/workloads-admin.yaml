@@ -29,9 +29,21 @@ rules:
       - jobs
       - cronjobs
     verbs: ["*"]
+  - apiGroups: ["batch.x-k8s.io"]
+    resources:
+      - jobsets
+    verbs: ["*"]
   - apiGroups: ["policy"]
     resources:
       - poddisruptionbudgets
+    verbs: ["*"]
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: ["*"]
+  - apiGroups: ["scheduling.k8s.io"]
+    resources:
+      - priorityclasses
     verbs: ["*"]
   - apiGroups: ["coordination.k8s.io"]
     resources:
