@@ -95,7 +95,7 @@ values:
 
     persistence:
       enabled: true
-      size: 25Gi
+      size: 30Gi
       existingClaim: omni
 
     metrics:
