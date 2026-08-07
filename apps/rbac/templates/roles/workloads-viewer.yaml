@@ -12,6 +12,7 @@ rules:
       - resourcequotas
       - limitranges
       - events
+      - serviceaccounts
     verbs: ["get", "list", "watch"]
   - apiGroups: ["apps"]
     resources:
@@ -25,9 +26,21 @@ rules:
       - jobs
       - cronjobs
     verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch.x-k8s.io"]
+    resources:
+      - jobsets
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["policy"]
     resources:
       - poddisruptionbudgets
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["scheduling.k8s.io"]
+    resources:
+      - priorityclasses
     verbs: ["get", "list", "watch"]
   - apiGroups: ["coordination.k8s.io"]
     resources:

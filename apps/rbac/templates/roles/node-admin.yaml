@@ -14,3 +14,11 @@ rules:
       - nodes
       - pods
     verbs: ["*"]
+  - apiGroups: ["node.k8s.io"]
+    resources:
+      - runtimeclasses
+    verbs: ["*"]
+  - apiGroups: ["certificates.k8s.io"]
+    resources:
+      - certificatesigningrequests
+    verbs: ["*"]

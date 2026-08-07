@@ -12,6 +12,13 @@ rules:
     resources:
       - storageclasses
       - volumeattachments
+      - volumeattributesclasses
+    verbs: ["*"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources:
+      - volumesnapshots
+      - volumesnapshotclasses
+      - volumesnapshotcontents
     verbs: ["*"]
   - apiGroups: ["volsync.backube"]
     resources:

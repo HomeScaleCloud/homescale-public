@@ -8,6 +8,18 @@ rules:
       - persistentvolumeclaims
       - persistentvolumes
     verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources:
+      - storageclasses
+      - volumeattachments
+      - volumeattributesclasses
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources:
+      - volumesnapshots
+      - volumesnapshotclasses
+      - volumesnapshotcontents
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["volsync.backube"]
     resources:
       - replicationsources
