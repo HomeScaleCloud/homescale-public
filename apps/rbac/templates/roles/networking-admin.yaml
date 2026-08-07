@@ -72,5 +72,30 @@ rules:
       - tiers
     verbs: ["*"]
   - apiGroups: ["cilium.io"]
-    resources: ["*"]
+    resources:
+      - ciliumbgpadvertisements
+      - ciliumbgpclusterconfigs
+      - ciliumbgpnodeconfigoverrides
+      - ciliumbgpnodeconfigs
+      - ciliumbgppeerconfigs
+      - ciliumcidrgroups
+      - ciliumclusterwideenvoyconfigs
+      - ciliumclusterwidenetworkpolicies
+      - ciliumdatapathplugins
+      - ciliumegressgatewaypolicies
+      - ciliumendpoints
+      - ciliumendpointslices
+      - ciliumenvoyconfigs
+      - ciliumgatewayclassconfigs
+      - ciliumidentities
+      - ciliuml2announcementpolicies
+      - ciliumloadbalancerippools
+      - ciliumlocalredirectpolicies
+      - ciliumnetworkdriverclusterconfigs
+      - ciliumnetworkdrivernodeconfigs
+      - ciliumnetworkpolicies
+      - ciliumnodeconfigs
+      - ciliumnodes
+      - ciliumpodippools
+      - ciliumresourceippools
     verbs: ["*"]
