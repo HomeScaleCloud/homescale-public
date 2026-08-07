@@ -11,7 +11,7 @@ rules:
     resources:
       - mutatingwebhookconfigurations
       - validatingwebhookconfigurations
-    verbs: ["*"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["apiregistration.k8s.io"]
     resources:
       - apiservices
