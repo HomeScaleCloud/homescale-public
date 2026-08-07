@@ -57,9 +57,24 @@ rules:
       - issuers
       - clusterissuers
     verbs: ["get", "list", "watch"]
+  - apiGroups: ["acme.cert-manager.io"]
+    resources:
+      - challenges
+      - orders
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["argocd-image-updater.argoproj.io"]
+    resources:
+      - imageupdaters
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["secrets.infisical.com"]
     resources:
+      - clustergenerators
+      - infisicalauths
+      - infisicalconnections
+      - infisicaldynamicsecrets
+      - infisicalpushsecrets
       - infisicalsecrets
+      - infisicalstaticsecrets
     verbs: ["get", "list", "watch"]
   - apiGroups: ["volsync.backube"]
     resources:

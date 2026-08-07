@@ -33,6 +33,44 @@ rules:
     verbs: ["get", "list", "watch"]
   - apiGroups: ["netbird.io"]
     resources:
+      - clusterproxies
+      - groups
+      - nbgroups
+      - nbpolicies
+      - nbresources
+      - nbroutingpeers
+      - nbsetupkeys
+      - networkegresses
       - networkresources
       - networkrouters
+      - setupkeys
+      - sidecarprofiles
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["crd.projectcalico.org"]
+    resources:
+      - bgpconfigurations
+      - bgpfilters
+      - bgppeers
+      - blockaffinities
+      - caliconodestatuses
+      - clusterinformations
+      - felixconfigurations
+      - globalnetworkpolicies
+      - globalnetworksets
+      - hostendpoints
+      - ipamblocks
+      - ipamconfigs
+      - ipamhandles
+      - ippools
+      - ipreservations
+      - kubecontrollersconfigurations
+      - networkpolicies
+      - networksets
+      - stagedglobalnetworkpolicies
+      - stagedkubernetesnetworkpolicies
+      - stagednetworkpolicies
+      - tiers
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["cilium.io"]
+    resources: ["*"]
     verbs: ["get", "list", "watch"]
