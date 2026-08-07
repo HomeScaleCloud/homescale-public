@@ -10,6 +10,9 @@ subjects:
   - kind: Group
     apiGroup: rbac.authorization.k8s.io
     name: team-infra-plat
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: 3a65b126-4dbe-4013-88dd-08fb8f45f6f7
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -23,6 +26,9 @@ subjects:
   - kind: Group
     apiGroup: rbac.authorization.k8s.io
     name: team-infra-plat
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: 3a65b126-4dbe-4013-88dd-08fb8f45f6f7
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -36,6 +42,9 @@ subjects:
   - kind: Group
     apiGroup: rbac.authorization.k8s.io
     name: team-infra-plat
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: 3a65b126-4dbe-4013-88dd-08fb8f45f6f7
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -49,6 +58,9 @@ subjects:
   - kind: Group
     apiGroup: rbac.authorization.k8s.io
     name: team-infra-plat
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: 3a65b126-4dbe-4013-88dd-08fb8f45f6f7
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -62,6 +74,9 @@ subjects:
   - kind: Group
     apiGroup: rbac.authorization.k8s.io
     name: team-infra-plat
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: 3a65b126-4dbe-4013-88dd-08fb8f45f6f7
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -75,6 +90,9 @@ subjects:
   - kind: Group
     apiGroup: rbac.authorization.k8s.io
     name: team-infra-plat
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: 3a65b126-4dbe-4013-88dd-08fb8f45f6f7
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -88,3 +106,6 @@ subjects:
   - kind: Group
     apiGroup: rbac.authorization.k8s.io
     name: team-infra-plat
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: 3a65b126-4dbe-4013-88dd-08fb8f45f6f7
