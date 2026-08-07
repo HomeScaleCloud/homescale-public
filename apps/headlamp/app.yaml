@@ -20,6 +20,7 @@ values:
     service:
       port: 443
     config:
+      inClusterContextName: {{ .Values.cluster.name }}
       tlsCertPath: /headlamp-tls/tls.crt
       tlsKeyPath: /headlamp-tls/tls.key
       oidc:
@@ -39,3 +40,10 @@ values:
       - name: headlamp-tls
         mountPath: /headlamp-tls
         readOnly: true
+    pluginsManager:
+      enabled: true
+      configContent: |
+        plugins:
+          - name: headlamp-argocd
+            source: https://artifacthub.io/packages/headlamp/headlamp-argocd/headlamp-argocd
+            version: 0.1.3

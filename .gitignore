@@ -45,3 +45,9 @@ site/
 Chart.lock
 **/charts/**.tgz
 **/charts/*/
+
+# Headlamp plugin dev (apps/headlamp/plugins/*)
+node_modules/
+apps/headlamp/plugins/*/dist/
+apps/headlamp/plugins/*/*.tar.gz
+apps/headlamp/plugins/*/.vscode/
