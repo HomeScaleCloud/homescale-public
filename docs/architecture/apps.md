@@ -68,7 +68,7 @@ extraSources:
 |-------|------|---------|-------------|
 | `syncWave` | int | `0` | ArgoCD sync wave. Lower numbers sync first. See [sync wave order](overview.md#sync-wave-order) |
 | `syncPolicy` | object | global automated prune+self-heal | Merged over the global `syncPolicy`. Use to disable automated sync or self-heal for a specific app |
-| `syncOptions` | list of strings | `["CreateNamespace=true"]` | Concatenated with the global `syncOptions` (duplicates removed). Common values: `ServerSideApply=true` |
+| `syncOptions` | list of strings | `["CreateNamespace=true", "SkipDryRunOnMissingResource=true"]` | Concatenated with the global `syncOptions` (duplicates removed). Common values: `ServerSideApply=true` |
 | `ignoreDifferences` | list | — | ArgoCD `ignoreDifferences` entries — suppress spurious drift detection on fields that are mutated out-of-band (e.g. webhook CABundles, generated secrets) |
 | `annotations` | object | — | Extra annotations added to the ArgoCD `Application` resource itself (not to app workloads) |
 
