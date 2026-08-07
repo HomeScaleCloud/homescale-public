@@ -1,0 +1,21 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: observability-viewer
+rules:
+  - apiGroups: ["monitoring.coreos.com"]
+    resources:
+      - alertmanagerconfigs
+      - alertmanagers
+      - podmonitors
+      - probes
+      - prometheusagents
+      - prometheuses
+      - prometheusrules
+      - scrapeconfigs
+      - servicemonitors
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["monitoring.grafana.com"]
+    resources:
+      - podlogs
+    verbs: ["get", "list", "watch"]
