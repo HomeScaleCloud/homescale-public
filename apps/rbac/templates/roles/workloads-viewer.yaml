@@ -66,6 +66,12 @@ rules:
     resources:
       - imageupdaters
     verbs: ["get", "list", "watch"]
+  - apiGroups: ["argoproj.io"]
+    resources:
+      - applications
+      - applicationsets
+      - appprojects
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["secrets.infisical.com"]
     resources:
       - clustergenerators
