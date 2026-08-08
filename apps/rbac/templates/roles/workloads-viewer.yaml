@@ -72,6 +72,15 @@ rules:
       - applicationsets
       - appprojects
     verbs: ["get", "list", "watch"]
+  # headlamp-argocd plugin proxies to the ArgoCD UI through the k8s API
+  # server rather than a direct network route, so viewing it needs the
+  # services/proxy subresource, scoped to just the argocd-server service.
+  - apiGroups: [""]
+    resources:
+      - services/proxy
+    resourceNames:
+      - argocd-server
+    verbs: ["get"]
   - apiGroups: ["secrets.infisical.com"]
     resources:
       - clustergenerators
