@@ -79,12 +79,20 @@ locals {
           app       = name
           namespace = try(y.namespace, name)
           service   = try(e.service, try(y.releaseName, name))
+          # NetBird DNS zones live one label under the account's dns_domain
+          # (REDACTED). Derive the zone straight from the fqdn's
+          # label immediately above that root, e.g. "REDACTED"
+          # -> zone "REDACTED", and
+          # "REDACTED" -> zone
+          # "REDACTED". This decouples the public fqdn
+          # from the app directory name entirely.
+          zone = "${element(split(".", trimsuffix(e.fqdn, "REDACTED")), length(split(".", trimsuffix(e.fqdn, "REDACTED"))) - 1)}REDACTED"
         })
       ]
     ]) : entry.fqdn => entry
   }
 
-  netbird_cname_apps = toset([for _, e in local.app_netbird_cnames : e.app])
+  netbird_cname_zones = toset([for _, e in local.app_netbird_cnames : e.zone])
 
   # One entry per rule: single-rule apps use app_name, multi-rule apps use app_name-N
   app_policy_rules = merge([

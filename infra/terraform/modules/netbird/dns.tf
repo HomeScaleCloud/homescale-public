@@ -11,7 +11,7 @@ resource "netbird_dns_record" "kubeapi" {
 resource "netbird_dns_record" "app_cname" {
   for_each = local.app_netbird_cnames
 
-  zone_id = netbird_dns_zone.app[each.value.app].id
+  zone_id = netbird_dns_zone.app[each.value.zone].id
   name    = each.value.fqdn
   type    = "CNAME"
   content = "${each.value.service}.${each.value.namespace}.${each.value.cluster}REDACTED"

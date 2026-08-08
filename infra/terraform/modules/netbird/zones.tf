@@ -9,7 +9,7 @@ resource "netbird_dns_zone" "cluster" {
 }
 
 resource "netbird_dns_zone" "app" {
-  for_each = local.netbird_cname_apps
+  for_each = local.netbird_cname_zones
 
   name                 = "${each.key}REDACTED"
   domain               = "${each.key}REDACTED"
