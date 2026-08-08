@@ -36,6 +36,13 @@ values:
           hasScopes: true
     probes:
       scheme: HTTPS
+    # homescale-theme-plugin is mounted via subPath, which Kubernetes never
+    # hot-reloads — kubelet only re-syncs whole-directory ConfigMap mounts.
+    # Bump this whenever dist/main.js or package.json changes, or the pod
+    # will keep serving the stale plugin bundle until something else forces
+    # a restart.
+    podAnnotations:
+      homescale-theme-plugin-revision: "2"
     volumes:
       - name: headlamp-tls
         secret:
