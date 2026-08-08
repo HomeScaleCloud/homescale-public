@@ -6,3 +6,5 @@ metadata:
 data:
   main.js: |
 {{ .Files.Get "plugins/homescale-theme/dist/main.js" | indent 4 }}
+  package.json: |
+{{ .Files.Get "plugins/homescale-theme/package.json" | indent 4 }}
