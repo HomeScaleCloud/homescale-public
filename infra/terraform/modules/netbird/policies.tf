@@ -80,13 +80,18 @@ locals {
           namespace = try(y.namespace, name)
           service   = try(e.service, try(y.releaseName, name))
           # NetBird DNS zones live one label under the account's dns_domain
-          # (REDACTED). Derive the zone straight from the fqdn's
-          # label immediately above that root, e.g. "REDACTED"
-          # -> zone "REDACTED", and
-          # "REDACTED" -> zone
-          # "REDACTED". This decouples the public fqdn
-          # from the app directory name entirely.
-          zone = "${element(split(".", trimsuffix(e.fqdn, "REDACTED")), length(split(".", trimsuffix(e.fqdn, "REDACTED"))) - 1)}REDACTED"
+          # (REDACTED). Derive that label straight from the fqdn
+          # itself, e.g. "REDACTED" -> zone label
+          # "console", and "REDACTED" -> zone
+          # label "metrics". This decouples the public fqdn from the app
+          # directory name, and (crucially) reproduces the exact same label
+          # apps already got from their directory name today, so unaffected
+          # apps' zones/records keep the same for_each key and aren't
+          # destroyed/recreated by this change.
+          zone = element(
+            split(".", trimsuffix(e.fqdn, "REDACTED")),
+            length(split(".", trimsuffix(e.fqdn, "REDACTED"))) - 1
+          )
         })
       ]
     ]) : entry.fqdn => entry
