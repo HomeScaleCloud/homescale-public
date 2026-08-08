@@ -47,7 +47,9 @@ Chart.lock
 **/charts/*/
 
 # Headlamp plugin dev (apps/headlamp/plugins/*)
+# dist/ is intentionally NOT ignored: the built bundle is what gets deployed
+# (see apps/headlamp/templates/homescale-theme-plugin-configmap.yaml) — there's
+# no CI build step for it, so it must be committed after `npm run build`.
 node_modules/
-apps/headlamp/plugins/*/dist/
 apps/headlamp/plugins/*/*.tar.gz
 apps/headlamp/plugins/*/.vscode/

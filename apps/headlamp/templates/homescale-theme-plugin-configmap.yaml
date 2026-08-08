@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: headlamp-homescale-theme-plugin
+  namespace: headlamp
+data:
+  main.js: |
+{{ .Files.Get "plugins/homescale-theme/dist/main.js" | indent 4 }}
