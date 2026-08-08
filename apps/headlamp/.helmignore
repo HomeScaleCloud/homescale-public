@@ -1,6 +1,8 @@
 # Patterns to ignore when building Helm packages, and when Helm loads chart
-# files (e.g. for .Files.Get). Only apps/headlamp/plugins/*/dist/ is needed
-# at render time — everything else here is plugin dev tooling/source.
+# files (e.g. for .Files.Get). These patterns also gate .Files.Get, so
+# plugins/*/dist/main.js and plugins/*/package.json must NOT be excluded
+# here — the homescale-theme-plugin-configmap.yaml template reads both at
+# render time. Everything else here is plugin dev tooling/source only.
 .git/
 .gitignore
 *.md
@@ -8,6 +10,5 @@ plugins/*/node_modules/
 plugins/*/src/
 plugins/*/*.tar.gz
 plugins/*/.vscode/
-plugins/*/package.json
 plugins/*/package-lock.json
 plugins/*/tsconfig.json
