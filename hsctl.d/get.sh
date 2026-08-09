@@ -248,42 +248,33 @@ PYEOF
 HSCTL_OIDC_ISSUER_URL="https://login.microsoftonline.com/REDACTED/v2.0"
 HSCTL_OIDC_CLIENT_ID="REDACTED"
 
-# Fetches a cluster's real Kubernetes CA cert via Omni's break-glass
-# kubeconfig, printing base64 CA data on stdout. Only the CA is kept — the
-# admin client-cert/key omnictl generates alongside it is discarded
-# immediately and never written to the user's real kubeconfig. Fails (no
-# output) for clusters Omni doesn't track, e.g. the Vultr-managed mgmt.
-_hsctl_fetch_cluster_ca() {
+# Cheap existence check: does Omni track this cluster at all? (Talos
+# clusters only — the Vultr-managed mgmt isn't Omni-tracked, so this fails
+# for it.) Doesn't touch credentials at all — --break-glass isn't needed
+# any more since k8s.api.<cluster> now presents a trusted LetsEncrypt cert
+# (apps/netbird-crs's kube-apiserver-proxy), not the cluster's own internal
+# CA, so there's nothing to extract.
+_hsctl_cluster_is_omni_managed() {
     local cluster="$1"
-    local tmpfile
-    tmpfile=$(mktemp /tmp/hsctl-omni-breakglass-XXXXXX)
-    chmod 600 "$tmpfile"
-    if ! omnictl kubeconfig --cluster "$cluster" --break-glass --merge=false --force "$tmpfile" >/dev/null 2>&1; then
-        rm -f "$tmpfile"
-        return 1
-    fi
-    local ca
-    ca=$(yq e '.clusters[0].cluster.certificate-authority-data' "$tmpfile" 2>/dev/null)
-    rm -f "$tmpfile"
-    [[ -z "$ca" || "$ca" == "null" ]] && return 1
-    echo "$ca"
+    omnictl get cluster "$cluster" >/dev/null 2>&1
 }
 
-# Direct-to-apiserver kubeconfig: real CA (no insecure-skip-tls-verify) +
-# per-user OIDC login via kubectl-oidc_login (PKCE, no client secret
-# needed). Requires the target apiserver to trust HSCTL_OIDC_ISSUER_URL —
-# see infra/omni/patches/oidc.yaml for which clusters do.
+# Direct-to-apiserver kubeconfig: trusted LetsEncrypt cert (no CA to embed,
+# no insecure-skip-tls-verify) + per-user OIDC login via kubectl-oidc_login
+# (PKCE, no client secret needed). Requires the target apiserver to trust
+# HSCTL_OIDC_ISSUER_URL — see infra/omni/patches/oidc.yaml for which
+# clusters do.
 _hsctl_write_kubeconfig_direct() {
-    local cluster="$1" kubeconfig="$2" ca_data="$3"
+    local cluster="$1" kubeconfig="$2"
     local fqdn="k8s.api.${cluster}REDACTED"
     local user="oidc-${cluster}"
 
-    python3 - "$cluster" "$fqdn" "$kubeconfig" "$ca_data" "$user" "$HSCTL_OIDC_ISSUER_URL" "$HSCTL_OIDC_CLIENT_ID" <<'PYEOF'
+    python3 - "$cluster" "$fqdn" "$kubeconfig" "$user" "$HSCTL_OIDC_ISSUER_URL" "$HSCTL_OIDC_CLIENT_ID" <<'PYEOF'
 import sys
 from pathlib import Path
 import yaml  # PyYAML — available via system python on macOS
 
-cluster, fqdn, kubeconfig_path, ca_data, user, issuer_url, client_id = sys.argv[1:8]
+cluster, fqdn, kubeconfig_path, user, issuer_url, client_id = sys.argv[1:7]
 
 server = f'https://{fqdn}'
 p = Path(kubeconfig_path)
@@ -302,10 +293,7 @@ def upsert(collection, name, value):
     items.append(value)
     cfg[collection] = items
 
-upsert('clusters', cluster, {
-    'name': cluster,
-    'cluster': {'server': server, 'certificate-authority-data': ca_data},
-})
+upsert('clusters', cluster, {'name': cluster, 'cluster': {'server': server}})
 upsert('users', user, {
     'name': user,
     'user': {
@@ -390,9 +378,8 @@ get_kubeconfig() {
     # Prefer the direct-to-apiserver path (real per-user OIDC RBAC, not
     # NetBird-peer-identity impersonation) — only works for clusters Omni
     # tracks (Talos) whose apiserver trusts HSCTL_OIDC_ISSUER_URL.
-    local ca_data
-    if ca_data=$(_hsctl_fetch_cluster_ca "$cluster"); then
-        _hsctl_write_kubeconfig_direct "$cluster" "$kubeconfig" "$ca_data"
+    if _hsctl_cluster_is_omni_managed "$cluster"; then
+        _hsctl_write_kubeconfig_direct "$cluster" "$kubeconfig"
         return
     fi
 

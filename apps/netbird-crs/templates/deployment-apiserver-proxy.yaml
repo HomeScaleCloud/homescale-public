@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-apiserver-proxy
+  namespace: netbird
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kube-apiserver-proxy
+  template:
+    metadata:
+      labels:
+        app: kube-apiserver-proxy
+      annotations:
+        # Forces a rollout when the nginx config changes — kubelet won't
+        # otherwise restart the pod just because a mounted ConfigMap changed.
+        checksum/nginx-conf: {{ include (print $.Template.BasePath "/configmap-apiserver-proxy.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - name: https
+              containerPort: 443
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+            - name: ca
+              mountPath: /ca
+              readOnly: true
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: kube-apiserver-proxy-nginx
+        - name: tls
+          secret:
+            secretName: kube-apiserver-proxy-tls
+        - name: ca
+          configMap:
+            name: kube-root-ca.crt
