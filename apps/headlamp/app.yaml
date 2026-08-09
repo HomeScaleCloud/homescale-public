@@ -40,9 +40,6 @@ values:
     # a restart.
     podAnnotations:
       homescale-theme-plugin-revision: "5"
-    # Joins the NetBird mesh so the backend can reach other clusters' real
-    # kube-apiservers directly (see templates/setupkey.yaml) — same pattern
-    # as apps/metrics' Prometheus/Alloy nb-client sidecars.
     initContainers:
       - name: nb-client
         image: "ghcr.io/netbirdio/netbird:0.72.4"
@@ -117,12 +114,5 @@ values:
         subPath: package.json
         readOnly: true
       - name: headlamp-multicluster
-        # Headlamp's backend always checks this exact hardcoded path for an
-        # additional/"dynamic" kubeconfig on top of its in-cluster context —
-        # confirmed via `error loading dynamic kubeconfig: ... open
-        # /home/headlamp/.config/Headlamp/kubeconfigs/config: no such file`
-        # in its logs before this mount existed. No -kubeconfig flag or
-        # KUBECONFIG env var is wired up by this chart (0.44.0) at all, so
-        # this is the only way in.
         mountPath: /home/headlamp/.config/Headlamp/kubeconfigs
         readOnly: true

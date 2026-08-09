@@ -1,8 +1,3 @@
-# Clusters Headlamp shows in its cluster picker, alongside its own in-cluster
-# one (mgmt) — derived from clusters/*/cluster.yaml rather than a hand-maintained
-# list, so a cluster shows up automatically once its kube-apiserver is set up to
-# trust the shared OIDC issuer (i.e. once its cluster.yaml references
-# infra/omni/patches/oidc.yaml). See apps/headlamp/templates/kubeconfig-secret.yaml.
 locals {
   headlamp_cluster_files = fileset("${path.module}/../../clusters", "*/cluster.yaml")
 

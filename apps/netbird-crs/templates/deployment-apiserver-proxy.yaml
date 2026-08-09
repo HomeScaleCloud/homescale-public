@@ -13,8 +13,6 @@ spec:
       labels:
         app: kube-apiserver-proxy
       annotations:
-        # Forces a rollout when the nginx config changes — kubelet won't
-        # otherwise restart the pod just because a mounted ConfigMap changed.
         checksum/nginx-conf: {{ include (print $.Template.BasePath "/configmap-apiserver-proxy.yaml") . | sha256sum }}
     spec:
       containers:

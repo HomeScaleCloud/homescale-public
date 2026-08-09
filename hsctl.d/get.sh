@@ -241,29 +241,14 @@ else:
 PYEOF
 }
 
-# OIDC issuer/client-id trusted by Omni-managed clusters' kube-apiservers
-# (see infra/omni/patches/oidc.yaml) — not secret: the same values are
-# already committed there in plaintext, and Headlamp's own OIDC secret
-# exposes them to any pod in its namespace.
 HSCTL_OIDC_ISSUER_URL="https://login.microsoftonline.com/REDACTED/v2.0"
 HSCTL_OIDC_CLIENT_ID="REDACTED"
 
-# Cheap existence check: does Omni track this cluster at all? (Talos
-# clusters only — the Vultr-managed mgmt isn't Omni-tracked, so this fails
-# for it.) Doesn't touch credentials at all — --break-glass isn't needed
-# any more since k8s.api.<cluster> now presents a trusted LetsEncrypt cert
-# (apps/netbird-crs's kube-apiserver-proxy), not the cluster's own internal
-# CA, so there's nothing to extract.
 _hsctl_cluster_is_omni_managed() {
     local cluster="$1"
     omnictl get cluster "$cluster" >/dev/null 2>&1
 }
 
-# Direct-to-apiserver kubeconfig: trusted LetsEncrypt cert (no CA to embed,
-# no insecure-skip-tls-verify) + per-user OIDC login via kubectl-oidc_login
-# (PKCE, no client secret needed). Requires the target apiserver to trust
-# HSCTL_OIDC_ISSUER_URL — see infra/omni/patches/oidc.yaml for which
-# clusters do.
 _hsctl_write_kubeconfig_direct() {
     local cluster="$1" kubeconfig="$2"
     local fqdn="k8s.api.${cluster}REDACTED"
@@ -319,9 +304,6 @@ print(f"Switched to cluster {cluster!r} (direct, OIDC)")
 PYEOF
 }
 
-# Fallback for clusters without direct/OIDC access (not Omni-tracked, or no
-# OIDC trust yet): ClusterProxy, which impersonates by connecting NetBird
-# peer identity rather than validating the token/cert presented.
 _hsctl_write_kubeconfig_clusterproxy() {
     local cluster="$1" kubeconfig="$2"
     local fqdn="nb.k8s.api.${cluster}REDACTED"
@@ -375,9 +357,6 @@ get_kubeconfig() {
 
     local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
 
-    # Prefer the direct-to-apiserver path (real per-user OIDC RBAC, not
-    # NetBird-peer-identity impersonation) — only works for clusters Omni
-    # tracks (Talos) whose apiserver trusts HSCTL_OIDC_ISSUER_URL.
     if _hsctl_cluster_is_omni_managed "$cluster"; then
         _hsctl_write_kubeconfig_direct "$cluster" "$kubeconfig"
         return

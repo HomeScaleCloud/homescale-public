@@ -1,11 +1,3 @@
-# TLS-terminating reverse proxy in front of the real kube-apiserver:
-# presents a trusted LetsEncrypt cert (certificate-apiserver-proxy.yaml) to
-# mesh clients, forwards to kubernetes.default.svc.cluster.local — the same
-# in-cluster address every pod already uses, which Kubernetes itself already
-# load-balances across all control-plane replicas, so there's no single-node
-# fragility. Whatever auth the client presents (e.g. an OIDC bearer token)
-# passes straight through in the Authorization header; the real apiserver
-# still does the actual authn/authz.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -15,8 +7,6 @@ data:
   nginx.conf: |
     events {}
     http {
-      # exec/attach/port-forward upgrade the connection (SPDY/WebSocket);
-      # everything else is plain HTTP/1.1 REST or a long-lived watch.
       map $http_upgrade $connection_upgrade {
         default upgrade;
         ''      close;
@@ -30,9 +20,6 @@ data:
         location / {
           proxy_pass https://kubernetes.default.svc.cluster.local;
 
-          # Verify the real apiserver's cert using the cluster's own root
-          # CA (auto-injected into every namespace as kube-root-ca.crt) —
-          # real end-to-end TLS verification, not proxy_ssl_verify off.
           proxy_ssl_trusted_certificate /ca/ca.crt;
           proxy_ssl_verify on;
           proxy_ssl_name kubernetes.default.svc.cluster.local;
