@@ -78,7 +78,7 @@ function ArgoCDRedirect() {
 
   React.useEffect(() => {
     if (target) {
-      window.location.assign(target);
+      window.open(target, '_blank', 'noopener,noreferrer');
     }
   }, [target]);
 
@@ -88,7 +88,11 @@ function ArgoCDRedirect() {
       <CommonComponents.SectionBox>
         {target ? (
           <p>
-            Opening <a href={target}>{target}</a>…
+            Opened{' '}
+            <a href={target} target="_blank" rel="noopener noreferrer">
+              {target}
+            </a>{' '}
+            in a new tab. If it didn't open, click the link.
           </p>
         ) : (
           <p>No cluster selected.</p>

@@ -38,7 +38,7 @@ values:
     # will keep serving the stale plugin bundle until something else forces
     # a restart.
     podAnnotations:
-      homescale-theme-plugin-revision: "3"
+      homescale-theme-plugin-revision: "4"
     volumes:
       - name: headlamp-tls
         secret:
