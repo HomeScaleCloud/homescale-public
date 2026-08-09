@@ -23,10 +23,6 @@ values:
       inClusterContextName: "{{ .Values.cluster.name }}"
       tlsCertPath: /headlamp-tls/tls.crt
       tlsKeyPath: /headlamp-tls/tls.key
-      # The pluginsManager sidecar installs plugins (e.g. headlamp-argocd)
-      # asynchronously after the main container starts, so the backend must
-      # watch the plugins dir to pick them up instead of only scanning once.
-      watchPlugins: true
       oidc:
         secret:
           create: false
@@ -42,7 +38,7 @@ values:
     # will keep serving the stale plugin bundle until something else forces
     # a restart.
     podAnnotations:
-      homescale-theme-plugin-revision: "2"
+      homescale-theme-plugin-revision: "3"
     volumes:
       - name: headlamp-tls
         secret:
@@ -62,10 +58,3 @@ values:
         mountPath: /headlamp/plugins/homescale-theme/package.json
         subPath: package.json
         readOnly: true
-    pluginsManager:
-      enabled: true
-      configContent: |
-        plugins:
-          - name: headlamp-argocd
-            source: https://artifacthub.io/packages/headlamp/headlamp-argocd/headlamp-argocd
-            version: 0.1.3

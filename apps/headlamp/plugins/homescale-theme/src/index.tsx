@@ -1,4 +1,13 @@
-import { AppLogoProps, registerAppLogo, registerAppTheme } from '@kinvolk/headlamp-plugin/lib';
+import {
+  AppLogoProps,
+  CommonComponents,
+  K8s,
+  registerAppLogo,
+  registerAppTheme,
+  registerRoute,
+  registerSidebarEntry,
+} from '@kinvolk/headlamp-plugin/lib';
+import React from 'react';
 import { LOGO_BANNER_DATA_URI, LOGO_ICON_DATA_URI } from './assets';
 
 // Navy sampled from media/homescale-{icon,transparent,banner}.png in the repo
@@ -54,4 +63,53 @@ registerAppTheme({
   primary: HOMESCALE_ACCENT,
   secondary: HOMESCALE_NAVY,
   ...sidebarAndNavbar,
+});
+
+// Links out to the real ArgoCD UI for the selected cluster instead of
+// proxying through the k8s API: argocd-server's Service always has two
+// named ports (http+https, both aliasing the same container port), and an
+// unqualified `services/proxy` request to a multi-port Service fails with
+// "no endpoints available" regardless of RBAC -- a k8s apiserver limitation
+// (see https://github.com/kubernetes/kubernetes/issues/20070), not
+// something fixable on our end.
+function ArgoCDRedirect() {
+  const cluster = K8s.useCluster();
+  const target = cluster ? `https://argocd-server.argocd.${cluster}REDACTED` : null;
+
+  React.useEffect(() => {
+    if (target) {
+      window.location.assign(target);
+    }
+  }, [target]);
+
+  return (
+    <>
+      <CommonComponents.SectionHeader title="ArgoCD" />
+      <CommonComponents.SectionBox>
+        {target ? (
+          <p>
+            Opening <a href={target}>{target}</a>…
+          </p>
+        ) : (
+          <p>No cluster selected.</p>
+        )}
+      </CommonComponents.SectionBox>
+    </>
+  );
+}
+
+registerSidebarEntry({
+  parent: null,
+  name: 'argocd',
+  label: 'ArgoCD',
+  url: '/argocd',
+  icon: 'mdi:git',
+});
+
+registerRoute({
+  path: '/argocd',
+  sidebar: 'argocd',
+  name: 'argocd',
+  exact: true,
+  component: () => <ArgoCDRedirect />,
 });
