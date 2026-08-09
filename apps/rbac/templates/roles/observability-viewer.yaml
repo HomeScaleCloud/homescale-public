@@ -20,16 +20,19 @@ rules:
       - podlogs
     verbs: ["get", "list", "watch"]
   # Headlamp's built-in prometheus plugin proxies to Prometheus's HTTP API
-  # through the k8s API server rather than a direct network route. Scoped to
-  # apps/metrics' prometheus-proxy Service (not prometheus-operated or
-  # metrics-kube-prometheus-st-prometheus): headless Services aren't proxied
-  # by the platform at all, and an unqualified services/proxy request to a
-  # multi-port Service can't be disambiguated -- both fail with "no
-  # endpoints available" regardless of RBAC (see apps/argocd's
-  # argocd-server, which hits the multi-port version of this).
+  # through the k8s API server rather than a direct network route, targeting
+  # apps/metrics' prometheus-proxy Service (not prometheus-operated, which is
+  # headless and never proxied by the platform, or
+  # metrics-kube-prometheus-st-prometheus, whose two named ports make an
+  # unqualified proxy request ambiguous). When manually configured with a
+  # "namespace/service:port" address, the plugin requests the k8s resource
+  # name as "prometheus-proxy:9090" (service+port together, not just the
+  # service name) -- RBAC resourceNames does exact string matches with no
+  # wildcards, so both forms need to be listed.
   - apiGroups: [""]
     resources:
       - services/proxy
     resourceNames:
       - prometheus-proxy
+      - prometheus-proxy:9090
     verbs: ["get"]
