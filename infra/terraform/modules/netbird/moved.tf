@@ -22,3 +22,8 @@ moved {
   from = netbird_dns_record.loki
   to   = netbird_dns_record.app_cname["REDACTED"]
 }
+
+moved {
+  from = netbird_dns_record.kubeapi
+  to   = netbird_dns_record.kubeapi_proxy
+}

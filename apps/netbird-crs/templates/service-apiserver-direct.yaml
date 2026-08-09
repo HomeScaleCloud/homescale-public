@@ -1,0 +1,22 @@
+# Headless on purpose: a normal ClusterIP Service would get an address from
+# the cluster's Service CIDR, which nearly every cluster leaves at the
+# Kubernetes default (10.96.0.0/12) — the built-in `kubernetes` Service always
+# lands on 10.96.0.1 as a result, and exposing that literal IP into the mesh
+# collided across clusters (two NetworkResources both advertising the same
+# /32, NetBird silently picking one). Selecting the real apiserver pods
+# instead exposes their hostNetwork IPs, which are genuinely unique per
+# cluster/region. No effect on clusters where nothing matches the selector
+# (e.g. mgmt, whose control plane is managed by Vultr and isn't a visible
+# pod) — the Service just has no endpoints there.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-apiserver-direct
+  namespace: kube-system
+spec:
+  clusterIP: None
+  selector:
+    component: kube-apiserver
+  ports:
+    - port: 6443
+      targetPort: 6443

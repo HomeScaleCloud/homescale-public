@@ -241,16 +241,107 @@ else:
 PYEOF
 }
 
-get_kubeconfig() {
-    local cluster="${1:-}"
-    [[ -z "$cluster" ]] && { echo "Usage: hsctl get kubeconfig <cluster>"; exit 1; }
+# OIDC issuer/client-id trusted by Omni-managed clusters' kube-apiservers
+# (see infra/omni/patches/oidc.yaml) — not secret: the same values are
+# already committed there in plaintext, and Headlamp's own OIDC secret
+# exposes them to any pod in its namespace.
+HSCTL_OIDC_ISSUER_URL="https://login.microsoftonline.com/REDACTED/v2.0"
+HSCTL_OIDC_CLIENT_ID="REDACTED"
 
-    local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
+# Fetches a cluster's real Kubernetes CA cert via Omni's break-glass
+# kubeconfig, printing base64 CA data on stdout. Only the CA is kept — the
+# admin client-cert/key omnictl generates alongside it is discarded
+# immediately and never written to the user's real kubeconfig. Fails (no
+# output) for clusters Omni doesn't track, e.g. the Vultr-managed mgmt.
+_hsctl_fetch_cluster_ca() {
+    local cluster="$1"
+    local tmpfile
+    tmpfile=$(mktemp /tmp/hsctl-omni-breakglass-XXXXXX)
+    chmod 600 "$tmpfile"
+    if ! omnictl kubeconfig --cluster "$cluster" --break-glass --merge=false --force "$tmpfile" >/dev/null 2>&1; then
+        rm -f "$tmpfile"
+        return 1
+    fi
+    local ca
+    ca=$(yq e '.clusters[0].cluster.certificate-authority-data' "$tmpfile" 2>/dev/null)
+    rm -f "$tmpfile"
+    [[ -z "$ca" || "$ca" == "null" ]] && return 1
+    echo "$ca"
+}
+
+# Direct-to-apiserver kubeconfig: real CA (no insecure-skip-tls-verify) +
+# per-user OIDC login via kubectl-oidc_login (PKCE, no client secret
+# needed). Requires the target apiserver to trust HSCTL_OIDC_ISSUER_URL —
+# see infra/omni/patches/oidc.yaml for which clusters do.
+_hsctl_write_kubeconfig_direct() {
+    local cluster="$1" kubeconfig="$2" ca_data="$3"
     local fqdn="k8s.api.${cluster}REDACTED"
+    local user="oidc-${cluster}"
+
+    python3 - "$cluster" "$fqdn" "$kubeconfig" "$ca_data" "$user" "$HSCTL_OIDC_ISSUER_URL" "$HSCTL_OIDC_CLIENT_ID" <<'PYEOF'
+import sys
+from pathlib import Path
+import yaml  # PyYAML — available via system python on macOS
+
+cluster, fqdn, kubeconfig_path, ca_data, user, issuer_url, client_id = sys.argv[1:8]
+
+server = f'https://{fqdn}'
+p = Path(kubeconfig_path)
+p.parent.mkdir(parents=True, exist_ok=True)
+cfg = yaml.safe_load(p.read_text()) if p.exists() else None
+if not cfg:
+    cfg = {'apiVersion': 'v1', 'kind': 'Config'}
+
+def upsert(collection, name, value):
+    items = cfg.get(collection) or []
+    for i, item in enumerate(items):
+        if item.get('name') == name:
+            items[i] = value
+            cfg[collection] = items
+            return
+    items.append(value)
+    cfg[collection] = items
+
+upsert('clusters', cluster, {
+    'name': cluster,
+    'cluster': {'server': server, 'certificate-authority-data': ca_data},
+})
+upsert('users', user, {
+    'name': user,
+    'user': {
+        'exec': {
+            'apiVersion': 'client.authentication.k8s.io/v1',
+            'command': 'kubectl',
+            'args': [
+                'oidc-login', 'get-token',
+                f'--oidc-issuer-url={issuer_url}',
+                f'--oidc-client-id={client_id}',
+                '--oidc-extra-scope=profile,email,offline_access',
+            ],
+            'interactiveMode': 'IfAvailable',
+            'provideClusterInfo': False,
+        },
+    },
+})
+upsert('contexts', cluster, {'name': cluster, 'context': {'cluster': cluster, 'user': user, 'namespace': 'default'}})
+cfg['current-context'] = cluster
+
+p.write_text(yaml.dump(cfg, default_flow_style=False))
+print(f"Switched to cluster {cluster!r} (direct, OIDC)")
+PYEOF
+}
+
+# Fallback for clusters without direct/OIDC access (not Omni-tracked, or no
+# OIDC trust yet): ClusterProxy, which impersonates by connecting NetBird
+# peer identity rather than validating the token/cert presented.
+_hsctl_write_kubeconfig_clusterproxy() {
+    local cluster="$1" kubeconfig="$2"
+    local fqdn="nb.k8s.api.${cluster}REDACTED"
 
     python3 - "$cluster" "$fqdn" "$kubeconfig" <<'PYEOF'
-import json, sys, ssl, urllib.request
+import sys, ssl, urllib.request
 from pathlib import Path
+import yaml
 
 cluster, fqdn, kubeconfig_path = sys.argv[1], sys.argv[2], sys.argv[3]
 
@@ -262,8 +353,6 @@ try:
 except Exception as e:
     print(f'error: cluster {cluster!r} not reachable at {fqdn}: {e}', file=sys.stderr)
     sys.exit(1)
-
-import yaml  # PyYAML — available via system python on macOS
 
 server = f'https://{fqdn}'
 p = Path(kubeconfig_path)
@@ -288,8 +377,27 @@ upsert('contexts', cluster, {'name': cluster, 'context': {'cluster': cluster, 'u
 cfg['current-context'] = cluster
 
 p.write_text(yaml.dump(cfg, default_flow_style=False))
-print(f'Switched to cluster {cluster!r}')
+print(f"Switched to cluster {cluster!r} (ClusterProxy fallback)")
 PYEOF
+}
+
+get_kubeconfig() {
+    local cluster="${1:-}"
+    [[ -z "$cluster" ]] && { echo "Usage: hsctl get kubeconfig <cluster>"; exit 1; }
+
+    local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
+
+    # Prefer the direct-to-apiserver path (real per-user OIDC RBAC, not
+    # NetBird-peer-identity impersonation) — only works for clusters Omni
+    # tracks (Talos) whose apiserver trusts HSCTL_OIDC_ISSUER_URL.
+    local ca_data
+    if ca_data=$(_hsctl_fetch_cluster_ca "$cluster"); then
+        _hsctl_write_kubeconfig_direct "$cluster" "$kubeconfig" "$ca_data"
+        return
+    fi
+
+    echo "hsctl: '$cluster' isn't Omni-managed (or has no OIDC trust yet) — falling back to ClusterProxy" >&2
+    _hsctl_write_kubeconfig_clusterproxy "$cluster" "$kubeconfig"
 }
 
 get_main() {

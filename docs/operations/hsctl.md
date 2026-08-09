@@ -23,7 +23,7 @@ Output format defaults to `table`; pass `-o yaml` or `-o json` for scripting.
 | Resource | Usage | Description |
 |----------|-------|-------------|
 | `clusters` | `hsctl get clusters` | List Kubernetes clusters reachable via NetBird |
-| `kubeconfig` | `hsctl get kubeconfig <cluster>` | Write a kubeconfig context for `<cluster>` (points at the cluster's NetBird-internal API server) |
+| `kubeconfig` | `hsctl get kubeconfig <cluster>` | Write a kubeconfig context for `<cluster>` — [direct to the real apiserver](../architecture/networking.md#direct-cluster-api-access) with OIDC login (`kubectl-oidc_login`, [krew](https://krew.sigs.k8s.io/) plugin, required) when Omni tracks the cluster and it trusts OIDC; falls back to `ClusterProxy` otherwise |
 | `machines` | `hsctl get machines [--cluster <name>]` | List all Omni machines with power state, enriched with node name, cluster, and role for machines already assigned to a cluster. Filter to one cluster with `--cluster`/`-c` |
 | `machine` | `hsctl get machine <id\|node-name>` | Show details for a single machine, by Omni machine ID or Kubernetes node name |
 | `snapshot` | `hsctl get snapshot <app>` | List restic snapshots for an app's VolSync-backed PVC, with timestamps and IDs — see [Backups: restore procedure](../architecture/backups.md#restore-procedure) |

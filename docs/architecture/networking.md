@@ -30,13 +30,17 @@ No Ingress or LoadBalancer service is needed — the NetBird operator handles DN
 
 ### Direct cluster API access
 
-`netbird-crs` also registers each cluster's built-in `kubernetes` Service (the real kube-apiserver, not a proxy), reachable at:
+Each cluster's real kube-apiserver (not a proxy) is reachable at:
 
 ```
-kubernetes.default.<cluster>REDACTED
+k8s.api.<cluster>REDACTED
 ```
 
-This is deliberately separate from the `ClusterProxy`-based access `hsctl get kubeconfig`/`hsctl switch` use (`k8s.api.<cluster>REDACTED`): `ClusterProxy` authenticates by impersonating the *connecting NetBird peer's* identity, which is correct for a human's laptop (one peer, one person) but wrong for a shared backend serving many different users — everyone would collapse into the same impersonated identity. `kubernetes.default.<cluster>...` instead reaches the cluster's real apiserver directly, so any auth the client presents (e.g. a forwarded per-user OIDC token) is validated by that apiserver itself. Headlamp uses this to show `boa1-prod` in its cluster picker with the same per-user RBAC it already has for `mgmt`. Which clusters appear is derived automatically — Terraform (`infra/terraform/headlamp.tf`) scans `clusters/*/cluster.yaml` for ones referencing `infra/omni/patches/oidc.yaml` and publishes the list to Infisical, which `apps/headlamp/templates/kubeconfig-secret.yaml` renders into a kubeconfig context per cluster. Adding a cluster to Headlamp's picker is then just adding the OIDC patch to its `cluster.yaml` — no separate list to maintain. See also `apps/headlamp/templates/setupkey.yaml`.
+`netbird-crs` gets there by selecting the real `component=kube-apiserver` pods (`apps/netbird-crs/templates/service-apiserver-direct.yaml`, a headless Service in `kube-system`) rather than the cluster's built-in `kubernetes` Service. That distinction matters: the built-in Service's ClusterIP is almost always `10.96.0.1` (the Kubernetes default), so exposing it directly collided across clusters — two `NetworkResource`s both advertising the identical `/32`, with NetBird silently routing to whichever one won. Selecting the real (`hostNetwork`) apiserver pods instead exposes IPs that are genuinely unique per cluster/region.
+
+Whatever auth the client presents (e.g. a forwarded per-user OIDC token) is validated by the target apiserver itself — this is what makes it different from `ClusterProxy` (now at `nb.k8s.api.<cluster>REDACTED`), which instead authenticates by impersonating the *connecting NetBird peer's* identity. That's correct for a single human's laptop (one peer, one person) but wrong for a shared backend serving many different users, since everyone would collapse into the same impersonated identity — which is why Headlamp (a shared backend) uses the direct path, not `ClusterProxy`. `hsctl get kubeconfig`/`hsctl switch` also default to the direct path now (`omnictl kubeconfig --break-glass` supplies the real CA, `kubectl-oidc_login` handles the OIDC login — no `insecure-skip-tls-verify`, no shared/impersonated identity), falling back to `ClusterProxy` only for clusters Omni doesn't track or that don't trust the OIDC issuer yet. `ClusterProxy` itself isn't going away — CI/automation still uses it — but it's no longer the primary path for interactive human access.
+
+Headlamp shows `boa1-prod` in its cluster picker via this same direct path, with the same per-user RBAC it already has for `mgmt`. Which clusters appear is derived automatically — Terraform (`infra/terraform/headlamp.tf`) scans `clusters/*/cluster.yaml` for ones referencing `infra/omni/patches/oidc.yaml` and publishes the list to Infisical, which `apps/headlamp/templates/kubeconfig-secret.yaml` renders into a kubeconfig context per cluster. Adding a cluster to Headlamp's picker is then just adding the OIDC patch to its `cluster.yaml` — no separate list to maintain. See also `apps/headlamp/templates/setupkey.yaml`. Unlike `hsctl`, Headlamp still uses `insecure-skip-tls-verify` rather than an embedded CA — it has no path to Omni credentials to fetch one; that's a possible follow-up, not solved here.
 
 ## External service exposure
 
