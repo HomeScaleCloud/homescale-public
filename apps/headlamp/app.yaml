@@ -33,6 +33,9 @@ values:
           enabled: true
           name: oidc
           hasScopes: true
+      extraArgs:
+        - "-default-light-theme=homescale"
+        - "-default-dark-theme=homescale-dark"
     probes:
       scheme: HTTPS
     # homescale-theme-plugin is mounted via subPath, which Kubernetes never
