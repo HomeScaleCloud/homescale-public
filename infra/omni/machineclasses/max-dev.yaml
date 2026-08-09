@@ -1,7 +1,0 @@
-metadata:
-  type: MachineClasses.omni.sidero.dev
-  id: max-dev
-  namespace: default
-spec:
-  matchlabels:
-    - omni.sidero.dev/cpu = qemu, cluster-desired = max-dev
