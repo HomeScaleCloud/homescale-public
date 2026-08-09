@@ -1,7 +1,9 @@
 import {
   AppLogoProps,
   CommonComponents,
+  ConfigStore,
   K8s,
+  registerAppBarAction,
   registerAppLogo,
   registerAppTheme,
   registerRoute,
@@ -117,3 +119,45 @@ registerRoute({
   exact: true,
   component: () => <ArgoCDRedirect />,
 });
+
+// Headlamp's shipped prometheus plugin defaults to auto-detect, which can't
+// find a usable Prometheus Service in this cluster (see apps/metrics'
+// prometheus-proxy Service and apps/rbac's observability-viewer for why).
+// Point it at prometheus-proxy by default so metrics charts work without
+// every user having to configure this by hand in Settings -> Plugins. Only
+// seeds the default when unset, so a user's own override is never clobbered.
+interface PrometheusPluginConfig {
+  autoDetect?: boolean;
+  isMetricsEnabled?: boolean;
+  address?: string;
+  subPath?: string;
+}
+
+const PROMETHEUS_PROXY_ADDRESS = 'metrics/prometheus-proxy:9090';
+
+function EnsurePrometheusDefaultConfigured() {
+  const cluster = K8s.useCluster();
+
+  React.useEffect(() => {
+    if (!cluster) {
+      return;
+    }
+    const configStore = new ConfigStore<Record<string, PrometheusPluginConfig>>('prometheus');
+    const current = configStore.get() ?? {};
+    const clusterConfig = current[cluster];
+    if (!clusterConfig?.address) {
+      configStore.update({
+        [cluster]: {
+          ...clusterConfig,
+          autoDetect: false,
+          isMetricsEnabled: true,
+          address: PROMETHEUS_PROXY_ADDRESS,
+        },
+      });
+    }
+  }, [cluster]);
+
+  return null;
+}
+
+registerAppBarAction(EnsurePrometheusDefaultConfigured);
