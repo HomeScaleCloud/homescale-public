@@ -18,6 +18,8 @@ values:
     name: "{{ .Values.cluster.name }}"
   headlamp:
     replicaCount: 1
+    deploymentAnnotations:
+      secrets.infisical.com/auto-reload: "true"
     service:
       port: 443
     config:
