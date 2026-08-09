@@ -20,9 +20,6 @@ values:
     replicaCount: 1
     service:
       port: 443
-    env:
-      - name: KUBECONFIG
-        value: /headlamp-multicluster/config
     config:
       inClusterContextName: "{{ .Values.cluster.name }}"
       tlsCertPath: /headlamp-tls/tls.crt
@@ -120,5 +117,12 @@ values:
         subPath: package.json
         readOnly: true
       - name: headlamp-multicluster
-        mountPath: /headlamp-multicluster
+        # Headlamp's backend always checks this exact hardcoded path for an
+        # additional/"dynamic" kubeconfig on top of its in-cluster context —
+        # confirmed via `error loading dynamic kubeconfig: ... open
+        # /home/headlamp/.config/Headlamp/kubeconfigs/config: no such file`
+        # in its logs before this mount existed. No -kubeconfig flag or
+        # KUBECONFIG env var is wired up by this chart (0.44.0) at all, so
+        # this is the only way in.
+        mountPath: /home/headlamp/.config/Headlamp/kubeconfigs
         readOnly: true
