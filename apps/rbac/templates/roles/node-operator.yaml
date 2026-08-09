@@ -1,0 +1,19 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-operator
+rules:
+  # Cordon/uncordon and taint (spec.taints, part of the main object) for
+  # maintenance and incident response. No delete — that detaches the Node
+  # object from the cluster, distinct from node-viewer/node-admin's broader
+  # (and read-only or full-CRUD) grants.
+  - apiGroups: [""]
+    resources:
+      - nodes
+    verbs: ["patch", "update"]
+  # status.conditions lives behind the /status subresource — needed to set
+  # or clear conditions manually (e.g. out-of-band health signals).
+  - apiGroups: [""]
+    resources:
+      - nodes/status
+    verbs: ["patch", "update"]

@@ -44,6 +44,9 @@ values:
           g, team-infra-plat, role:readonly
           p, team-infra-plat, applications, delete/*/Pod/*/*, */*, allow
           p, team-infra-plat, applications, sync, */*, allow
+          p, team-infra-plat, applications, action/apps/Deployment/restart, */*, allow
+          p, team-infra-plat, applications, action/apps/DaemonSet/restart, */*, allow
+          p, team-infra-plat, applications, action/apps/StatefulSet/restart, */*, allow
           g, team-sec-plat, role:readonly
           p, team-sec-plat, applications, delete/*/Pod/*/*, */*, allow
           p, team-sec-plat, applications, sync, */*, allow

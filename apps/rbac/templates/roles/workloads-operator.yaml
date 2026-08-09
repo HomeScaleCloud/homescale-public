@@ -1,0 +1,20 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: workloads-operator
+rules:
+  # Rollout restart (patches spec.template annotations) and scaling, without
+  # create/delete — those are left to GitOps. ArgoCD self-heal reverts the
+  # drift these patches leave behind, but by then the pods have already
+  # cycled, same as how pod-operator's pod delete already works today.
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - daemonsets
+      - statefulsets
+    verbs: ["patch", "update"]
+  - apiGroups: ["apps"]
+    resources:
+      - deployments/scale
+      - statefulsets/scale
+    verbs: ["patch", "update"]
