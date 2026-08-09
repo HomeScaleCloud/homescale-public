@@ -1,3 +1,25 @@
+# prometheus-operated (the operator's own headless Service) and
+# metrics-kube-prometheus-st-prometheus (multi-port: http-web + reloader-web)
+# both fail k8s's services/proxy subresource -- headless Services aren't
+# proxied by the platform at all, and unqualified proxy requests to a
+# multi-port Service can't be disambiguated (kubernetes/kubernetes#20070).
+# This gives Headlamp's prometheus plugin a single-port, non-headless
+# target that actually works.
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-proxy
+  namespace: metrics
+spec:
+  type: ClusterIP
+  ports:
+    - name: http-web
+      port: 9090
+      protocol: TCP
+      targetPort: http-web
+  selector:
+    app.kubernetes.io/name: prometheus
+---
 {{- if eq .Values.cluster.name "boa1-prod" }}
 apiVersion: v1
 kind: Service

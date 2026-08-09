@@ -21,14 +21,15 @@ rules:
     verbs: ["get", "list", "watch"]
   # Headlamp's built-in prometheus plugin proxies to Prometheus's HTTP API
   # through the k8s API server rather than a direct network route. Scoped to
-  # prometheus-operated specifically because it's single-port -- unlike
-  # metrics-kube-prometheus-st-prometheus (http-web + reloader-web), an
-  # unqualified services/proxy request to a multi-port service fails with
-  # "no endpoints available" regardless of RBAC (see apps/argocd's
-  # argocd-server, which hits the same k8s apiserver limitation).
+  # apps/metrics' prometheus-proxy Service (not prometheus-operated or
+  # metrics-kube-prometheus-st-prometheus): headless Services aren't proxied
+  # by the platform at all, and an unqualified services/proxy request to a
+  # multi-port Service can't be disambiguated -- both fail with "no
+  # endpoints available" regardless of RBAC (see apps/argocd's
+  # argocd-server, which hits the multi-port version of this).
   - apiGroups: [""]
     resources:
       - services/proxy
     resourceNames:
-      - prometheus-operated
+      - prometheus-proxy
     verbs: ["get"]
