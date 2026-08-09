@@ -53,7 +53,7 @@ resource "netbird_policy" "k8s" {
     protocol      = "tcp"
     ports         = ["443"]
     name          = "Kubernetes"
-    sources       = [data.netbird_group.team_infra_plat.id, data.netbird_group.team_sec_plat.id, data.netbird_group.sg_k8s_admin.id]
+    sources       = [data.netbird_group.team_infra_plat.id, data.netbird_group.team_sec_plat.id, data.netbird_group.sg_k8s_admin.id, netbird_group.app["headlamp"].id]
     destinations  = [netbird_group.k8s.id]
   }
 }

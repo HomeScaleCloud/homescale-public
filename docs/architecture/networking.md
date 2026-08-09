@@ -28,6 +28,16 @@ argocd-server.argocd.<cluster>REDACTED
 
 No Ingress or LoadBalancer service is needed — the NetBird operator handles DNS registration automatically when a `NetworkResource` CR exists.
 
+### Direct cluster API access
+
+`netbird-crs` also registers each cluster's built-in `kubernetes` Service (the real kube-apiserver, not a proxy), reachable at:
+
+```
+kubernetes.default.<cluster>REDACTED
+```
+
+This is deliberately separate from the `ClusterProxy`-based access `hsctl get kubeconfig`/`hsctl switch` use (`k8s.api.<cluster>REDACTED`): `ClusterProxy` authenticates by impersonating the *connecting NetBird peer's* identity, which is correct for a human's laptop (one peer, one person) but wrong for a shared backend serving many different users — everyone would collapse into the same impersonated identity. `kubernetes.default.<cluster>...` instead reaches the cluster's real apiserver directly, so any auth the client presents (e.g. a forwarded per-user OIDC token) is validated by that apiserver itself. Headlamp uses this to show `boa1-prod` in its cluster picker with the same per-user RBAC it already has for `mgmt`. Which clusters appear is derived automatically — Terraform (`infra/terraform/headlamp.tf`) scans `clusters/*/cluster.yaml` for ones referencing `infra/omni/patches/oidc.yaml` and publishes the list to Infisical, which `apps/headlamp/templates/kubeconfig-secret.yaml` renders into a kubeconfig context per cluster. Adding a cluster to Headlamp's picker is then just adding the OIDC patch to its `cluster.yaml` — no separate list to maintain. See also `apps/headlamp/templates/setupkey.yaml`.
+
 ## External service exposure
 
 Public internet exposure goes through Cloudflare Zero Trust Tunnels. Add an `exposePublic:` block to the app's `app.yaml` — it's a list, so one app can expose multiple Services/ports/fqdns:
