@@ -188,6 +188,8 @@ exposePublic:
 
 Terraform creates the Cloudflare tunnel ingress rule and DNS record for each entry on the next apply. See [Networking: external service exposure](../architecture/networking.md#external-service-exposure).
 
+Add an `access:` block to an entry to gate it behind Cloudflare Access (Entra ID login, any user/group allowed) instead of leaving it open to the internet — see [Networking: gating a public app behind Cloudflare Access](../architecture/networking.md#gating-a-public-app-behind-cloudflare-access).
+
 ## Deployment overrides
 
 To vary values per cluster, edit the target cluster's `clusters/<cluster>/apps.yaml`. That file is the bootstrap ArgoCD app-of-apps; its `apps` source carries an inline `helm.values` block passed to the `apps/` chart — add an `apps:` map there, keyed by app directory name:

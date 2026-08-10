@@ -199,6 +199,10 @@ exposePublic:
     fqdn: myapp.io        # public hostname (must be in a Cloudflare zone in the HomeScale account)
     port: 80              # backend service port
     service: myapp        # optional, defaults to releaseName (falls back to app dir name)
+    tls: false             # optional, defaults to false — set true if the backend Service only speaks TLS
+    access:                # optional — omit entirely to leave the hostname open to the internet
+      allowedIdps: []       # optional, list of Cloudflare Zero Trust identity provider names; defaults to every IdP configured in the account
+      sessionDuration: "24h" # optional, defaults to Cloudflare's own default (24h)
 ```
 
 `exposePublic` is a list — add multiple entries to expose more than one Service/port/fqdn (even against different clusters) from the same app.
@@ -209,6 +213,10 @@ exposePublic:
 | `fqdn` | string | Public fully-qualified domain name. Must be globally unique across all apps. The apex zone must be a Cloudflare-managed zone |
 | `port` | int | Port on the Kubernetes Service that receives traffic |
 | `service` | string | Optional. Kubernetes Service name (`<service>.<namespace>.svc.cluster.local:<port>`) to route to. Defaults to `releaseName` (or the app directory name) |
+| `tls` | bool | Optional, defaults to `false`. Set `true` if the backend Service only accepts TLS (`http://` otherwise). cloudflared verifies the origin certificate against `fqdn` as the expected server name — the app's own `Certificate` must include `fqdn` in `dnsNames` (add `.Values.homescale.exposePublicFqdns` there, see [below](#using-cname-lists-in-your-chart-valueshomescale)) |
+| `access` | object | Optional. Gates this hostname behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) — omit entirely to leave it open to the internet. Any authenticated user is allowed through (no group/email restriction) once they pass one of the allowed identity providers |
+| `access.allowedIdps` | list of strings | Optional. Identity provider names (as configured in the Cloudflare Zero Trust dashboard) users may authenticate with. Omit to allow any IdP configured in the account (today: Entra ID only) |
+| `access.sessionDuration` | string | Optional. How long an Access session lasts before re-authentication, e.g. `24h`. Defaults to Cloudflare's own default |
 
 ---
 

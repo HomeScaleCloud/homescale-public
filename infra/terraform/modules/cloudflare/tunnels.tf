@@ -22,7 +22,13 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
     ingress = concat(
       [for fqdn, app in local.public_apps : {
         hostname = app.fqdn
-        service  = "http://${app.service}.${app.namespace}.svc.cluster.local:${app.port}"
+        service  = "${try(app.tls, false) ? "https" : "http"}://${app.service}.${app.namespace}.svc.cluster.local:${app.port}"
+        origin_request = try(app.tls, false) ? {
+          # The backend terminates TLS with a real cert whose SANs include app.fqdn
+          # (see docs/architecture/apps.md#public-exposure-exposepublic) rather than
+          # the in-cluster Service DNS name cloudflared actually connects to.
+          origin_server_name = app.fqdn
+        } : null
       } if app.cluster == each.key],
       [{ service = "http_status:404" }]
     )

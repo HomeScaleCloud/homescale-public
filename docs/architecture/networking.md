@@ -61,7 +61,7 @@ exposePublic:
 
 Terraform creates:
 - A `cloudflare_zero_trust_tunnel_cloudflared` resource for each cluster that has public apps (one tunnel per cluster, shared across all apps on that cluster)
-- A `cloudflare_zero_trust_tunnel_cloudflared_config` ingress entry for each entry, pointing at `<service>.<namespace>.svc.cluster.local:<port>`
+- A `cloudflare_zero_trust_tunnel_cloudflared_config` ingress entry for each entry, pointing at `<service>.<namespace>.svc.cluster.local:<port>` (`https://` instead of `http://` when `tls: true`)
 - A proxied Cloudflare CNAME record for each entry's FQDN pointing to `<tunnel-id>.cfargotunnel.com`
 
 The `cloudflared` app (deployed on the target cluster) maintains the outbound tunnel connection to Cloudflare. Traffic flows:
@@ -71,6 +71,23 @@ Internet → Cloudflare (proxied CNAME) → Cloudflare Tunnel → cloudflared po
 ```
 
 See the [App reference](apps.md#public-exposure-exposepublic) for the full `exposePublic:` field reference.
+
+### Gating a public app behind Cloudflare Access
+
+Add an `access:` block to an `exposePublic:` entry to require Entra ID (or whichever identity providers are configured in the Cloudflare Zero Trust account) login before traffic reaches the tunnel — enforced at Cloudflare's edge, in front of the proxied DNS record:
+
+```yaml
+exposePublic:
+  - cluster: mgmt
+    fqdn: REDACTED
+    port: 443
+    tls: true
+    access:
+      allowedIdps: []       # optional — omit to allow any IdP configured in the account
+      sessionDuration: "24h" # optional
+```
+
+Terraform (`infra/terraform/modules/cloudflare/access.tf`) creates a `cloudflare_zero_trust_access_application` for the FQDN with a single "allow everyone" policy — i.e. any user who authenticates via an allowed identity provider is granted access, with no group or email restriction. Restricting to specific groups isn't implemented — extend the module's `policies` block if that's ever needed. See the [App reference](apps.md#public-exposure-exposepublic) for the full `access:` field reference.
 
 ## NetBird access policies
 

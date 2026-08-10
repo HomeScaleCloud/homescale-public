@@ -4,15 +4,12 @@ releaseName: headlamp
 syncWave: 0
 defaultDeploy: false
 podSecurity: privileged
-netbird:
-  policy:
-    rules:
-      - sources: ["team-infra-plat", "team-sec-plat"]
-        protocol: tcp
-        ports: ["443"]
-  cname:
-    - fqdn: REDACTED
-      cluster: mgmt
+exposePublic:
+  - cluster: mgmt
+    fqdn: REDACTED
+    port: 443
+    tls: true
+    access: {}
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
