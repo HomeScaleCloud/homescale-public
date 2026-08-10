@@ -1,0 +1,99 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: jero-cp-3-boot
+  namespace: jero
+spec:
+  source:
+    http:
+      url: "https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-amd64.img"
+  pvc:
+    accessModes:
+      - ReadWriteOnce
+    storageClassName: longhorn
+    resources:
+      requests:
+        storage: 10Gi
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: jero-cp-3
+  namespace: jero
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: jero-cp-3
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        resources:
+          requests:
+            memory: 2Gi
+          limits:
+            memory: 2Gi
+        devices:
+          disks:
+            - name: bootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+            - name: tailscale-auth
+              serial: tailscaleauth
+          interfaces:
+            - name: default
+              macAddress: "52:54:00:10:00:03"
+              masquerade: {}
+            - name: jero-net
+              macAddress: "52:54:00:10:01:03"
+              bridge: {}
+      networks:
+        - name: default
+          pod: {}
+        - name: jero-net
+          multus:
+            networkName: vlan-jero
+      volumes:
+        - name: bootdisk
+          dataVolume:
+            name: jero-cp-3-boot
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              hostname: jero-cp-3
+              package_update: true
+              packages:
+                - curl
+              bootcmd:
+                - mkdir -p /mnt/tailscale-auth
+                - >-
+                  mount /dev/$(lsblk --nodeps -no name,serial | grep tailscaleauth | cut -f1 -d' ')
+                  /mnt/tailscale-auth
+              runcmd:
+                - curl -fsSL https://tailscale.com/install.sh | sh
+                - tailscale up --ssh --authkey=$(cat /mnt/tailscale-auth/authkey) --hostname=jero-cp-3
+            networkData: |
+              network:
+                version: 2
+                ethernets:
+                  eth0:
+                    match:
+                      macaddress: "52:54:00:10:00:03"
+                    set-name: eth0
+                    dhcp4: true
+                  eth1:
+                    match:
+                      macaddress: "52:54:00:10:01:03"
+                    set-name: eth1
+                    dhcp4: false
+                    addresses:
+                      - "10.2.71.12/24"
+        - name: tailscale-auth
+          secret:
+            secretName: jero-tailscale

@@ -66,3 +66,4 @@ patches:
                   - eno4
               vlans:
                 - vlanId: 241
+                - vlanId: 271
