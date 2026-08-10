@@ -19,3 +19,28 @@ misconfigurations:
     paths:
       - "apps/rbac/templates/roles/rbac-admin.yaml"
     statement: "Intentional: rbac-admin is the designated role for RBAC management; bind/escalate are inherent to that purpose"
+  - id: KSV-0041
+    paths:
+      - "apps/kubevirt/templates/clusterrole-cdi-operator-cluster.yaml"
+      - "apps/kubevirt/templates/clusterrole-kubevirt-operator.yaml"
+    statement: "Vendored upstream KubeVirt/CDI operator RBAC: managing Secrets (TLS certs for their own webhooks/services) is inherent to how these operators work"
+  - id: KSV-0046
+    paths:
+      - "apps/kubevirt/templates/clusterrole-cdi-operator-cluster.yaml"
+      - "apps/kubevirt/templates/clusterrole-kubevirt-operator.yaml"
+    statement: "Vendored upstream KubeVirt/CDI operator RBAC: these operators manage a wide range of cluster resources on behalf of the whole cluster; narrowing the wildcard rules would mean forking upstream RBAC"
+  - id: KSV-0053
+    paths:
+      - "apps/kubevirt/templates/clusterrole-kubevirt-operator.yaml"
+    statement: "Vendored upstream KubeVirt operator RBAC: virt-handler needs pods/exec to implement VM console/serial access"
+  - id: KSV-0056
+    paths:
+      - "apps/kubevirt/templates/clusterrole-cdi-operator-cluster.yaml"
+      - "apps/kubevirt/templates/clusterrole-kubevirt-operator.yaml"
+      - "apps/kubevirt/templates/role-cdi-operator.yaml"
+    statement: "Vendored upstream KubeVirt/CDI operator RBAC: these operators create and manage Services/Endpoints for their own components (virt-api, cdi-uploadproxy, etc.)"
+  - id: KSV-0114
+    paths:
+      - "apps/kubevirt/templates/clusterrole-cdi-operator-cluster.yaml"
+      - "apps/kubevirt/templates/clusterrole-kubevirt-operator.yaml"
+    statement: "Vendored upstream KubeVirt/CDI operator RBAC: these operators manage their own admission webhook configurations"

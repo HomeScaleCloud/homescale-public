@@ -1,0 +1,6 @@
+path: apps/kubevirt
+namespace: kubevirt
+releaseName: kubevirt
+syncWave: 0
+podSecurity: privileged
+defaultDeploy: false

@@ -326,6 +326,8 @@ spec:
                 vlans:
                   wlan:
                     enabled: true
+            kubevirt:
+              deploy: true
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
