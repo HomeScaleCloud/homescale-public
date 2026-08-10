@@ -1,8 +1,8 @@
 apiVersion: cdi.kubevirt.io/v1beta1
 kind: DataVolume
 metadata:
-  name: jero-cp-3-boot
-  namespace: jero
+  name: k8s-gang-cp-1-boot
+  namespace: k8s-gang
 spec:
   source:
     http:
@@ -18,14 +18,14 @@ spec:
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
-  name: jero-cp-3
-  namespace: jero
+  name: k8s-gang-cp-1
+  namespace: k8s-gang
 spec:
   runStrategy: Always
   template:
     metadata:
       labels:
-        kubevirt.io/domain: jero-cp-3
+        kubevirt.io/domain: k8s-gang-cp-1
     spec:
       domain:
         cpu:
@@ -47,26 +47,26 @@ spec:
               serial: tailscaleauth
           interfaces:
             - name: default
-              macAddress: "52:54:00:10:00:03"
+              macAddress: "52:54:00:10:00:01"
               masquerade: {}
-            - name: jero-net
-              macAddress: "52:54:00:10:01:03"
+            - name: k8s-gang-net
+              macAddress: "52:54:00:10:01:01"
               bridge: {}
       networks:
         - name: default
           pod: {}
-        - name: jero-net
+        - name: k8s-gang-net
           multus:
-            networkName: vlan-jero
+            networkName: vlan-k8s-gang
       volumes:
         - name: bootdisk
           dataVolume:
-            name: jero-cp-3-boot
+            name: k8s-gang-cp-1-boot
         - name: cloudinitdisk
           cloudInitNoCloud:
             userData: |
               #cloud-config
-              hostname: jero-cp-3
+              hostname: k8s-gang-cp-1
               package_update: true
               packages:
                 - curl
@@ -77,23 +77,23 @@ spec:
                   /mnt/tailscale-auth
               runcmd:
                 - curl -fsSL https://tailscale.com/install.sh | sh
-                - tailscale up --ssh --authkey=$(cat /mnt/tailscale-auth/authkey) --hostname=jero-cp-3
+                - tailscale up --ssh --authkey=$(cat /mnt/tailscale-auth/authkey) --hostname=k8s-gang-cp-1
             networkData: |
               network:
                 version: 2
                 ethernets:
                   eth0:
                     match:
-                      macaddress: "52:54:00:10:00:03"
+                      macaddress: "52:54:00:10:00:01"
                     set-name: eth0
                     dhcp4: true
                   eth1:
                     match:
-                      macaddress: "52:54:00:10:01:03"
+                      macaddress: "52:54:00:10:01:01"
                     set-name: eth1
                     dhcp4: false
                     addresses:
-                      - "10.2.71.12/24"
+                      - "10.2.71.10/24"
         - name: tailscale-auth
           secret:
-            secretName: jero-tailscale
+            secretName: k8s-gang-tailscale

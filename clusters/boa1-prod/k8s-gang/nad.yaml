@@ -1,8 +1,8 @@
 apiVersion: k8s.cni.cncf.io/v1
 kind: NetworkAttachmentDefinition
 metadata:
-  name: vlan-jero
-  namespace: jero
+  name: vlan-k8s-gang
+  namespace: k8s-gang
 spec:
   config: |
     {
