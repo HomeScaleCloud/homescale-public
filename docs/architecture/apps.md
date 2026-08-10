@@ -200,6 +200,7 @@ exposePublic:
     port: 80              # backend service port
     service: myapp        # optional, defaults to releaseName (falls back to app dir name)
     tls: false             # optional, defaults to false — set true if the backend Service only speaks TLS
+    cacheBypass: false     # optional, defaults to false — set true to bypass Cloudflare's edge cache entirely for this hostname
     access:                # optional — omit entirely to leave the hostname open to the internet
       allowedIdps: []       # optional, list of Cloudflare Zero Trust identity provider names; defaults to every IdP configured in the account
       sessionDuration: "24h" # optional, defaults to Cloudflare's own default (24h)
@@ -214,6 +215,7 @@ exposePublic:
 | `port` | int | Port on the Kubernetes Service that receives traffic |
 | `service` | string | Optional. Kubernetes Service name (`<service>.<namespace>.svc.cluster.local:<port>`) to route to. Defaults to `releaseName` (or the app directory name) |
 | `tls` | bool | Optional, defaults to `false`. Set `true` if the backend Service only accepts TLS (`http://` otherwise). cloudflared verifies the origin certificate against `fqdn` as the expected server name — the app's own `Certificate` must include `fqdn` in `dnsNames` (add `.Values.homescale.exposePublicFqdns` there, see [below](#using-cname-lists-in-your-chart-valueshomescale)) |
+| `cacheBypass` | bool | Optional, defaults to `false`. Set `true` to create a Cloudflare Cache Rule that bypasses the edge cache for every request to this hostname — use for live/dynamic apps (dashboards, APIs) where a stale cached response would be wrong, as opposed to static sites that benefit from CDN caching |
 | `access` | object | Optional. Gates this hostname behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) — omit entirely to leave it open to the internet. Any authenticated user is allowed through (no group/email restriction) once they pass one of the allowed identity providers |
 | `access.allowedIdps` | list of strings | Optional. Identity provider names (as configured in the Cloudflare Zero Trust dashboard) users may authenticate with. Omit to allow any IdP configured in the account (today: Entra ID only) |
 | `access.sessionDuration` | string | Optional. How long an Access session lasts before re-authentication, e.g. `24h`. Defaults to Cloudflare's own default |

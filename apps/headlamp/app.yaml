@@ -9,6 +9,7 @@ exposePublic:
     fqdn: REDACTED
     port: 443
     tls: true
+    cacheBypass: true
     access: {}
 values:
   cluster:
