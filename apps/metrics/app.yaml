@@ -382,6 +382,9 @@ values:
           - apiGroups: ["netbird.io"]
             resources: ["clusterproxies", "networkrouters", "networkresources"]
             verbs: ["list", "watch"]
+          - apiGroups: ["volsync.backube"]
+            resources: ["replicationsources"]
+            verbs: ["list", "watch"]
       customResourceState:
         enabled: true
         config:
@@ -442,6 +445,20 @@ values:
                           condition: [type]
                           reason: [reason]
                         valueFrom: [status]
+              - groupVersionKind:
+                  group: volsync.backube
+                  version: v1alpha1
+                  kind: ReplicationSource
+                labelsFromPath:
+                  obj_name: [metadata, name]
+                  obj_namespace: [metadata, namespace]
+                metrics:
+                  - name: volsync_replicationsource_last_sync_time_seconds
+                    help: "Unix timestamp of the most recent successful synchronization (status.lastSyncTime)"
+                    each:
+                      type: Gauge
+                      gauge:
+                        path: [status, lastSyncTime]
   metrics-server:
     metrics:
       enabled: true

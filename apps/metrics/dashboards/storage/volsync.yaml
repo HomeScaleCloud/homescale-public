@@ -527,6 +527,14 @@ panels:
                     value: null
                   - color: red
                     value: 1
+        - matcher:
+            id: byName
+            options: Last Backup
+          properties:
+            - id: unit
+              value: dateTimeFromNow
+            - id: custom.width
+              value: 180
     targets:
       - datasource:
           type: prometheus
@@ -535,7 +543,16 @@ panels:
         instant: true
         format: table
         refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: kube_customresource_volsync_replicationsource_last_sync_time_seconds{cluster=~"$cluster", obj_namespace=~"$namespace"} * 1000
+        instant: true
+        format: table
+        refId: B
     transformations:
+      - id: merge
+        options: {}
       - id: organize
         options:
           excludeByName:
@@ -548,23 +565,27 @@ panels:
             prometheus_replica: true
             service: true
             role: true
+            pod: true
           indexByName:
             obj_name: 0
             obj_namespace: 1
             cluster: 2
             method: 3
-            Value: 4
-            Time: 5
-            __name__: 6
-            endpoint: 7
-            instance: 8
-            job: 9
-            prometheus: 10
-            prometheus_replica: 11
-            service: 12
-            role: 13
+            'Value #A': 4
+            'Value #B': 5
+            Time: 6
+            __name__: 7
+            endpoint: 8
+            instance: 9
+            job: 10
+            prometheus: 11
+            prometheus_replica: 12
+            service: 13
+            role: 14
+            pod: 15
           renameByName:
-            Value: Status
+            'Value #A': Status
+            'Value #B': Last Backup
   - type: row
     title: Sync Duration
     id: 7
