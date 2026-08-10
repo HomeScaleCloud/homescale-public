@@ -1,0 +1,63 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vm-viewer
+rules:
+  - apiGroups: ["kubevirt.io"]
+    resources:
+      - virtualmachines
+      - virtualmachineinstances
+      - virtualmachineinstancepresets
+      - virtualmachineinstancereplicasets
+      - virtualmachineinstancemigrations
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.kubevirt.io"]
+    resources:
+      - virtualmachinesnapshots
+      - virtualmachinesnapshotcontents
+      - virtualmachinerestores
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["backup.kubevirt.io"]
+    resources:
+      - virtualmachinebackups
+      - virtualmachinebackuptrackers
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["export.kubevirt.io"]
+    resources:
+      - virtualmachineexports
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["clone.kubevirt.io"]
+    resources:
+      - virtualmachineclones
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["instancetype.kubevirt.io"]
+    resources:
+      - virtualmachineinstancetypes
+      - virtualmachineclusterinstancetypes
+      - virtualmachinepreferences
+      - virtualmachineclusterpreferences
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["pool.kubevirt.io"]
+    resources:
+      - virtualmachinepools
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["migrations.kubevirt.io"]
+    resources:
+      - migrationpolicies
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources:
+      - datavolumes
+      - datasources
+    verbs: ["get", "list", "watch"]
+  # Read-only introspection subresources — mirrors KubeVirt's own upstream
+  # kubevirt.io:view ClusterRole. Interactive-access subresources
+  # (console/vnc/portforward) are intentionally excluded; see vm-console.
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - virtualmachineinstances/guestosinfo
+      - virtualmachineinstances/filesystemlist
+      - virtualmachineinstances/userlist
+      - virtualmachineinstances/objectgraph
+      - virtualmachines/objectgraph
+    verbs: ["get"]

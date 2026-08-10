@@ -1,0 +1,88 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vm-admin
+rules:
+  - apiGroups: ["kubevirt.io"]
+    resources:
+      - virtualmachines
+      - virtualmachineinstances
+      - virtualmachineinstancepresets
+      - virtualmachineinstancereplicasets
+      - virtualmachineinstancemigrations
+    verbs: ["*"]
+  - apiGroups: ["snapshot.kubevirt.io"]
+    resources:
+      - virtualmachinesnapshots
+      - virtualmachinesnapshotcontents
+      - virtualmachinerestores
+    verbs: ["*"]
+  - apiGroups: ["backup.kubevirt.io"]
+    resources:
+      - virtualmachinebackups
+      - virtualmachinebackuptrackers
+    verbs: ["*"]
+  - apiGroups: ["export.kubevirt.io"]
+    resources:
+      - virtualmachineexports
+    verbs: ["*"]
+  - apiGroups: ["clone.kubevirt.io"]
+    resources:
+      - virtualmachineclones
+    verbs: ["*"]
+  - apiGroups: ["instancetype.kubevirt.io"]
+    resources:
+      - virtualmachineinstancetypes
+      - virtualmachineclusterinstancetypes
+      - virtualmachinepreferences
+      - virtualmachineclusterpreferences
+    verbs: ["*"]
+  - apiGroups: ["pool.kubevirt.io"]
+    resources:
+      - virtualmachinepools
+    verbs: ["*"]
+  - apiGroups: ["migrations.kubevirt.io"]
+    resources:
+      - migrationpolicies
+    verbs: ["*"]
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources:
+      - datavolumes
+      - datasources
+    verbs: ["*"]
+  # Lifecycle and interactive-access subresources — these are distinct RBAC
+  # resources from their parent object, so the "*" grants above don't cover
+  # them. Mirrors KubeVirt's own upstream kubevirt.io:admin ClusterRole.
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - virtualmachines/start
+      - virtualmachines/stop
+      - virtualmachines/restart
+      - virtualmachines/addvolume
+      - virtualmachines/removevolume
+      - virtualmachines/memorydump
+      - virtualmachines/removememorydump
+      - virtualmachines/evacuate/cancel
+      - virtualmachineinstances/pause
+      - virtualmachineinstances/unpause
+      - virtualmachineinstances/addvolume
+      - virtualmachineinstances/removevolume
+      - virtualmachineinstances/freeze
+      - virtualmachineinstances/unfreeze
+      - virtualmachineinstances/softreboot
+      - virtualmachineinstances/reset
+      - virtualmachineinstances/evacuate/cancel
+    verbs: ["update"]
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - virtualmachineinstances/console
+      - virtualmachineinstances/vnc
+      - virtualmachineinstances/vnc/screenshot
+      - virtualmachineinstances/portforward
+      - virtualmachineinstances/usbredir
+      - virtualmachineinstances/guestosinfo
+      - virtualmachineinstances/filesystemlist
+      - virtualmachineinstances/userlist
+      - virtualmachineinstances/objectgraph
+      - virtualmachines/objectgraph
+    verbs: ["get"]

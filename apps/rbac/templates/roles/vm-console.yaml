@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vm-console
+rules:
+  # Interactive access to a running VM — the KubeVirt analog of
+  # pod-port-forward's pods/portforward grant.
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - virtualmachineinstances/console
+      - virtualmachineinstances/vnc
+      - virtualmachineinstances/vnc/screenshot
+      - virtualmachineinstances/portforward
+      - virtualmachineinstances/usbredir
+    verbs: ["get"]

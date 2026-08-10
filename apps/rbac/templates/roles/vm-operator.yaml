@@ -1,0 +1,26 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vm-operator
+rules:
+  # Power lifecycle and live-migration-adjacent actions, without create/delete
+  # or spec edit rights on the VirtualMachine/VMI objects themselves — those
+  # are left to GitOps. Same split as pod-operator's pod delete vs.
+  # workloads-admin's full pod CRUD.
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - virtualmachines/start
+      - virtualmachines/stop
+      - virtualmachines/restart
+      - virtualmachines/evacuate/cancel
+    verbs: ["update"]
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - virtualmachineinstances/pause
+      - virtualmachineinstances/unpause
+      - virtualmachineinstances/freeze
+      - virtualmachineinstances/unfreeze
+      - virtualmachineinstances/softreboot
+      - virtualmachineinstances/reset
+      - virtualmachineinstances/evacuate/cancel
+    verbs: ["update"]
