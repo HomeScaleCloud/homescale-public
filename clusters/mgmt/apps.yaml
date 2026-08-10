@@ -25,13 +25,11 @@ spec:
               deploy: false
             external-dns:
               deploy: true
-            external-dns-crs:
-              deploy: true
             headlamp:
               deploy: true
             multus:
               deploy: false
-            netbird-crs:
+            netbird:
               values:
                 kubeApiServer: "https://kubernetes.default.svc/"
             node-inotify-limits:

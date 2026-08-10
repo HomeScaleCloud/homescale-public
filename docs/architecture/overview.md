@@ -126,8 +126,8 @@ See [Gateway clusters](networking.md#gateway-clusters) for how gateway clusters 
 | -35 | `infisical`, `multus` | Secrets operator must be ready so other apps can pull secrets; Multus for multi-homed pods |
 | -30 | `cert-manager`, `argocd`, `rbac` | TLS, GitOps and access control |
 | -25 | `generic-device-plugin-tun`, `node-inotify-limits` | Node resource registration and sysctl tuning before consumers |
-| -20 | `netbird`, `cert-manager-crs`, `spegel`, `external-dns-crs` | Mesh access, certificate issuers, and DNS CRDs before services need them |
-| -10 | `external-dns`, `netbird-crs`, `kubelet-serving-cert-approver` | DNS registration and network routing before apps |
+| -20 | `netbird`, `spegel` | Mesh access and network routing before services need them |
+| -10 | `external-dns`, `kubelet-serving-cert-approver` | DNS registration before apps |
 | -5 | `volsync` | Backup operator ready before app PVCs need it |
 | 0 | everything else | Default wave |
 | 1+ | apps that depend on wave-0 apps | |

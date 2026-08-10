@@ -1,5 +1,0 @@
-apiVersion: v2
-name: netbird-crs
-description: Helm chart for deploying NetBird Operator CRs
-type: application
-version: 0.1.0

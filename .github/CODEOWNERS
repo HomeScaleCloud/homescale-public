@@ -31,16 +31,13 @@ apps/argocd/                                    @HomeScaleCloud/team-infra-plat
 
 # Networking & ingress
 apps/netbird/                                   @HomeScaleCloud/team-infra-plat
-apps/netbird-crs/                               @HomeScaleCloud/team-infra-plat
 apps/cloudflared/                               @HomeScaleCloud/team-infra-plat
 apps/traefik-private/                           @HomeScaleCloud/team-infra-plat
 apps/traefik-public/                            @HomeScaleCloud/team-infra-plat
 apps/external-dns/                              @HomeScaleCloud/team-infra-plat
-apps/external-dns-crs/                          @HomeScaleCloud/team-infra-plat
 
 # TLS
 apps/cert-manager/                              @HomeScaleCloud/team-infra-plat
-apps/cert-manager-crs/                          @HomeScaleCloud/team-infra-plat
 
 # Storage & backup
 apps/longhorn/                                  @HomeScaleCloud/team-infra-plat

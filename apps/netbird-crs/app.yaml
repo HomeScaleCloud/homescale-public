@@ -1,9 +1,0 @@
-path: apps/netbird-crs
-namespace: netbird
-releaseName: netbird-crs
-syncWave: -10
-podSecurity: privileged
-values:
-  cluster:
-    name: "{{ .Values.cluster.name }}"
-defaultDeploy: true

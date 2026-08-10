@@ -40,16 +40,16 @@ NetBird is the zero-trust WireGuard mesh that connects all clusters, CI jobs, an
 
 | App | What it does |
 |-----|-------------|
-| `netbird` / `netbird-crs` | Zero-trust WireGuard mesh and network resources |
+| `netbird` | Zero-trust WireGuard mesh and network resources |
 | `cloudflared` | Cloudflare tunnel for external exposure |
 | `traefik-private` / `traefik-public` | Ingress controllers |
-| `external-dns` / `external-dns-crs` | Automatic DNS record management |
+| `external-dns` | Automatic DNS record management |
 
 ### TLS
 
 | App | What it does |
 |-----|-------------|
-| `cert-manager` / `cert-manager-crs` | Certificate issuance and renewal |
+| `cert-manager` | Certificate issuance and renewal |
 
 ### Storage & backup
 

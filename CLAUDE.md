@@ -134,7 +134,7 @@ Three reusable workflows called from `ci.yaml`:
 NetBird is the zero-trust WireGuard mesh used for human and machine access to services — CI reaching internal infra, and service exposure to end users.
 CI jobs connect to internal infrastructure (Omni, Terraform providers) by joining the NetBird mesh with an ephemeral one-off setup key generated at the start of each workflow run and revoked at the end.
 
-**Internal service exposure** — the `netbird-crs` app deploys a `NetworkRouter` CRD per cluster. The NetBird operator automatically registers each `NetworkResource` into the cluster's DNS zone (`<cluster>REDACTED`), making any k8s Service reachable at `<service-name>.<namespace>.<cluster>REDACTED` across the mesh.
+**Internal service exposure** — the `netbird` app deploys a `NetworkRouter` CRD per cluster. The NetBird operator automatically registers each `NetworkResource` into the cluster's DNS zone (`<cluster>REDACTED`), making any k8s Service reachable at `<service-name>.<namespace>.<cluster>REDACTED` across the mesh.
 
 **External service exposure** — a two-step pattern managed entirely in Terraform:
 1. A NetBird reverse proxy resource is created pointing at the internal `REDACTED` FQDN. This gives the service an address under `REDACTED` (the reverse proxy domain registered in `netbird.tf`).
