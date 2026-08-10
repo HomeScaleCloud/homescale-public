@@ -9,7 +9,10 @@ get_usage() {
     echo ""
     echo "Resources:"
     echo "  clusters                      List Kubernetes clusters reachable via NetBird"
-    echo "  kubeconfig <cluster>          Write kubeconfig context for a cluster"
+    echo "  kubeconfig <cluster> [flags]  Write kubeconfig context for a cluster; default is direct apiserver + OIDC"
+    echo "      --netbird                     write a ClusterProxy (NetBird) kubeconfig instead"
+    echo "      --omni                        run 'omnictl kubeconfig --cluster <cluster>' instead"
+    echo "      --break-glass                 run 'omnictl kubeconfig --break-glass --cluster <cluster>' instead"
     echo "  machines [--cluster <name>]   List all machines with power state; enriches with node name for assigned ones"
     echo "  machine  <id>                 Show details for a specific machine"
     echo "  snapshot <app>                List restic snapshots for an app"
@@ -244,11 +247,6 @@ PYEOF
 HSCTL_OIDC_ISSUER_URL="https://login.microsoftonline.com/REDACTED/v2.0"
 HSCTL_OIDC_CLIENT_ID="REDACTED"
 
-_hsctl_cluster_is_omni_managed() {
-    local cluster="$1"
-    omnictl get cluster "$cluster" >/dev/null 2>&1
-}
-
 _hsctl_write_kubeconfig_direct() {
     local cluster="$1" kubeconfig="$2"
     local fqdn="k8s.api.${cluster}REDACTED"
@@ -300,7 +298,7 @@ upsert('contexts', cluster, {'name': cluster, 'context': {'cluster': cluster, 'u
 cfg['current-context'] = cluster
 
 p.write_text(yaml.dump(cfg, default_flow_style=False))
-print(f"Switched to cluster {cluster!r} (direct, OIDC)")
+print(f"Switched to cluster {cluster!r}")
 PYEOF
 }
 
@@ -347,23 +345,41 @@ upsert('contexts', cluster, {'name': cluster, 'context': {'cluster': cluster, 'u
 cfg['current-context'] = cluster
 
 p.write_text(yaml.dump(cfg, default_flow_style=False))
-print(f"Switched to cluster {cluster!r} (ClusterProxy fallback)")
+print(f"Switched to cluster {cluster!r}")
 PYEOF
 }
 
 get_kubeconfig() {
-    local cluster="${1:-}"
-    [[ -z "$cluster" ]] && { echo "Usage: hsctl get kubeconfig <cluster>"; exit 1; }
+    local cluster="" mode="direct"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --netbird) mode="netbird"; shift ;;
+            --omni) mode="omni"; shift ;;
+            --break-glass) mode="break-glass"; shift ;;
+            -*) echo "hsctl get kubeconfig: unknown flag '$1'" >&2; get_usage ;;
+            *) cluster="$1"; shift ;;
+        esac
+    done
+    [[ -z "$cluster" ]] && { echo "Usage: hsctl get kubeconfig <cluster> [--netbird|--omni|--break-glass]"; exit 1; }
 
     local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
 
-    if _hsctl_cluster_is_omni_managed "$cluster"; then
-        _hsctl_write_kubeconfig_direct "$cluster" "$kubeconfig"
-        return
-    fi
-
-    echo "hsctl: '$cluster' isn't Omni-managed (or has no OIDC trust yet) — falling back to ClusterProxy" >&2
-    _hsctl_write_kubeconfig_clusterproxy "$cluster" "$kubeconfig"
+    case "$mode" in
+        netbird)
+            _hsctl_write_kubeconfig_clusterproxy "$cluster" "$kubeconfig"
+            ;;
+        omni)
+            omnictl kubeconfig "$kubeconfig" --cluster "$cluster"
+            echo "Switched to cluster '$cluster'"
+            ;;
+        break-glass)
+            omnictl kubeconfig "$kubeconfig" --break-glass --cluster "$cluster"
+            echo "Switched to cluster '$cluster'"
+            ;;
+        direct)
+            _hsctl_write_kubeconfig_direct "$cluster" "$kubeconfig"
+            ;;
+    esac
 }
 
 get_main() {
