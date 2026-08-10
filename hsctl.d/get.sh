@@ -252,7 +252,7 @@ _hsctl_cluster_is_omni_managed() {
 _hsctl_write_kubeconfig_direct() {
     local cluster="$1" kubeconfig="$2"
     local fqdn="k8s.api.${cluster}REDACTED"
-    local user="oidc-${cluster}"
+    local user="${cluster}"
 
     python3 - "$cluster" "$fqdn" "$kubeconfig" "$user" "$HSCTL_OIDC_ISSUER_URL" "$HSCTL_OIDC_CLIENT_ID" <<'PYEOF'
 import sys
