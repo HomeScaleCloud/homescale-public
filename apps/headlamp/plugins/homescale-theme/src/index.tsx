@@ -67,35 +67,42 @@ registerAppTheme({
   ...sidebarAndNavbar,
 });
 
-// Links out to the real ArgoCD UI for the selected cluster instead of
-// proxying through the k8s API: argocd-server's Service always has two
+// Embeds the real ArgoCD UI for the selected cluster in an iframe, rather
+// than proxying through the k8s API: argocd-server's Service always has two
 // named ports (http+https, both aliasing the same container port), and an
 // unqualified `services/proxy` request to a multi-port Service fails with
 // "no endpoints available" regardless of RBAC -- a k8s apiserver limitation
 // (see https://github.com/kubernetes/kubernetes/issues/20070), not
-// something fixable on our end.
-function ArgoCDRedirect() {
+// something fixable on our end. Framing works because argocd's
+// server.x.frame.options/server.content.security.policy params (see
+// apps/argocd/app.yaml) are scoped to allow Headlamp's own origins. First
+// login still goes through Entra SAML, whose sign-in page refuses to render
+// in an iframe -- the "open in new tab" link is the escape hatch for that.
+function ArgoCDEmbed() {
   const cluster = K8s.useCluster();
   const target = cluster ? `https://argocd-server.argocd.${cluster}REDACTED` : null;
 
-  React.useEffect(() => {
-    if (target) {
-      window.open(target, '_blank', 'noopener,noreferrer');
-    }
-  }, [target]);
-
   return (
     <>
-      <CommonComponents.SectionHeader title="ArgoCD" />
+      <CommonComponents.SectionHeader
+        title="ArgoCD"
+        actions={
+          target
+            ? [
+                <a key="open" href={target} target="_blank" rel="noopener noreferrer">
+                  Open in new tab
+                </a>,
+              ]
+            : null
+        }
+      />
       <CommonComponents.SectionBox>
         {target ? (
-          <p>
-            Opened{' '}
-            <a href={target} target="_blank" rel="noopener noreferrer">
-              {target}
-            </a>{' '}
-            in a new tab. If it didn't open, click the link.
-          </p>
+          <iframe
+            src={target}
+            title="ArgoCD"
+            style={{ width: '100%', height: 'calc(100vh - 200px)', border: 'none' }}
+          />
         ) : (
           <p>No cluster selected.</p>
         )}
@@ -117,7 +124,7 @@ registerRoute({
   sidebar: 'argocd',
   name: 'argocd',
   exact: true,
-  component: () => <ArgoCDRedirect />,
+  component: () => <ArgoCDEmbed />,
 });
 
 // Headlamp's shipped prometheus plugin defaults to auto-detect, which can't

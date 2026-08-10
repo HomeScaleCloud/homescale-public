@@ -52,6 +52,12 @@ values:
           p, team-sec-plat, applications, sync, */*, allow
       params:
         application.operations.selfHealTimeout: "5"
+        # Headlamp embeds this UI in an iframe (apps/headlamp's ArgoCD tab)
+        # instead of proxying through the k8s apiserver. Scope framing to
+        # Headlamp's own origins rather than disabling the protections
+        # outright, so arbitrary third-party sites still can't frame this.
+        server.x.frame.options: ""
+        server.content.security.policy: "frame-ancestors 'self' https://REDACTED https://REDACTED;"
     controller:
       metrics:
         enabled: true
