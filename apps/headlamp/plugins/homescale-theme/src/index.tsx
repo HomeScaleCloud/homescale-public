@@ -161,3 +161,34 @@ function EnsurePrometheusDefaultConfigured() {
 }
 
 registerAppBarAction(EnsurePrometheusDefaultConfigured);
+
+// The KubeVirt plugin (headlamp-kubevirt) has its own, separate metrics
+// endpoint setting -- it doesn't read the built-in prometheus plugin's
+// ConfigStore above. It checks localStorage first, then falls back to a
+// per-cluster "headlamp-kubevirt-config" ConfigMap, then gives up with
+// "Not configured". Seed the same localStorage key it reads
+// (`headlamp-kubevirt-metrics-endpoint`) with the same prometheus-proxy
+// Service, expressed as the raw k8s services/proxy subresource path the
+// KubeVirt plugin expects (it doesn't do the "namespace/service:port"
+// shorthand parsing the built-in plugin does above). Only seeds when unset,
+// so a user's own override is never clobbered. Global, not per-cluster,
+// since prometheus-proxy is deployed identically on every cluster.
+const KUBEVIRT_METRICS_LOCALSTORAGE_KEY = 'headlamp-kubevirt-metrics-endpoint';
+const KUBEVIRT_METRICS_ENDPOINT = '/api/v1/namespaces/metrics/services/prometheus-proxy:9090/proxy';
+
+function EnsureKubeVirtMetricsDefaultConfigured() {
+  React.useEffect(() => {
+    try {
+      if (!localStorage.getItem(KUBEVIRT_METRICS_LOCALSTORAGE_KEY)) {
+        localStorage.setItem(KUBEVIRT_METRICS_LOCALSTORAGE_KEY, KUBEVIRT_METRICS_ENDPOINT);
+      }
+    } catch {
+      // localStorage unavailable (e.g. private browsing) -- KubeVirt plugin
+      // falls back to its own "Not configured" state, nothing more to do.
+    }
+  }, []);
+
+  return null;
+}
+
+registerAppBarAction(EnsureKubeVirtMetricsDefaultConfigured);
