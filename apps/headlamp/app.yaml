@@ -35,13 +35,15 @@ values:
         - "-default-dark-theme=homescale-dark"
     probes:
       scheme: HTTPS
-    # homescale-theme-plugin is mounted via subPath, which Kubernetes never
-    # hot-reloads — kubelet only re-syncs whole-directory ConfigMap mounts.
-    # Bump this whenever dist/main.js or package.json changes, or the pod
-    # will keep serving the stale plugin bundle until something else forces
-    # a restart.
+    # homescale-theme-plugin and homescale-favicon are mounted via subPath,
+    # which Kubernetes never hot-reloads — kubelet only re-syncs
+    # whole-directory ConfigMap mounts. These checksums (computed from the
+    # actual file contents via the apps/ chart's .Files access into this
+    # app dir) change automatically whenever the plugin bundle or favicon
+    # assets change, forcing a pod restart without a manual version bump.
     podAnnotations:
-      homescale-theme-plugin-revision: "5"
+      homescale-theme-plugin-checksum: "{{ printf \"%s%s\" ($.Files.Get \"headlamp/plugins/homescale-theme/dist/main.js\") ($.Files.Get \"headlamp/plugins/homescale-theme/package.json\") | sha256sum }}"
+      homescale-favicon-checksum: "{{ printf \"%s%s%s\" ($.Files.Get \"headlamp/assets/favicon/favicon.ico\") ($.Files.Get \"headlamp/assets/favicon/favicon-16x16.png\") ($.Files.Get \"headlamp/assets/favicon/favicon-32x32.png\") | sha256sum }}"
     initContainers:
       - name: nb-client
         image: "ghcr.io/netbirdio/netbird:0.72.4"
@@ -96,6 +98,9 @@ values:
       - name: homescale-theme-plugin
         configMap:
           name: headlamp-homescale-theme-plugin
+      - name: homescale-favicon
+        configMap:
+          name: headlamp-favicon
       - name: netbird-run
         emptyDir: {}
       - name: netbird-lib
@@ -114,6 +119,18 @@ values:
       - name: homescale-theme-plugin
         mountPath: /headlamp/plugins/homescale-theme/package.json
         subPath: package.json
+        readOnly: true
+      - name: homescale-favicon
+        mountPath: /headlamp/frontend/favicon.ico
+        subPath: favicon.ico
+        readOnly: true
+      - name: homescale-favicon
+        mountPath: /headlamp/frontend/favicon-16x16.png
+        subPath: favicon-16x16.png
+        readOnly: true
+      - name: homescale-favicon
+        mountPath: /headlamp/frontend/favicon-32x32.png
+        subPath: favicon-32x32.png
         readOnly: true
       - name: headlamp-multicluster
         mountPath: /home/headlamp/.config/Headlamp/kubeconfigs

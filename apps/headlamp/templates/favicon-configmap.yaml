@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: headlamp-favicon
+  namespace: headlamp
+binaryData:
+  favicon.ico: {{ .Files.Get "assets/favicon/favicon.ico" | b64enc }}
+  favicon-16x16.png: {{ .Files.Get "assets/favicon/favicon-16x16.png" | b64enc }}
+  favicon-32x32.png: {{ .Files.Get "assets/favicon/favicon-32x32.png" | b64enc }}
