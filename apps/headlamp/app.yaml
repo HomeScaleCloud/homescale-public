@@ -35,6 +35,16 @@ values:
         - "-default-dark-theme=homescale-dark"
     probes:
       scheme: HTTPS
+    pluginsManager:
+      enabled: true
+      configContent: |
+        plugins:
+          - name: cert-manager
+            source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_cert-manager
+            version: 0.1.1
+          - name: kubevirt
+            source: https://artifacthub.io/packages/headlamp/headlamp-kubevirt/headlamp_kubevirt
+            version: 0.2.2
     # homescale-theme-plugin and homescale-favicon are mounted via subPath,
     # which Kubernetes never hot-reloads — kubelet only re-syncs
     # whole-directory ConfigMap mounts. These checksums (computed from the
