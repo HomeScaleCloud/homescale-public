@@ -6,6 +6,7 @@ import {
   registerAppBarAction,
   registerAppLogo,
   registerAppTheme,
+  registerDetailsViewHeaderAction,
   registerRoute,
   registerSidebarEntry,
 } from '@kinvolk/headlamp-plugin/lib';
@@ -119,6 +120,60 @@ registerRoute({
   exact: true,
   component: () => <ArgoCDRedirect />,
 });
+
+// Adds an "Open in ArgoCD" button to the details view of any resource ArgoCD
+// manages, deep-linking straight to that resource within its owning
+// Application. ArgoCD stamps every managed resource with an
+// argocd.argoproj.io/tracking-id *annotation* (despite the "-id" name, this
+// is never a label in this repo's default resourceTrackingMethod -- verified
+// against live cluster resources) shaped
+// "<app-name>:<group>/<kind>:<namespace>/<name>", e.g.
+// "headlamp:apps/Deployment:headlamp/headlamp". The ArgoCD UI's application
+// details route is "/applications/<app-name>" with the pre-selected resource
+// passed as a "node" query param shaped "<group>/<kind>/<namespace>/<name>"
+// (see NodeInfo/nodeKey in argo-cd's
+// ui/src/app/applications/components/{application-details,utils}.tsx) --
+// which is exactly the annotation's tail with its middle ':' swapped for '/'.
+const ARGOCD_TRACKING_ID_ANNOTATION = 'argocd.argoproj.io/tracking-id';
+
+function parseArgoCDTrackingId(trackingId: string): { appName: string; node: string } | null {
+  const separator = trackingId.indexOf(':');
+  if (separator === -1) {
+    return null;
+  }
+  return {
+    appName: trackingId.slice(0, separator),
+    node: trackingId.slice(separator + 1).replace(':', '/'),
+  };
+}
+
+interface ArgoCDTrackedResource {
+  metadata?: { annotations?: Record<string, string> };
+}
+
+function OpenInArgoCDButton({ item }: { item?: ArgoCDTrackedResource }) {
+  const cluster = K8s.useCluster();
+  const trackingId = item?.metadata?.annotations?.[ARGOCD_TRACKING_ID_ANNOTATION];
+  const parsed = trackingId ? parseArgoCDTrackingId(trackingId) : null;
+
+  if (!cluster || !parsed) {
+    return null;
+  }
+
+  const target = `https://argocd-server.argocd.${cluster}REDACTED/applications/${encodeURIComponent(
+    parsed.appName
+  )}?node=${encodeURIComponent(parsed.node)}`;
+
+  return (
+    <CommonComponents.ActionButton
+      description="Open in ArgoCD"
+      icon="mdi:git"
+      onClick={() => window.open(target, '_blank', 'noopener,noreferrer')}
+    />
+  );
+}
+
+registerDetailsViewHeaderAction(OpenInArgoCDButton);
 
 // Headlamp's shipped prometheus plugin defaults to auto-detect, which can't
 // find a usable Prometheus Service in this cluster (see apps/metrics'
