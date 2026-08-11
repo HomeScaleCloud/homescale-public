@@ -24,9 +24,20 @@ spec:
         spec:
           serviceAccountName: remote-write-watchdog
           restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            runAsGroup: 101
+            seccompProfile:
+              type: RuntimeDefault
           containers:
             - name: watchdog
               image: curlimages/curl:8.11.1
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
               command:
                 - sh
                 - -c
