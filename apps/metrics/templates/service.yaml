@@ -5,6 +5,13 @@
 # multi-port Service can't be disambiguated (kubernetes/kubernetes#20070).
 # This gives Headlamp's prometheus plugin a single-port, non-headless
 # target that actually works.
+#
+# The selector needs operator.prometheus.io/name pinned too: app.kubernetes.io/name:
+# prometheus alone also matches apps/metrics-aggr's separate "aggregator" Prometheus
+# StatefulSet in this same namespace, which would make this Service load-balance
+# across both instances nondeterministically (that one only scrapes what's
+# remote-written to it, no ServiceMonitor discovery of its own -- see its own
+# same-purpose disambiguation in apps/metrics-aggr/templates/service.yaml).
 apiVersion: v1
 kind: Service
 metadata:
@@ -19,6 +26,7 @@ spec:
       targetPort: http-web
   selector:
     app.kubernetes.io/name: prometheus
+    operator.prometheus.io/name: metrics-kube-prometheus-st-prometheus
 ---
 {{- if eq .Values.cluster.name "boa1-prod" }}
 apiVersion: v1
