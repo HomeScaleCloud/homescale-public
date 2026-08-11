@@ -17,6 +17,31 @@ usage() {
     exit 1
 }
 
+hsctl_install_deps() {
+    command -v brew &>/dev/null || {
+        echo "hsctl: Homebrew is required to install dependencies — see https://brew.sh" >&2
+        exit 1
+    }
+
+    local req_file="$HSCTL_ROOT/hsctl.d/requirements.txt"
+    [[ -f "$req_file" ]] || { echo "hsctl: missing $req_file" >&2; exit 1; }
+
+    local missing=() pkg bin
+    while IFS= read -r pkg; do
+        [[ -z "$pkg" || "$pkg" == \#* ]] && continue
+        bin="${pkg##*/}"
+        command -v "$bin" &>/dev/null || missing+=("$pkg")
+    done < "$req_file"
+
+    if [[ ${#missing[@]} -eq 0 ]]; then
+        echo "Dependencies already installed."
+        return 0
+    fi
+
+    echo "Installing missing dependencies via brew: ${missing[*]}"
+    brew install "${missing[@]}"
+}
+
 hsctl_update() {
     local repo="HomeScaleCloud/homescale"
     local raw_header="Accept: application/vnd.github.raw+json"
@@ -36,6 +61,10 @@ hsctl_update() {
         gh api "repos/$repo/contents/hsctl.d/$module" --header "$raw_header" > "$modules_dir/$module"
         echo "  $module"
     done
+
+    gh api "repos/$repo/contents/hsctl.d/requirements.txt" --header "$raw_header" > "$modules_dir/requirements.txt"
+
+    hsctl_install_deps
 
     echo "Installed to $install_dir"
 }

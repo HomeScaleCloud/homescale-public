@@ -1,0 +1,10 @@
+az
+jq
+yq
+fzf
+gh
+ipmitool
+talosctl
+kubectl
+siderolabs/tap/omnictl
+infisical
