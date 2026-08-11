@@ -70,6 +70,7 @@ spec:
               package_update: true
               packages:
                 - curl
+                - qemu-guest-agent
               bootcmd:
                 - mkdir -p /mnt/tailscale-auth
                 - >-
