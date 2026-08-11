@@ -1,0 +1,63 @@
+# NetBird relay reconnects have occasionally left this cluster's Prometheus
+# remote_write connections to the aggregator zombied -- the underlying path
+# recovers but the persistent HTTP client keeps retrying writes on TCP
+# sockets that never got the memo (stuck in FIN-WAIT with unacked data,
+# never timing out on their own). Prometheus itself has no built-in way to
+# notice or recover from this, so this CronJob does it externally: it reads
+# Prometheus's own remote_write lag off its API, and if it's been stuck long
+# enough, deletes the pod so the StatefulSet recreates it with fresh sockets.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: remote-write-watchdog
+  namespace: metrics
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 60
+      backoffLimit: 0
+      template:
+        spec:
+          serviceAccountName: remote-write-watchdog
+          restartPolicy: Never
+          containers:
+            - name: watchdog
+              image: curlimages/curl:8.11.1
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+
+                  response="$(curl -sf --max-time 10 'http://prometheus-proxy.metrics.svc.cluster.local:9090/api/v1/query' \
+                    --data-urlencode 'query=max(time() - prometheus_remote_storage_queue_highest_sent_timestamp_seconds)')"
+
+                  lag="$(echo "$response" | grep -oE '"value":\[[0-9.]+,"[0-9.]+"\]' | grep -oE ',"[0-9.]+"' | tr -d ',"')"
+
+                  if [ -z "$lag" ]; then
+                    echo "no remote_write target configured, or no data yet -- nothing to do"
+                    exit 0
+                  fi
+
+                  echo "remote_write lag: ${lag}s"
+
+                  if awk -v lag="$lag" 'BEGIN { exit !(lag > 900) }'; then
+                    echo "lag exceeds 900s -- deleting the stuck prometheus pod so it reconnects with fresh sockets"
+                    curl -sf --max-time 10 -X DELETE \
+                      --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
+                      -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+                      'https://kubernetes.default.svc/api/v1/namespaces/metrics/pods?labelSelector=app.kubernetes.io%2Fname%3Dprometheus%2Coperator.prometheus.io%2Fname%3Dmetrics-kube-prometheus-st-prometheus'
+                  else
+                    echo "lag within threshold -- nothing to do"
+                  fi
+              resources:
+                requests:
+                  cpu: 5m
+                  memory: 16Mi
+                limits:
+                  cpu: 50m
+                  memory: 32Mi
