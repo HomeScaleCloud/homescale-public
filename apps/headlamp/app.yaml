@@ -55,7 +55,7 @@ values:
     # assets change, forcing a pod restart without a manual version bump.
     podAnnotations:
       homescale-theme-plugin-checksum: "{{ printf \"%s%s\" ($.Files.Get \"headlamp/plugins/homescale-theme/dist/main.js\") ($.Files.Get \"headlamp/plugins/homescale-theme/package.json\") | sha256sum }}"
-      homescale-favicon-checksum: "{{ printf \"%s%s%s\" ($.Files.Get \"headlamp/assets/favicon/favicon.ico\") ($.Files.Get \"headlamp/assets/favicon/favicon-16x16.png\") ($.Files.Get \"headlamp/assets/favicon/favicon-32x32.png\") | sha256sum }}"
+      homescale-favicon-checksum: "{{ printf \"%s%s%s%s\" ($.Files.Get \"headlamp/assets/favicon/favicon.ico\") ($.Files.Get \"headlamp/assets/favicon/favicon.ico.br\") ($.Files.Get \"headlamp/assets/favicon/favicon-16x16.png\") ($.Files.Get \"headlamp/assets/favicon/favicon-32x32.png\") | sha256sum }}"
     initContainers:
       - name: nb-client
         image: "ghcr.io/netbirdio/netbird:0.72.4"
@@ -135,6 +135,10 @@ values:
       - name: homescale-favicon
         mountPath: /headlamp/frontend/favicon.ico
         subPath: favicon.ico
+        readOnly: true
+      - name: homescale-favicon
+        mountPath: /headlamp/frontend/favicon.ico.br
+        subPath: favicon.ico.br
         readOnly: true
       - name: homescale-favicon
         mountPath: /headlamp/frontend/favicon-16x16.png
