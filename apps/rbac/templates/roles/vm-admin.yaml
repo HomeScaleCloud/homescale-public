@@ -62,6 +62,7 @@ rules:
       - virtualmachines/removevolume
       - virtualmachines/memorydump
       - virtualmachines/removememorydump
+      - virtualmachines/migrate
       - virtualmachines/evacuate/cancel
       - virtualmachineinstances/pause
       - virtualmachineinstances/unpause
