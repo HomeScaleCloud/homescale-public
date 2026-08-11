@@ -1,0 +1,2233 @@
+title: Virtual Machines
+uid: k8s_views_vms
+description: 'Per-VM view of KubeVirt VirtualMachineInstances -- CPU, memory, disk and network usage plus live migration transfer stats for individual VMs. For cluster-wide KubeVirt component health see the KubeVirt dashboard in the Platform folder.'
+tags:
+  - Kubernetes
+  - Prometheus
+  - KubeVirt
+editable: true
+graphTooltip: 1
+refresh: 30s
+schemaVersion: 42
+version: 1
+time:
+  from: now-1h
+  to: now
+timepicker: {}
+fiscalYearStartMonth: 0
+links: []
+annotations:
+  list:
+    - builtIn: 1
+      datasource:
+        type: datasource
+        uid: grafana
+      enable: true
+      hide: true
+      iconColor: rgba(0, 211, 255, 1)
+      name: Annotations & Alerts
+      target:
+        limit: 100
+        matchAny: false
+        tags: []
+        type: dashboard
+      type: dashboard
+templating:
+  list:
+    - current:
+        selected: false
+        text: ''
+        value: ''
+      includeAll: false
+      name: datasource
+      options: []
+      query: prometheus
+      refresh: 1
+      regex: ''
+      type: datasource
+    - current:
+        text: ''
+        value: ''
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(kube_node_info,cluster)
+      includeAll: true
+      name: cluster
+      options: []
+      query:
+        qryType: 1
+        query: label_values(kube_node_info,cluster)
+        refId: PrometheusVariableQueryEditor-VariableQuery
+      refresh: 1
+      regex: ''
+      sort: 1
+      type: query
+    - current:
+        selected: false
+        text: ''
+        value: ''
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(kubevirt_vmi_info{cluster=~"$cluster"}, namespace)
+      includeAll: false
+      name: namespace
+      options: []
+      query:
+        query: label_values(kubevirt_vmi_info{cluster=~"$cluster"}, namespace)
+        refId: Prometheus-namespace-Variable-Query
+      refresh: 1
+      regex: ''
+      sort: 1
+      type: query
+    - allValue: .*
+      current:
+        selected: false
+        text: ''
+        value: ''
+      datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(kubevirt_vmi_info{namespace="$namespace", cluster=~"$cluster"}, name)
+      includeAll: true
+      multi: true
+      name: vm
+      options: []
+      query:
+        query: label_values(kubevirt_vmi_info{namespace="$namespace", cluster=~"$cluster"}, name)
+        refId: Prometheus-vm-Variable-Query
+      refresh: 2
+      regex: ''
+      sort: 1
+      type: query
+    - current:
+        text: 30s
+        value: 30s
+      includeAll: false
+      name: resolution
+      options:
+        - selected: false
+          text: 1s
+          value: 1s
+        - selected: false
+          text: 15s
+          value: 15s
+        - selected: true
+          text: 30s
+          value: 30s
+        - selected: false
+          text: 1m
+          value: 1m
+        - selected: false
+          text: 3m
+          value: 3m
+        - selected: false
+          text: 5m
+          value: 5m
+      query: 1s, 15s, 30s, 1m, 3m, 5m
+      type: custom
+panels:
+  - type: row
+    title: Alerts
+    id: 10
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 0
+    panels:
+      - type: state-timeline
+        title: Alert Timeline
+        id: 11
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 1
+        options:
+          alignValue: left
+          legend:
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          mergeValues: true
+          rowHeight: 0.9
+          showValue: auto
+          tooltip:
+            mode: single
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: thresholds
+            custom:
+              fillOpacity: 70
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineWidth: 0
+              spanNulls: false
+            mappings:
+              - type: value
+                options:
+                  '1':
+                    color: yellow
+                    index: 0
+                    text: Warning / Pending
+                  '2':
+                    color: red
+                    index: 1
+                    text: Critical (Firing)
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: null
+                - color: yellow
+                  value: 1
+                - color: red
+                  value: 2
+          overrides: []
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${datasource}
+            expr: max without (alertstate) ((ALERTS{cluster=~"$cluster", namespace=~"$namespace", name=~"$vm", severity="critical", alertstate="firing"} * 2) or (ALERTS{cluster=~"$cluster", namespace=~"$namespace", name=~"$vm", alertstate="pending"} * 1) or (ALERTS{cluster=~"$cluster", namespace=~"$namespace", name=~"$vm", severity="warning"} * 1))
+            legendFormat: '{{alertname}} [{{severity}}]'
+            range: true
+            instant: false
+            refId: A
+      - type: table
+        title: Active Alerts
+        id: 12
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 9
+        options:
+          cellHeight: sm
+          footer:
+            countRows: false
+            fields: ''
+            reducer:
+              - sum
+            show: false
+          showHeader: true
+          sortBy:
+            - desc: false
+              displayName: alertname
+        fieldConfig:
+          defaults:
+            custom:
+              align: auto
+              cellOptions:
+                type: auto
+              inspect: false
+          overrides:
+            - matcher:
+                id: byName
+                options: cluster
+              properties:
+                - id: custom.width
+                  value: 140
+            - matcher:
+                id: byName
+                options: alertname
+              properties:
+                - id: custom.width
+                  value: 300
+            - matcher:
+                id: byName
+                options: alertstate
+              properties:
+                - id: custom.width
+                  value: 90
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        firing:
+                          color: red
+                          index: 0
+                          text: firing
+                        pending:
+                          color: yellow
+                          index: 1
+                          text: pending
+            - matcher:
+                id: byName
+                options: severity
+              properties:
+                - id: custom.width
+                  value: 100
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        warning:
+                          color: yellow
+                          index: 0
+                          text: warning
+                        critical:
+                          color: red
+                          index: 1
+                          text: critical
+                        info:
+                          color: blue
+                          index: 2
+                          text: info
+            - matcher:
+                id: byName
+                options: name
+              properties:
+                - id: links
+                  value:
+                    - title: VM details
+                      url: /d/k8s_views_vms/virtual-machines?${datasource:queryparam}&${cluster:queryparam}&var-namespace=${__data.fields.namespace}&var-vm=${__value.text}&${resolution:queryparam}&${__url_time_range}
+                      targetBlank: true
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${datasource}
+            expr: ALERTS{cluster=~"$cluster", alertstate=~"firing|pending", namespace=~"$namespace", name=~"$vm"}
+            instant: true
+            format: table
+            legendFormat: ''
+            refId: A
+        transformations:
+          - id: organize
+            options:
+              excludeByName:
+                Time: true
+                Value: true
+                __name__: true
+                endpoint: true
+                instance: true
+                job: true
+                prometheus: true
+                prometheus_replica: true
+                service: true
+                container: true
+              indexByName:
+                alertname: 0
+                alertstate: 1
+                severity: 2
+                namespace: 3
+                name: 4
+                cluster: 5
+                node: 6
+              renameByName: {}
+  - type: row
+    title: Logs
+    id: 13
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 1
+    panels:
+      - type: logs
+        title: Kubernetes Events
+        id: 14
+        datasource:
+          type: loki
+          uid: loki
+        gridPos:
+          h: 14
+          w: 24
+          x: 0
+          'y': 2
+        options:
+          dedupStrategy: none
+          enableLogDetails: true
+          prettifyLogMessage: false
+          showCommonLabels: false
+          showLabels: false
+          showTime: true
+          sortOrder: Descending
+          wrapLogMessage: true
+        targets:
+          - datasource:
+              type: loki
+              uid: loki
+            editorMode: code
+            expr: '{cluster=~"$cluster", job="integrations/kubernetes/eventhandler", namespace=~"$namespace"} | logfmt | kind=~`VirtualMachine|VirtualMachineInstance` | name=~`$vm`'
+            queryType: range
+            refId: A
+  - type: row
+    title: Overview
+    id: 15
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 2
+    panels: []
+  - type: gauge
+    title: Memory Usage
+    description: Guest memory currently assigned via the balloon driver, as a fraction of memory allocated to the domain.
+    id: 16
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 4
+      x: 0
+      'y': 3
+    options:
+      minVizHeight: 75
+      minVizWidth: 75
+      orientation: auto
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showThresholdLabels: false
+      showThresholdMarkers: true
+      sizing: auto
+    fieldConfig:
+      defaults:
+        decimals: 2
+        mappings: []
+        max: 1
+        min: 0
+        thresholds:
+          mode: percentage
+          steps:
+            - color: green
+              value: null
+            - color: orange
+              value: 50
+            - color: red
+              value: 70
+        unit: percentunit
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: sum(kubevirt_vmi_memory_actual_balloon_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}) / sum(kubevirt_vmi_memory_domain_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"})
+        instant: true
+        interval: $resolution
+        legendFormat: ''
+        refId: A
+  - type: stat
+    title: CPU Usage
+    description: Sum of vCPU usage across the matched VMs, in cores.
+    id: 17
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 4
+      x: 4
+      'y': 3
+    options:
+      colorMode: value
+      graphMode: area
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      text: {}
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        decimals: 2
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: blue
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: sum(rate(kubevirt_vmi_cpu_usage_seconds_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval]))
+        interval: $resolution
+        legendFormat: ''
+        refId: A
+  - type: stat
+    title: VM Count
+    description: Number of VirtualMachineInstances matching the current namespace/vm filter.
+    id: 18
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 4
+      x: 8
+      'y': 3
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      text: {}
+      textMode: value
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: blue
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: count(kubevirt_vmi_info{namespace="$namespace", name=~"$vm", cluster=~"$cluster"})
+        instant: true
+        interval: ''
+        legendFormat: ''
+        refId: A
+  - type: table
+    title: List of VMs
+    description: Browse the VirtualMachineInstances matched by the current namespace/vm filter. Click a VM or node to drill into its dashboard.
+    id: 19
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 16
+      w: 12
+      x: 12
+      'y': 3
+    options:
+      cellHeight: sm
+      footer:
+        countRows: false
+        fields: ''
+        reducer:
+          - sum
+        show: false
+      showHeader: true
+      sortBy: []
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        custom:
+          align: auto
+          cellOptions:
+            type: auto
+          inspect: false
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+      overrides:
+        - matcher:
+            id: byName
+            options: cluster
+          properties:
+            - id: custom.width
+              value: 120
+        - matcher:
+            id: byName
+            options: name
+          properties:
+            - id: custom.width
+              value: 220
+            - id: links
+              value:
+                - title: VM details
+                  url: /d/k8s_views_vms/virtual-machines?${datasource:queryparam}&${cluster:queryparam}&${namespace:queryparam}&var-vm=${__value.text}&${resolution:queryparam}&${__url_time_range}
+                  targetBlank: true
+        - matcher:
+            id: byName
+            options: node
+          properties:
+            - id: custom.width
+              value: 160
+            - id: links
+              value:
+                - title: Node details
+                  url: /d/k8s_views_nodes/kubernetes-views-nodes?${datasource:queryparam}&${cluster:queryparam}&var-node=${__value.text}&${resolution:queryparam}&${__url_time_range}
+                  targetBlank: true
+        - matcher:
+            id: byName
+            options: phase
+          properties:
+            - id: custom.cellOptions
+              value:
+                type: color-background
+                mode: basic
+            - id: mappings
+              value:
+                - type: value
+                  options:
+                    running:
+                      color: green
+                      index: 0
+                      text: running
+                    pending:
+                      color: yellow
+                      index: 1
+                      text: pending
+                    scheduling:
+                      color: yellow
+                      index: 2
+                      text: scheduling
+                    scheduled:
+                      color: yellow
+                      index: 3
+                      text: scheduled
+                    failed:
+                      color: red
+                      index: 4
+                      text: failed
+                    succeeded:
+                      color: blue
+                      index: 5
+                      text: succeeded
+        - matcher:
+            id: byName
+            options: evictable
+          properties:
+            - id: custom.width
+              value: 100
+        - matcher:
+            id: byName
+            options: vmi_pod
+          properties:
+            - id: custom.width
+              value: 260
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: kubevirt_vmi_info{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}
+        format: table
+        instant: true
+        interval: ''
+        legendFormat: ''
+        refId: A
+    transformations:
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            Value: true
+            __name__: true
+            container: true
+            endpoint: true
+            instance: true
+            job: true
+            namespace: true
+            outdated: true
+            pod: true
+            prometheus: true
+            prometheus_replica: true
+            service: true
+          indexByName:
+            name: 0
+            node: 1
+            phase: 2
+            evictable: 3
+            cluster: 4
+            vmi_pod: 5
+            guest_os_machine: 6
+          renameByName:
+            vmi_pod: Launcher Pod
+            guest_os_machine: Machine Type
+            evictable: Evictable
+  - type: stat
+    title: VM Phase
+    description: Panel only works when a single VM is selected.
+    id: 20
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 0
+      'y': 11
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs: []
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: name
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+        unit: none
+      overrides:
+        - matcher:
+            id: byName
+            options: failed
+          properties:
+            - id: color
+              value:
+                fixedColor: red
+                mode: fixed
+        - matcher:
+            id: byName
+            options: pending
+          properties:
+            - id: color
+              value:
+                fixedColor: orange
+                mode: fixed
+        - matcher:
+            id: byName
+            options: scheduling
+          properties:
+            - id: color
+              value:
+                fixedColor: orange
+                mode: fixed
+        - matcher:
+            id: byName
+            options: scheduled
+          properties:
+            - id: color
+              value:
+                fixedColor: orange
+                mode: fixed
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: kubevirt_vmi_info{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}
+        instant: true
+        interval: ''
+        legendFormat: '{{ phase }}'
+        refId: A
+  - type: stat
+    title: Running on
+    description: Panel only works when a single VM is selected.
+    id: 21
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 4
+      'y': 11
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - mean
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: name
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        links:
+          - title: ''
+            url: /d/k8s_views_nodes/kubernetes-views-nodes?var-datasource=${datasource}&var-node=${__field.labels.node}&${cluster:queryparam}
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: 0
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: kubevirt_vmi_info{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}
+        instant: true
+        interval: ''
+        legendFormat: '{{ node }}'
+        refId: A
+  - type: stat
+    title: Evictable
+    description: Whether KubeVirt considers this VM safe to evict (live-migrate away) from its current node, e.g. ahead of a drain. Panel only works when a single VM is selected.
+    id: 22
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 8
+      'y': 11
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - mean
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: name
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: red
+              value: 0
+        unit: none
+      overrides:
+        - matcher:
+            id: byName
+            options: 'true'
+          properties:
+            - id: color
+              value:
+                fixedColor: green
+                mode: fixed
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: kubevirt_vmi_info{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}
+        instant: true
+        interval: ''
+        legendFormat: '{{ evictable }}'
+        refId: A
+  - type: stat
+    title: Memory Allocated
+    id: 23
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 0
+      'y': 15
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: 0
+        unit: bytes
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: sum(kubevirt_vmi_memory_domain_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"})
+        instant: true
+        interval: ''
+        legendFormat: ''
+        refId: A
+  - type: stat
+    title: Guest Memory Available
+    description: Requires the QEMU guest agent to be running inside the VM.
+    id: 24
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 4
+      'y': 15
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: 'n/a'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: 0
+        unit: bytes
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: sum(kubevirt_vmi_memory_available_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"})
+        instant: true
+        interval: ''
+        legendFormat: ''
+        refId: A
+  - type: stat
+    title: Total Disk I/O
+    id: 25
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 4
+      w: 4
+      x: 8
+      'y': 15
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: auto
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        decimals: 2
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: 0
+        unit: Bps
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: sum(rate(kubevirt_vmi_storage_read_traffic_bytes_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) + sum(rate(kubevirt_vmi_storage_write_traffic_bytes_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval]))
+        instant: true
+        interval: $resolution
+        legendFormat: ''
+        refId: A
+  - type: row
+    title: Resources
+    id: 26
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 19
+    panels: []
+  - type: timeseries
+    title: CPU Usage by VM
+    id: 27
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 20
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: CPU Cores
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 4
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(kubevirt_vmi_cpu_usage_seconds_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Memory Usage by VM
+    id: 28
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 20
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: Bytes
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineStyle:
+            fill: solid
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: bytes
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(kubevirt_vmi_memory_actual_balloon_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: Memory Usage / Allocated by VM
+    id: 29
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 28
+    options:
+      legend:
+        calcs: []
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: Percent
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: area
+        mappings: []
+        max: 1
+        min: 0
+        thresholds:
+          mode: percentage
+          steps:
+            - color: green
+              value: 0
+            - color: '#EAB839'
+              value: 70
+            - color: red
+              value: 90
+        unit: percentunit
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(kubevirt_vmi_memory_actual_balloon_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}) by (name) / sum(kubevirt_vmi_memory_domain_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }}'
+        range: true
+        refId: A
+  - type: timeseries
+    title: vCPU Scheduler Delay by VM
+    description: Time vCPU threads spent waiting for a physical CPU. Sustained high values indicate host CPU contention.
+    id: 30
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 28
+    options:
+      legend:
+        calcs:
+          - min
+          - max
+          - mean
+        displayMode: table
+        placement: right
+        showLegend: true
+        sortBy: Max
+        sortDesc: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: SECONDS
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: s
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(kubevirt_vmi_vcpu_delay_seconds_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }}'
+        range: true
+        refId: A
+  - type: row
+    title: Storage
+    id: 31
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 36
+    panels: []
+  - type: timeseries
+    title: Storage Throughput by VM
+    id: 32
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 37
+    options:
+      legend:
+        calcs: []
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: binBps
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(kubevirt_vmi_storage_read_traffic_bytes_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }} READ'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: '- sum(rate(kubevirt_vmi_storage_write_traffic_bytes_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)'
+        interval: $resolution
+        legendFormat: '{{ name }} WRITE'
+        range: true
+        refId: B
+  - type: timeseries
+    title: Storage IOPS by VM
+    id: 33
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 37
+    options:
+      legend:
+        calcs: []
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: iops
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(rate(kubevirt_vmi_storage_iops_read_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }} READ'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: '- sum(rate(kubevirt_vmi_storage_iops_write_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)'
+        interval: $resolution
+        legendFormat: '{{ name }} WRITE'
+        range: true
+        refId: B
+  - type: timeseries
+    title: Filesystem Usage in %
+    description: Requires the QEMU guest agent to be running inside the VM.
+    id: 34
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 45
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: false
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        max: 1
+        min: 0
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: percentunit
+      overrides: []
+    pluginVersion: 8.3.3
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: max(kubevirt_vmi_filesystem_used_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}) by (name, mount_point) / max(kubevirt_vmi_filesystem_capacity_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}) by (name, mount_point)
+        interval: $resolution
+        legendFormat: '{{ name }} - {{ mount_point }}'
+        range: true
+        refId: A
+  - type: table
+    title: Filesystem Usage in GB
+    description: Requires the QEMU guest agent to be running inside the VM.
+    id: 35
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 45
+    options:
+      cellHeight: sm
+      footer:
+        countRows: false
+        fields: ''
+        reducer:
+          - sum
+        show: false
+      showHeader: true
+      sortBy: []
+    fieldConfig:
+      defaults:
+        color:
+          mode: continuous-GrYlRd
+        custom:
+          align: auto
+          cellOptions:
+            type: auto
+          filterable: false
+          inspect: false
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: bytes
+      overrides:
+        - matcher:
+            id: byName
+            options: Used
+          properties:
+            - id: custom.width
+              value: 146
+        - matcher:
+            id: byName
+            options: Capacity
+          properties:
+            - id: custom.width
+              value: 167
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: max(kubevirt_vmi_filesystem_used_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}) by (name, mount_point)
+        format: table
+        hide: false
+        interval: ''
+        legendFormat: ''
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: max(kubevirt_vmi_filesystem_capacity_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}) by (name, mount_point)
+        format: table
+        hide: false
+        interval: ''
+        legendFormat: ''
+        refId: B
+    transformations:
+      - id: merge
+        options: {}
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+          indexByName:
+            name: 0
+            mount_point: 1
+          renameByName:
+            'Value #A': Used
+            'Value #B': Capacity
+            name: VM
+            mount_point: Mount Point
+  - type: row
+    title: Network
+    id: 36
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 53
+    panels: []
+  - type: timeseries
+    title: Network - Bandwidth
+    id: 37
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 54
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: binBps
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(rate(kubevirt_vmi_network_receive_bytes_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }} RX'
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: '- sum(rate(kubevirt_vmi_network_transmit_bytes_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)'
+        interval: $resolution
+        legendFormat: '{{ name }} TX'
+        refId: B
+  - type: timeseries
+    title: Network - Packets Rate
+    id: 38
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 54
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: pps
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(rate(kubevirt_vmi_network_receive_packets_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }} RX'
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: '- sum(rate(kubevirt_vmi_network_transmit_packets_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)'
+        interval: $resolution
+        legendFormat: '{{ name }} TX'
+        refId: B
+  - type: timeseries
+    title: Network - Packets Dropped
+    id: 39
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 62
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: pps
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(rate(kubevirt_vmi_network_receive_packets_dropped_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }} RX'
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: '- sum(rate(kubevirt_vmi_network_transmit_packets_dropped_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)'
+        interval: $resolution
+        legendFormat: '{{ name }} TX'
+        refId: B
+  - type: timeseries
+    title: Network - Errors
+    id: 40
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 62
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: bottom
+        showLegend: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: none
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: pps
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: sum(rate(kubevirt_vmi_network_receive_errors_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }} RX'
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: '- sum(rate(kubevirt_vmi_network_transmit_errors_total{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}[$__rate_interval])) by (name)'
+        interval: $resolution
+        legendFormat: '{{ name }} TX'
+        refId: B
+  - type: row
+    title: Live Migration
+    id: 41
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 70
+    panels: []
+  - type: timeseries
+    title: Migration Data Processed / Remaining by VM
+    description: Only reports non-zero values while a VM has an active live migration in progress.
+    id: 42
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 71
+    options:
+      legend:
+        calcs: []
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        hideZeros: true
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: Bytes
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: bytes
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(kubevirt_vmi_migration_data_processed_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }} PROCESSED'
+        range: true
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(kubevirt_vmi_migration_data_remaining_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }} REMAINING'
+        range: true
+        refId: B
+  - type: timeseries
+    title: Migration Dirty Memory Rate by VM
+    description: Rate at which guest memory pages are being dirtied during an active live migration.
+    id: 43
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 71
+    options:
+      legend:
+        calcs: []
+        displayMode: table
+        placement: right
+        showLegend: true
+      tooltip:
+        hideZeros: true
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: binBps
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: sum(kubevirt_vmi_migration_dirty_memory_rate_bytes{namespace="$namespace", name=~"$vm", cluster=~"$cluster"}) by (name)
+        interval: $resolution
+        legendFormat: '{{ name }}'
+        range: true
+        refId: A

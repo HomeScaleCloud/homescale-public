@@ -8,7 +8,7 @@ editable: true
 graphTooltip: 1
 refresh: 30s
 schemaVersion: 42
-version: 39
+version: 40
 time:
   from: now-1h
   to: now
@@ -384,7 +384,7 @@ panels:
           h: 14
           w: 24
           x: 0
-          'y': 74
+          'y': 2
         options:
           dedupStrategy: none
           enableLogDetails: true
@@ -412,7 +412,7 @@ panels:
           h: 10
           w: 24
           x: 0
-          'y': 88
+          'y': 16
         options:
           dedupStrategy: none
           enableLogDetails: true
@@ -431,7 +431,7 @@ panels:
             queryType: range
             refId: A
   - type: row
-    title: Information
+    title: Overview
     id: 43
     collapsed: false
     gridPos:
@@ -439,379 +439,6 @@ panels:
       w: 24
       x: 0
       'y': 2
-    panels: []
-  - type: stat
-    title: Created by
-    description: Panel only works when a single pod is selected.
-    id: 2
-    datasource:
-      type: prometheus
-      uid: ${datasource}
-    gridPos:
-      h: 2
-      w: 12
-      x: 0
-      'y': 3
-    options:
-      colorMode: none
-      graphMode: none
-      justifyMode: auto
-      orientation: auto
-      percentChangeColorMode: standard
-      reduceOptions:
-        calcs:
-          - mean
-        fields: ''
-        values: false
-      showPercentChange: false
-      textMode: name
-      wideLayout: true
-    fieldConfig:
-      defaults:
-        mappings: []
-        thresholds:
-          mode: absolute
-          steps:
-            - color: rgb(255, 255, 255)
-              value: 0
-        unit: none
-      overrides: []
-    pluginVersion: 12.2.1
-    targets:
-      - datasource:
-          type: prometheus
-          uid: ${datasource}
-        editorMode: code
-        exemplar: false
-        expr: kube_pod_info{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}
-        instant: true
-        interval: ''
-        legendFormat: '{{ created_by_kind }}: {{ created_by_name }}'
-        refId: A
-  - type: stat
-    title: Running on
-    description: Panel only works when a single pod is selected.
-    id: 33
-    datasource:
-      type: prometheus
-      uid: ${datasource}
-    gridPos:
-      h: 2
-      w: 6
-      x: 12
-      'y': 3
-    options:
-      colorMode: none
-      graphMode: none
-      justifyMode: auto
-      orientation: auto
-      percentChangeColorMode: standard
-      reduceOptions:
-        calcs:
-          - mean
-        fields: ''
-        values: false
-      showPercentChange: false
-      textMode: name
-      wideLayout: true
-    fieldConfig:
-      defaults:
-        links:
-          - title: ''
-            url: /d/k8s_views_nodes/kubernetes-views-nodes?var-datasource=${datasource}&var-node=${__field.labels.node}&${cluster:queryparam}
-        mappings: []
-        thresholds:
-          mode: absolute
-          steps:
-            - color: rgb(255, 255, 255)
-              value: 0
-        unit: none
-      overrides: []
-    pluginVersion: 12.2.1
-    targets:
-      - datasource:
-          type: prometheus
-          uid: ${datasource}
-        editorMode: code
-        exemplar: false
-        expr: kube_pod_info{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}
-        instant: true
-        interval: ''
-        legendFormat: '{{ node }}'
-        refId: A
-  - type: stat
-    title: Pod IP
-    description: Panel only works when a single pod is selected.
-    id: 41
-    datasource:
-      type: prometheus
-      uid: ${datasource}
-    gridPos:
-      h: 2
-      w: 6
-      x: 18
-      'y': 3
-    options:
-      colorMode: none
-      graphMode: none
-      justifyMode: auto
-      orientation: auto
-      percentChangeColorMode: standard
-      reduceOptions:
-        calcs:
-          - mean
-        fields: ''
-        values: false
-      showPercentChange: false
-      textMode: name
-      wideLayout: true
-    fieldConfig:
-      defaults:
-        mappings: []
-        thresholds:
-          mode: absolute
-          steps:
-            - color: rgb(255, 255, 255)
-              value: 0
-        unit: none
-      overrides: []
-    pluginVersion: 12.2.1
-    targets:
-      - datasource:
-          type: prometheus
-          uid: ${datasource}
-        editorMode: code
-        exemplar: false
-        expr: kube_pod_info{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}
-        instant: true
-        interval: ''
-        legendFormat: '{{ pod_ip }}'
-        refId: A
-  - type: stat
-    title: Priority Class
-    description: Panel only works when a single pod is selected.
-    id: 52
-    datasource:
-      type: prometheus
-      uid: ${datasource}
-    gridPos:
-      h: 2
-      w: 5
-      x: 0
-      'y': 5
-    options:
-      colorMode: none
-      graphMode: none
-      justifyMode: auto
-      orientation: auto
-      percentChangeColorMode: standard
-      reduceOptions:
-        calcs:
-          - mean
-        fields: ''
-        values: false
-      showPercentChange: false
-      textMode: name
-      wideLayout: true
-    fieldConfig:
-      defaults:
-        mappings: []
-        thresholds:
-          mode: absolute
-          steps:
-            - color: rgb(255, 255, 255)
-              value: 0
-        unit: none
-      overrides: []
-    pluginVersion: 12.2.1
-    targets:
-      - datasource:
-          type: prometheus
-          uid: ${datasource}
-        editorMode: code
-        exemplar: false
-        expr: kube_pod_info{namespace="$namespace", pod=~"$pod", priority_class!="", cluster=~"$cluster"}
-        format: time_series
-        instant: true
-        interval: ''
-        legendFormat: '{{ priority_class }}'
-        range: false
-        refId: A
-  - type: stat
-    title: QOS Class
-    description: Panel only works when a single pod is selected.
-    id: 53
-    datasource:
-      type: prometheus
-      uid: ${datasource}
-    gridPos:
-      h: 2
-      w: 7
-      x: 5
-      'y': 5
-    options:
-      colorMode: value
-      graphMode: none
-      justifyMode: auto
-      orientation: auto
-      percentChangeColorMode: standard
-      reduceOptions:
-        calcs: []
-        fields: ''
-        values: false
-      showPercentChange: false
-      textMode: name
-      wideLayout: true
-    fieldConfig:
-      defaults:
-        color:
-          mode: thresholds
-        mappings: []
-        thresholds:
-          mode: absolute
-          steps:
-            - color: green
-              value: 0
-        unit: none
-      overrides:
-        - matcher:
-            id: byName
-            options: Burstable
-          properties:
-            - id: color
-              value:
-                fixedColor: red
-                mode: fixed
-        - matcher:
-            id: byName
-            options: BestEffort
-          properties:
-            - id: color
-              value:
-                fixedColor: orange
-                mode: fixed
-    pluginVersion: 12.2.1
-    targets:
-      - datasource:
-          type: prometheus
-          uid: ${datasource}
-        editorMode: code
-        exemplar: false
-        expr: kube_pod_status_qos_class{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"} > 0
-        instant: true
-        interval: ''
-        legendFormat: '{{ qos_class }}'
-        refId: A
-  - type: stat
-    title: Last Terminated Reason
-    description: Panel only works when a single pod is selected.
-    id: 56
-    datasource:
-      type: prometheus
-      uid: ${datasource}
-    gridPos:
-      h: 2
-      w: 6
-      x: 12
-      'y': 5
-    options:
-      colorMode: value
-      graphMode: none
-      justifyMode: auto
-      orientation: auto
-      percentChangeColorMode: standard
-      reduceOptions:
-        calcs: []
-        fields: ''
-        values: false
-      showPercentChange: false
-      textMode: name
-      wideLayout: true
-    fieldConfig:
-      defaults:
-        mappings: []
-        thresholds:
-          mode: absolute
-          steps:
-            - color: text
-              value: 0
-            - color: red
-              value: 1
-        unit: none
-      overrides: []
-    pluginVersion: 12.2.1
-    targets:
-      - datasource:
-          type: prometheus
-          uid: ${datasource}
-        editorMode: code
-        exemplar: false
-        expr: kube_pod_container_status_last_terminated_reason{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}
-        instant: true
-        interval: ''
-        legendFormat: '{{ reason }}'
-        refId: A
-  - type: stat
-    title: Last Terminated Exit Code
-    description: Panel only works when a single pod is selected.
-    id: 57
-    datasource:
-      type: prometheus
-      uid: ${datasource}
-    gridPos:
-      h: 2
-      w: 6
-      x: 18
-      'y': 5
-    options:
-      colorMode: value
-      graphMode: none
-      justifyMode: auto
-      orientation: auto
-      percentChangeColorMode: standard
-      reduceOptions:
-        calcs: []
-        fields: ''
-        values: true
-      showPercentChange: false
-      textMode: value
-      wideLayout: true
-    fieldConfig:
-      defaults:
-        mappings: []
-        thresholds:
-          mode: absolute
-          steps:
-            - color: text
-              value: 0
-            - color: red
-              value: 1
-            - color: '#EAB839'
-              value: 2
-        unit: none
-      overrides: []
-    pluginVersion: 12.2.1
-    targets:
-      - datasource:
-          type: prometheus
-          uid: ${datasource}
-        editorMode: code
-        exemplar: false
-        expr: kube_pod_container_status_last_terminated_exitcode{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}
-        instant: true
-        interval: ''
-        legendFormat: __auto
-        range: false
-        refId: A
-  - type: row
-    title: Resources
-    id: 47
-    collapsed: false
-    gridPos:
-      h: 1
-      w: 24
-      x: 0
-      'y': 7
     panels: []
   - type: gauge
     title: Total pod CPU Requests usage
@@ -823,7 +450,7 @@ panels:
       h: 8
       w: 3
       x: 0
-      'y': 8
+      'y': 3
     options:
       minVizHeight: 75
       minVizWidth: 75
@@ -878,7 +505,7 @@ panels:
       h: 8
       w: 3
       x: 3
-      'y': 8
+      'y': 3
     options:
       minVizHeight: 75
       minVizWidth: 75
@@ -930,7 +557,7 @@ panels:
       h: 8
       w: 3
       x: 6
-      'y': 8
+      'y': 3
     options:
       minVizHeight: 75
       minVizWidth: 75
@@ -985,7 +612,7 @@ panels:
       h: 8
       w: 3
       x: 9
-      'y': 8
+      'y': 3
     options:
       minVizHeight: 75
       minVizWidth: 75
@@ -1028,6 +655,610 @@ panels:
         legendFormat: Limits
         refId: B
   - type: table
+    title: List of pods
+    description: Browse the pods matched by the current namespace/pod filter. Click a pod or node to drill into its dashboard.
+    id: 100
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 17
+      w: 12
+      x: 12
+      'y': 3
+    options:
+      cellHeight: sm
+      footer:
+        countRows: false
+        fields: ''
+        reducer:
+          - sum
+        show: false
+      showHeader: true
+      sortBy: []
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        custom:
+          align: auto
+          cellOptions:
+            type: auto
+          inspect: false
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+      overrides:
+        - matcher:
+            id: byName
+            options: cluster
+          properties:
+            - id: custom.width
+              value: 120
+        - matcher:
+            id: byName
+            options: pod
+          properties:
+            - id: custom.width
+              value: 300
+            - id: links
+              value:
+                - title: Pod details
+                  url: /d/k8s_views_pods/kubernetes-views-pods?${datasource:queryparam}&${cluster:queryparam}&${namespace:queryparam}&var-pod=${__value.text}&${resolution:queryparam}&${__url_time_range}
+                  targetBlank: true
+        - matcher:
+            id: byName
+            options: node
+          properties:
+            - id: custom.width
+              value: 160
+            - id: links
+              value:
+                - title: Node details
+                  url: /d/k8s_views_nodes/kubernetes-views-nodes?${datasource:queryparam}&${cluster:queryparam}&var-node=${__value.text}&${resolution:queryparam}&${__url_time_range}
+                  targetBlank: true
+        - matcher:
+            id: byName
+            options: pod_ip
+          properties:
+            - id: custom.width
+              value: 130
+        - matcher:
+            id: byName
+            options: priority_class
+          properties:
+            - id: custom.width
+              value: 140
+        - matcher:
+            id: byName
+            options: created_by_kind
+          properties:
+            - id: custom.width
+              value: 150
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: kube_pod_info{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}
+        format: table
+        instant: true
+        interval: ''
+        legendFormat: ''
+        refId: A
+    transformations:
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            Value: true
+            __name__: true
+            container: true
+            created_by_name: true
+            endpoint: true
+            env: true
+            host_ip: true
+            host_network: true
+            instance: true
+            job: true
+            namespace: true
+            project: true
+            prometheus_replica: true
+            service: true
+            uid: true
+          indexByName:
+            pod: 0
+            node: 1
+            created_by_kind: 2
+            cluster: 3
+            pod_ip: 4
+            priority_class: 5
+          renameByName: {}
+  - type: stat
+    title: Created by
+    description: Panel only works when a single pod is selected.
+    id: 2
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 4
+      x: 0
+      'y': 11
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - mean
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: name
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: 0
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: kube_pod_info{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}
+        instant: true
+        interval: ''
+        legendFormat: '{{ created_by_kind }}: {{ created_by_name }}'
+        refId: A
+  - type: stat
+    title: Running on
+    description: Panel only works when a single pod is selected.
+    id: 33
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 4
+      x: 4
+      'y': 11
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - mean
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: name
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        links:
+          - title: ''
+            url: /d/k8s_views_nodes/kubernetes-views-nodes?var-datasource=${datasource}&var-node=${__field.labels.node}&${cluster:queryparam}
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: 0
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: kube_pod_info{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}
+        instant: true
+        interval: ''
+        legendFormat: '{{ node }}'
+        refId: A
+  - type: stat
+    title: Pod IP
+    description: Panel only works when a single pod is selected.
+    id: 41
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 4
+      x: 8
+      'y': 11
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - mean
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: name
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: 0
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: kube_pod_info{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}
+        instant: true
+        interval: ''
+        legendFormat: '{{ pod_ip }}'
+        refId: A
+  - type: stat
+    title: Priority Class
+    description: Panel only works when a single pod is selected.
+    id: 52
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 4
+      x: 0
+      'y': 14
+    options:
+      colorMode: none
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - mean
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: name
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: rgb(255, 255, 255)
+              value: 0
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: kube_pod_info{namespace="$namespace", pod=~"$pod", priority_class!="", cluster=~"$cluster"}
+        format: time_series
+        instant: true
+        interval: ''
+        legendFormat: '{{ priority_class }}'
+        range: false
+        refId: A
+  - type: stat
+    title: QOS Class
+    description: Panel only works when a single pod is selected.
+    id: 53
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 4
+      x: 4
+      'y': 14
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs: []
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: name
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+        unit: none
+      overrides:
+        - matcher:
+            id: byName
+            options: Burstable
+          properties:
+            - id: color
+              value:
+                fixedColor: red
+                mode: fixed
+        - matcher:
+            id: byName
+            options: BestEffort
+          properties:
+            - id: color
+              value:
+                fixedColor: orange
+                mode: fixed
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: kube_pod_status_qos_class{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"} > 0
+        instant: true
+        interval: ''
+        legendFormat: '{{ qos_class }}'
+        refId: A
+  - type: stat
+    title: Pod Count
+    description: Number of pods matching the current namespace/pod filter.
+    id: 101
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 4
+      x: 8
+      'y': 14
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      text: {}
+      textMode: value
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: blue
+              value: null
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: count(kube_pod_info{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"})
+        instant: true
+        interval: ''
+        legendFormat: ''
+        refId: A
+  - type: stat
+    title: Last Terminated Reason
+    description: Panel only works when a single pod is selected.
+    id: 56
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 4
+      x: 0
+      'y': 17
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs: []
+        fields: ''
+        values: false
+      showPercentChange: false
+      textMode: name
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: text
+              value: 0
+            - color: red
+              value: 1
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: kube_pod_container_status_last_terminated_reason{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}
+        instant: true
+        interval: ''
+        legendFormat: '{{ reason }}'
+        refId: A
+  - type: stat
+    title: Last Terminated Exit Code
+    description: Panel only works when a single pod is selected.
+    id: 57
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 4
+      x: 4
+      'y': 17
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs: []
+        fields: ''
+        values: true
+      showPercentChange: false
+      textMode: value
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: text
+              value: 0
+            - color: red
+              value: 1
+            - color: '#EAB839'
+              value: 2
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: kube_pod_container_status_last_terminated_exitcode{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}
+        instant: true
+        interval: ''
+        legendFormat: __auto
+        range: false
+        refId: A
+  - type: stat
+    title: Total Restarts
+    description: Sum of container restarts across pods matching the current filter.
+    id: 102
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 3
+      w: 4
+      x: 8
+      'y': 17
+    options:
+      colorMode: value
+      graphMode: none
+      justifyMode: auto
+      orientation: auto
+      percentChangeColorMode: standard
+      reduceOptions:
+        calcs:
+          - lastNotNull
+        fields: ''
+        values: false
+      showPercentChange: false
+      text: {}
+      textMode: value
+      wideLayout: true
+    fieldConfig:
+      defaults:
+        mappings: []
+        noValue: '0'
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: '#EAB839'
+              value: 1
+            - color: red
+              value: 5
+        unit: none
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: false
+        expr: sum(kube_pod_container_status_restarts_total{namespace="$namespace", pod=~"$pod", job=~"$job", cluster=~"$cluster"})
+        instant: true
+        interval: ''
+        legendFormat: ''
+        refId: A
+  - type: row
+    title: Resources
+    id: 47
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 20
+    panels: []
+  - type: table
     title: Resources by container
     id: 38
     datasource:
@@ -1036,8 +1267,8 @@ panels:
     gridPos:
       h: 8
       w: 12
-      x: 12
-      'y': 8
+      x: 0
+      'y': 21
     options:
       cellHeight: sm
       showHeader: true
@@ -1245,8 +1476,8 @@ panels:
     gridPos:
       h: 8
       w: 12
-      x: 0
-      'y': 16
+      x: 12
+      'y': 21
     options:
       legend:
         calcs: []
@@ -1338,8 +1569,8 @@ panels:
     gridPos:
       h: 8
       w: 12
-      x: 12
-      'y': 16
+      x: 0
+      'y': 29
     options:
       legend:
         calcs: []
@@ -1434,8 +1665,8 @@ panels:
     gridPos:
       h: 8
       w: 12
-      x: 0
-      'y': 24
+      x: 12
+      'y': 29
     options:
       legend:
         calcs:
@@ -1524,8 +1755,8 @@ panels:
     gridPos:
       h: 8
       w: 12
-      x: 12
-      'y': 24
+      x: 0
+      'y': 37
     options:
       legend:
         calcs:
@@ -1607,8 +1838,8 @@ panels:
     gridPos:
       h: 8
       w: 12
-      x: 0
-      'y': 32
+      x: 12
+      'y': 37
     options:
       legend:
         calcs:
@@ -1690,7 +1921,7 @@ panels:
       h: 1
       w: 24
       x: 0
-      'y': 40
+      'y': 45
     panels: []
   - type: timeseries
     title: OOM Events by container
@@ -1702,7 +1933,7 @@ panels:
       h: 8
       w: 12
       x: 0
-      'y': 41
+      'y': 46
     options:
       legend:
         calcs: []
@@ -1781,7 +2012,7 @@ panels:
       h: 8
       w: 12
       x: 12
-      'y': 41
+      'y': 46
     options:
       legend:
         calcs: []
@@ -1860,7 +2091,7 @@ panels:
       h: 8
       w: 12
       x: 0
-      'y': 49
+      'y': 54
     options:
       cellHeight: sm
       showHeader: true
@@ -1980,7 +2211,7 @@ panels:
       h: 8
       w: 12
       x: 12
-      'y': 49
+      'y': 54
     options:
       cellHeight: sm
       showHeader: true
@@ -2081,6 +2312,202 @@ panels:
             pod: Pod Name
             cluster: Cluster
   - type: row
+    title: Storage
+    id: 105
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 62
+    panels: []
+  - type: timeseries
+    title: Persistent Volumes - Usage in %
+    description: Only shows PVCs mounted by pods matching the current namespace/pod filter.
+    id: 103
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 0
+      'y': 63
+    options:
+      legend:
+        calcs: []
+        displayMode: list
+        placement: right
+        showLegend: true
+      tooltip:
+        hideZeros: false
+        mode: multi
+        sort: desc
+    fieldConfig:
+      defaults:
+        color:
+          mode: palette-classic
+        custom:
+          axisBorderShow: false
+          axisCenteredZero: false
+          axisColorMode: text
+          axisLabel: ''
+          axisPlacement: auto
+          barAlignment: 0
+          barWidthFactor: 0.6
+          drawStyle: line
+          fillOpacity: 25
+          gradientMode: opacity
+          hideFrom:
+            legend: false
+            tooltip: false
+            viz: false
+          insertNulls: false
+          lineInterpolation: smooth
+          lineWidth: 2
+          pointSize: 5
+          scaleDistribution:
+            type: linear
+          showPoints: never
+          showValues: false
+          spanNulls: false
+          stacking:
+            group: A
+            mode: none
+          thresholdsStyle:
+            mode: 'off'
+        decimals: 2
+        mappings: []
+        max: 1
+        min: 0
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: 0
+            - color: red
+              value: 80
+        unit: percentunit
+      overrides: []
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        editorMode: code
+        exemplar: true
+        expr: (max(kubelet_volume_stats_used_bytes{namespace="$namespace", cluster=~"$cluster"}) by (persistentvolumeclaim) / max(kubelet_volume_stats_capacity_bytes{namespace="$namespace", cluster=~"$cluster"}) by (persistentvolumeclaim)) and on(persistentvolumeclaim) count(kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}) by (persistentvolumeclaim)
+        interval: $resolution
+        legendFormat: '{{ persistentvolumeclaim }}'
+        range: true
+        refId: A
+  - type: table
+    title: Persistent Volumes - Usage in GB
+    description: Only shows PVCs mounted by pods matching the current namespace/pod filter.
+    id: 104
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 12
+      'y': 63
+    options:
+      cellHeight: sm
+      footer:
+        countRows: false
+        fields: ''
+        reducer:
+          - sum
+        show: false
+      showHeader: true
+      sortBy: []
+    fieldConfig:
+      defaults:
+        color:
+          mode: continuous-GrYlRd
+        custom:
+          align: auto
+          cellOptions:
+            type: auto
+          filterable: false
+          inspect: false
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: green
+              value: null
+            - color: red
+              value: 80
+        unit: bytes
+      overrides:
+        - matcher:
+            id: byName
+            options: Used
+          properties:
+            - id: custom.width
+              value: 146
+        - matcher:
+            id: byName
+            options: Total
+          properties:
+            - id: custom.width
+              value: 167
+    pluginVersion: 12.2.1
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: (max(kubelet_volume_stats_used_bytes{namespace="$namespace", cluster=~"$cluster"}) by (persistentvolumeclaim)) and on(persistentvolumeclaim) count(kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}) by (persistentvolumeclaim)
+        format: table
+        hide: false
+        interval: ''
+        legendFormat: ''
+        refId: A
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        exemplar: true
+        expr: (max(kubelet_volume_stats_capacity_bytes{namespace="$namespace", cluster=~"$cluster"}) by (persistentvolumeclaim)) and on(persistentvolumeclaim) count(kube_pod_spec_volumes_persistentvolumeclaims_info{namespace="$namespace", pod=~"$pod", cluster=~"$cluster"}) by (persistentvolumeclaim)
+        format: table
+        hide: false
+        interval: ''
+        legendFormat: ''
+        refId: B
+    transformations:
+      - id: groupBy
+        options:
+          fields:
+            Value:
+              aggregations:
+                - lastNotNull
+              operation: aggregate
+            'Value #A':
+              aggregations:
+                - lastNotNull
+              operation: aggregate
+            'Value #B':
+              aggregations:
+                - lastNotNull
+              operation: aggregate
+            persistentvolumeclaim:
+              aggregations: []
+              operation: groupby
+      - id: seriesToColumns
+        options:
+          byField: persistentvolumeclaim
+      - id: organize
+        options:
+          excludeByName: {}
+          indexByName: {}
+          renameByName:
+            'Value #A (lastNotNull)': Used
+            'Value #B (lastNotNull)': Total
+            persistentvolumeclaim: Persistent Volume Claim
+  - type: row
     title: Network
     id: 45
     collapsed: false
@@ -2088,7 +2515,7 @@ panels:
       h: 1
       w: 24
       x: 0
-      'y': 57
+      'y': 71
     panels: []
   - type: timeseries
     title: Network - Bandwidth
@@ -2100,7 +2527,7 @@ panels:
       h: 8
       w: 12
       x: 0
-      'y': 58
+      'y': 72
     options:
       legend:
         calcs: []
@@ -2182,7 +2609,7 @@ panels:
       h: 8
       w: 12
       x: 12
-      'y': 58
+      'y': 72
     options:
       legend:
         calcs: []
@@ -2264,7 +2691,7 @@ panels:
       h: 8
       w: 12
       x: 0
-      'y': 66
+      'y': 80
     options:
       legend:
         calcs: []
@@ -2346,7 +2773,7 @@ panels:
       h: 8
       w: 12
       x: 12
-      'y': 66
+      'y': 80
     options:
       legend:
         calcs: []
