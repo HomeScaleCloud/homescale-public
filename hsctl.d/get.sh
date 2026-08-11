@@ -16,6 +16,10 @@ get_usage() {
     echo "  machines [--cluster <name>]   List all machines with power state; enriches with node name for assigned ones"
     echo "  machine  <id>                 Show details for a specific machine"
     echo "  snapshot <app>                List restic snapshots for an app"
+    echo "  pimrole                     List your Entra directory role PIM eligibility/assignments"
+    echo "  pimgroup                    List your Entra group PIM eligibility/assignments"
+    echo "  pimazurerole --scope <s>    List your Azure resource RBAC PIM eligibility/assignments"
+    echo "  pimapproval [role|group|azure] [--scope <s>]  List pending PIM approvals (yours and ones you can approve)"
     exit 1
 }
 
@@ -396,6 +400,430 @@ get_kubeconfig() {
     esac
 }
 
+HSCTL_PIM_GRAPH_SCOPES="https://graph.microsoft.com/RoleManagement.ReadWrite.Directory https://graph.microsoft.com/PrivilegedAccess.ReadWrite.AzureADGroup offline_access"
+
+_pim_require_deps() {
+    command -v az &>/dev/null || { echo "hsctl: the Azure CLI is required (brew install azure-cli)" >&2; exit 1; }
+    command -v jq &>/dev/null || { echo "hsctl: jq is required (brew install jq)" >&2; exit 1; }
+    command -v curl &>/dev/null || { echo "hsctl: curl is required" >&2; exit 1; }
+    command -v openssl &>/dev/null || { echo "hsctl: openssl is required" >&2; exit 1; }
+    command -v python3 &>/dev/null || { echo "hsctl: python3 is required" >&2; exit 1; }
+    command -v infisical &>/dev/null || { echo "hsctl: the infisical CLI is required (brew install infisical)" >&2; exit 1; }
+    _pim_resolve_ids
+}
+
+_pim_resolve_ids() {
+    [[ -n "${HSCTL_PIM_TENANT_ID:-}" && -n "${HSCTL_PIM_CLIENT_ID:-}" ]] && return 0
+
+    if ! HSCTL_PIM_TENANT_ID=$(infisical secrets get entra-tenant --env=prod --path=/ --plain --silent </dev/null 2>/dev/null); then
+        echo "hsctl: could not fetch entra-tenant from Infisical (/) — try 'infisical login' first" >&2
+        exit 1
+    fi
+    [[ -z "$HSCTL_PIM_TENANT_ID" ]] && { echo "hsctl: entra-tenant in Infisical is empty" >&2; exit 1; }
+
+    if ! HSCTL_PIM_CLIENT_ID=$(infisical secrets get CLIENT_ID --env=prod --path=/hsctl-pim --plain --silent </dev/null 2>/dev/null); then
+        echo "hsctl: could not fetch CLIENT_ID from Infisical (/hsctl-pim) — try 'infisical login' first" >&2
+        exit 1
+    fi
+    [[ -z "$HSCTL_PIM_CLIENT_ID" ]] && { echo "hsctl: CLIENT_ID at /hsctl-pim in Infisical is empty" >&2; exit 1; }
+
+    export HSCTL_PIM_TENANT_ID HSCTL_PIM_CLIENT_ID
+}
+
+_pim_ensure_signed_in() {
+    local current_tenant
+    current_tenant=$(az account show --query tenantId -o tsv 2>/dev/null) || current_tenant=""
+    [[ "$current_tenant" == "$HSCTL_PIM_TENANT_ID" ]] && return 0
+
+    hsctl_log_info "signing in to the HomeScale tenant"
+    if ! az login --tenant "$HSCTL_PIM_TENANT_ID" >/dev/null; then
+        echo "hsctl: sign-in failed" >&2
+        return 1
+    fi
+}
+
+HSCTL_PIM_KEYCHAIN_SERVICE="hsctl-graph"
+HSCTL_PIM_KEYCHAIN_ACCOUNT="hsctl"
+
+_pim_graph_token_file() {
+    local dir="${XDG_CACHE_HOME:-$HOME/.cache}/hsctl"
+    mkdir -p "$dir"
+    printf '%s/pim-graph-token.json\n' "$dir"
+}
+
+_pim_graph_token_exists() {
+    if command -v security &>/dev/null; then
+        security find-generic-password -a "$HSCTL_PIM_KEYCHAIN_ACCOUNT" -s "$HSCTL_PIM_KEYCHAIN_SERVICE" &>/dev/null
+    else
+        [[ -f "$(_pim_graph_token_file)" ]]
+    fi
+}
+
+_pim_graph_token_read() {
+    if command -v security &>/dev/null; then
+        security find-generic-password -a "$HSCTL_PIM_KEYCHAIN_ACCOUNT" -s "$HSCTL_PIM_KEYCHAIN_SERVICE" -w 2>/dev/null
+    else
+        cat "$(_pim_graph_token_file)" 2>/dev/null
+    fi
+}
+
+_pim_save_graph_token() {
+    local resp="$1"
+    local expires_at; expires_at=$(( $(date +%s) + $(jq -r '.expires_in' <<< "$resp") - 60 ))
+    local blob; blob=$(jq -nc --argjson r "$resp" --argjson exp "$expires_at" \
+        '{access_token: $r.access_token, refresh_token: $r.refresh_token, expires_at: $exp}')
+    if command -v security &>/dev/null; then
+        security add-generic-password -a "$HSCTL_PIM_KEYCHAIN_ACCOUNT" -s "$HSCTL_PIM_KEYCHAIN_SERVICE" -w "$blob" -U &>/dev/null
+        rm -f "$(_pim_graph_token_file)"
+    else
+        local f; f=$(_pim_graph_token_file)
+        printf '%s' "$blob" > "$f"
+        chmod 600 "$f"
+    fi
+}
+
+_pim_graph_token_clear() {
+    command -v security &>/dev/null && security delete-generic-password -a "$HSCTL_PIM_KEYCHAIN_ACCOUNT" -s "$HSCTL_PIM_KEYCHAIN_SERVICE" &>/dev/null
+    rm -f "$(_pim_graph_token_file)"
+}
+
+_pim_urlencode() { jq -rn --arg v "$1" '$v|@uri'; }
+
+_pim_graph_browser_login() {
+    local code_verifier code_challenge state
+    code_verifier=$(openssl rand -hex 32)
+    code_challenge=$(printf '%s' "$code_verifier" | openssl dgst -sha256 -binary | openssl base64 | tr '+/' '-_' | tr -d '=')
+    state=$(openssl rand -hex 16)
+
+    local port_file result_file
+    port_file=$(mktemp)
+    result_file=$(mktemp)
+
+    python3 - "$port_file" "$result_file" <<'PYEOF' &
+import http.server, json, sys, urllib.parse
+
+port_file, result_file = sys.argv[1], sys.argv[2]
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+    def do_GET(self):
+        qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        with open(result_file, "w") as f:
+            json.dump({k: v[0] for k, v in qs.items()}, f)
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html")
+        self.end_headers()
+        self.wfile.write(b"<html><body>Signed in \xe2\x80\x94 you can close this tab.</body></html>")
+
+srv = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+with open(port_file, "w") as f:
+    f.write(str(srv.server_address[1]))
+srv.timeout = 300
+srv.handle_request()
+PYEOF
+    local py_pid=$!
+
+    local waited=0
+    while [[ ! -s "$port_file" && $waited -lt 50 ]]; do sleep 0.1; waited=$((waited + 1)); done
+    local port; port=$(cat "$port_file")
+    [[ -z "$port" ]] && { hsctl_log_error "could not start local callback listener for Graph sign-in"; kill "$py_pid" 2>/dev/null; rm -f "$port_file" "$result_file"; return 1; }
+
+    local redirect_uri="http://localhost:${port}"
+    local authorize_url="https://login.microsoftonline.com/${HSCTL_PIM_TENANT_ID}/oauth2/v2.0/authorize"
+    authorize_url+="?client_id=${HSCTL_PIM_CLIENT_ID}&response_type=code&response_mode=query"
+    authorize_url+="&redirect_uri=$(_pim_urlencode "$redirect_uri")"
+    authorize_url+="&scope=$(_pim_urlencode "$HSCTL_PIM_GRAPH_SCOPES")"
+    authorize_url+="&code_challenge=${code_challenge}&code_challenge_method=S256&state=${state}"
+
+    hsctl_log_info "Please continue authentication to Microsoft Entra in your browser"
+    if command -v open &>/dev/null; then
+        open "$authorize_url"
+    elif command -v xdg-open &>/dev/null; then
+        xdg-open "$authorize_url"
+    else
+        echo "Open this URL to sign in: $authorize_url" >&2
+    fi
+
+    wait "$py_pid"
+    local qs; qs=$(cat "$result_file" 2>/dev/null)
+    rm -f "$port_file" "$result_file"
+
+    if [[ -z "$qs" ]]; then
+        hsctl_log_error "Graph sign-in timed out waiting for browser redirect"
+        return 1
+    fi
+
+    local err; err=$(jq -r '.error // empty' <<< "$qs")
+    if [[ -n "$err" ]]; then
+        hsctl_log_error "Graph sign-in failed: $(jq -r '.error_description // .error' <<< "$qs")"
+        return 1
+    fi
+
+    local returned_state; returned_state=$(jq -r '.state // empty' <<< "$qs")
+    [[ "$returned_state" == "$state" ]] || { hsctl_log_error "Graph sign-in failed: state mismatch (possible CSRF)"; return 1; }
+
+    local code; code=$(jq -r '.code // empty' <<< "$qs")
+    [[ -z "$code" ]] && { hsctl_log_error "Graph sign-in failed: no authorization code returned"; return 1; }
+
+    local token_resp
+    token_resp=$(curl -sg -X POST "https://login.microsoftonline.com/${HSCTL_PIM_TENANT_ID}/oauth2/v2.0/token" \
+        --data-urlencode "client_id=$HSCTL_PIM_CLIENT_ID" \
+        --data-urlencode "grant_type=authorization_code" \
+        --data-urlencode "code=$code" \
+        --data-urlencode "redirect_uri=$redirect_uri" \
+        --data-urlencode "code_verifier=$code_verifier" \
+        --data-urlencode "scope=$HSCTL_PIM_GRAPH_SCOPES")
+    jq -e '.access_token' >/dev/null 2>&1 <<< "$token_resp" || { hsctl_log_error "Graph sign-in failed: $(jq -r '.error_description // .error // "token exchange failed"' <<< "$token_resp")"; return 1; }
+    _pim_save_graph_token "$token_resp"
+}
+
+_pim_graph_refresh_token() {
+    _pim_graph_token_exists || return 1
+    local refresh_token; refresh_token=$(jq -r '.refresh_token // empty' <<< "$(_pim_graph_token_read)")
+    [[ -z "$refresh_token" ]] && return 1
+
+    local resp
+    resp=$(curl -sg -X POST "https://login.microsoftonline.com/${HSCTL_PIM_TENANT_ID}/oauth2/v2.0/token" \
+        --data-urlencode "grant_type=refresh_token" \
+        --data-urlencode "client_id=$HSCTL_PIM_CLIENT_ID" \
+        --data-urlencode "refresh_token=$refresh_token" \
+        --data-urlencode "scope=$HSCTL_PIM_GRAPH_SCOPES")
+    jq -e '.access_token' >/dev/null 2>&1 <<< "$resp" || return 1
+    _pim_save_graph_token "$resp"
+}
+
+_pim_graph_access_token() {
+    if _pim_graph_token_exists; then
+        local data now expires_at
+        data=$(_pim_graph_token_read)
+        now=$(date +%s)
+        expires_at=$(jq -r '.expires_at // 0' <<< "$data")
+        [[ "$now" -lt "$expires_at" ]] && { jq -r '.access_token' <<< "$data"; return 0; }
+        _pim_graph_refresh_token && { jq -r '.access_token' <<< "$(_pim_graph_token_read)"; return 0; }
+    fi
+    _pim_graph_browser_login || return 1
+    jq -r '.access_token' <<< "$(_pim_graph_token_read)"
+}
+
+_pim_graph_rest() {
+    local method="$1" url="$2" body="${3:-}"
+    local token; token=$(_pim_graph_access_token) || return 1
+
+    local out code resp_body
+    if [[ -n "$body" ]]; then
+        out=$(curl -sg -w $'\n%{http_code}' -X "$method" "$url" \
+            -H "Authorization: Bearer $token" -H "Content-Type: application/json" -d "$body")
+    else
+        out=$(curl -sg -w $'\n%{http_code}' -X "$method" "$url" -H "Authorization: Bearer $token")
+    fi
+    code=$(tail -n1 <<< "$out")
+    resp_body=$(sed '$d' <<< "$out")
+
+    if [[ "$code" -ge 400 ]]; then
+        hsctl_log_error "graph $method $url failed ($code): $resp_body"
+        return 1
+    fi
+    printf '%s\n' "$resp_body"
+}
+
+_pim_fetch_parallel() {
+    _pim_graph_access_token >/dev/null || return 1
+    local pids=() rc=0
+    while [[ $# -gt 0 ]]; do
+        local outfile="$1" url="$2"; shift 2
+        _pim_graph_rest GET "$url" > "$outfile" &
+        pids+=("$!")
+    done
+    local pid
+    for pid in "${pids[@]}"; do wait "$pid" || rc=1; done
+    return "$rc"
+}
+
+_pim_normalize_scope() {
+    local s="$1"
+    [[ "$s" == /* ]] && printf '%s\n' "$s" || printf '/subscriptions/%s\n' "$s"
+}
+
+_pim_rest() {
+    _pim_ensure_signed_in || return 1
+    local method="$1" url="$2" body="${3:-}"
+    local errfile out rc
+    errfile=$(mktemp)
+    if [[ -n "$body" ]]; then
+        out=$(az rest --method "$method" --url "$url" --body "$body" 2>"$errfile")
+    else
+        out=$(az rest --method "$method" --url "$url" 2>"$errfile")
+    fi
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        hsctl_log_error "az rest $method $url failed: $(cat "$errfile")"
+        rm -f "$errfile"
+        return 1
+    fi
+    rm -f "$errfile"
+    printf '%s\n' "$out"
+}
+
+get_pimrole() {
+    _pim_require_deps
+    local elig_f active_f; elig_f=$(mktemp); active_f=$(mktemp)
+    _pim_fetch_parallel \
+        "$elig_f" "https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilityScheduleInstances/filterByCurrentUser(on='principal')?\$expand=roleDefinition" \
+        "$active_f" "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleInstances/filterByCurrentUser(on='principal')?\$expand=roleDefinition" \
+        || { rm -f "$elig_f" "$active_f"; return 1; }
+    local elig active; elig=$(<"$elig_f"); active=$(<"$active_f")
+    rm -f "$elig_f" "$active_f"
+
+    case "$HSCTL_OUTPUT" in
+        table)
+            printf "%-10s  %-40s  %-10s  %s\n" "STATUS" "ROLE" "TYPE" "END TIME"
+            jq -r '.value[] | [.roleDefinition.displayName, (.endDateTime // "permanent"), .memberType] | @tsv' <<< "$elig" | \
+                while IFS=$'\t' read -r role end mtype; do printf "%-10s  %-40s  %-10s  %s\n" "eligible" "$role" "$mtype" "$end"; done
+            jq -r '.value[] | [.roleDefinition.displayName, (.endDateTime // "permanent"), .assignmentType] | @tsv' <<< "$active" | \
+                while IFS=$'\t' read -r role end atype; do printf "%-10s  %-40s  %-10s  %s\n" "active" "$role" "$atype" "$end"; done
+            ;;
+        json) jq -n --argjson e "$(jq '.value' <<< "$elig")" --argjson a "$(jq '.value' <<< "$active")" '{eligible:$e, active:$a}' ;;
+        yaml) jq -n --argjson e "$(jq '.value' <<< "$elig")" --argjson a "$(jq '.value' <<< "$active")" '{eligible:$e, active:$a}' | yq -p json -o yaml ;;
+    esac
+}
+
+get_pimgroup() {
+    _pim_require_deps
+    local elig_f active_f; elig_f=$(mktemp); active_f=$(mktemp)
+    _pim_fetch_parallel \
+        "$elig_f" "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/eligibilityScheduleInstances/filterByCurrentUser(on='principal')?\$expand=group" \
+        "$active_f" "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/assignmentScheduleInstances/filterByCurrentUser(on='principal')?\$expand=group" \
+        || { rm -f "$elig_f" "$active_f"; return 1; }
+    local elig active; elig=$(<"$elig_f"); active=$(<"$active_f")
+    rm -f "$elig_f" "$active_f"
+
+    case "$HSCTL_OUTPUT" in
+        table)
+            printf "%-10s  %-40s  %-10s  %s\n" "STATUS" "GROUP" "ACCESS" "END TIME"
+            jq -r '.value[] | [.group.displayName, (.endDateTime // "permanent"), .accessId] | @tsv' <<< "$elig" | \
+                while IFS=$'\t' read -r group end access; do printf "%-10s  %-40s  %-10s  %s\n" "eligible" "$group" "$access" "$end"; done
+            jq -r '.value[] | [.group.displayName, (.endDateTime // "permanent"), .accessId] | @tsv' <<< "$active" | \
+                while IFS=$'\t' read -r group end access; do printf "%-10s  %-40s  %-10s  %s\n" "active" "$group" "$access" "$end"; done
+            ;;
+        json) jq -n --argjson e "$(jq '.value' <<< "$elig")" --argjson a "$(jq '.value' <<< "$active")" '{eligible:$e, active:$a}' ;;
+        yaml) jq -n --argjson e "$(jq '.value' <<< "$elig")" --argjson a "$(jq '.value' <<< "$active")" '{eligible:$e, active:$a}' | yq -p json -o yaml ;;
+    esac
+}
+
+get_pimazurerole() {
+    _pim_require_deps
+    local scope=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --scope) scope="$2"; shift 2 ;;
+            *) echo "hsctl get pimazurerole: unknown flag '$1'" >&2; exit 1 ;;
+        esac
+    done
+    [[ -z "$scope" ]] && { echo "Usage: hsctl get pimazurerole --scope <arm-scope>" >&2; exit 1; }
+    scope=$(_pim_normalize_scope "$scope")
+
+    local elig active
+    elig=$(_pim_rest GET "https://management.azure.com${scope}/providers/Microsoft.Authorization/roleEligibilityScheduleInstances?api-version=2020-10-01-preview&\$filter=asTarget()") || return 1
+    active=$(_pim_rest GET "https://management.azure.com${scope}/providers/Microsoft.Authorization/roleAssignmentScheduleInstances?api-version=2020-10-01-preview&\$filter=asTarget()") || return 1
+
+    case "$HSCTL_OUTPUT" in
+        table)
+            printf "%-10s  %-40s  %s\n" "STATUS" "ROLE" "END TIME"
+            jq -r '.value[] | [.properties.expandedProperties.roleDefinition.displayName, (.properties.endDateTime // "permanent")] | @tsv' <<< "$elig" | \
+                while IFS=$'\t' read -r role end; do printf "%-10s  %-40s  %s\n" "eligible" "$role" "$end"; done
+            jq -r '.value[] | [.properties.expandedProperties.roleDefinition.displayName, (.properties.endDateTime // "permanent")] | @tsv' <<< "$active" | \
+                while IFS=$'\t' read -r role end; do printf "%-10s  %-40s  %s\n" "active" "$role" "$end"; done
+            ;;
+        json) jq -n --argjson e "$(jq '.value' <<< "$elig")" --argjson a "$(jq '.value' <<< "$active")" '{eligible:$e, active:$a}' ;;
+        yaml) jq -n --argjson e "$(jq '.value' <<< "$elig")" --argjson a "$(jq '.value' <<< "$active")" '{eligible:$e, active:$a}' | yq -p json -o yaml ;;
+    esac
+}
+
+_pim_approve_list_combined() {
+    local approver_url="$1" mine_url="$2"
+    local pending; pending=$(_pim_urlencode "status eq 'PendingApproval'")
+    local approver_f mine_f; approver_f=$(mktemp); mine_f=$(mktemp)
+    _pim_fetch_parallel \
+        "$approver_f" "${approver_url}?\$filter=${pending}" \
+        "$mine_f" "${mine_url}?\$filter=${pending}" \
+        || { rm -f "$approver_f" "$mine_f"; return 1; }
+    local as_approver as_mine; as_approver=$(<"$approver_f"); as_mine=$(<"$mine_f")
+    rm -f "$approver_f" "$mine_f"
+    jq -n --argjson a "$(jq '.value' <<< "$as_approver")" --argjson m "$(jq '.value' <<< "$as_mine")" \
+        '($a | map(. + {role:"approver"})) + ($m | map(. + {role:"requestor"}))'
+}
+
+_get_pimapproval_role() {
+    local combined
+    combined=$(_pim_approve_list_combined \
+        "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleRequests/filterByCurrentUser(on='approver')" \
+        "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleRequests/filterByCurrentUser(on='principal')") || return 1
+    case "$HSCTL_OUTPUT" in
+        table)
+            printf "%-38s  %-16s  %-10s  %-38s  %s\n" "REQUEST ID" "STATUS" "ROLE" "PRINCIPAL ID" "JUSTIFICATION"
+            jq -r '.[] | [.id, .status, .role, .principalId, (.justification // "-")] | @tsv' <<< "$combined" | \
+                while IFS=$'\t' read -r id req_status req_role pid just; do printf "%-38s  %-16s  %-10s  %-38s  %s\n" "$id" "$req_status" "$req_role" "$pid" "$just"; done
+            ;;
+        json) printf '%s\n' "$combined" ;;
+        yaml) printf '%s\n' "$combined" | yq -p json -o yaml ;;
+    esac
+}
+
+_get_pimapproval_group() {
+    local combined
+    combined=$(_pim_approve_list_combined \
+        "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/assignmentScheduleRequests/filterByCurrentUser(on='approver')" \
+        "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/assignmentScheduleRequests/filterByCurrentUser(on='principal')") || return 1
+    case "$HSCTL_OUTPUT" in
+        table)
+            printf "%-38s  %-16s  %-10s  %-38s  %s\n" "REQUEST ID" "STATUS" "ROLE" "PRINCIPAL ID" "JUSTIFICATION"
+            jq -r '.[] | [.id, .status, .role, .principalId, (.justification // "-")] | @tsv' <<< "$combined" | \
+                while IFS=$'\t' read -r id req_status req_role pid just; do printf "%-38s  %-16s  %-10s  %-38s  %s\n" "$id" "$req_status" "$req_role" "$pid" "$just"; done
+            ;;
+        json) printf '%s\n' "$combined" ;;
+        yaml) printf '%s\n' "$combined" | yq -p json -o yaml ;;
+    esac
+}
+
+_get_pimapproval_azure() {
+    local scope; scope=$(_pim_normalize_scope "$1")
+    local resp
+    resp=$(_pim_rest GET "https://management.azure.com${scope}/providers/Microsoft.Authorization/roleAssignmentApprovals?api-version=2021-01-01-preview") || return 1
+    case "$HSCTL_OUTPUT" in
+        table)
+            printf "%-38s  %-12s  %s\n" "APPROVAL ID" "STATUS" "STAGE IDs"
+            jq -r '.value[] | [.id, .properties.status, ([.properties.stages[]? | .id] | join(","))] | @tsv' <<< "$resp" | \
+                while IFS=$'\t' read -r id status stages; do printf "%-38s  %-12s  %s\n" "$id" "$status" "${stages:--}"; done
+            ;;
+        json) jq '.value' <<< "$resp" ;;
+        yaml) jq '.value' <<< "$resp" | yq -p json -o yaml ;;
+    esac
+}
+
+get_pimapproval() {
+    _pim_require_deps
+    local type="" scope=""
+    [[ $# -gt 0 && "$1" != -* ]] && { type="$1"; shift; }
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --scope) scope="$2"; shift 2 ;;
+            *) echo "hsctl get pimapproval: unknown flag '$1'" >&2; exit 1 ;;
+        esac
+    done
+
+    case "$type" in
+        role|roles) _get_pimapproval_role ;;
+        group|groups) _get_pimapproval_group ;;
+        azure)
+            [[ -z "$scope" ]] && { echo "hsctl get pimapproval azure: --scope is required" >&2; exit 1; }
+            _get_pimapproval_azure "$scope"
+            ;;
+        "") _get_pimapproval_role; _get_pimapproval_group ;;
+        *) echo "hsctl get pimapproval: unknown type '$type' (expected role, group, or azure)" >&2; exit 1 ;;
+    esac
+}
+
 get_main() {
     HSCTL_OUTPUT="table"
     local args=()
@@ -427,6 +855,18 @@ get_main() {
             ;;
         snapshot|snapshots)
             get_snapshot "$@"
+            ;;
+        pimrole|pimroles)
+            get_pimrole "$@"
+            ;;
+        pimgroup|pimgroups)
+            get_pimgroup "$@"
+            ;;
+        pimazurerole|pimazureroles)
+            get_pimazurerole "$@"
+            ;;
+        pimapproval|pimapprovals)
+            get_pimapproval "$@"
             ;;
 *) echo "hsctl get: unknown resource '$resource'" >&2; get_usage ;;
     esac
