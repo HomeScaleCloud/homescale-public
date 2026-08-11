@@ -400,7 +400,7 @@ get_kubeconfig() {
     esac
 }
 
-HSCTL_PIM_GRAPH_SCOPES="https://graph.microsoft.com/RoleManagement.ReadWrite.Directory https://graph.microsoft.com/PrivilegedAccess.ReadWrite.AzureADGroup offline_access"
+HSCTL_PIM_GRAPH_SCOPES="https://graph.microsoft.com/RoleManagement.ReadWrite.Directory https://graph.microsoft.com/PrivilegedAccess.ReadWrite.AzureADGroup https://graph.microsoft.com/PrivilegedAccess.ReadWrite.AzureAD offline_access"
 
 _pim_require_deps() {
     command -v az &>/dev/null || { echo "hsctl: the Azure CLI is required (brew install azure-cli)" >&2; exit 1; }
@@ -745,8 +745,8 @@ _pim_approve_list_combined() {
     local pending; pending=$(_pim_urlencode "status eq 'PendingApproval'")
     local approver_f mine_f; approver_f=$(mktemp); mine_f=$(mktemp)
     _pim_fetch_parallel \
-        "$approver_f" "${approver_url}?\$filter=${pending}" \
-        "$mine_f" "${mine_url}?\$filter=${pending}" \
+        "$approver_f" "${approver_url}?\$filter=${pending}&\$expand=principal" \
+        "$mine_f" "${mine_url}?\$filter=${pending}&\$expand=principal" \
         || { rm -f "$approver_f" "$mine_f"; return 1; }
     local as_approver as_mine; as_approver=$(<"$approver_f"); as_mine=$(<"$mine_f")
     rm -f "$approver_f" "$mine_f"
@@ -761,9 +761,9 @@ _get_pimapproval_role() {
         "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleRequests/filterByCurrentUser(on='principal')") || return 1
     case "$HSCTL_OUTPUT" in
         table)
-            printf "%-38s  %-16s  %-10s  %-38s  %s\n" "REQUEST ID" "STATUS" "ROLE" "PRINCIPAL ID" "JUSTIFICATION"
-            jq -r '.[] | [.id, .status, .role, .principalId, (.justification // "-")] | @tsv' <<< "$combined" | \
-                while IFS=$'\t' read -r id req_status req_role pid just; do printf "%-38s  %-16s  %-10s  %-38s  %s\n" "$id" "$req_status" "$req_role" "$pid" "$just"; done
+            printf "%-38s  %-16s  %-10s  %-32s  %s\n" "REQUEST ID" "STATUS" "ROLE" "REQUESTER" "JUSTIFICATION"
+            jq -r '.[] | [.id, .status, .role, ((.principal.displayName // "-") + " <" + (.principal.userPrincipalName // .principal.mail // "-") + ">"), (.justification // "-")] | @tsv' <<< "$combined" | \
+                while IFS=$'\t' read -r id req_status req_role requester just; do printf "%-38s  %-16s  %-10s  %-32s  %s\n" "$id" "$req_status" "$req_role" "$requester" "$just"; done
             ;;
         json) printf '%s\n' "$combined" ;;
         yaml) printf '%s\n' "$combined" | yq -p json -o yaml ;;
@@ -777,9 +777,9 @@ _get_pimapproval_group() {
         "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/assignmentScheduleRequests/filterByCurrentUser(on='principal')") || return 1
     case "$HSCTL_OUTPUT" in
         table)
-            printf "%-38s  %-16s  %-10s  %-38s  %s\n" "REQUEST ID" "STATUS" "ROLE" "PRINCIPAL ID" "JUSTIFICATION"
-            jq -r '.[] | [.id, .status, .role, .principalId, (.justification // "-")] | @tsv' <<< "$combined" | \
-                while IFS=$'\t' read -r id req_status req_role pid just; do printf "%-38s  %-16s  %-10s  %-38s  %s\n" "$id" "$req_status" "$req_role" "$pid" "$just"; done
+            printf "%-38s  %-16s  %-10s  %-32s  %s\n" "REQUEST ID" "STATUS" "ROLE" "REQUESTER" "JUSTIFICATION"
+            jq -r '.[] | [.id, .status, .role, ((.principal.displayName // "-") + " <" + (.principal.userPrincipalName // .principal.mail // "-") + ">"), (.justification // "-")] | @tsv' <<< "$combined" | \
+                while IFS=$'\t' read -r id req_status req_role requester just; do printf "%-38s  %-16s  %-10s  %-32s  %s\n" "$id" "$req_status" "$req_role" "$requester" "$just"; done
             ;;
         json) printf '%s\n' "$combined" ;;
         yaml) printf '%s\n' "$combined" | yq -p json -o yaml ;;

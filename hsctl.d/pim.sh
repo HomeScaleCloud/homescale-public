@@ -16,8 +16,8 @@ pim_usage() {
     echo "  cancel <role|group> <request-id>"
     echo "                                    Withdraw your own pending request. IDs from 'hsctl get pimapprovals'."
     echo ""
-    echo "  approve <role|group|azure> <approval-id> <step-id> [--deny] [--reason \"...\"] [--scope <arm-scope>]"
-    echo "                                    IDs from 'hsctl get pimapprovals -o json'. Prompts for confirmation."
+    echo "  approve <role|group|azure> <approval-id> [--deny] [--reason \"...\"] [--scope <arm-scope>]"
+    echo "                                    approval-id from 'hsctl get pimapprovals -o json'. Prompts for confirmation."
     echo ""
     echo "  logout"
     echo "                                    Clear the cached Graph sign-in (Keychain)."
@@ -292,36 +292,56 @@ pim_cancel() {
     esac
 }
 
+_pim_resolve_pending_step_graph() {
+    local get_url="$1" resp step_id
+    resp=$(_pim_graph_rest GET "$get_url") || return 1
+    step_id=$(jq -r '([.steps[]? | select(.assignedToMe == true and .status == "InProgress")] + [.steps[]? | select(.status == "InProgress")])[0].id // empty' <<< "$resp")
+    [[ -z "$step_id" ]] && { hsctl_log_error "no in-progress approval step found at $get_url — it may already be decided"; return 1; }
+    printf '%s\n' "$step_id"
+}
+
+# roleAssignmentApprovals/assignmentApprovals only exist under Graph's beta segment, unlike the rest of this
+# file's v1.0 endpoints. The approval object's id is always the same as the id of the request that needed approval.
 _pim_decide_role() {
-    local approval_id="$1" step_id="$2" result="$3" reason="$4"
+    local approval_id="$1" result="$2" reason="$3"
+    local base="https://graph.microsoft.com/beta/roleManagement/directory/roleAssignmentApprovals/${approval_id}"
+    local step_id; step_id=$(_pim_resolve_pending_step_graph "$base") || exit 1
     local body resp
     body=$(jq -n --arg r "$result" --arg j "$reason" '{reviewResult: $r, justification: $j}')
-    resp=$(_pim_graph_rest POST "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentApprovals/${approval_id}/steps/${step_id}" "$body") || exit 1
-    hsctl_log_success "$result recorded for role approval $approval_id step $step_id"
+    resp=$(_pim_graph_rest PATCH "${base}/steps/${step_id}" "$body") || exit 1
+    hsctl_log_success "$result recorded for role approval $approval_id"
 }
 
 _pim_decide_group() {
-    local approval_id="$1" step_id="$2" result="$3" reason="$4"
+    local approval_id="$1" result="$2" reason="$3"
+    local base="https://graph.microsoft.com/beta/identityGovernance/privilegedAccess/group/assignmentApprovals/${approval_id}"
+    local step_id; step_id=$(_pim_resolve_pending_step_graph "$base") || exit 1
     local body resp
     body=$(jq -n --arg r "$result" --arg j "$reason" '{reviewResult: $r, justification: $j}')
-    resp=$(_pim_graph_rest POST "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/assignmentApprovals/${approval_id}/steps/${step_id}" "$body") || exit 1
-    hsctl_log_success "$result recorded for group approval $approval_id step $step_id"
+    resp=$(_pim_graph_rest PATCH "${base}/steps/${step_id}" "$body") || exit 1
+    hsctl_log_success "$result recorded for group approval $approval_id"
 }
 
+# ARM's approval object id is likewise the same as the id of the roleAssignmentScheduleRequest.
 _pim_decide_azure() {
-    local scope="$1" approval_id="$2" stage_id="$3" result="$4" reason="$5"
-    local arm_result="Approved"; [[ "$result" == "Deny" ]] && arm_result="Denied"
-    local body resp
-    body=$(jq -n --arg r "$arm_result" --arg j "$reason" '{properties: {reviewResult: $r, justification: $j}}')
-    resp=$(_pim_rest PATCH "https://management.azure.com${scope}/providers/Microsoft.Authorization/roleAssignmentApprovals/${approval_id}/stages/${stage_id}?api-version=2021-01-01-preview" "$body") || exit 1
-    hsctl_log_success "$arm_result recorded for Azure approval $approval_id stage $stage_id"
+    local scope="$1" approval_id="$2" result="$3" reason="$4"
+    local base="https://management.azure.com${scope}/providers/Microsoft.Authorization/roleAssignmentApprovals/${approval_id}"
+    local resp stage_path stage_id
+    resp=$(_pim_rest GET "${base}?api-version=2021-01-01-preview") || exit 1
+    stage_path=$(jq -r '([.properties.stages[]? | select(.properties.assignedToMe == true and .properties.status == "InProgress")] + [.properties.stages[]? | select(.properties.status == "InProgress")])[0].id // empty' <<< "$resp")
+    [[ -z "$stage_path" ]] && { hsctl_log_error "no in-progress approval stage found for Azure approval $approval_id — it may already be decided"; exit 1; }
+    stage_id="${stage_path##*/}"
+    local body resp2
+    body=$(jq -n --arg r "$result" --arg j "$reason" '{properties: {reviewResult: $r, justification: $j}}')
+    resp2=$(_pim_rest PATCH "${base}/stages/${stage_id}?api-version=2021-01-01-preview" "$body") || exit 1
+    hsctl_log_success "$result recorded for Azure approval $approval_id"
 }
 
 pim_approve() {
     local type="${1:-}"; shift || true
-    [[ -z "$type" ]] && { echo "Usage: hsctl pim approve <role|group|azure> <approval-id> <step-id> [--deny] [--reason \"...\"] [--scope <arm-scope>]" >&2; exit 1; }
+    [[ -z "$type" ]] && { echo "Usage: hsctl pim approve <role|group|azure> <approval-id> [--deny] [--reason \"...\"] [--scope <arm-scope>]" >&2; exit 1; }
 
-    local approval_id="" step_id="" deny=false reason="" scope=""
+    local approval_id="" deny=false reason="" scope=""
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --deny) deny=true; shift ;;
@@ -329,29 +349,28 @@ pim_approve() {
             --scope) scope="$2"; shift 2 ;;
             *)
                 if [[ -z "$approval_id" ]]; then approval_id="$1"
-                elif [[ -z "$step_id" ]]; then step_id="$1"
                 else echo "hsctl pim approve: unexpected arg '$1'" >&2; exit 1
                 fi
                 shift
                 ;;
         esac
     done
-    [[ -z "$approval_id" || -z "$step_id" ]] && { echo "Usage: hsctl pim approve <role|group|azure> <approval-id> <step-id> [--deny] [--reason \"...\"]" >&2; exit 1; }
+    [[ -z "$approval_id" ]] && { echo "Usage: hsctl pim approve <role|group|azure> <approval-id> [--deny] [--reason \"...\"]" >&2; exit 1; }
 
     local result="Approve"; [[ "$deny" == true ]] && result="Deny"
 
-    echo "About to $result approval $approval_id (step/stage $step_id, type $type) — this affects someone else's access." >&2
+    echo "About to $result approval $approval_id (type $type) — this affects someone else's access." >&2
     [[ -n "$reason" ]] && echo "Reason: $reason" >&2
     local confirm
     read -r -p "Continue? [y/N] " confirm </dev/tty
     [[ "$confirm" =~ ^[Yy]$ ]] || { echo "Aborted." >&2; exit 1; }
 
     case "$type" in
-        role|roles) _pim_decide_role "$approval_id" "$step_id" "$result" "$reason" ;;
-        group|groups) _pim_decide_group "$approval_id" "$step_id" "$result" "$reason" ;;
+        role|roles) _pim_decide_role "$approval_id" "$result" "$reason" ;;
+        group|groups) _pim_decide_group "$approval_id" "$result" "$reason" ;;
         azure)
             [[ -z "$scope" ]] && { echo "hsctl pim approve azure: --scope is required" >&2; exit 1; }
-            _pim_decide_azure "$(_pim_normalize_scope "$scope")" "$approval_id" "$step_id" "$result" "$reason"
+            _pim_decide_azure "$(_pim_normalize_scope "$scope")" "$approval_id" "$result" "$reason"
             ;;
         *) echo "hsctl pim approve: unknown type '$type'" >&2; exit 1 ;;
     esac
@@ -369,10 +388,10 @@ _pim_ui_rows() {
         "$f_role_active" "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleInstances/filterByCurrentUser(on='principal')?\$expand=roleDefinition" \
         "$f_group_elig" "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/eligibilityScheduleInstances/filterByCurrentUser(on='principal')?\$expand=group" \
         "$f_group_active" "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/assignmentScheduleInstances/filterByCurrentUser(on='principal')?\$expand=group" \
-        "$f_role_appr" "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleRequests/filterByCurrentUser(on='approver')?\$filter=${pending}" \
-        "$f_role_mine" "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleRequests/filterByCurrentUser(on='principal')?\$filter=${pending}" \
-        "$f_group_appr" "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/assignmentScheduleRequests/filterByCurrentUser(on='approver')?\$filter=${pending}" \
-        "$f_group_mine" "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/assignmentScheduleRequests/filterByCurrentUser(on='principal')?\$filter=${pending}" \
+        "$f_role_appr" "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleRequests/filterByCurrentUser(on='approver')?\$filter=${pending}&\$expand=principal" \
+        "$f_role_mine" "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleRequests/filterByCurrentUser(on='principal')?\$filter=${pending}&\$expand=principal" \
+        "$f_group_appr" "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/assignmentScheduleRequests/filterByCurrentUser(on='approver')?\$filter=${pending}&\$expand=principal" \
+        "$f_group_mine" "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/assignmentScheduleRequests/filterByCurrentUser(on='principal')?\$filter=${pending}&\$expand=principal" \
         || { rm -f "$f_role_elig" "$f_role_active" "$f_group_elig" "$f_group_active" "$f_role_appr" "$f_role_mine" "$f_group_appr" "$f_group_mine"; return 1; }
 
     local role_elig role_active group_elig group_active role_appr role_mine group_appr group_mine
@@ -394,28 +413,44 @@ _pim_ui_rows() {
 
     local sep=$'\x1f'
     {
-        jq -r --arg sep "$sep" '.value[] | [.roleDefinition.displayName, "role", "eligible", (.endDateTime // "permanent"), "", ""] | join($sep)' <<< "$role_elig"
-        jq -r --arg sep "$sep" '.value[] | [.roleDefinition.displayName, "role", "active", (.endDateTime // "permanent"), "", ""] | join($sep)' <<< "$role_active"
-        jq -r --arg sep "$sep" '.value[] | [.group.displayName, "group", "eligible", (.endDateTime // "permanent"), .accessId, ""] | join($sep)' <<< "$group_elig"
-        jq -r --arg sep "$sep" '.value[] | [.group.displayName, "group", "active", (.endDateTime // "permanent"), .accessId, ""] | join($sep)' <<< "$group_active"
-        jq -r --arg sep "$sep" --argjson names "$role_names" '.[] | [($names[.roleDefinitionId] // .roleDefinitionId), "role", ("pending-" + .role), .status, "", .id] | join($sep)' <<< "$role_pending"
-        jq -r --arg sep "$sep" --argjson names "$group_names" '.[] | [($names[.groupId] // .groupId), "group", ("pending-" + .role), .status, "", .id] | join($sep)' <<< "$group_pending"
+        jq -r --arg sep "$sep" '.value[] | [.roleDefinition.displayName, "role", "eligible", (.endDateTime // "permanent"), "", "", ""] | join($sep)' <<< "$role_elig"
+        jq -r --arg sep "$sep" '.value[] | [.roleDefinition.displayName, "role", "active", (.endDateTime // "permanent"), "", "", ""] | join($sep)' <<< "$role_active"
+        jq -r --arg sep "$sep" '.value[] | [.group.displayName, "group", "eligible", (.endDateTime // "permanent"), .accessId, "", ""] | join($sep)' <<< "$group_elig"
+        jq -r --arg sep "$sep" '.value[] | [.group.displayName, "group", "active", (.endDateTime // "permanent"), .accessId, "", ""] | join($sep)' <<< "$group_active"
+        jq -r --arg sep "$sep" --argjson names "$role_names" '
+            .[] | [($names[.roleDefinitionId] // .roleDefinitionId), "role", ("pending-" + .role), (.justification // "-"), "", .id,
+                   ((.principal.displayName // "-") + " <" + (.principal.userPrincipalName // .principal.mail // "-") + ">")] | join($sep)' <<< "$role_pending"
+        jq -r --arg sep "$sep" --argjson names "$group_names" '
+            .[] | [($names[.groupId] // .groupId), "group", ("pending-" + .role), (.justification // "-"), "", .id,
+                   ((.principal.displayName // "-") + " <" + (.principal.userPrincipalName // .principal.mail // "-") + ">")] | join($sep)' <<< "$group_pending"
     }
 }
 
+_pim_status_label() {
+    case "$1" in
+        pending-approver)  printf '%s\n' "pending · needs your approval" ;;
+        pending-requestor) printf '%s\n' "pending · sent by you" ;;
+        *) printf '%s\n' "$1" ;;
+    esac
+}
+
 _pim_ui_act_on() {
-    local type="$1" status="$2" name="$3" access="$4" reqid="$5"
+    local type="$1" status="$2" name="$3" access="$4" reqid="$5" requester="$6"
     local actions=()
     case "$status" in
         eligible) actions=("Activate") ;;
         active) actions=("Deactivate") ;;
         pending-requestor) actions=("Cancel") ;;
-        pending-approver) actions=() ;;
+        pending-approver) actions=("Approve" "Deny") ;;
     esac
     actions+=("Back")
 
+    local header="$type: $name ($(_pim_status_label "$status"))"
+    [[ "$status" == pending-* ]] && header+=" — request $reqid"
+    [[ -n "$requester" && "$status" == "pending-approver" ]] && header+=" — from $requester"
+
     local action
-    action=$(printf '%s\n' "${actions[@]}" | fzf --height=40% --reverse --border --header="$type: $name ($status)") || return 0
+    action=$(printf '%s\n' "${actions[@]}" | fzf --height=40% --reverse --border --header="$header") || return 0
     [[ -z "$action" || "$action" == "Back" ]] && return 0
 
     case "$action" in
@@ -442,6 +477,17 @@ _pim_ui_act_on() {
                 ( _pim_deactivate_group "$name" "${access:-member}" )
             fi
             ;;
+        Approve|Deny)
+            local reason
+            read -r -p "Reason (optional): " reason </dev/tty
+            read -r -p "$action this $type request${requester:+ from $requester}? [y/N] " confirm </dev/tty
+            [[ "$confirm" =~ ^[Yy]$ ]] || return 0
+            if [[ "$type" == role ]]; then
+                ( _pim_decide_role "$reqid" "$action" "$reason" )
+            else
+                ( _pim_decide_group "$reqid" "$action" "$reason" )
+            fi
+            ;;
         Cancel)
             read -r -p "Withdraw this pending request? [y/N] " confirm </dev/tty
             [[ "$confirm" =~ ^[Yy]$ ]] || return 0
@@ -465,22 +511,23 @@ pim_ui() {
         [[ -z "$raw" ]] && { echo "Nothing to show — no PIM assignments or pending requests."; return 0; }
 
         rows=""
-        while IFS="$sep" read -r name type status detail access reqid; do
-            local pretty; pretty=$(printf "%-7s %-18s %-32s %s" "$type" "$status" "$name" "$detail")
-            rows+="${pretty}${sep}${type}${sep}${status}${sep}${name}${sep}${access}${sep}${reqid}"$'\n'
+        while IFS="$sep" read -r name type status detail access reqid requester; do
+            local pretty; pretty=$(printf "%-7s %-30s %-24s %-28s %-36s %s" "$type" "$(_pim_status_label "$status")" "$name" "$requester" "$reqid" "$detail")
+            rows+="${pretty}${sep}${type}${sep}${status}${sep}${name}${sep}${access}${sep}${reqid}${sep}${requester}"$'\n'
         done <<< "$raw"
         rows="${rows%$'\n'}"
 
+        local header; header=$(printf "%-7s %-30s %-24s %-28s %-36s %s" "TYPE" "STATUS" "NAME" "REQUESTER" "REQUEST ID" "DETAIL")
         local selected
         selected=$(printf '%s\n' "$rows" | fzf \
             --delimiter="$sep" --with-nth=1 --no-sort \
             --height=100% --reverse --border \
-            --header=$'TYPE    STATUS              NAME                             DETAIL\n↑/↓ move · enter select · esc/ctrl-c quit') || return 0
+            --header="${header}"$'\n↑/↓ move · enter select · esc/ctrl-c quit') || return 0
         [[ -z "$selected" ]] && return 0
 
-        local type status name access reqid
-        IFS="$sep" read -r _ type status name access reqid <<< "$selected"
-        _pim_ui_act_on "$type" "$status" "$name" "$access" "$reqid"
+        local type status name access reqid requester
+        IFS="$sep" read -r _ type status name access reqid requester <<< "$selected"
+        _pim_ui_act_on "$type" "$status" "$name" "$access" "$reqid" "$requester"
     done
 }
 

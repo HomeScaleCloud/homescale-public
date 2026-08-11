@@ -32,7 +32,7 @@ Output format defaults to `table`; pass `-o yaml` or `-o json` for scripting.
 | `pimrole` | `hsctl get pimrole` | List your eligible + active Entra directory role PIM assignments (Graph API) |
 | `pimgroup` | `hsctl get pimgroup` | List your eligible + active PIM-for-Groups assignments (Graph API) |
 | `pimazurerole` | `hsctl get pimazurerole --scope <arm-scope>` | List your eligible + active Azure resource RBAC PIM assignments (ARM API) |
-| `pimapproval` | `hsctl get pimapproval [role\|group\|azure] [--scope <arm-scope>]` | List pending PIM approval requests — both ones you can approve and your own, tagged `approver`/`requestor`. No type: `role` + `group` |
+| `pimapproval` | `hsctl get pimapproval [role\|group\|azure] [--scope <arm-scope>]` | List pending PIM approval requests — both ones you can approve and your own, tagged `approver`/`requestor`, with the requester's display name and email (`role`/`group` only — Graph API). No type: `role` + `group` |
 
 ## `hsctl argocd`
 
@@ -72,17 +72,19 @@ hsctl pim activate <role|group|azure> <name|id> --reason "<justification>"
                    [--duration <e.g. 2h35m, 45m, or ISO8601 — default 8h>] [--access member|owner] [--scope <arm-scope>]
 hsctl pim deactivate <role|group|azure> <name|id> [--scope <arm-scope>]
 hsctl pim cancel <role|group> <request-id>
-hsctl pim approve <role|group|azure> <approval-id> <step-id> [--deny] [--reason "..."] [--scope <arm-scope>]
+hsctl pim approve <role|group|azure> <approval-id> [--deny] [--reason "..."] [--scope <arm-scope>]
 hsctl pim logout
 ```
 
 Self-service [Entra ID](../architecture/teams.md) PIM actions from the CLI — listing lives under `hsctl get pimrole|pimgroup|pimazurerole|pimapproval` (see above). `role`/`group` (also `roles`/`groups`) hit Graph; `azure` hits ARM and requires `--scope`.
 
-Bare `hsctl pim` opens an [fzf](https://github.com/junegunn/fzf)-based full-screen picker over your eligible/active/pending role+group items (arrow keys, enter to select, esc/ctrl-c to quit), with a follow-up menu for Activate/Deactivate/Cancel per item — azure isn't in the UI yet.
+Bare `hsctl pim` opens an [fzf](https://github.com/junegunn/fzf)-based full-screen picker over your eligible/active/pending role+group items (arrow keys, enter to select, esc/ctrl-c to quit), with a follow-up menu per item: Activate/Deactivate for your own assignments, Cancel for a pending request you sent, Approve/Deny for one you're the approver on — azure isn't in the UI yet. Pending rows show the requester (name + email) and request ID, and are labeled `pending · sent by you` or `pending · needs your approval` so the two directions aren't confused.
 
-`activate role`/`activate group` print the resulting request ID, needed for `cancel`/`approve`. IDs for `approve` come from `hsctl get pimapprovals -o json`, which also shows your own pending requests tagged `approver`/`requestor`; the `approve`/`deny` action itself is unverified for `role`/`group` — the Graph endpoint it hits rejects delegated tokens.
+`activate role`/`activate group` print the resulting request ID, needed for `cancel`/`approve`. The ID `approve` takes is the same request ID (shown by `hsctl get pimapprovals -o json` or the TUI) — `hsctl pim approve` resolves the single pending approval step/stage against it automatically, no separate step ID needed. `approve role`/`approve group` hit Graph's `/beta` segment for this specifically (`roleAssignmentApprovals`/`assignmentApprovals` have no `/v1.0` equivalent); every other `role`/`group` PIM call in this repo uses `/v1.0`.
 
 Requires `az`, `jq`, `curl`, `openssl`, `python3`, `infisical` (`fzf` too for the UI; same requirements apply to the `pim*` resources under `hsctl get`). `azure` auths via `az login`; `role`/`group` sign in separately (browser flow, token in macOS Keychain) through a dedicated `hsctl` Entra app registration, since Azure CLI's own app can't get the Graph scopes PIM needs. The tenant ID (`entra-tenant` at Infisical root) and the app's client ID (`CLIENT_ID` at `/hsctl-pim`) are fetched at runtime, not hardcoded.
+
+The `hsctl-pim` app registration's delegated Graph permissions (all admin-consented) are `RoleManagement.ReadWrite.Directory`, `PrivilegedAccess.ReadWrite.AzureADGroup`, and `PrivilegedAccess.ReadWrite.AzureAD` — the last is only needed for `approve role`/`approve group`, since `roleAssignmentApprovals`/`assignmentApprovals` sit behind the older PIM permission family rather than the unified `RoleManagement`/`RoleAssignmentSchedule` one. This app registration isn't Terraform-managed; permissions are added by hand in the Entra portal. After adding a new scope, run `hsctl pim logout` to drop the cached token so the next sign-in re-requests the updated scope list.
 
 ## `hsctl switch`
 
