@@ -413,30 +413,30 @@ _pim_require_deps() {
 }
 
 _pim_resolve_ids() {
-    [[ -n "${HSCTL_PIM_TENANT_ID:-}" && -n "${HSCTL_PIM_CLIENT_ID:-}" ]] && return 0
+    [[ -n "${HSCTL_TENANT_ID:-}" && -n "${HSCTL_CLIENT_ID:-}" ]] && return 0
 
-    if ! HSCTL_PIM_TENANT_ID=$(infisical secrets get entra-tenant --env=prod --path=/ --plain --silent </dev/null 2>/dev/null); then
+    if ! HSCTL_TENANT_ID=$(infisical secrets get entra-tenant --env=prod --path=/ --plain --silent </dev/null 2>/dev/null); then
         echo "hsctl: could not fetch entra-tenant from Infisical (/) — try 'infisical login' first" >&2
         exit 1
     fi
-    [[ -z "$HSCTL_PIM_TENANT_ID" ]] && { echo "hsctl: entra-tenant in Infisical is empty" >&2; exit 1; }
+    [[ -z "$HSCTL_TENANT_ID" ]] && { echo "hsctl: entra-tenant in Infisical is empty" >&2; exit 1; }
 
-    if ! HSCTL_PIM_CLIENT_ID=$(infisical secrets get CLIENT_ID --env=prod --path=/hsctl-pim --plain --silent </dev/null 2>/dev/null); then
-        echo "hsctl: could not fetch CLIENT_ID from Infisical (/hsctl-pim) — try 'infisical login' first" >&2
+    if ! HSCTL_CLIENT_ID=$(infisical secrets get CLIENT_ID --env=prod --path=/hsctl --plain --silent </dev/null 2>/dev/null); then
+        echo "hsctl: could not fetch CLIENT_ID from Infisical (/hsctl) — try 'infisical login' first" >&2
         exit 1
     fi
-    [[ -z "$HSCTL_PIM_CLIENT_ID" ]] && { echo "hsctl: CLIENT_ID at /hsctl-pim in Infisical is empty" >&2; exit 1; }
+    [[ -z "$HSCTL_CLIENT_ID" ]] && { echo "hsctl: CLIENT_ID at /hsctl in Infisical is empty" >&2; exit 1; }
 
-    export HSCTL_PIM_TENANT_ID HSCTL_PIM_CLIENT_ID
+    export HSCTL_TENANT_ID HSCTL_CLIENT_ID
 }
 
 _pim_ensure_signed_in() {
     local current_tenant
     current_tenant=$(az account show --query tenantId -o tsv 2>/dev/null) || current_tenant=""
-    [[ "$current_tenant" == "$HSCTL_PIM_TENANT_ID" ]] && return 0
+    [[ "$current_tenant" == "$HSCTL_TENANT_ID" ]] && return 0
 
     hsctl_log_info "signing in to the HomeScale tenant"
-    if ! az login --tenant "$HSCTL_PIM_TENANT_ID" >/dev/null; then
+    if ! az login --tenant "$HSCTL_TENANT_ID" >/dev/null; then
         echo "hsctl: sign-in failed" >&2
         return 1
     fi
@@ -530,8 +530,8 @@ PYEOF
     [[ -z "$port" ]] && { hsctl_log_error "could not start local callback listener for Graph sign-in"; kill "$py_pid" 2>/dev/null; rm -f "$port_file" "$result_file"; return 1; }
 
     local redirect_uri="http://localhost:${port}"
-    local authorize_url="https://login.microsoftonline.com/${HSCTL_PIM_TENANT_ID}/oauth2/v2.0/authorize"
-    authorize_url+="?client_id=${HSCTL_PIM_CLIENT_ID}&response_type=code&response_mode=query"
+    local authorize_url="https://login.microsoftonline.com/${HSCTL_TENANT_ID}/oauth2/v2.0/authorize"
+    authorize_url+="?client_id=${HSCTL_CLIENT_ID}&response_type=code&response_mode=query"
     authorize_url+="&redirect_uri=$(_pim_urlencode "$redirect_uri")"
     authorize_url+="&scope=$(_pim_urlencode "$HSCTL_PIM_GRAPH_SCOPES")"
     authorize_url+="&code_challenge=${code_challenge}&code_challenge_method=S256&state=${state}"
@@ -567,8 +567,8 @@ PYEOF
     [[ -z "$code" ]] && { hsctl_log_error "Graph sign-in failed: no authorization code returned"; return 1; }
 
     local token_resp
-    token_resp=$(curl -sg -X POST "https://login.microsoftonline.com/${HSCTL_PIM_TENANT_ID}/oauth2/v2.0/token" \
-        --data-urlencode "client_id=$HSCTL_PIM_CLIENT_ID" \
+    token_resp=$(curl -sg -X POST "https://login.microsoftonline.com/${HSCTL_TENANT_ID}/oauth2/v2.0/token" \
+        --data-urlencode "client_id=$HSCTL_CLIENT_ID" \
         --data-urlencode "grant_type=authorization_code" \
         --data-urlencode "code=$code" \
         --data-urlencode "redirect_uri=$redirect_uri" \
@@ -584,9 +584,9 @@ _pim_graph_refresh_token() {
     [[ -z "$refresh_token" ]] && return 1
 
     local resp
-    resp=$(curl -sg -X POST "https://login.microsoftonline.com/${HSCTL_PIM_TENANT_ID}/oauth2/v2.0/token" \
+    resp=$(curl -sg -X POST "https://login.microsoftonline.com/${HSCTL_TENANT_ID}/oauth2/v2.0/token" \
         --data-urlencode "grant_type=refresh_token" \
-        --data-urlencode "client_id=$HSCTL_PIM_CLIENT_ID" \
+        --data-urlencode "client_id=$HSCTL_CLIENT_ID" \
         --data-urlencode "refresh_token=$refresh_token" \
         --data-urlencode "scope=$HSCTL_PIM_GRAPH_SCOPES")
     jq -e '.access_token' >/dev/null 2>&1 <<< "$resp" || return 1
