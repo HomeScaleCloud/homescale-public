@@ -4,6 +4,18 @@ metadata:
   name: kubevirt
   namespace: kubevirt
 spec:
+  # Enables the operator's built-in Prometheus integration: it creates a
+  # ServiceMonitor (selecting the kubevirt-prometheus-metrics Service the
+  # operator already deploys) plus the Role/RoleBinding letting our
+  # Prometheus's ServiceAccount list/watch services+endpoints+pods in this
+  # namespace to discover scrape targets. Both fields are validated against
+  # the live cluster before anything is created -- monitorAccount must
+  # already exist in monitorNamespace (see apps/metrics' kube-prometheus-stack
+  # release, whose Prometheus ServiceAccount is named
+  # "<release>-kube-prometheus-st-prometheus") or the operator silently skips
+  # creating the monitoring resources.
+  monitorNamespace: metrics
+  monitorAccount: metrics-kube-prometheus-st-prometheus
   configuration:
     developerConfiguration:
       featureGates:
