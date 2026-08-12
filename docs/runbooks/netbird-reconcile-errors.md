@@ -6,7 +6,7 @@
 
 ## What this means
 
-The NetBird operator's `clusterproxy`, `networkrouter`, or `networkresource` controller (identified by `$labels.controller`) has logged reconcile errors in the last 15 minutes. The affected objects may still show `Ready` if a previous reconcile succeeded, so this can fire before (or without) a corresponding `NotReady` alert — it's an early signal that something is failing even if the last-known state still looks fine.
+The NetBird operator's `networkrouter` or `networkresource` controller (identified by `$labels.controller`) has logged reconcile errors in the last 15 minutes. The affected objects may still show `Ready` if a previous reconcile succeeded, so this can fire before (or without) a corresponding `NotReady` alert — it's an early signal that something is failing even if the last-known state still looks fine.
 
 ## Common causes
 
@@ -20,6 +20,6 @@ The NetBird operator's `clusterproxy`, `networkrouter`, or `networkresource` con
 ## Remediation
 
 1. `kubectl --context <cluster> -n netbird logs deploy/netbird-netbird-operator --since=15m | grep -i error` — find the specific object and error message.
-2. Cross-reference the `controller` label with the affected CR kind (`clusterproxy`, `networkrouter`, `networkresource`) and inspect that specific object's `status.conditions`.
+2. Cross-reference the `controller` label with the affected CR kind (`networkrouter`, `networkresource`) and inspect that specific object's `status.conditions`.
 3. If the error references the NetBird management API, verify connectivity and credentials before assuming an operator bug.
 4. This alert clears once `controller_runtime_reconcile_errors_total` stops incrementing for 15 minutes — no manual reset needed once the underlying cause is fixed.

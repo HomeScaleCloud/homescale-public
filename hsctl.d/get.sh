@@ -10,7 +10,6 @@ get_usage() {
     echo "Resources:"
     echo "  clusters                      List Kubernetes clusters reachable via NetBird"
     echo "  kubeconfig <cluster> [flags]  Write kubeconfig context for a cluster; default is direct apiserver + OIDC"
-    echo "      --netbird                     write a ClusterProxy (NetBird) kubeconfig instead"
     echo "      --omni                        run 'omnictl kubeconfig --cluster <cluster>' instead"
     echo "      --break-glass                 run 'omnictl kubeconfig --break-glass --cluster <cluster>' instead"
     echo "  machines [--cluster <name>]   List all machines with power state; enriches with node name for assigned ones"
@@ -185,19 +184,17 @@ spec:
 }
 
 get_clusters() {
-    local netbird_json talos_tsv cluster_names
-    netbird_json=$(netbird status --json 2>/dev/null || echo '{}')
+    local talos_tsv cluster_names
     talos_tsv=$(omnictl get clusters -o yaml 2>/dev/null | \
         yq e '[.metadata.id, (.spec.talosversion // "?")] | @tsv' - 2>/dev/null || true)
     cluster_names=$(hsctl_cluster_names)
 
-    python3 - "$HSCTL_OUTPUT" "$talos_tsv" "$netbird_json" "$cluster_names" <<'PYEOF'
-import json, sys, urllib.request, ssl
+    python3 - "$HSCTL_OUTPUT" "$talos_tsv" "$cluster_names" <<'PYEOF'
+import json, sys, urllib.request
 
 output_fmt    = sys.argv[1]
 talos_tsv     = sys.argv[2]
-netbird_json  = sys.argv[3]
-cluster_names = [c for c in sys.argv[4].split(',') if c]
+cluster_names = [c for c in sys.argv[3].split(',') if c]
 
 talos_versions = {}
 for line in talos_tsv.strip().splitlines():
@@ -205,33 +202,14 @@ for line in talos_tsv.strip().splitlines():
     if len(parts) == 2:
         talos_versions[parts[0]] = parts[1]
 
-def match_cluster(fqdn):
-    # clusterproxy-<cluster>-<pod-template-hash>-<pod-suffix>-... — the hash
-    # is a variable-length k8s-generated suffix, so match against known
-    # cluster names (longest first, in case one name prefixes another)
-    # rather than guessing at the hash format/length.
-    best = None
-    for c in cluster_names:
-        if fqdn.startswith(f'clusterproxy-{c}-') and (best is None or len(c) > len(best)):
-            best = c
-    return best
-
-data = json.loads(netbird_json)
-seen = {}
 clusters = []
-for p in data.get('peers', {}).get('details', []):
-    c = match_cluster(p.get('fqdn', ''))
-    if c and c not in seen:
-        seen[c] = True
-        fqdn = f'k8s.api.{c}REDACTED'
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        try:
-            k8s_ver = json.loads(urllib.request.urlopen(f'https://{fqdn}/version', timeout=5, context=ctx).read()).get('gitVersion', '?')
-        except Exception:
-            k8s_ver = '?'
-        clusters.append({'name': c, 'fqdn': fqdn, 'k8s_version': k8s_ver, 'talos_version': talos_versions.get(c, '?')})
+for c in cluster_names:
+    fqdn = f'k8s.api.{c}REDACTED'
+    try:
+        k8s_ver = json.loads(urllib.request.urlopen(f'https://{fqdn}/version', timeout=5).read()).get('gitVersion', '?')
+    except Exception:
+        k8s_ver = '?'
+    clusters.append({'name': c, 'fqdn': fqdn, 'k8s_version': k8s_ver, 'talos_version': talos_versions.get(c, '?')})
 
 if output_fmt == 'json':
     print(json.dumps(clusters, indent=2))
@@ -320,72 +298,21 @@ print(f"Switched to cluster {cluster!r}")
 PYEOF
 }
 
-_hsctl_write_kubeconfig_clusterproxy() {
-    local cluster="$1" kubeconfig="$2"
-    local fqdn="nb.k8s.api.${cluster}REDACTED"
-
-    python3 - "$cluster" "$fqdn" "$kubeconfig" <<'PYEOF'
-import sys, ssl, urllib.request
-from pathlib import Path
-import yaml
-
-cluster, fqdn, kubeconfig_path = sys.argv[1], sys.argv[2], sys.argv[3]
-
-ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
-try:
-    urllib.request.urlopen(f'https://{fqdn}/version', timeout=5, context=ctx)
-except Exception as e:
-    print(f'error: cluster {cluster!r} not reachable at {fqdn}: {e}', file=sys.stderr)
-    sys.exit(1)
-
-server = f'https://{fqdn}'
-p = Path(kubeconfig_path)
-p.parent.mkdir(parents=True, exist_ok=True)
-cfg = yaml.safe_load(p.read_text()) if p.exists() else None
-if not cfg:
-    cfg = {'apiVersion': 'v1', 'kind': 'Config'}
-
-def upsert(collection, name, value):
-    items = cfg.get(collection) or []
-    for i, item in enumerate(items):
-        if item.get('name') == name:
-            items[i] = value
-            cfg[collection] = items
-            return
-    items.append(value)
-    cfg[collection] = items
-
-upsert('clusters', cluster, {'name': cluster, 'cluster': {'server': server, 'insecure-skip-tls-verify': True}})
-upsert('users',    'netbird', {'name': 'netbird', 'user': {'token': 'none'}})
-upsert('contexts', cluster, {'name': cluster, 'context': {'cluster': cluster, 'user': 'netbird', 'namespace': 'default'}})
-cfg['current-context'] = cluster
-
-p.write_text(yaml.dump(cfg, default_flow_style=False))
-print(f"Switched to cluster {cluster!r}")
-PYEOF
-}
-
 get_kubeconfig() {
     local cluster="" mode="direct"
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --netbird) mode="netbird"; shift ;;
             --omni) mode="omni"; shift ;;
             --break-glass) mode="break-glass"; shift ;;
             -*) echo "hsctl get kubeconfig: unknown flag '$1'" >&2; get_usage ;;
             *) cluster="$1"; shift ;;
         esac
     done
-    [[ -z "$cluster" ]] && { echo "Usage: hsctl get kubeconfig <cluster> [--netbird|--omni|--break-glass]"; exit 1; }
+    [[ -z "$cluster" ]] && { echo "Usage: hsctl get kubeconfig <cluster> [--omni|--break-glass]"; exit 1; }
 
     local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
 
     case "$mode" in
-        netbird)
-            _hsctl_write_kubeconfig_clusterproxy "$cluster" "$kubeconfig"
-            ;;
         omni)
             omnictl kubeconfig "$kubeconfig" --cluster "$cluster"
             echo "Switched to cluster '$cluster'"

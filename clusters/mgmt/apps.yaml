@@ -34,9 +34,6 @@ spec:
               deploy: true
             multus:
               deploy: false
-            netbird:
-              values:
-                kubeApiServer: "https://kubernetes.default.svc/"
             node-inotify-limits:
               deploy: true
             omni:

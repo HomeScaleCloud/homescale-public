@@ -6,7 +6,7 @@
 
 ## What this means
 
-The Prometheus scrape target for the NetBird operator (`netbird-netbird-operator-metrics` service, `netbird` namespace) has been failing for 5 minutes. `ClusterProxy`, `NetworkRouter`, and `NetworkResource` objects on this cluster will stop reconciling — new or changed mesh access, DNS zone registration, and service exposure will not take effect until the operator recovers.
+The Prometheus scrape target for the NetBird operator (`netbird-netbird-operator-metrics` service, `netbird` namespace) has been failing for 5 minutes. `NetworkRouter` and `NetworkResource` objects on this cluster will stop reconciling — new or changed mesh access, DNS zone registration, and service exposure will not take effect until the operator recovers.
 
 ## Common causes
 
@@ -23,4 +23,4 @@ The Prometheus scrape target for the NetBird operator (`netbird-netbird-operator
 2. `kubectl -n netbird logs deploy/netbird-netbird-operator -f` for crash reasons or repeated API errors.
 3. `kubectl -n netbird get svc netbird-netbird-operator-metrics` and confirm the Service has endpoints (`kubectl -n netbird get endpoints netbird-netbird-operator-metrics`).
 4. If the pods are healthy but the scrape still fails, check the `ServiceMonitor` (`netbird-operator`) and the Prometheus targets page for the specific scrape error.
-5. Once the operator is back up, existing `ClusterProxy`/`NetworkRouter`/`NetworkResource` objects reconcile automatically on their next resync — no manual re-trigger is needed.
+5. Once the operator is back up, existing `NetworkRouter`/`NetworkResource` objects reconcile automatically on their next resync — no manual re-trigger is needed.

@@ -6,7 +6,7 @@
 
 ## What this means
 
-The NetBird operator's `clusterproxy`, `networkrouter`, or `networkresource` controller (identified by `$labels.name`) has held a backlog of more than 5 queued items for 15 minutes. Reconciles for that CR kind are falling behind — changes to `ClusterProxy`/`NetworkRouter`/`NetworkResource` objects on this cluster may take longer than expected to take effect, or a specific item may be stuck retrying.
+The NetBird operator's `networkrouter` or `networkresource` controller (identified by `$labels.name`) has held a backlog of more than 5 queued items for 15 minutes. Reconciles for that CR kind are falling behind — changes to `NetworkRouter`/`NetworkResource` objects on this cluster may take longer than expected to take effect, or a specific item may be stuck retrying.
 
 ## Common causes
 

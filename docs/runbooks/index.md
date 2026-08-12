@@ -47,7 +47,6 @@ Runbooks for alerts fired by Prometheus. Each alert links back to this page via 
 | Alert | Severity |
 |-------|----------|
 | [NetBirdOperatorDown](netbird-operator-down.md) | critical |
-| [NetBirdClusterProxyNotReady](netbird-clusterproxy-not-ready.md) | critical |
 | [NetBirdNetworkRouterNotReady](netbird-networkrouter-not-ready.md) | critical |
 | [NetBirdNetworkResourceNotReady](netbird-networkresource-not-ready.md) | warning |
 | [NetBirdReconcileErrors](netbird-reconcile-errors.md) | warning |
