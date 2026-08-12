@@ -230,8 +230,11 @@ _hsctl_resolve_oidc() {
     [[ -n "${HSCTL_OIDC_ISSUER_URL:-}" && -n "${HSCTL_OIDC_CLIENT_ID:-}" ]] && return 0
     local secrets_json
     if ! secrets_json=$(infisical export --silent --env=prod --path=/k8s/oidc --format=json </dev/null); then
-        echo "hsctl get kubeconfig: could not fetch OIDC config from Infisical (/k8s/oidc) — try 'infisical login' first" >&2
-        return 1
+        hsctl_infisical_login || { echo "hsctl get kubeconfig: infisical login failed" >&2; return 1; }
+        if ! secrets_json=$(infisical export --silent --env=prod --path=/k8s/oidc --format=json </dev/null); then
+            echo "hsctl get kubeconfig: could not fetch OIDC config from Infisical (/k8s/oidc)" >&2
+            return 1
+        fi
     fi
     HSCTL_OIDC_ISSUER_URL=$(yq e -p json '.[] | select(.key == "OIDC_ISSUER_URL") | .value' <<< "$secrets_json" 2>/dev/null) || true
     HSCTL_OIDC_CLIENT_ID=$(yq e -p json '.[] | select(.key == "OIDC_CLIENT_ID") | .value' <<< "$secrets_json" 2>/dev/null) || true
@@ -343,14 +346,20 @@ _pim_resolve_ids() {
     [[ -n "${HSCTL_TENANT_ID:-}" && -n "${HSCTL_CLIENT_ID:-}" ]] && return 0
 
     if ! HSCTL_TENANT_ID=$(infisical secrets get entra-tenant --env=prod --path=/ --plain --silent </dev/null 2>/dev/null); then
-        echo "hsctl: could not fetch entra-tenant from Infisical (/) — try 'infisical login' first" >&2
-        exit 1
+        hsctl_infisical_login || { echo "hsctl: infisical login failed" >&2; exit 1; }
+        if ! HSCTL_TENANT_ID=$(infisical secrets get entra-tenant --env=prod --path=/ --plain --silent </dev/null 2>/dev/null); then
+            echo "hsctl: could not fetch entra-tenant from Infisical (/)" >&2
+            exit 1
+        fi
     fi
     [[ -z "$HSCTL_TENANT_ID" ]] && { echo "hsctl: entra-tenant in Infisical is empty" >&2; exit 1; }
 
     if ! HSCTL_CLIENT_ID=$(infisical secrets get CLIENT_ID --env=prod --path=/hsctl --plain --silent </dev/null 2>/dev/null); then
-        echo "hsctl: could not fetch CLIENT_ID from Infisical (/hsctl) — try 'infisical login' first" >&2
-        exit 1
+        hsctl_infisical_login || { echo "hsctl: infisical login failed" >&2; exit 1; }
+        if ! HSCTL_CLIENT_ID=$(infisical secrets get CLIENT_ID --env=prod --path=/hsctl --plain --silent </dev/null 2>/dev/null); then
+            echo "hsctl: could not fetch CLIENT_ID from Infisical (/hsctl)" >&2
+            exit 1
+        fi
     fi
     [[ -z "$HSCTL_CLIENT_ID" ]] && { echo "hsctl: CLIENT_ID at /hsctl in Infisical is empty" >&2; exit 1; }
 

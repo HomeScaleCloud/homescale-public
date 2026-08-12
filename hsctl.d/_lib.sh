@@ -49,6 +49,15 @@ hsctl_resolve_machine_id() {
     printf '%s\n' "$id"
 }
 
+# Interactively runs `infisical login`, to auto-retry a secret fetch that failed because
+# there's no valid session. stdin/stdout/stderr are left connected to the terminal so the
+# browser-based login flow can prompt the user.
+# Usage: hsctl_infisical_login || return 1
+hsctl_infisical_login() {
+    echo "hsctl: no valid Infisical session — starting 'infisical login'" >&2
+    infisical login --domain https://app.infisical.com
+}
+
 # Fetch a machine's BMC (Redfish) connection info from Infisical, at /bmc/<machine-id>.
 # Usage: creds=$(hsctl_bmc_creds <machine-id>) || exit 1
 #        IFS=$'\t' read -r bmc_ip bmc_user bmc_pass <<< "$creds"
@@ -57,12 +66,16 @@ hsctl_bmc_creds() {
     # stdin is /dev/null so a missing session can't drop into infisical's interactive login
     # wizard — that TUI renders over stdout, which we're capturing here, so it would otherwise
     # sit blocked on keystrokes the terminal never shows. Without a session it now fails fast
-    # instead. stderr is left alone so infisical's own error output still reaches the terminal.
+    # instead, and we run our own interactive login (unredirected) and retry once. stderr is
+    # left alone so infisical's own error output still reaches the terminal.
     # Uses if/else (rather than `cmd || true`) so a failed fetch is caught by its exit code here,
     # instead of tripping `set -e` or silently falling through with empty/garbage stdout.
     if ! secrets_json=$(infisical export --silent --env=prod --path="/bmc/$id" --format=json </dev/null); then
-        hsctl_log_error "failed to fetch BMC credentials for machine '$id' from Infisical (path /bmc/$id) — try 'infisical login' first"
-        return 1
+        hsctl_infisical_login || { hsctl_log_error "infisical login failed"; return 1; }
+        if ! secrets_json=$(infisical export --silent --env=prod --path="/bmc/$id" --format=json </dev/null); then
+            hsctl_log_error "failed to fetch BMC credentials for machine '$id' from Infisical (path /bmc/$id)"
+            return 1
+        fi
     fi
 
     # infisical export --format=json is an array of secret objects (.key/.value), not a flat map
