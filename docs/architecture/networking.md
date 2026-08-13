@@ -119,9 +119,3 @@ tailscale:
 The **destination** is always the app's own tag (`tag:app-<name>`), auto-registered in `tagOwners` by Terraform for every app directory. If no `tailscale:` block is present, **access is denied by default**. `sources` values are literal ACL identifiers, spelled out in full (`group:<name>@REDACTED` for Entra-synced groups, `tag:<name>` for tags, `*` for everyone) — there's no short-alias remapping.
 
 See the [App reference](apps.md#tailscale-access-policy-tailscale) for the full field reference.
-
-## Gateway clusters
-
-Gateway clusters (`<region>-gw`) are single-node clusters — one per region — intended to act as the regional entry point into the HomeScale mesh, bridging region-local services and BMC/MGMT subnet access to the management cluster. This role isn't implemented yet — the equivalent NetBird subnet-router module was removed rather than ported, and a Tailscale `Connector`-based design is a separate future task.
-
-Naming convention: `<region>-gw`.

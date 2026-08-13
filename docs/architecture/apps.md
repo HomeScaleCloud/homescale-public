@@ -153,7 +153,7 @@ The **destination** is always the app's own tag (`tag:app-<name>`), auto-registe
 
 ### Exposing a Service on the tailnet
 
-Unlike NetBird, Tailscale doesn't auto-register a Service once a `tailscale:` policy exists — you also mark the Service itself for exposure:
+Tailscale doesn't auto-register a Service once a `tailscale:` policy exists — you also mark the Service itself for exposure:
 
 ```yaml
 spec:
@@ -177,7 +177,7 @@ metadata:
 | `tailscale.com/tags` | Tags applied to the tailnet device for this Service. Always include `tag:k8s` and `tag:app-<name>`; add `tag:cluster-<name>` for anything cluster-scoped |
 | `tailscale.com/hostname` | The MagicDNS label for this device (`<hostname>.<tailnet>.ts.net`) |
 | `tailscale.com/proxy-group` | Set to `ingress` to route through the cluster's shared ingress `ProxyGroup` (from the `tailscale` app) instead of provisioning a dedicated proxy pod |
-| `external-dns.alpha.kubernetes.io/hostname` | Optional. Publishes a friendly `REDACTED` CNAME (via `external-dns`, running in every cluster) pointing at whatever tailnet hostname the Operator assigns — this replaces NetBird's `netbird.cname:` block entirely, no separate Terraform-managed DNS zone involved |
+| `external-dns.alpha.kubernetes.io/hostname` | Optional. Publishes a friendly `REDACTED` CNAME (via `external-dns`, running in every cluster) pointing at whatever tailnet hostname the Operator assigns |
 
 Requires a matching [`tailscale.policy`](#tailscale-access-policy-tailscale) rule to actually grant access — exposing the Service alone doesn't open the tailnet.
 

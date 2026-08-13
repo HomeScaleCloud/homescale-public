@@ -69,7 +69,7 @@ Infrastructure Platforms owns the full observability stack: per-cluster Promethe
 
 ### Cluster lifecycle
 
-Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS config patches, Kubernetes version upgrades, and the bootstrap app-of-apps that seeds ArgoCD on a fresh cluster. Gateway clusters (`*-gw`) are also Infrastructure Platforms's responsibility, though the regional subnet-router role they're meant to serve isn't implemented yet.
+Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS config patches, Kubernetes version upgrades, and the bootstrap app-of-apps that seeds ArgoCD on a fresh cluster.
 
 | Path | What it does |
 |------|-------------|

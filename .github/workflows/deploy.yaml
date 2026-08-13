@@ -64,9 +64,6 @@ jobs:
       - name: Plan
         id: plan
         continue-on-error: true
-        # TODO(cutover): drop this env block once state has no netbird_* resources left to destroy.
-        env:
-          TF_VAR_netbird_token: ${{ env.NETBIRD_SA_TOKEN }}
         run: |
           if terraform plan -no-color -out=tfplan > /tmp/tf-plan-full.txt 2>&1; then
             terraform show -no-color tfplan > /tmp/tf-plan.txt
@@ -184,9 +181,6 @@ jobs:
           exit 1
       - name: Apply
         if: github.ref == 'refs/heads/main'
-        # TODO(cutover): drop this env block once state has no netbird_* resources left to destroy.
-        env:
-          TF_VAR_netbird_token: ${{ env.NETBIRD_SA_TOKEN }}
         run: terraform apply -auto-approve tfplan
 
   omni:

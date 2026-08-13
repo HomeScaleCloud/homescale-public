@@ -27,7 +27,6 @@ Clusters follow the `<region>-<role>` convention:
 | Pattern | Example | Role |
 |---------|---------|------|
 | `<region>-prod` | `boa1-prod` | Production workloads |
-| `<region>-gw` | `boa1-gw` | Gateway: subnet routing |
 | `mgmt` | `mgmt` | Management (exception to the naming convention) |
 
 Each cluster maps to exactly one region. Region codes are short datacenter identifiers (e.g. `boa1`).

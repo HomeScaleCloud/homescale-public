@@ -158,7 +158,7 @@ The `# pragma: allowlist secret` comment suppresses a false positive from `detec
 
 ### Internal (mesh only)
 
-Access is configured with the `tailscale:` block in `app.yaml` — Terraform flattens it into the tailnet ACL. Unlike NetBird, Tailscale doesn't auto-register a Service once policy exists; you also expose the Service itself:
+Access is configured with the `tailscale:` block in `app.yaml` — Terraform flattens it into the tailnet ACL. Tailscale doesn't auto-register a Service once policy exists; you also expose the Service itself:
 
 ```yaml
 spec:
@@ -181,7 +181,7 @@ metadata:
     external-dns.alpha.kubernetes.io/hostname: "my-app.{{ .Values.cluster.name }}REDACTED"
 ```
 
-`tailscale.com/proxy-group: ingress` routes the Service through the cluster's shared ingress `ProxyGroup` (from the `tailscale` app) instead of provisioning a dedicated proxy pod. `external-dns` (running in every cluster) publishes the `external-dns.alpha.kubernetes.io/hostname` value as a CNAME to whatever tailnet hostname the Operator assigns — no separate cname/DNS-zone block needed the way NetBird required.
+`tailscale.com/proxy-group: ingress` routes the Service through the cluster's shared ingress `ProxyGroup` (from the `tailscale` app) instead of provisioning a dedicated proxy pod. `external-dns` (running in every cluster) publishes the `external-dns.alpha.kubernetes.io/hostname` value as a CNAME to whatever tailnet hostname the Operator assigns.
 
 ### Public internet
 

@@ -109,12 +109,9 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 | Type | Kind | Role |
 |------|------|------|
 | `mgmt` | Vultr Kubernetes Engine (VKE) | Single management cluster. Hosts Omni, ArgoCD, Infisical operator, and shared infrastructure. Provisioned by Vultr via Terraform. |
-| `<region>-gw` | Talos (Omni-managed) | One per region. Gateway cluster for bare-metal provisioning and subnet routing. |
 | `<region>-*` | Talos (Omni-managed) | General compute clusters for production workloads. |
 
 Talos clusters have their node config, k8s version, and machine assignments managed entirely by Omni, which runs on the `mgmt` cluster. The CI deploy workflow syncs `clusters/<name>/cluster.yaml` to Omni on every merge to `main`.
-
-See [Gateway clusters](networking.md#gateway-clusters) for how gateway clusters handle bare-metal provisioning and subnet routing.
 
 ## Sync wave order
 

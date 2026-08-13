@@ -14,7 +14,7 @@ This monorepo contains the Infrastructure as Code (IaC) used to manage **HomeSca
 
 ### 🔒 **Networking & Security**
 - [Entra ID](https://www.microsoft.com/en-us/security/business/identity-access/microsoft-entra-id) - Identity and access management (SAML/SSO)
-- [Tailscale](https://tailscale.com) - Zero-trust peer-to-peer networking
+- [Tailscale](https://tailscale.com) - Zero-trust peer-to-peer mesh networking
 - [Infisical](https://infisical.com) - Secrets management and k8s sync
 
 ### ⚙️ **GitOps & Automation**

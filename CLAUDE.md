@@ -95,7 +95,7 @@ Apps that contain a `Chart.yaml` and `Dockerfile` under `apps/<name>/` are built
 
 ### Clusters (`clusters/`)
 
-One directory per cluster: `mgmt`, `boa1-prod`, `boa1-gw`. Cluster names follow the `<region>-<name>` convention (e.g. `boa1-prod`, `boa1-gw`); `mgmt` is the exception. Each cluster maps to exactly one region.
+One directory per cluster: `mgmt`, `boa1-prod`. Cluster names follow the `<region>-<name>` convention (e.g. `boa1-prod`); `mgmt` is the exception. Each cluster maps to exactly one region.
 
 - `clusters/<cluster>/apps.yaml` — the bootstrap ArgoCD app-of-apps (applied manually once)
 - `clusters/<cluster>/cluster.yaml` — Omni cluster template (Talos/k8s versions, machine assignments, patches); uses `$CLUSTER_NAME` envsubst substitution at deploy time
@@ -137,8 +137,6 @@ CI jobs that need internal infra (Omni) join the tailnet as an ephemeral node (`
 **Internal service exposure** — the `tailscale` app deploys the official Tailscale Kubernetes Operator plus a shared per-cluster ingress `ProxyGroup` to every cluster. A Service opts in with `type: LoadBalancer` / `loadBalancerClass: tailscale`, annotated `tailscale.com/tags`/`tailscale.com/hostname`/`tailscale.com/proxy-group: ingress` (routes through the shared ProxyGroup instead of a dedicated proxy pod) and `external-dns.alpha.kubernetes.io/hostname` for a friendly `<name>.<cluster>REDACTED` CNAME, published by `external-dns` running in every cluster.
 
 **External service exposure** — public internet exposure goes through Cloudflare Zero Trust Tunnels via the `exposePublic:` app.yaml block, entirely independent of Tailscale.
-
-**Gateway clusters (`*-gw`)** are single-node clusters, one per region, intended as the regional entry point into the HomeScale mesh (subnet routing to region BMC/MGMT subnets, region↔mgmt connectivity). Not implemented yet — the equivalent NetBird subnet-router module was removed rather than ported; a Tailscale `Connector`-based design is a separate future task. Naming convention is `<region>-gw` (e.g. `boa1-gw`).
 
 ### Tailscale access policies for apps
 
