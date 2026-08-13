@@ -10,6 +10,7 @@ metadata:
   name: egress
 spec:
   type: egress
-  replicas: 1
+  replicas: 3
+  hostnamePrefix: 'egress-{{ required "cluster.name is required" .Values.cluster.name }}'
   tags:
     - 'tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}'

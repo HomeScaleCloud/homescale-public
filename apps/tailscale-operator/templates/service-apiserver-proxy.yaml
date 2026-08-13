@@ -6,6 +6,7 @@ metadata:
   annotations:
     tailscale.com/tags: 'tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}'
     tailscale.com/hostname: 'k8s-api-{{ required "cluster.name is required" .Values.cluster.name }}'
+    tailscale.com/proxy-group: ingress
     external-dns.alpha.kubernetes.io/hostname: 'k8s.api.{{ required "cluster.name is required" .Values.cluster.name }}REDACTED'
 spec:
   type: LoadBalancer

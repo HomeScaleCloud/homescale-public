@@ -11,6 +11,7 @@ metadata:
   annotations:
     tailscale.com/tags: "tag:app-headlamp,tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}"
     tailscale.com/hostname: "headlamp-{{ required "cluster.name is required" .Values.cluster.name }}"
+    tailscale.com/proxy-group: ingress
     external-dns.alpha.kubernetes.io/hostname: "headlamp.{{ required "cluster.name is required" .Values.cluster.name }}REDACTED"
 spec:
   type: LoadBalancer
