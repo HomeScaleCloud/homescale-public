@@ -6,5 +6,12 @@
 resource "tailscale_oauth_client" "k8s_operator" {
   description = "Kubernetes Operator"
   scopes      = ["devices:core", "auth_keys"]
-  tags        = ["tag:k8s-operator"]
+  tags        = ["tag:k8s"]
+
+  # tailscale_acl.this is what registers tag:k8s in tagOwners.
+  # Without this, Terraform has no reason to know the two are related and
+  # may create both in parallel -- racing this against the ACL write and
+  # getting "requested tags ... invalid or not permitted" if the tag isn't
+  # registered yet when the API processes this request.
+  depends_on = [tailscale_acl.this]
 }

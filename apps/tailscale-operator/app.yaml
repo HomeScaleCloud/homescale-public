@@ -16,7 +16,7 @@ values:
     operatorConfig:
       hostname: 'ts-operator-{{ .Values.cluster.name }}'
       defaultTags:
-        - 'tag:k8s-operator'
+        - 'tag:k8s'
     proxyConfig:
       defaultTags: 'tag:cluster-{{ .Values.cluster.name }}'
       defaultProxyClass: default

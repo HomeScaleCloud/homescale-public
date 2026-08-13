@@ -36,12 +36,12 @@ locals {
   # tagOwners: who is allowed to apply each tag to a device.
   tag_owners = merge(
     {
-      "tag:k8s-operator"   = ["autogroup:admin"]
+      "tag:k8s"            = ["autogroup:admin"]
       "tag:github-actions" = ["autogroup:admin"]
     },
     { for t in local.fixed_source_tags : "tag:${t}" => ["autogroup:admin"] },
-    { for k in local.app_names : "tag:app-${k}" => ["tag:k8s-operator"] },
-    { for k in local.cluster_names : "tag:cluster-${k}" => ["tag:k8s-operator"] },
+    { for k in local.app_names : "tag:app-${k}" => ["tag:k8s"] },
+    { for k in local.cluster_names : "tag:cluster-${k}" => ["tag:k8s"] },
   )
 
   # Every app's declared tailscale.policy rules, flattened into ACL grants.
