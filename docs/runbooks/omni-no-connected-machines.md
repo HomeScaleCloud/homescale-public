@@ -12,5 +12,5 @@ Zero connected machines means Omni cannot push Talos config updates to any machi
 
 ## Notes
 
-- If this coincided with a Terraform apply, check `infra/terraform/` for changes to NetBird or DNS resources.
+- If this coincided with a Terraform apply, check `infra/terraform/` for changes to Tailscale or DNS resources.
 - Machines reconnect automatically once the underlying network path is restored. No manual action on the machines is typically needed.

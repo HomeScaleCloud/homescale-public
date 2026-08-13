@@ -1,0 +1,11 @@
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyGroup
+metadata:
+  name: ingress
+spec:
+  type: ingress
+  replicas: 3
+  hostnamePrefix: 'ingress-{{ required "cluster.name is required" .Values.cluster.name }}'
+  tags:
+    - 'tag:k8s'
+    - 'tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}'

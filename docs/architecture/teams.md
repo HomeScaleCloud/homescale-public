@@ -36,11 +36,11 @@ CODEOWNERS is configured in `.github/CODEOWNERS`. All paths default to Infrastru
 
 ### Networking & ingress
 
-NetBird is the zero-trust WireGuard mesh that connects all clusters, CI jobs, and end-user devices. Infrastructure Platforms owns the mesh topology, network resource definitions, and the Terraform that creates NetBird groups and access policies. External services are exposed via a Cloudflare tunnel or reverse proxy, with DNS managed automatically by external-dns.
+Tailscale is the zero-trust mesh that connects all clusters, CI jobs, and end-user devices. Infrastructure Platforms owns the tailnet ACL, tag ownership, and the Terraform that creates them. External services are exposed via a Cloudflare tunnel or reverse proxy, with DNS managed automatically by external-dns.
 
 | App | What it does |
 |-----|-------------|
-| `netbird` | Zero-trust WireGuard mesh and network resources |
+| `tailscale` | Tailscale Kubernetes Operator, ingress/egress ProxyGroups, and the apiserver-proxy |
 | `cloudflared` | Cloudflare tunnel for external exposure |
 | `traefik-private` / `traefik-public` | Ingress controllers |
 | `external-dns` | Automatic DNS record management |
@@ -69,7 +69,7 @@ Infrastructure Platforms owns the full observability stack: per-cluster Promethe
 
 ### Cluster lifecycle
 
-Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS config patches, Kubernetes version upgrades, and the bootstrap app-of-apps that seeds ArgoCD on a fresh cluster. Gateway clusters (`*-gw`) are also Infrastructure Platforms's responsibility — they run the regional subnet router that connects each region to the WireGuard mesh.
+Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS config patches, Kubernetes version upgrades, and the bootstrap app-of-apps that seeds ArgoCD on a fresh cluster. Gateway clusters (`*-gw`) are also Infrastructure Platforms's responsibility, though the regional subnet-router role they're meant to serve isn't implemented yet.
 
 | Path | What it does |
 |------|-------------|
@@ -83,9 +83,8 @@ Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS conf
 | Module | What it manages |
 |--------|----------------|
 | `infra/terraform/modules/cloudflare/` | Cloudflare DNS records and tunnels |
-| `infra/terraform/modules/netbird/` | NetBird mesh, groups, DNS, and access policies (sourced from `app.yaml` `netbird:` blocks) |
+| `infra/terraform/modules/tailscale/` | Tailscale ACL, tags, OAuth clients, and DNS preferences (sourced from `app.yaml` `tailscale:` blocks) |
 | `infra/terraform/modules/mgmt_cluster/` | Vultr mgmt cluster (VKE) — co-owned with Security Platforms for cloud security review |
-| `infra/terraform/modules/region/` | Regional bare-metal and cloud resources — co-owned with Security Platforms for cloud security review |
 
 ### App catalog machinery
 

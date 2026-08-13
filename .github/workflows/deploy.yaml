@@ -61,43 +61,12 @@ jobs:
       - name: Validate
         id: validate
         run: terraform validate
-      - name: Setup NetBird client
-        run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
-      - name: Generate NetBird Setup Key
-        run: |
-          NB_GROUP_ID=$(curl -fsSL \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            https://api.netbird.io/api/groups \
-            | jq -r '.[] | select(.name == "GitHub Actions") | .id')
-
-          if [ -z "$NB_GROUP_ID" ] || [ "$NB_GROUP_ID" = "null" ]; then
-            echo "Failed to find GitHub Actions group" && exit 1
-          fi
-          echo "Found GitHub Actions group"
-
-          NB_KEY_RESPONSE=$(curl -fsSL -X POST \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            -H "Content-Type: application/json" \
-            https://api.netbird.io/api/setup-keys \
-            -d "{\"name\":\"github-actions-${GITHUB_RUN_ID}\",\"type\":\"one-off\",\"expires_in\":900,\"revokable\":true,\"ephemeral\":true,\"auto_groups\":[\"$NB_GROUP_ID\"]}")
-
-          NB_SETUP_KEY=$(echo "$NB_KEY_RESPONSE" | jq -r '.key')
-          NB_SETUP_KEY_ID=$(echo "$NB_KEY_RESPONSE" | jq -r '.id')
-
-          if [ -z "$NB_SETUP_KEY" ] || [ "$NB_SETUP_KEY" = "null" ]; then
-            echo "Failed to generate NetBird setup key" && exit 1
-          fi
-          echo "::add-mask::$NB_SETUP_KEY"
-          echo "Setup key generated"
-          echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
-          echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
-      - name: Connect to NetBird
-        run: |
-          netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
-          sleep 10
       - name: Plan
         id: plan
         continue-on-error: true
+        # TODO(cutover): drop this env block once state has no netbird_* resources left to destroy.
+        env:
+          TF_VAR_netbird_token: ${{ env.NETBIRD_SA_TOKEN }}
         run: |
           if terraform plan -no-color -out=tfplan > /tmp/tf-plan-full.txt 2>&1; then
             terraform show -no-color tfplan > /tmp/tf-plan.txt
@@ -107,8 +76,6 @@ jobs:
             echo "PLAN_STATUS=failed" >> "$GITHUB_ENV"
             exit 1
           fi
-        env:
-          TF_VAR_netbird_token: ${{ env.NETBIRD_SA_TOKEN }}
       - name: Extract rendered Tailscale ACL
         id: tailscale_acl
         if: steps.plan.outcome == 'success'
@@ -217,20 +184,10 @@ jobs:
           exit 1
       - name: Apply
         if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve tfplan
+        # TODO(cutover): drop this env block once state has no netbird_* resources left to destroy.
         env:
           TF_VAR_netbird_token: ${{ env.NETBIRD_SA_TOKEN }}
-      - name: Revoke NetBird Setup Key
-        if: always()
-        run: |
-          if [ -z "$NB_SETUP_KEY_ID" ] || [ "$NB_SETUP_KEY_ID" = "null" ]; then
-            echo "No setup key to revoke"
-            exit 0
-          fi
-          curl -fsSL -X DELETE \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
-          echo "Setup key revoked"
+        run: terraform apply -auto-approve tfplan
 
   omni:
     name: "Omni"
@@ -316,43 +273,13 @@ jobs:
           secret-path: "/github-actions"
           export-type: env
 
-      - name: Setup NetBird client
+      - name: Connect to Tailscale
         if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
-        run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
-
-      - name: Generate NetBird Setup Key
-        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
-        run: |
-          NB_GROUP_ID=$(curl -fsSL \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            https://api.netbird.io/api/groups \
-            | jq -r '.[] | select(.name == "GitHub Actions") | .id')
-
-          if [ -z "$NB_GROUP_ID" ] || [ "$NB_GROUP_ID" = "null" ]; then
-            echo "Failed to find GitHub Actions group" && exit 1
-          fi
-
-          NB_KEY_RESPONSE=$(curl -fsSL -X POST \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            -H "Content-Type: application/json" \
-            https://api.netbird.io/api/setup-keys \
-            -d "{\"name\":\"github-actions-${GITHUB_RUN_ID}\",\"type\":\"one-off\",\"expires_in\":900,\"revokable\":true,\"ephemeral\":true,\"auto_groups\":[\"$NB_GROUP_ID\"]}")
-
-          NB_SETUP_KEY=$(echo "$NB_KEY_RESPONSE" | jq -r '.key')
-          NB_SETUP_KEY_ID=$(echo "$NB_KEY_RESPONSE" | jq -r '.id')
-
-          if [ -z "$NB_SETUP_KEY" ] || [ "$NB_SETUP_KEY" = "null" ]; then
-            echo "Failed to generate NetBird setup key" && exit 1
-          fi
-          echo "::add-mask::$NB_SETUP_KEY"
-          echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
-          echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
-
-      - name: Connect to NetBird
-        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
-        run: |
-          netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
-          sleep 10
+        uses: tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888  # v4.1.3
+        with:
+          oauth-client-id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ env.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tags: tag:github-actions
 
       - name: Check Omni reachability
         id: omni_check
@@ -554,18 +481,6 @@ jobs:
           echo "One or more cluster template plans failed. See PR comments for details."
           exit 1
 
-      - name: Revoke NetBird Setup Key
-        if: always()
-        run: |
-          if [ -z "${NB_SETUP_KEY_ID:-}" ] || [ "${NB_SETUP_KEY_ID}" = "null" ]; then
-            echo "No setup key to revoke"
-            exit 0
-          fi
-          curl -fsSL -X DELETE \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
-          echo "Setup key revoked"
-
   ansible:
     name: "Ansible"
     runs-on: ubuntu-latest
@@ -585,40 +500,12 @@ jobs:
           secret-path: "/github-actions"
           export-type: env
 
-      - name: Setup NetBird client
-        run: curl -fsSL https://pkgs.netbird.io/install.sh | sh
-
-      - name: Generate NetBird Setup Key
-        run: |
-          NB_GROUP_ID=$(curl -fsSL \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            https://api.netbird.io/api/groups \
-            | jq -r '.[] | select(.name == "GitHub Actions") | .id')
-
-          if [ -z "$NB_GROUP_ID" ] || [ "$NB_GROUP_ID" = "null" ]; then
-            echo "Failed to find GitHub Actions group" && exit 1
-          fi
-
-          NB_KEY_RESPONSE=$(curl -fsSL -X POST \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            -H "Content-Type: application/json" \
-            https://api.netbird.io/api/setup-keys \
-            -d "{\"name\":\"github-actions-${GITHUB_RUN_ID}\",\"type\":\"one-off\",\"expires_in\":900,\"revokable\":true,\"ephemeral\":true,\"auto_groups\":[\"$NB_GROUP_ID\"]}")
-
-          NB_SETUP_KEY=$(echo "$NB_KEY_RESPONSE" | jq -r '.key')
-          NB_SETUP_KEY_ID=$(echo "$NB_KEY_RESPONSE" | jq -r '.id')
-
-          if [ -z "$NB_SETUP_KEY" ] || [ "$NB_SETUP_KEY" = "null" ]; then
-            echo "Failed to generate NetBird setup key" && exit 1
-          fi
-          echo "::add-mask::$NB_SETUP_KEY"
-          echo "NB_SETUP_KEY=$NB_SETUP_KEY" >> "$GITHUB_ENV"
-          echo "NB_SETUP_KEY_ID=$NB_SETUP_KEY_ID" >> "$GITHUB_ENV"
-
-      - name: Connect to NetBird
-        run: |
-          netbird up --setup-key "$NB_SETUP_KEY" --hostname "github-actions-${GITHUB_RUN_ID}"
-          sleep 10
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888  # v4.1.3
+        with:
+          oauth-client-id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ env.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tags: tag:github-actions
 
       - name: Request OIDC Token
         run: |
@@ -665,15 +552,3 @@ jobs:
           INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: ansible-playbook playbooks/bootstrap-cluster.yml
-
-      - name: Revoke NetBird Setup Key
-        if: always()
-        run: |
-          if [ -z "${NB_SETUP_KEY_ID:-}" ] || [ "${NB_SETUP_KEY_ID}" = "null" ]; then
-            echo "No setup key to revoke"
-            exit 0
-          fi
-          curl -fsSL -X DELETE \
-            -H "Authorization: Token $NETBIRD_SA_TOKEN" \
-            "https://api.netbird.io/api/setup-keys/${NB_SETUP_KEY_ID}"
-          echo "Setup key revoked"

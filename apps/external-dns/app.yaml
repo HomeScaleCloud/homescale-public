@@ -2,14 +2,11 @@ path: apps/external-dns
 namespace: external-dns
 releaseName: external-dns
 syncWave: -10
-# Core infra now, same tier as netbird/tailscale-operator: every cluster
-# needs its own external-dns to publish REDACTED records for
-# whatever it exposes over Tailscale (argocd, metrics, and eventually
-# tailscale-operator's apiserver-proxy all run per-cluster). Previously
-# opt-in (mgmt only, for the unrelated REDACTED/traefik-public
-# case) -- upsert-only policy + per-cluster txtOwnerId below make it safe to
-# run everywhere without risk of one cluster's instance touching another's
-# records.
+# Core infra now, same tier as tailscale: every cluster needs its
+# own external-dns to publish REDACTED records for whatever
+# it exposes over Tailscale. Previously opt-in (mgmt only, for the unrelated
+# REDACTED/traefik-public case) -- upsert-only policy +
+# per-cluster txtOwnerId below make it safe to run everywhere.
 defaultDeploy: true
 values:
   cluster:

@@ -109,7 +109,7 @@ Omni handles the upgrade sequence — control plane nodes first, then workers �
 
 ## Terraform
 
-Cloud resources (Cloudflare DNS, Vultr, Infisical project setup, NetBird configuration, mgmt cluster provisioning) live in `infra/terraform/`. State is in [Terraform Cloud](https://developer.hashicorp.com/terraform/cloud-docs) (`homescale` org, `homescale` workspace).
+Cloud resources (Cloudflare DNS, Vultr, Infisical project setup, Tailscale configuration, mgmt cluster provisioning) live in `infra/terraform/`. State is in [Terraform Cloud](https://developer.hashicorp.com/terraform/cloud-docs) (`homescale` org, `homescale` workspace).
 
 Terraform runs only in CI — it uses GitHub OIDC for Infisical auth and cannot be run locally. On merge to `main`, CI runs `terraform apply` automatically (after `scan` and `build` pass). On PRs, CI runs `terraform plan` and posts the plan as a PR comment.
 
@@ -123,8 +123,7 @@ terraform -chdir=infra/terraform fmt
 
 | Module | What it manages |
 |--------|----------------|
-| `modules/netbird/` | NetBird policies and groups — reads `netbird:` blocks from `app.yaml` files via `fileset` |
+| `modules/tailscale/` | Tailscale ACL, tags, and OAuth clients — reads `tailscale:` blocks from `app.yaml` files via `fileset` |
 | `modules/cloudflare/` | DNS records and Cloudflare Zero Trust Tunnel config — reads `exposePublic:` from `app.yaml` |
 | `modules/infisical/` | Infisical project structure and machine identities. VolSync's per-app secret scaffolding is separate — see `volsync.tf` in the Terraform root |
 | `modules/mgmt_cluster/` | The `mgmt` Vultr Kubernetes cluster and its Infisical kubeconfig secret. Does not bootstrap ArgoCD — the bootstrap `apps.yaml` is applied manually once, per cluster |
-| `modules/region/` | Regional bare-metal/cloud resources (NetBird subnet routing, secrets) — defined but not yet instantiated (commented out in `main.tf`) |

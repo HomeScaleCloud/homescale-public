@@ -31,21 +31,6 @@ rules:
       - serverstransports
       - serverstransporttcps
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["netbird.io"]
-    resources:
-      - clusterproxies
-      - groups
-      - nbgroups
-      - nbpolicies
-      - nbresources
-      - nbroutingpeers
-      - nbsetupkeys
-      - networkegresses
-      - networkresources
-      - networkrouters
-      - setupkeys
-      - sidecarprofiles
-    verbs: ["get", "list", "watch"]
   - apiGroups: ["tailscale.com"]
     resources:
       - connectors

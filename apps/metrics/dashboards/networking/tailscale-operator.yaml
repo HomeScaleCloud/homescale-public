@@ -1,0 +1,460 @@
+title: Tailscale Operator
+uid: tailscale-operator
+tags:
+  - tailscale
+  - networking
+editable: true
+graphTooltip: 1
+refresh: 1m
+schemaVersion: 38
+version: 1
+time:
+  from: now-24h
+  to: now
+timepicker: {}
+fiscalYearStartMonth: 0
+links: []
+annotations:
+  list: []
+templating:
+  list:
+    - current: {}
+      hide: 0
+      includeAll: false
+      multi: false
+      name: datasource
+      options: []
+      query: prometheus
+      refresh: 1
+      regex: ''
+      type: datasource
+    - datasource:
+        type: prometheus
+        uid: ${datasource}
+      definition: label_values(kube_customresource_tailscale_proxygroup_status_condition, cluster)
+      hide: 0
+      includeAll: true
+      multi: false
+      name: cluster
+      query:
+        query: label_values(kube_customresource_tailscale_proxygroup_status_condition, cluster)
+        refId: StandardVariableQuery
+      refresh: 2
+      sort: 1
+      type: query
+      allValue: .*
+panels:
+  - type: row
+    title: Alerts
+    id: 100
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 0
+    panels:
+      - type: state-timeline
+        title: Alert Timeline
+        id: 101
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 1
+        options:
+          alignValue: left
+          legend:
+            displayMode: list
+            placement: bottom
+            showLegend: true
+          mergeValues: true
+          rowHeight: 0.9
+          showValue: auto
+          tooltip:
+            mode: single
+            sort: none
+        fieldConfig:
+          defaults:
+            color:
+              mode: thresholds
+            custom:
+              fillOpacity: 70
+              hideFrom:
+                legend: false
+                tooltip: false
+                viz: false
+              lineWidth: 0
+              spanNulls: false
+            mappings:
+              - type: value
+                options:
+                  '1':
+                    color: yellow
+                    index: 0
+                    text: Warning / Pending
+                  '2':
+                    color: red
+                    index: 1
+                    text: Critical (Firing)
+            thresholds:
+              mode: absolute
+              steps:
+                - color: green
+                  value: null
+                - color: yellow
+                  value: 1
+                - color: red
+                  value: 2
+          overrides: []
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${datasource}
+            expr: max without (alertstate) ((ALERTS{cluster=~"$cluster", alertname=~"Tailscale.*", severity="critical", alertstate="firing"} * 2) or (ALERTS{cluster=~"$cluster", alertname=~"Tailscale.*", alertstate="pending"} * 1) or (ALERTS{cluster=~"$cluster", alertname=~"Tailscale.*", severity="warning"} * 1))
+            legendFormat: '{{alertname}} [{{severity}}]'
+            range: true
+            instant: false
+            refId: A
+      - type: table
+        title: Active Alerts
+        id: 102
+        datasource:
+          type: prometheus
+          uid: ${datasource}
+        gridPos:
+          h: 8
+          w: 24
+          x: 0
+          'y': 9
+        options:
+          cellHeight: sm
+          footer:
+            countRows: false
+            fields: ''
+            reducer:
+              - sum
+            show: false
+          showHeader: true
+          sortBy:
+            - desc: false
+              displayName: alertname
+        fieldConfig:
+          defaults:
+            custom:
+              align: auto
+              cellOptions:
+                type: auto
+              inspect: false
+          overrides:
+            - matcher:
+                id: byName
+                options: alertstate
+              properties:
+                - id: custom.width
+                  value: 90
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        firing:
+                          color: red
+                          index: 0
+                          text: firing
+                        pending:
+                          color: yellow
+                          index: 1
+                          text: pending
+            - matcher:
+                id: byName
+                options: severity
+              properties:
+                - id: custom.width
+                  value: 100
+                - id: custom.cellOptions
+                  value:
+                    type: color-background
+                    mode: basic
+                - id: mappings
+                  value:
+                    - type: value
+                      options:
+                        warning:
+                          color: yellow
+                          index: 0
+                          text: warning
+                        critical:
+                          color: red
+                          index: 1
+                          text: critical
+            - matcher:
+                id: byName
+                options: alertname
+              properties:
+                - id: custom.width
+                  value: 300
+        targets:
+          - datasource:
+              type: prometheus
+              uid: ${datasource}
+            expr: ALERTS{cluster=~"$cluster", alertname=~"Tailscale.*", alertstate=~"firing|pending"}
+            instant: true
+            format: table
+            legendFormat: ''
+            refId: A
+        transformations:
+          - id: organize
+            options:
+              excludeByName:
+                Time: true
+                Value: true
+                __name__: true
+                endpoint: true
+                instance: true
+                job: true
+                prometheus: true
+                prometheus_replica: true
+                service: true
+                container: true
+              indexByName:
+                alertname: 0
+                alertstate: 1
+                severity: 2
+                cluster: 3
+              renameByName: {}
+  - type: row
+    title: Operator
+    id: 200
+    collapsed: false
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 10
+    panels: []
+  - type: stat
+    title: Operator Available Replicas
+    id: 201
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 6
+      w: 8
+      x: 0
+      'y': 11
+    options:
+      colorMode: background
+      graphMode: none
+      justifyMode: auto
+      orientation: horizontal
+      reduceOptions:
+        calcs: [lastNotNull]
+        fields: ''
+        values: false
+      textMode: auto
+    fieldConfig:
+      defaults:
+        color:
+          mode: thresholds
+        mappings: []
+        thresholds:
+          mode: absolute
+          steps:
+            - color: red
+              value: null
+            - color: green
+              value: 1
+      overrides: []
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: kube_deployment_status_replicas_available{cluster=~"$cluster", namespace="tailscale", deployment="operator"}
+        legendFormat: '{{cluster}}'
+        range: false
+        instant: true
+        refId: A
+  - type: table
+    title: ProxyGroup Status
+    id: 202
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 12
+      x: 8
+      'y': 11
+    options:
+      cellHeight: sm
+      showHeader: true
+    fieldConfig:
+      defaults:
+        custom:
+          align: auto
+          cellOptions:
+            type: auto
+          inspect: false
+        mappings:
+          - type: value
+            options:
+              '1':
+                color: green
+                index: 0
+                text: Ready
+              '0':
+                color: red
+                index: 1
+                text: Not Ready
+      overrides:
+        - matcher:
+            id: byName
+            options: Value
+          properties:
+            - id: custom.cellOptions
+              value:
+                type: color-background
+                mode: basic
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: kube_customresource_tailscale_proxygroup_status_condition{cluster=~"$cluster", condition="ProxyGroupReady"}
+        instant: true
+        format: table
+        legendFormat: ''
+        refId: A
+    transformations:
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            __name__: true
+            condition: true
+            endpoint: true
+            instance: true
+            job: true
+            prometheus: true
+            prometheus_replica: true
+            service: true
+            container: true
+          indexByName:
+            cluster: 0
+            name: 1
+            reason: 2
+            Value: 3
+          renameByName: {}
+  - type: table
+    title: ProxyClass Status
+    id: 203
+    datasource:
+      type: prometheus
+      uid: ${datasource}
+    gridPos:
+      h: 8
+      w: 4
+      x: 20
+      'y': 11
+    options:
+      cellHeight: sm
+      showHeader: true
+    fieldConfig:
+      defaults:
+        custom:
+          align: auto
+          cellOptions:
+            type: auto
+          inspect: false
+        mappings:
+          - type: value
+            options:
+              '1':
+                color: green
+                index: 0
+                text: Ready
+              '0':
+                color: red
+                index: 1
+                text: Not Ready
+      overrides:
+        - matcher:
+            id: byName
+            options: Value
+          properties:
+            - id: custom.cellOptions
+              value:
+                type: color-background
+                mode: basic
+    targets:
+      - datasource:
+          type: prometheus
+          uid: ${datasource}
+        expr: kube_customresource_tailscale_proxyclass_status_condition{cluster=~"$cluster", condition="ProxyClassReady"}
+        instant: true
+        format: table
+        legendFormat: ''
+        refId: A
+    transformations:
+      - id: organize
+        options:
+          excludeByName:
+            Time: true
+            __name__: true
+            condition: true
+            endpoint: true
+            instance: true
+            job: true
+            prometheus: true
+            prometheus_replica: true
+            service: true
+            container: true
+          indexByName:
+            cluster: 0
+            name: 1
+            reason: 2
+            Value: 3
+          renameByName: {}
+  - type: row
+    title: Logs
+    id: 300
+    collapsed: true
+    gridPos:
+      h: 1
+      w: 24
+      x: 0
+      'y': 19
+    panels:
+      - type: logs
+        title: Operator Pod Logs
+        id: 301
+        datasource:
+          type: loki
+          uid: loki
+        gridPos:
+          h: 10
+          w: 24
+          x: 0
+          'y': 20
+        options:
+          dedupStrategy: none
+          enableLogDetails: true
+          prettifyLogMessage: false
+          showCommonLabels: false
+          showLabels: false
+          showTime: true
+          sortOrder: Descending
+        targets:
+          - datasource:
+              type: loki
+              uid: loki
+            expr: '{cluster=~"$cluster", namespace="tailscale", pod=~"operator.*"}'
+            queryType: range
+            refId: A

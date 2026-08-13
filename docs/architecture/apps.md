@@ -23,7 +23,7 @@ Apps with both a `Chart.yaml` and a `Dockerfile` under `apps/<name>/` are built 
 |-------|------|---------|-------------|
 | `defaultDeploy` | bool | `false` | Deploy to every cluster unless overridden |
 
-Deployment overrides — enabling/disabling on a specific cluster, or overriding any other field — are **not** set here. They live in [`clusters/<cluster>/apps.yaml`](../operations/deploying-an-app.md#deployment-overrides) instead, under an `apps:` map keyed by app directory name. The override object is merged directly onto the entire base `app.yaml`, so any top-level key (`values`, `syncWave`, `podSecurity`, `netbird`, `exposePublic`, `ignoreDifferences`, ...) can be overridden per cluster, not just `deploy`/`values`:
+Deployment overrides — enabling/disabling on a specific cluster, or overriding any other field — are **not** set here. They live in [`clusters/<cluster>/apps.yaml`](../operations/deploying-an-app.md#deployment-overrides) instead, under an `apps:` map keyed by app directory name. The override object is merged directly onto the entire base `app.yaml`, so any top-level key (`values`, `syncWave`, `podSecurity`, `tailscale`, `exposePublic`, `ignoreDifferences`, ...) can be overridden per cluster, not just `deploy`/`values`:
 
 ```yaml
 # clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
@@ -35,7 +35,7 @@ apps:
       someKey: clusterSpecificValue   # deep-merged over the base app.yaml, for boa1-prod only
 ```
 
-The merge is a deep merge on maps, but **lists are replaced wholesale, not concatenated** — overriding `values.someList: [z]` replaces a base `[a, b]` entirely rather than appending to it. This matters for list-valued fields like `ignoreDifferences` or `netbird.policy.rules`.
+The merge is a deep merge on maps, but **lists are replaced wholesale, not concatenated** — overriding `values.someList: [z]` replaces a base `[a, b]` entirely rather than appending to it. This matters for list-valued fields like `ignoreDifferences` or `tailscale.policy.rules`.
 
 See [Deployment overrides](../operations/deploying-an-app.md#deployment-overrides) for the full pattern.
 
@@ -115,74 +115,71 @@ By default, `destination.server` resolves to `https://kubernetes.default.svc` (t
 
 ---
 
-### NetBird access policy (`netbird:`)
+### Tailscale access policy (`tailscale:`)
 
-Defines who can reach this app across the NetBird mesh. If absent, access is **denied by default**.
+Defines who can reach this app over the tailnet. If absent, access is **denied by default**.
 
 ```yaml
-netbird:
+tailscale:
   policy:
     rules:
-      - sources: ["team-infra-plat", "app:other-app"]
+      - sources: ["group:team-infra-plat@REDACTED", "app:other-app"]
         protocol: tcp
         ports: ["443", "9090"]
-      - sources: ["all"]
+      - sources: ["*"]
         protocol: udp
         ports: ["25565"]
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `netbird.policy.rules` | list | One or more access rules. Each rule becomes a separate `netbird_policy` resource named `app-<name>` (single rule) or `app-<name>-0`, `app-<name>-1`, … (multiple rules) |
-| `rules[].sources` | list of strings | Source groups that are granted access. See valid values below |
+| `tailscale.policy.rules` | list | One or more access rules. All apps' rules are flattened into a single `tailscale_acl` resource (Tailscale's ACL is one policy document, not many discrete objects) |
+| `rules[].sources` | list of strings | Source identifiers granted access — always the literal ACL value, not a short alias (see below) |
 | `rules[].protocol` | string | `tcp` or `udp` |
 | `rules[].ports` | list of strings | Port numbers as strings (e.g. `["80", "443"]`) |
 
-The **destination** is always the app's own NetBird group (`app-<name>`), created automatically by Terraform for every app directory.
+The **destination** is always the app's own tag (`tag:app-<name>`), auto-registered in `tagOwners` by Terraform for every app directory.
 
-**Valid `sources` values:**
+**`sources` values are literal ACL identifiers, spelled out in full — there's no short-alias remapping:**
 
 | Value | Who |
 |-------|-----|
-| `team-infra-plat` | Infrastructure platform team |
-| `team-sec-plat` | Security platform team |
-| `github-actions` | CI/CD runners |
-| `owners` | Owners group (personal/family access) |
-| `sg-k8s-admin` | Kubernetes admins |
-| `all` | Everyone on the NetBird mesh |
-| `app:<name>` | Another app's NetBird group (colon-separated, e.g. `app:metrics`) |
+| `group:<name>@REDACTED` | An Entra ID group, SCIM-synced into Tailscale (e.g. `group:team-infra-plat@REDACTED`, `group:owners@REDACTED`) |
+| `tag:github-actions` | CI/CD runners |
+| `tag:app-<name>` | Another app's own tag (e.g. `tag:app-metrics`) |
+| `*` | Everyone on the tailnet |
 
 ---
 
-### NetBird private DNS (`netbird.cname:`)
+### Exposing a Service on the tailnet
 
-!!! warning "Mostly a Terraform input, not Helm config"
-    Terraform (`infra/terraform/modules/netbird/`) reads this block directly to create a per-app `netbird_dns_zone` and one `netbird_dns_record` per entry — that's its real purpose, and it has no other effect on Helm rendering. Never delete it thinking it's dead config. One caveat: the app catalog chart *does* read each entry's `fqdn` (only) to populate `.Values.homescale.netbirdCnameFqdns` — see [below](#using-cname-lists-in-your-chart-valueshomescale).
-
-Gives an app a pretty private DNS name on the NetBird mesh, aliasing to its auto-registered `<service>.<namespace>.<cluster>REDACTED` address. The first `netbird.cname` entry for an app causes Terraform to create a dedicated zone named `<app-name>REDACTED`; every entry's `fqdn` must be a subdomain of that zone.
+Unlike NetBird, Tailscale doesn't auto-register a Service once a `tailscale:` policy exists — you also mark the Service itself for exposure:
 
 ```yaml
-netbird:
-  cname:
-    - fqdn: REDACTED   # must be a subdomain of <app-name>REDACTED
-      cluster: boa1-prod                    # which cluster's k8s Service to alias
-      service: myapp                        # optional, defaults to releaseName (falls back to app dir name)
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `cname` | list | One or more private DNS aliases for this app |
-| `cname[].fqdn` | string | Private hostname; must be a subdomain of the app's auto-created `<app-name>REDACTED` zone |
-| `cname[].cluster` | string | Cluster whose `<service>.<namespace>.<cluster>REDACTED` address this record points to |
-| `cname[].service` | string | Optional. Kubernetes Service name to alias. Defaults to `releaseName` (or the app directory name) |
+with annotations giving it a tailnet identity and (optionally) a friendly internal DNS name:
 
-!!! note "No port field"
-    A NetBird CNAME is a plain DNS alias, not a reverse proxy — it doesn't translate ports the way `exposePublic`'s Cloudflare tunnel does. Callers still connect on the target service's actual port.
+```yaml
+metadata:
+  annotations:
+    tailscale.com/tags: "tag:k8s,tag:app-myapp,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "myapp-{{ .Values.cluster.name }}"
+    tailscale.com/proxy-group: ingress
+    external-dns.alpha.kubernetes.io/hostname: "myapp.{{ .Values.cluster.name }}REDACTED"
+```
 
-Requires a matching [`netbird.policy`](#netbird-access-policy-netbird) rule to actually grant access — the DNS record alone doesn't open the mesh.
+| Annotation | Description |
+|------------|-------------|
+| `tailscale.com/tags` | Tags applied to the tailnet device for this Service. Always include `tag:k8s` and `tag:app-<name>`; add `tag:cluster-<name>` for anything cluster-scoped |
+| `tailscale.com/hostname` | The MagicDNS label for this device (`<hostname>.<tailnet>.ts.net`) |
+| `tailscale.com/proxy-group` | Set to `ingress` to route through the cluster's shared ingress `ProxyGroup` (from the `tailscale` app) instead of provisioning a dedicated proxy pod |
+| `external-dns.alpha.kubernetes.io/hostname` | Optional. Publishes a friendly `REDACTED` CNAME (via `external-dns`, running in every cluster) pointing at whatever tailnet hostname the Operator assigns — this replaces NetBird's `netbird.cname:` block entirely, no separate Terraform-managed DNS zone involved |
 
-!!! warning "Avoid zone-name collisions"
-    An app name that collides with an existing NetBird DNS zone (a cluster name like `boa1-prod`, or `metrics`) will conflict with that zone at `apply` time. Pick app names that don't shadow existing zones.
+Requires a matching [`tailscale.policy`](#tailscale-access-policy-tailscale) rule to actually grant access — exposing the Service alone doesn't open the tailnet.
 
 ---
 
@@ -222,16 +219,15 @@ exposePublic:
 
 ---
 
-### Using CNAME lists in your chart (`.Values.homescale`)
+### Using exposePublic FQDNs in your chart (`.Values.homescale`)
 
-Unlike the rest of `exposePublic:`/`netbird:`, the flattened list of FQDNs from both blocks *is* forwarded into the chart as regular Helm values — `apps/templates/applications.yaml` computes it from the app's own `app.yaml` (before any per-cluster override) and injects it for every app, so a chart can reference its own hostnames without hardcoding them (e.g. as `Certificate` `dnsNames`):
+Unlike `tailscale:`, the flattened list of FQDNs from `exposePublic:` *is* forwarded into the chart as a regular Helm value — `apps/templates/applications.yaml` computes it from the app's own `app.yaml` (before any per-cluster override) and injects it for every app, so a chart can reference its own public hostnames without hardcoding them (e.g. as `Certificate` `dnsNames`):
 
 ```yaml
 .Values.homescale.exposePublicFqdns   # list of strings, from this app's exposePublic[].fqdn
-.Values.homescale.netbirdCnameFqdns   # list of strings, from this app's netbird.cname[].fqdn
 ```
 
-Both are always present (as empty lists if the app has no entries). A chart template consuming them should still guard against being rendered standalone (e.g. via `helm template <name> apps/<name>/`, which doesn't go through `apps/templates/applications.yaml` and so never sets `.Values.homescale`):
+Always present (as an empty list if the app has no entries). A chart template consuming it should still guard against being rendered standalone (e.g. via `helm template <name> apps/<name>/`, which doesn't go through `apps/templates/applications.yaml` and so never sets `.Values.homescale`):
 
 ```yaml
 {{- $homescale := default (dict) .Values.homescale }}
@@ -239,12 +235,9 @@ dnsNames:
 {{- range (default (list) $homescale.exposePublicFqdns) }}
   - {{ . }}
 {{- end }}
-{{- range (default (list) $homescale.netbirdCnameFqdns) }}
-  - {{ . }}
-{{- end }}
 ```
 
-See `apps/omni/templates/certificate.yaml` for a real example, including keeping old hostnames around as a static fallback SAN when renaming.
+Tailscale-side internal hostnames don't go through this mechanism — a Service's `external-dns.alpha.kubernetes.io/hostname` annotation (see [Exposing a Service on the tailnet](#exposing-a-service-on-the-tailnet)) is what actually publishes the DNS record, so a chart's `Certificate` `dnsNames` should list those hostnames directly rather than reading them from `.Values.homescale`. See `apps/omni/templates/certificate.yaml` for a real example, including keeping old hostnames around as a static fallback SAN when renaming.
 
 ---
 
@@ -274,15 +267,12 @@ ignoreDifferences:
     jsonPointers:
       - /webhooks
 
-netbird:
+tailscale:
   policy:
     rules:
-      - sources: ["team-infra-plat"]
+      - sources: ["group:team-infra-plat@REDACTED"]
         protocol: tcp
         ports: ["443"]
-  cname:
-    - fqdn: REDACTED
-      cluster: boa1-prod
 
 exposePublic:
   - cluster: boa1-prod

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# hsctl switch — fuzzy-switch kubeconfig context (local + live NetBird clusters)
+# hsctl switch — fuzzy-switch kubeconfig context (local + live Tailscale clusters)
 
 switch_main() {
     [[ $# -gt 0 ]] && { echo "Usage: hsctl switch"; exit 1; }

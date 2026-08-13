@@ -27,4 +27,4 @@ The alert fires per PDU (`$labels.job` / `$labels.instance`). Currently monitore
 
 ## Physical access
 
-If remote management is unavailable, the PDU display panel shows current load and outlet status. The region's BMC subnet is routable over NetBird via the region's gw cluster.
+If remote management is unavailable, the PDU display panel shows current load and outlet status. Region BMC subnet routing via the gateway cluster isn't implemented yet (the dormant NetBird subnet-router module was removed rather than ported to Tailscale).

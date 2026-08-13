@@ -42,15 +42,13 @@ Runbooks for alerts fired by Prometheus. Each alert links back to this page via 
 | [VolSyncMoverJobFailed](volsync-mover-job-failed.md) | critical |
 | [VolSyncControllerDown](volsync-controller-down.md) | critical |
 
-## NetBird
+## Tailscale
 
 | Alert | Severity |
 |-------|----------|
-| [NetBirdOperatorDown](netbird-operator-down.md) | critical |
-| [NetBirdNetworkRouterNotReady](netbird-networkrouter-not-ready.md) | critical |
-| [NetBirdNetworkResourceNotReady](netbird-networkresource-not-ready.md) | warning |
-| [NetBirdReconcileErrors](netbird-reconcile-errors.md) | warning |
-| [NetBirdWorkqueueBacklog](netbird-workqueue-backlog.md) | warning |
+| [TailscaleOperatorDown](tailscale-operator-down.md) | critical |
+| [TailscaleProxyGroupNotReady](tailscale-proxygroup-not-ready.md) | critical |
+| [TailscaleProxyClassNotReady](tailscale-proxyclass-not-ready.md) | warning |
 
 ## Longhorn
 

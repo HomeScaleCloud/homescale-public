@@ -1,6 +1,6 @@
 # hsctl
 
-`hsctl` is a small bash CLI for day-to-day operator tasks against the HomeScale fleet — listing clusters and machines, fetching kubeconfigs, browsing restic snapshots, power-cycling machines, jumping into ArgoCD, and managing Entra PIM assignments. Most commands talk to Omni and each cluster's API server over NetBird, so they require an active NetBird connection — the exception is `hsctl pim` and the `pim*` resources under `hsctl get`, which talk to Microsoft Graph/ARM directly and don't need NetBird.
+`hsctl` is a small bash CLI for day-to-day operator tasks against the HomeScale fleet — listing clusters and machines, fetching kubeconfigs, browsing restic snapshots, power-cycling machines, jumping into ArgoCD, and managing Entra PIM assignments. Most commands talk to Omni and each cluster's API server over Tailscale, so they require an active Tailscale connection — the exception is `hsctl pim` and the `pim*` resources under `hsctl get`, which talk to Microsoft Graph/ARM directly and don't need Tailscale.
 
 Source: `hsctl` (entrypoint) and `hsctl.d/*.sh` (one file per top-level command) at the repo root.
 
@@ -24,7 +24,7 @@ Output format defaults to `table`; pass `-o yaml` or `-o json` for scripting.
 
 | Resource | Usage | Description |
 |----------|-------|-------------|
-| `clusters` | `hsctl get clusters` | List Kubernetes clusters reachable via NetBird |
+| `clusters` | `hsctl get clusters` | List Kubernetes clusters reachable via Tailscale |
 | `kubeconfig` | `hsctl get kubeconfig <cluster> [--omni\|--break-glass]` | Write a kubeconfig context for `<cluster>`. Default: [direct to the real apiserver](../architecture/networking.md#direct-cluster-api-access) with OIDC login (`kubectl-oidc_login`, [krew](https://krew.sigs.k8s.io/) plugin, required; OIDC issuer/client ID fetched from Infisical at `/k8s/oidc`). `--omni` runs `omnictl kubeconfig --cluster <cluster>`. `--break-glass` runs `omnictl kubeconfig --break-glass --cluster <cluster>` to bypass Omni and access nodes directly |
 | `machines` | `hsctl get machines [--cluster <name>]` | List all Omni machines with power state, enriched with node name, cluster, and role for machines already assigned to a cluster. Filter to one cluster with `--cluster`/`-c` |
 | `machine` | `hsctl get machine <id\|node-name>` | Show details for a single machine, by Omni machine ID or Kubernetes node name |
@@ -41,7 +41,7 @@ hsctl argocd login <cluster>   # argocd CLI login via SSO to that cluster's Argo
 hsctl argocd open <cluster>    # open that cluster's ArgoCD UI in the browser
 ```
 
-Both resolve to `argocd-server.argocd.<cluster>REDACTED` — the [NetBird internal service address](../architecture/networking.md#internal-service-exposure) for ArgoCD on that cluster.
+Both resolve to `argocd.<cluster>REDACTED` — the [Tailscale internal service address](../architecture/networking.md#internal-service-exposure) for ArgoCD on that cluster.
 
 ## `hsctl machine`
 
@@ -92,4 +92,4 @@ The `hsctl` app registration's delegated Graph permissions (all admin-consented)
 hsctl switch
 ```
 
-Fuzzy-picker (requires [`fzf`](https://github.com/junegunn/fzf), `brew install fzf`) over both your existing local kubeconfig contexts and every cluster currently reachable via NetBird (`hsctl get clusters`). Selecting a live cluster you don't have a context for yet runs `hsctl get kubeconfig` for you first. Switches with `kubectl config use-context` and prints the resulting default namespace.
+Fuzzy-picker (requires [`fzf`](https://github.com/junegunn/fzf), `brew install fzf`) over both your existing local kubeconfig contexts and every cluster currently reachable via Tailscale (`hsctl get clusters`). Selecting a live cluster you don't have a context for yet runs `hsctl get kubeconfig` for you first. Switches with `kubectl config use-context` and prints the resulting default namespace.

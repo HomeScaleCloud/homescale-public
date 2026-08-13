@@ -1,8 +1,0 @@
-apiVersion: netbird.io/v1alpha1
-kind: NetworkRouter
-metadata:
-  name: '{{ required "cluster.name is required" .Values.cluster.name }}'
-  namespace: netbird
-spec:
-  dnsZoneRef:
-    name: '{{ required "cluster.name is required" .Values.cluster.name }}REDACTED'

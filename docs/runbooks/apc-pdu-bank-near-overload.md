@@ -36,4 +36,4 @@ This is a critical alert because:
 
 ## PDU web UI access
 
-The PDU management interface is reachable over NetBird via the region's gw cluster, which routes the region's BMC subnet.
+Region BMC subnet routing via the gateway cluster isn't implemented yet (the dormant NetBird subnet-router module was removed rather than ported); until a Tailscale `Connector`-based equivalent exists, reach the PDU management interface directly on the local network.

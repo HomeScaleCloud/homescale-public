@@ -5,7 +5,7 @@ metadata:
   labels:
     REDACTED/name: "{{ .Release.Name }}"
   annotations:
-    tailscale.com/tags: "tag:app-homecraft,tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-homecraft,tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}"
     tailscale.com/hostname: "mc-{{ required "cluster.name is required" .Values.cluster.name }}"
     tailscale.com/proxy-group: ingress
     external-dns.alpha.kubernetes.io/hostname: "homecraft.{{ required "cluster.name is required" .Values.cluster.name }}REDACTED"

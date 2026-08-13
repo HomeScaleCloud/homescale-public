@@ -1,5 +1,5 @@
 apiVersion: v2
-name: tailscale-operator
+name: tailscale
 description: Helm chart for the Tailscale Kubernetes Operator
 type: application
 version: 0.1.0

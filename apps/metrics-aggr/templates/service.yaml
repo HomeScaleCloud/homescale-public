@@ -3,8 +3,14 @@ kind: Service
 metadata:
   name: prometheus
   namespace: metrics
+  annotations:
+    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-boa1-prod"
+    tailscale.com/hostname: "prometheus-metrics-boa1-prod-aggr"
+    tailscale.com/proxy-group: ingress
+    external-dns.alpha.kubernetes.io/hostname: "REDACTED"
 spec:
-  type: ClusterIP
+  type: LoadBalancer
+  loadBalancerClass: tailscale
   ports:
     - name: http-web
       port: 9090
@@ -19,8 +25,14 @@ kind: Service
 metadata:
   name: loki
   namespace: metrics
+  annotations:
+    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-boa1-prod"
+    tailscale.com/hostname: "loki-metrics-boa1-prod"
+    tailscale.com/proxy-group: ingress
+    external-dns.alpha.kubernetes.io/hostname: "REDACTED"
 spec:
-  type: ClusterIP
+  type: LoadBalancer
+  loadBalancerClass: tailscale
   ports:
     - name: http-metrics
       port: 3100

@@ -18,7 +18,7 @@ PR merged to main
        │
        └─► deploy
               │
-              ├─► terraform apply ── Cloudflare DNS, NetBird policies/groups,
+              ├─► terraform apply ── Cloudflare DNS, Tailscale ACL/tags,
               │                      Infisical project structure, VolSync secret paths,
               │                      Vultr (mgmt cluster)
               │
@@ -64,7 +64,7 @@ Every cluster
     │  kube-prometheus-stack (per-cluster)
     │  scrapes: node-exporter, kube-state-metrics, app ServiceMonitors
     │
-    │  remote-write (via NetBird)
+    │  remote-write (via Tailscale)
     ▼
 Prometheus Aggregator  ──  boa1-prod (metrics namespace)
     │
@@ -126,7 +126,7 @@ See [Gateway clusters](networking.md#gateway-clusters) for how gateway clusters 
 | -35 | `infisical`, `multus` | Secrets operator must be ready so other apps can pull secrets; Multus for multi-homed pods |
 | -30 | `cert-manager`, `argocd`, `rbac` | TLS, GitOps and access control |
 | -25 | `generic-device-plugin-tun`, `node-inotify-limits` | Node resource registration and sysctl tuning before consumers |
-| -20 | `netbird`, `spegel` | Mesh access and network routing before services need them |
+| -20 | `tailscale`, `spegel` | Mesh access and network routing before services need them |
 | -10 | `external-dns`, `kubelet-serving-cert-approver` | DNS registration before apps |
 | -5 | `volsync` | Backup operator ready before app PVCs need it |
 | 0 | everything else | Default wave |
@@ -153,12 +153,12 @@ Runs on every PR and push:
 
 ### `deploy` — infrastructure and cluster sync/bootstrap
 
-Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has three sequential jobs — `terraform` → `omni` → `ansible` (main only) — and each job independently joins the NetBird mesh with its own ephemeral setup key, revoked when that job ends (not one shared connection for the whole run).
+Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has three sequential jobs — `terraform` → `omni` → `ansible` (main only). The `omni` and `ansible` jobs each independently join the tailnet via `tailscale/github-action` (ephemeral node, tagged `tag:github-actions`, auto-removed when the job ends) to reach Omni's internal API; `terraform` doesn't need to join the mesh at all — it only talks to public APIs (Cloudflare, Vultr, Infisical, Tailscale).
 
 #### 1. `terraform`
 
 - **On PR**: runs `terraform plan` and posts the plan diff as a PR comment
-- **On merge to `main`**: runs `terraform apply` (gated by a GitHub Environment) — manages Cloudflare DNS, Vultr, Infisical project structure, NetBird policies and groups, VolSync secret paths, etc
+- **On merge to `main`**: runs `terraform apply` (gated by a GitHub Environment) — manages Cloudflare DNS, Vultr, Infisical project structure, Tailscale ACL and tags, VolSync secret paths, etc
 
 #### 2. `omni` (after terraform)
 
@@ -171,7 +171,7 @@ Shared Talos patches from `infra/omni/patches/` are applied alongside each clust
 
 #### 3. `ansible` (after omni, main only)
 
-Runs two Ansible playbooks in sequence against the live clusters via NetBird:
+Runs two Ansible playbooks in sequence against the live clusters via Tailscale:
 
 - **`bootstrap-mgmt.yml`** — bootstraps the `mgmt` cluster specifically (reads its kubeconfig from Infisical)
 - **`bootstrap-cluster.yml`** — ensures every cluster has its `cluster-secrets`, `cilium`, and `argocd` roles applied (idempotent)

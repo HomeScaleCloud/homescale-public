@@ -8,7 +8,7 @@ get_usage() {
     echo "Usage: hsctl get <resource> [-o table|yaml|json] [flags...]"
     echo ""
     echo "Resources:"
-    echo "  clusters                      List Kubernetes clusters reachable via NetBird"
+    echo "  clusters                      List Kubernetes clusters reachable via Tailscale"
     echo "  kubeconfig <cluster> [flags]  Write kubeconfig context for a cluster; default is direct apiserver + OIDC"
     echo "      --omni                        run 'omnictl kubeconfig --cluster <cluster>' instead"
     echo "      --break-glass                 run 'omnictl kubeconfig --break-glass --cluster <cluster>' instead"

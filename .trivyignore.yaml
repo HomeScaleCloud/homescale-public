@@ -44,3 +44,8 @@ misconfigurations:
       - "apps/kubevirt/templates/clusterrole-cdi-operator-cluster.yaml"
       - "apps/kubevirt/templates/clusterrole-kubevirt-operator.yaml"
     statement: "Vendored upstream KubeVirt/CDI operator RBAC: these operators manage their own admission webhook configurations"
+  - id: KSV-0108
+    paths:
+      - "apps/metrics/templates/service-egress.yaml"
+      - "apps/headlamp/templates/service-egress.yaml"
+    statement: "Intentional: type: ExternalName is required by the Tailscale Kubernetes operator's egress ProxyGroup pattern. The tailscale.com/tailnet-fqdn annotation is resolved against the tailnet's own netmap by the operator's admission webhook, not an attacker-controlled public DNS name, so CVE-2020-8554's MITM risk model doesn't apply"

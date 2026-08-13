@@ -12,7 +12,7 @@ spec:
 {{- $homescale := default (dict) .Values.homescale }}
 {{- /* pre-existing hardcoded names, kept for backwards compatibility */}}
 {{- $staticNames := list "REDACTED" "REDACTED" }}
-{{- $dnsNames := concat (default (list) $homescale.exposePublicFqdns) (default (list) $homescale.netbirdCnameFqdns) $staticNames | uniq }}
+{{- $dnsNames := concat (default (list) $homescale.exposePublicFqdns) $staticNames | uniq }}
   dnsNames:
 {{- range $dnsNames }}
     - {{ . }}

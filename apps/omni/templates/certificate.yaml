@@ -16,8 +16,10 @@ spec:
       (required "machineApiHostname is required" .Values.machineApiHostname)
       (printf "omni.%REDACTED" $clusterName)
       (printf "k8s.omni.%REDACTED" $clusterName)
+      "REDACTED"
+      "REDACTED"
 }}
-{{- $dnsNames := concat (default (list) $homescale.exposePublicFqdns) (default (list) $homescale.netbirdCnameFqdns) $staticNames | uniq }}
+{{- $dnsNames := concat (default (list) $homescale.exposePublicFqdns) $staticNames | uniq }}
   dnsNames:
 {{- range $dnsNames }}
     - {{ . }}

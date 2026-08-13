@@ -2,26 +2,10 @@ path: apps/omni
 namespace: omni
 releaseName: omni
 syncWave: 0
-netbird:
-  policy:
-    rules:
-      - sources: ["github-actions", "team-infra-plat", "team-sec-plat"]
-        protocol: tcp
-        ports: ["80", "443"]
-  cname:
-    - fqdn: REDACTED
-      cluster: mgmt
-      service: api
-    - fqdn: REDACTED
-      cluster: mgmt
-      service: api
-    - fqdn: REDACTED
-      cluster: mgmt
-      service: k8s
 tailscale:
   policy:
     rules:
-      - sources: ["github-actions", "team-infra-plat", "team-sec-plat"]
+      - sources: ["tag:github-actions", "group:team-infra-plat@REDACTED", "group:team-sec-plat@REDACTED"]
         protocol: tcp
         ports: ["80", "443"]
 

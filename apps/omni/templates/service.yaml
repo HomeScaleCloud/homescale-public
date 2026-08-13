@@ -4,7 +4,7 @@ metadata:
   name: api
   namespace: omni
   annotations:
-    tailscale.com/tags: "tag:app-omni,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-omni,tag:cluster-{{ .Values.cluster.name }}"
     tailscale.com/hostname: "omni-{{ .Values.cluster.name }}"
     tailscale.com/proxy-group: ingress
     external-dns.alpha.kubernetes.io/hostname: "REDACTED"
@@ -30,7 +30,7 @@ metadata:
   name: k8s
   namespace: omni
   annotations:
-    tailscale.com/tags: "tag:app-omni,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-omni,tag:cluster-{{ .Values.cluster.name }}"
     tailscale.com/hostname: "omni-k8s-{{ .Values.cluster.name }}"
     tailscale.com/proxy-group: ingress
     external-dns.alpha.kubernetes.io/hostname: "REDACTED"

@@ -4,16 +4,10 @@ releaseName: home-assistant
 syncWave: 0
 podSecurity: privileged
 defaultDeploy: false
-netbird:
-  policy:
-    rules:
-      - sources: ["owners"]
-        protocol: tcp
-        ports: ["80", "443"]
 tailscale:
   policy:
     rules:
-      - sources: ["owners"]
+      - sources: ["group:owners@REDACTED"]
         protocol: tcp
         ports: ["80", "443"]
 values:

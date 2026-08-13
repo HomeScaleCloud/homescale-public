@@ -1,9 +1,0 @@
-apiVersion: v2
-name: netbird
-description: Helm chart for NetBird Operator
-type: application
-version: 0.1.0
-dependencies:
-  - name: netbird-operator
-    version: 0.8.0
-    repository: oci://ghcr.io/netbirdio/helm-charts

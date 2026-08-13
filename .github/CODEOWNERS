@@ -30,8 +30,7 @@ apps/spegel/                                    @HomeScaleCloud/team-infra-plat
 apps/argocd/                                    @HomeScaleCloud/team-infra-plat
 
 # Networking & ingress
-apps/netbird/                                   @HomeScaleCloud/team-infra-plat
-apps/tailscale-operator/                        @HomeScaleCloud/team-infra-plat
+apps/tailscale/                                 @HomeScaleCloud/team-infra-plat
 apps/cloudflared/                               @HomeScaleCloud/team-infra-plat
 apps/traefik-private/                           @HomeScaleCloud/team-infra-plat
 apps/traefik-public/                            @HomeScaleCloud/team-infra-plat
@@ -50,12 +49,10 @@ apps/metrics-aggr/                              @HomeScaleCloud/team-infra-plat
 
 # Terraform – infra-plat modules
 infra/terraform/modules/cloudflare/             @HomeScaleCloud/team-infra-plat
-infra/terraform/modules/netbird/                @HomeScaleCloud/team-infra-plat
 infra/terraform/modules/tailscale/              @HomeScaleCloud/team-infra-plat
 
 # Terraform – public cloud modules (both teams: infra-plat operates, sec-plat reviews for security posture)
 infra/terraform/modules/mgmt_cluster/           @HomeScaleCloud/team-infra-plat @HomeScaleCloud/team-sec-plat
-infra/terraform/modules/region/                 @HomeScaleCloud/team-infra-plat @HomeScaleCloud/team-sec-plat
 
 # ── Security Platforms ────────────────────────────────────────────────────────
 

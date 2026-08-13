@@ -1,6 +1,5 @@
-// Key names match what the tailscale-operator chart expects verbatim in its
-// "operator-oauth" Secret (client_id/client_secret), so apps/tailscale-operator's
-// InfisicalSecret can pass these straight through without remapping.
+// Names must be exactly client_id/client_secret -- the tailscale-operator
+// chart reads them verbatim from its "operator-oauth" Secret.
 resource "infisical_secret" "tailscale_k8s_operator_client_id" {
   name         = "client_id"
   value        = tailscale_oauth_client.k8s_operator.id

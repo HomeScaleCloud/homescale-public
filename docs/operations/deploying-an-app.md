@@ -45,13 +45,13 @@ apps:
     deploy: true
 ```
 
-Add access control (required — access is denied by default if no `netbird:` block):
+Add access control (required — access is denied by default if no `tailscale:` block):
 
 ```yaml
-netbird:
+tailscale:
   policy:
     rules:
-      - sources: ["owners"]
+      - sources: ["group:owners@REDACTED"]
         protocol: tcp
         ports: ["443"]
 ```
@@ -131,10 +131,10 @@ feat(my-app): add my-app to the app catalog
 CI will:
 - Lint the chart
 - Build a Docker image if the directory contains a `Dockerfile`
-- Run `terraform plan` (to preview any NetBird/Cloudflare changes from `netbird:` / `exposePublic:`)
+- Run `terraform plan` (to preview any Tailscale/Cloudflare changes from `tailscale:` / `exposePublic:`)
 
 On merge to `main`:
-- `terraform apply` runs (NetBird policies, DNS records created)
+- `terraform apply` runs (Tailscale ACL updated)
 - ArgoCD detects the new `Application` in the next reconciliation and deploys the app
 
 ## First-party Docker images
@@ -158,22 +158,30 @@ The `# pragma: allowlist secret` comment suppresses a false positive from `detec
 
 ### Internal (mesh only)
 
-Access via NetBird is configured with the `netbird:` block in `app.yaml`. Once merged, Terraform creates the policy and the app is reachable at:
-
-```
-<service-name>.<namespace>.<cluster>REDACTED
-```
-
-for anyone in the specified `sources` groups. For a friendlier private name, add a `netbird.cname:` list:
+Access is configured with the `tailscale:` block in `app.yaml` — Terraform flattens it into the tailnet ACL. Unlike NetBird, Tailscale doesn't auto-register a Service once policy exists; you also expose the Service itself:
 
 ```yaml
-netbird:
-  cname:
-    - fqdn: REDACTED   # must be a subdomain of <app-name>REDACTED
-      cluster: boa1-prod
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  selector:
+    app: my-app
+  ports:
+    - port: 443
 ```
 
-Terraform creates a dedicated `<app-name>REDACTED` DNS zone and a CNAME record per entry. See [Networking: NetBird DNS cnames](../architecture/networking.md#netbird-dns-cnames).
+with annotations giving it a tailnet identity and a friendly internal name:
+
+```yaml
+metadata:
+  annotations:
+    tailscale.com/tags: "tag:k8s,tag:app-my-app,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "my-app-{{ .Values.cluster.name }}"
+    tailscale.com/proxy-group: ingress
+    external-dns.alpha.kubernetes.io/hostname: "my-app.{{ .Values.cluster.name }}REDACTED"
+```
+
+`tailscale.com/proxy-group: ingress` routes the Service through the cluster's shared ingress `ProxyGroup` (from the `tailscale` app) instead of provisioning a dedicated proxy pod. `external-dns` (running in every cluster) publishes the `external-dns.alpha.kubernetes.io/hostname` value as a CNAME to whatever tailnet hostname the Operator assigns — no separate cname/DNS-zone block needed the way NetBird required.
 
 ### Public internet
 

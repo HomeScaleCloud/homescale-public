@@ -22,7 +22,7 @@ spec:
         - alert: OmniNoConnectedMachines
           annotations:
             summary: "Omni has no connected machines."
-            description: "omni_connected_machines has been 0 for 10 minutes. All machines have lost their SideroLink/WireGuard connection to Omni. This likely indicates a networking change (firewall rule, NetBird config, or SideroLink endpoint change) broke connectivity."
+            description: "omni_connected_machines has been 0 for 10 minutes. All machines have lost their SideroLink/WireGuard connection to Omni. This likely indicates a networking change (firewall rule, Tailscale config, or SideroLink endpoint change) broke connectivity."
             runbook_url: "https://REDACTED/runbooks/omni-no-connected-machines/"
             dashboard_url: "https://REDACTED/d/omni"
           expr: omni_connected_machines == 0

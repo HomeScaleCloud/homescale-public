@@ -70,7 +70,7 @@ Each `apps/<name>/app.yaml` controls deployment with these fields:
 - `defaultDeploy: true|false` — whether to deploy to all clusters by default
 - `path` — path to the actual Helm chart (required)
 - `namespace` — target namespace (required)
-- `syncWave` — ArgoCD sync wave; bootstrap order is: infisical (-35) → cert-manager/argocd/rbac (-30) → netbird (-20) → external-dns (-10) → apps (0)
+- `syncWave` — ArgoCD sync wave; bootstrap order is: infisical (-35) → cert-manager/argocd/rbac (-30) → tailscale (-20) → external-dns (-10) → apps (0)
 - `values` — Helm values passed through; may use `{{ .Values.cluster.name }}` and `{{ .Values.cluster.region }}` templating
 
 Deployment overrides no longer live in `app.yaml`. Instead, `clusters/<cluster>/apps.yaml` (see below) carries an `apps:` map, keyed by app directory name, in its `apps` source's inline `helm.values` block:
@@ -114,7 +114,7 @@ Full walkthrough: `docs/operations/registering-machines.md`.
 
 ### Infrastructure (`infra/`)
 
-- `infra/terraform/` — Terraform for cloud resources (Cloudflare DNS, DigitalOcean, Infisical project setup, NetBird config, mgmt cluster bootstrap). State is in Terraform Cloud (`homescale` org, `homescale` workspace).
+- `infra/terraform/` — Terraform for cloud resources (Cloudflare DNS, DigitalOcean, Infisical project setup, Tailscale ACL/tags, mgmt cluster bootstrap). State is in Terraform Cloud (`homescale` org, `homescale` workspace).
 - `infra/ansible/` — Bootstrapping playbooks (e.g., Omni bootstrap)
 - `infra/omni/patches/` — shared Talos machine config patches applied to clusters during Omni template sync
 
@@ -127,54 +127,37 @@ Infisical is the secrets store. The Infisical k8s operator (deployed as an ArgoC
 Three reusable workflows called from `ci.yaml`:
 - **scan** — pre-commit, PR title lint (Conventional Commits), CodeQL, Trivy config scan
 - **build** — detects changed apps on PRs (or builds all on push to main), builds Docker images, runs Trivy image scan; Helm charts are linted but not published
-- **deploy** — Terraform plan (PR) / apply (main) then Omni cluster template sync for changed clusters; both jobs connect to internal infrastructure via ephemeral NetBird setup keys
+- **deploy** — Terraform plan (PR) / apply (main) then Omni cluster template sync for changed clusters; the `omni`/`ansible` jobs connect to internal infrastructure via an ephemeral Tailscale node (`tailscale/github-action`, tagged `tag:github-actions`); `terraform` doesn't need mesh access at all — it only talks to public APIs
 
 ### Networking
 
-NetBird is the zero-trust WireGuard mesh used for human and machine access to services — CI reaching internal infra, and service exposure to end users.
-CI jobs connect to internal infrastructure (Omni, Terraform providers) by joining the NetBird mesh with an ephemeral one-off setup key generated at the start of each workflow run and revoked at the end.
+Tailscale is the zero-trust mesh used for human and machine access to services — CI reaching internal infra, and service exposure to end users.
+CI jobs that need internal infra (Omni) join the tailnet as an ephemeral node (`tailscale/github-action`, tagged `tag:github-actions`, auto-removed when the job ends); Terraform doesn't need mesh access since it only calls public APIs.
 
-**Internal service exposure** — the `netbird` app deploys a `NetworkRouter` CRD per cluster. The NetBird operator automatically registers each `NetworkResource` into the cluster's DNS zone (`<cluster>REDACTED`), making any k8s Service reachable at `<service-name>.<namespace>.<cluster>REDACTED` across the mesh.
+**Internal service exposure** — the `tailscale` app deploys the official Tailscale Kubernetes Operator plus a shared per-cluster ingress `ProxyGroup` to every cluster. A Service opts in with `type: LoadBalancer` / `loadBalancerClass: tailscale`, annotated `tailscale.com/tags`/`tailscale.com/hostname`/`tailscale.com/proxy-group: ingress` (routes through the shared ProxyGroup instead of a dedicated proxy pod) and `external-dns.alpha.kubernetes.io/hostname` for a friendly `<name>.<cluster>REDACTED` CNAME, published by `external-dns` running in every cluster.
 
-**External service exposure** — a two-step pattern managed entirely in Terraform:
-1. A NetBird reverse proxy resource is created pointing at the internal `REDACTED` FQDN. This gives the service an address under `REDACTED` (the reverse proxy domain registered in `netbird.tf`).
-2. A Cloudflare `REDACTED` wildcard CNAME (in `dns.tf`) resolves to the NetBird reverse proxy cluster. Optionally a second Cloudflare CNAME is added for a friendlier public URL.
+**External service exposure** — public internet exposure goes through Cloudflare Zero Trust Tunnels via the `exposePublic:` app.yaml block, entirely independent of Tailscale.
 
-**Gateway clusters (`*-gw`)** are single-node clusters, one per region. They serve as the regional entry point into the HomeScale mesh and handle two roles:
-- **Subnet routing** — runs a NetBird subnet router that exposes the region's BMC and MGMT subnets across the WireGuard mesh
-- **Region ↔ mgmt connectivity** — bridges region-local services to the central `mgmt` cluster and vice versa
+**Gateway clusters (`*-gw`)** are single-node clusters, one per region, intended as the regional entry point into the HomeScale mesh (subnet routing to region BMC/MGMT subnets, region↔mgmt connectivity). Not implemented yet — the equivalent NetBird subnet-router module was removed rather than ported; a Tailscale `Connector`-based design is a separate future task. Naming convention is `<region>-gw` (e.g. `boa1-gw`).
 
-The naming convention is `<region>-gw` (e.g. `boa1-gw`).
+### Tailscale access policies for apps
 
-### NetBird access policies for apps
-
-Each `apps/<name>/app.yaml` may include a top-level `netbird:` block (outside of `values:`). This is **not a Helm value** — it is read directly by Terraform (`infra/terraform/modules/netbird/policies.tf`) via `fileset` + `yamldecode` and used to create `netbird_policy` resources in the NetBird management plane.
+Each `apps/<name>/app.yaml` may include a top-level `tailscale:` block (outside of `values:`). This is **not a Helm value** — it is read directly by Terraform (`infra/terraform/modules/tailscale/acl.tf`) via `fileset` + `yamldecode` and flattened, along with every other app's rules, into a single `tailscale_acl` resource (Tailscale's ACL model is one policy document, not many discrete objects).
 
 ```yaml
-netbird:
+tailscale:
   policy:
     rules:
-      - sources: ["team-infra-plat", "app:myapp"]
+      - sources: ["group:team-infra-plat@REDACTED", "app:myapp"]
         protocol: tcp
         ports: ["443", "9090"]
 ```
 
-- `destinations` is always the app's own NetBird group (`app-<app-name>`), created automatically by Terraform for every app directory.
-- `sources` must be keys from the known group map: `team-infra-plat`, `team-sec-plat`, `github-actions`, `owners`, `sg-k8s-admin`, `all`, or `app:<name>` (colon-separated) for another app's group.
-- If an app has no `netbird:` block, no policy is created for it (access is denied by default).
-- Multiple rules in `policy.rules` produce separate `netbird_policy` resources named `app-<name>-0`, `app-<name>-1`, etc.
+- `destinations` is always the app's own tag (`tag:app-<app-name>`), auto-registered in `tagOwners` by Terraform for every app directory.
+- `sources` are literal ACL identifiers spelled out in full — no short-alias remapping: `group:<name>@REDACTED` for an Entra ID group (SCIM-synced into Tailscale), `tag:github-actions`, `tag:app-<name>` for another app's tag, or `*` for everyone.
+- If an app has no `tailscale:` block, no access is granted for it (access is denied by default).
 
 **Do not remove or treat this block as dead config** — it has no effect on Helm rendering but drives real infrastructure via Terraform.
-
-### Tailscale (in-progress, parallel build)
-
-A Tailscale-based replacement for the NetBird mesh is being built **alongside** it, not instead of it — NetBird remains the live, load-bearing system described above until the new setup is validated and a separate cutover is done. Nothing under `apps/netbird/`, `infra/terraform/modules/netbird/`, or any `netbird:` app.yaml block is touched by this build-out.
-
-- **Operator** — `apps/tailscale-operator/` deploys the official Tailscale Kubernetes Operator (`defaultDeploy: false`, opt in per cluster). It uses the Operator's native primitives instead of re-implementing NetBird's sidecar pattern: `Service.spec.type: LoadBalancer` + `loadBalancerClass: tailscale` to expose a Service to the tailnet, and a shared per-cluster egress `ProxyGroup` for pods that need outbound-only mesh reach (replacing the privileged `nb-client` init containers in `apps/headlamp` and `apps/metrics`, once wired in).
-- **DNS** — Tailscale-exposed services live under **`REDACTED`**, kept deliberately distinct from NetBird's `REDACTED` zone to avoid any collision while both systems run. Records are published by `external-dns` (running in-cluster) from `external-dns.alpha.kubernetes.io/hostname` annotations directly on the Tailscale-exposed Service — there's no Terraform-managed DNS zone/record mechanism on the Tailscale side the way `modules/netbird/zones.tf`/`dns.tf` do it for NetBird.
-- **Per-app policy** — mirrors the `netbird:` block: a `tailscale:` block (same `policy.rules` shape) is read by `infra/terraform/modules/tailscale/acl.tf`, but unlike NetBird's many discrete `netbird_policy` resources, every app's rules are flattened into **one** `tailscale_acl` resource (Tailscale's ACL model is a single policy document). `netbird.cname:` has no Tailscale equivalent — the external-dns hostname annotation replaces it directly.
-- **Terraform** — `infra/terraform/modules/tailscale/` runs alongside `modules/netbird/`, provisioning its own OAuth clients/ACL/DNS preferences independently.
-- **Not yet ported**: the dormant gateway/subnet-router NetBird module (`infra/terraform/modules/region/`) — still NetBird-only, untouched; a Tailscale `Connector`-based design is a separate future task.
 
 ## VolSync Backups
 

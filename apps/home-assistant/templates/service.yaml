@@ -5,7 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/name: home-assistant
   annotations:
-    tailscale.com/tags: "tag:app-home-assistant,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-home-assistant,tag:cluster-{{ .Values.cluster.name }}"
     tailscale.com/hostname: "ha-{{ .Values.cluster.name }}"
     tailscale.com/proxy-group: ingress
     external-dns.alpha.kubernetes.io/hostname: "home-assistant.{{ .Values.cluster.name }}REDACTED"
@@ -24,7 +24,7 @@ kind: Service
 metadata:
   name: homebridge
   annotations:
-    tailscale.com/tags: "tag:app-home-assistant,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-home-assistant,tag:cluster-{{ .Values.cluster.name }}"
     tailscale.com/hostname: "homebridge-{{ .Values.cluster.name }}"
     tailscale.com/proxy-group: ingress
     external-dns.alpha.kubernetes.io/hostname: "homebridge.{{ .Values.cluster.name }}REDACTED"
@@ -42,7 +42,7 @@ kind: Service
 metadata:
   name: z2m
   annotations:
-    tailscale.com/tags: "tag:app-home-assistant,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-home-assistant,tag:cluster-{{ .Values.cluster.name }}"
     tailscale.com/hostname: "z2m-{{ .Values.cluster.name }}"
     tailscale.com/proxy-group: ingress
     external-dns.alpha.kubernetes.io/hostname: "z2m.{{ .Values.cluster.name }}REDACTED"

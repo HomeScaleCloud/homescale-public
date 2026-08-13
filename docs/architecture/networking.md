@@ -1,35 +1,45 @@
 # Networking
 
-[NetBird](https://netbird.io/) is the zero-trust WireGuard mesh that connects all humans, machines, and services in HomeScale. This page covers how services are exposed — internally to the mesh and externally to the internet.
-
-!!! note "Tailscale build in progress"
-    A [Tailscale](https://tailscale.com/)-based replacement is being built alongside NetBird (not instead of it yet) — see [Tailscale (in-progress, parallel build)](#tailscale-in-progress-parallel-build) below. Everything else on this page describes the current, live NetBird setup.
+[Tailscale](https://tailscale.com/) is the zero-trust mesh that connects all humans, machines, and services in HomeScale. This page covers how services are exposed — internally to the tailnet and externally to the internet.
 
 ## Human and machine access
 
-NetBird is used for:
+Tailscale is used for:
 
-- **Developer access** — team members connect their laptops to the mesh and can reach internal services directly
-- **CI connectivity** — GitHub Actions jobs join the mesh with an ephemeral setup key at the start of each workflow run. The key is single-use and is revoked when the job completes
-- **Service exposure** — internal services are registered into the mesh and reachable at stable DNS names
+- **Developer access** — team members connect their devices to the tailnet and can reach internal services directly
+- **CI connectivity** — GitHub Actions jobs that need to reach internal infrastructure (Omni) join the tailnet as an ephemeral node via `tailscale/github-action`, tagged `tag:github-actions` and automatically removed when the job completes
+- **Service exposure** — internal services are exposed to the tailnet via the Tailscale Kubernetes Operator and reachable at stable DNS names
 
-NetBird policies (who can reach what) are managed in Terraform via the `netbird:` block in each `app.yaml`. See [Access policies](#netbird-access-policies) below.
+Human/team access is granted via Entra ID groups, SCIM-synced into Tailscale — see [Access policies](#access-policies) below.
 
 ## Internal service exposure
 
-The `netbird` app deploys a `NetworkRouter` CRD per cluster. The NetBird operator automatically registers each Kubernetes `Service` as a `NetworkResource` in the cluster's DNS zone. Any service is then reachable across the mesh at:
+The `tailscale` app deploys the official Tailscale Kubernetes Operator to every cluster, along with a shared per-cluster ingress `ProxyGroup`. A Service opts into tailnet exposure with:
 
-```
-<service-name>.<namespace>.<cluster>REDACTED
-```
-
-For example, the ArgoCD server on the management cluster is reachable at:
-
-```
-argocd-server.argocd.<cluster>REDACTED
+```yaml
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
 ```
 
-No Ingress or LoadBalancer service is needed — the NetBird operator handles DNS registration automatically when a `NetworkResource` CR exists.
+annotated:
+
+```yaml
+metadata:
+  annotations:
+    tailscale.com/tags: "tag:k8s,tag:app-myapp,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "myapp-{{ .Values.cluster.name }}"
+    tailscale.com/proxy-group: ingress
+    external-dns.alpha.kubernetes.io/hostname: "myapp.{{ .Values.cluster.name }}REDACTED"
+```
+
+`tailscale.com/proxy-group: ingress` routes the Service through the cluster's shared ingress `ProxyGroup` instead of provisioning a dedicated proxy pod per Service. `external-dns` (running in every cluster) publishes the `external-dns.alpha.kubernetes.io/hostname` value as a CNAME in Cloudflare, pointing at whatever `<hostname>.<tailnet>.ts.net` address the Operator assigns the proxy. For example, the ArgoCD server on the management cluster is reachable at:
+
+```
+REDACTED
+```
+
+Pods that need *outbound* access to tailnet-only targets (rather than being reached) use a shared per-cluster egress `ProxyGroup` instead — a Service annotated `tailscale.com/tailnet-fqdn`/`tailscale.com/proxy-group: egress` gives them a stable in-cluster hostname, without running their own mesh client.
 
 ### Direct cluster API access
 
@@ -39,22 +49,15 @@ Each cluster's kube-apiserver is reachable, via a small TLS-terminating reverse 
 k8s.api.<cluster>REDACTED
 ```
 
-`netbird` runs this proxy (`kube-apiserver-proxy`, an `nginx` Deployment in the `netbird` namespace) rather than exposing the cluster's built-in `kubernetes` Service directly. Two things forced that:
+`tailscale` runs this proxy (`kube-apiserver-proxy`, an `nginx` Deployment in the `tailscale` namespace) rather than exposing the cluster's built-in `kubernetes` Service directly, since the built-in Service is backed by `hostNetwork` apiserver pods rather than a normal selector-based ClusterIP. The proxy is a normal ClusterIP Service in front of it, forwarding to `kubernetes.default.svc.cluster.local` — the same in-cluster address every pod already uses, which Kubernetes itself load-balances across every control-plane replica. It terminates TLS with a real cert-manager/LetsEncrypt certificate (`apps/tailscale/templates/certificate-apiserver-proxy.yaml`, same `letsencrypt` `ClusterIssuer` Headlamp's own cert uses) rather than the cluster's internal CA, so clients get standard, publicly-trusted TLS verification — no `insecure-skip-tls-verify`, no CA to distribute. Whatever auth the client presents (e.g. a forwarded per-user OIDC bearer token) passes straight through in the `Authorization` header; the real apiserver still does the actual authn/authz.
 
-- The built-in Service's ClusterIP is almost always `10.96.0.1` (the Kubernetes default), so exposing it directly collided across clusters — two `NetworkResource`s both advertising the identical `/32`, with NetBird silently routing to whichever one won.
-- `NetworkResource` requires the target Service to have a real ClusterIP — a headless Service (tried as a fix for the above, selecting the real `hostNetwork` apiserver pods directly) isn't supported (`status.conditions` reports `Referenced Service does not have a ClusterIP set`).
+`hsctl get kubeconfig`/`hsctl switch` default to this direct path (`kubectl-oidc_login` handles the OIDC login, PKCE, no client secret); `--omni`/`--break-glass` delegate straight to `omnictl kubeconfig` (see [`hsctl` reference](../operations/hsctl.md)).
 
-The proxy sidesteps both: it's a normal ClusterIP Service (own IP, no collision risk), and it forwards to `kubernetes.default.svc.cluster.local` — the same in-cluster address every pod already uses, which Kubernetes itself load-balances across every control-plane replica, so there's no single-node fragility either. It terminates TLS with a real cert-manager/LetsEncrypt certificate (`apps/netbird/templates/certificate-apiserver-proxy.yaml`, same `letsencrypt` `ClusterIssuer` Headlamp's own cert uses) rather than the cluster's internal CA, so clients get standard, publicly-trusted TLS verification — no `insecure-skip-tls-verify`, no CA to distribute. Whatever auth the client presents (e.g. a forwarded per-user OIDC bearer token) passes straight through in the `Authorization` header; the real apiserver still does the actual authn/authz.
-
-This is now the only path for human/operator cluster API access — a previous NetBird-peer-impersonation proxy (`ClusterProxy`) has been removed. It authenticated by impersonating the *connecting NetBird peer's* identity, which was wrong for a shared backend serving many different users (everyone collapsed into the same impersonated identity), and it wasn't used by CI/automation either, so there was no reason to keep it around once the direct OIDC path existed.
-
-`hsctl get kubeconfig`/`hsctl switch` default to the direct path (`kubectl-oidc_login` handles the OIDC login, PKCE, no client secret); `--omni`/`--break-glass` delegate straight to `omnictl kubeconfig` (see [`hsctl` reference](../operations/hsctl.md)).
-
-Headlamp shows `boa1-prod` in its cluster picker via this same direct path, with the same per-user RBAC it already has for `mgmt`. Which clusters appear is derived automatically — Terraform (`infra/terraform/headlamp.tf`) scans `clusters/*/cluster.yaml` for ones referencing `infra/omni/patches/oidc.yaml` and publishes the list to Infisical, which `apps/headlamp/templates/kubeconfig-secret.yaml` renders into a kubeconfig context per cluster. Adding a cluster to Headlamp's picker is then just adding the OIDC patch to its `cluster.yaml` — no separate list to maintain. See also `apps/headlamp/templates/setupkey.yaml`.
+Headlamp shows `boa1-prod` in its cluster picker via this same direct path, with the same per-user RBAC it already has for `mgmt`. Which clusters appear is derived automatically — Terraform (`infra/terraform/headlamp.tf`) scans `clusters/*/cluster.yaml` for ones referencing `infra/omni/patches/oidc.yaml` and publishes the list to Infisical, which `apps/headlamp/templates/kubeconfig-secret.yaml` renders into a kubeconfig context per cluster. Adding a cluster to Headlamp's picker is then just adding the OIDC patch to its `cluster.yaml` — no separate list to maintain.
 
 ## External service exposure
 
-Public internet exposure goes through Cloudflare Zero Trust Tunnels. Add an `exposePublic:` block to the app's `app.yaml` — it's a list, so one app can expose multiple Services/ports/fqdns:
+Public internet exposure goes through Cloudflare Zero Trust Tunnels — entirely independent of Tailscale. Add an `exposePublic:` block to the app's `app.yaml` — it's a list, so one app can expose multiple Services/ports/fqdns:
 
 ```yaml
 exposePublic:
@@ -94,66 +97,31 @@ exposePublic:
 
 Terraform (`infra/terraform/modules/cloudflare/access.tf`) creates a `cloudflare_zero_trust_access_application` for the FQDN with a single "allow everyone" policy — i.e. any user who authenticates via an allowed identity provider is granted access, with no group or email restriction. Restricting to specific groups isn't implemented — extend the module's `policies` block if that's ever needed. See the [App reference](apps.md#public-exposure-exposepublic) for the full `access:` field reference.
 
-## NetBird access policies
+## Access policies
 
-Each `apps/<name>/app.yaml` may include a top-level `netbird:` block. This is **not a Helm value** — it is read directly by Terraform (`infra/terraform/modules/netbird/policies.tf`) to create [`netbird_policy`](https://registry.terraform.io/providers/netbirdio/netbird/latest/docs/resources/policy) resources.
+Each `apps/<name>/app.yaml` may include a top-level `tailscale:` block. This is **not a Helm value** — it is read directly by Terraform (`infra/terraform/modules/tailscale/acl.tf`) via `fileset`/`yamldecode` and flattened, along with every other app's rules, into a single [`tailscale_acl`](https://registry.terraform.io/providers/tailscale/tailscale/latest/docs/resources/acl) resource (Tailscale's ACL model is one policy document, not many discrete objects).
 
-!!! warning "Never delete a `netbird:` block thinking it's dead config"
+!!! warning "Never delete a `tailscale:` block thinking it's dead config"
     It has no visible effect on Helm rendering but drives real infrastructure. Removing it removes network access for that app.
 
 ```yaml
-netbird:
+tailscale:
   policy:
     rules:
-      - sources: ["team-infra-plat", "app:other-app"]
+      - sources: ["group:team-infra-plat@REDACTED", "app:other-app"]
         protocol: tcp
         ports: ["443", "9090"]
-      - sources: ["all"]
+      - sources: ["*"]
         protocol: udp
         ports: ["25565"]
 ```
 
-The **destination** is always the app's own NetBird group (`app-<name>`), created automatically by Terraform for every app directory. If no `netbird:` block is present, **access is denied by default**.
+The **destination** is always the app's own tag (`tag:app-<name>`), auto-registered in `tagOwners` by Terraform for every app directory. If no `tailscale:` block is present, **access is denied by default**. `sources` values are literal ACL identifiers, spelled out in full (`group:<name>@REDACTED` for Entra-synced groups, `tag:<name>` for tags, `*` for everyone) — there's no short-alias remapping.
 
-See the [App reference](apps.md#netbird-access-policy-netbird) for the full field reference including valid `sources` values.
-
-## NetBird DNS cnames
-
-The [internal service exposure](#internal-service-exposure) address (`<service>.<namespace>.<cluster>REDACTED`) is functional but not pretty, and ties the name to a specific cluster. Apps that want a stable, friendly private name can add a `netbird.cname:` block:
-
-```yaml
-netbird:
-  cname:
-    - fqdn: REDACTED
-      cluster: boa1-prod
-      service: myapp   # optional, defaults to releaseName
-```
-
-The first `cname` entry for an app causes Terraform to create a dedicated `netbird_dns_zone` named `<app-name>REDACTED`; every entry's `fqdn` must be a subdomain of that zone. Each entry becomes a `netbird_dns_record` (type `CNAME`) whose content is the entry's `<service>.<namespace>.<cluster>REDACTED` address. See `apps/metrics/app.yaml` for a real example — it gives the four Services in its `metrics` namespace (`grafana`, `alertmanager`, `prometheus`, `loki`) friendly names under `REDACTED`.
-
-Unlike `exposePublic`, there's no port translation — a NetBird CNAME is a plain DNS alias, not a reverse proxy, so it needs no `port` field. A `netbird.cname` record only grants a name; reaching it still requires a matching [`netbird.policy`](#netbird-access-policies) rule.
-
-!!! warning "Avoid zone-name collisions"
-    Picking an app name that matches an existing cluster name (each cluster gets its own `<cluster>REDACTED` zone, e.g. `boa1-prod`, `mgmt`) will conflict with that zone at `apply` time.
-
-See the [App reference](apps.md#netbird-private-dns-netbirdcname) for the full field reference.
+See the [App reference](apps.md#tailscale-access-policy-tailscale) for the full field reference.
 
 ## Gateway clusters
 
-Gateway clusters (`<region>-gw`) are single-node clusters — one per region — that act as the regional entry point into the HomeScale mesh:
-
-- **Subnet routing** — runs a NetBird subnet router that exposes the region's BMC and MGMT subnets (switch management, iDRAC/IPMI, etc.) across the WireGuard mesh
-- **Region ↔ management connectivity** — bridges region-local services (accessible at `*.<region>REDACTED`) to the management cluster and vice versa
-
-## Tailscale (in-progress, parallel build)
-
-A Tailscale-based replacement for the above is being built **alongside** NetBird, not instead of it — NetBird stays live and unmodified until the new setup is validated and a separate cutover happens. Nothing under `apps/netbird/`, `infra/terraform/modules/netbird/`, or any `netbird:` app.yaml block is touched by this build-out.
-
-- **Operator** — `apps/tailscale-operator/` deploys the official Tailscale Kubernetes Operator (opt-in per cluster). It uses the Operator's own primitives rather than re-implementing NetBird's sidecar model:
-    - `Service.spec.type: LoadBalancer` + `loadBalancerClass: tailscale` exposes a Service to the tailnet (replaces `NetworkRouter`/`NetworkResource`)
-    - a shared per-cluster egress `ProxyGroup` gives pods a stable in-cluster hostname for reaching tailnet-only targets, replacing the privileged `nb-client` init containers in `apps/headlamp` and `apps/metrics` (scaffolded but not yet wired into either app)
-- **DNS** — Tailscale-exposed services live under `REDACTED`, a domain deliberately distinct from NetBird's `REDACTED` zone so the two systems can't collide while both are running. Records are published by `external-dns` from `external-dns.alpha.kubernetes.io/hostname` annotations directly on the Tailscale-exposed Service — there's no Terraform-managed DNS zone/record step the way NetBird's cname mechanism (above) has one.
-- **Per-app policy** — a `tailscale:` block (same `policy.rules` shape as `netbird:`) is read by `infra/terraform/modules/tailscale/acl.tf` and flattened into a single `tailscale_acl` resource (Tailscale's ACL model is one policy document, not many discrete objects like NetBird's). There's no equivalent of `netbird.cname:` — the external-dns annotation does that job directly.
-- **Not yet ported** — the dormant gateway/subnet-router NetBird module (`infra/terraform/modules/region/`, described above) is still NetBird-only and untouched. A Tailscale `Connector`-based design for gateway clusters is a separate future task.
+Gateway clusters (`<region>-gw`) are single-node clusters — one per region — intended to act as the regional entry point into the HomeScale mesh, bridging region-local services and BMC/MGMT subnet access to the management cluster. This role isn't implemented yet — the equivalent NetBird subnet-router module was removed rather than ported, and a Tailscale `Connector`-based design is a separate future task.
 
 Naming convention: `<region>-gw`.
