@@ -166,6 +166,16 @@ netbird:
 
 **Do not remove or treat this block as dead config** — it has no effect on Helm rendering but drives real infrastructure via Terraform.
 
+### Tailscale (in-progress, parallel build)
+
+A Tailscale-based replacement for the NetBird mesh is being built **alongside** it, not instead of it — NetBird remains the live, load-bearing system described above until the new setup is validated and a separate cutover is done. Nothing under `apps/netbird/`, `infra/terraform/modules/netbird/`, or any `netbird:` app.yaml block is touched by this build-out.
+
+- **Operator** — `apps/tailscale-operator/` deploys the official Tailscale Kubernetes Operator (`defaultDeploy: false`, opt in per cluster). It uses the Operator's native primitives instead of re-implementing NetBird's sidecar pattern: `Service.spec.type: LoadBalancer` + `loadBalancerClass: tailscale` to expose a Service to the tailnet, and a shared per-cluster egress `ProxyGroup` for pods that need outbound-only mesh reach (replacing the privileged `nb-client` init containers in `apps/headlamp` and `apps/metrics`, once wired in).
+- **DNS** — Tailscale-exposed services live under **`REDACTED`**, kept deliberately distinct from NetBird's `REDACTED` zone to avoid any collision while both systems run. Records are published by `external-dns` (running in-cluster) from `external-dns.alpha.kubernetes.io/hostname` annotations directly on the Tailscale-exposed Service — there's no Terraform-managed DNS zone/record mechanism on the Tailscale side the way `modules/netbird/zones.tf`/`dns.tf` do it for NetBird.
+- **Per-app policy** — mirrors the `netbird:` block: a `tailscale:` block (same `policy.rules` shape) is read by `infra/terraform/modules/tailscale/acl.tf`, but unlike NetBird's many discrete `netbird_policy` resources, every app's rules are flattened into **one** `tailscale_acl` resource (Tailscale's ACL model is a single policy document). `netbird.cname:` has no Tailscale equivalent — the external-dns hostname annotation replaces it directly.
+- **Terraform** — `infra/terraform/modules/tailscale/` runs alongside `modules/netbird/`, provisioning its own OAuth clients/ACL/DNS preferences independently.
+- **Not yet ported**: the dormant gateway/subnet-router NetBird module (`infra/terraform/modules/region/`) — still NetBird-only, untouched; a Tailscale `Connector`-based design is a separate future task.
+
 ## VolSync Backups
 
 VolSync (`apps/volsync/`, syncWave -5) provides PVC-level backup and restore via restic repositories.

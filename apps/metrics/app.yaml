@@ -25,9 +25,19 @@ netbird:
     - fqdn: REDACTED
       cluster: boa1-prod
       service: loki
+tailscale:
+  policy:
+    rules:
+      - sources: ["team-infra-plat", "team-sec-plat", "app:metrics"]
+        protocol: tcp
+        ports: ["80", "443", "9090", "3100"]
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
+  # See templates/service-egress.yaml -- must be set to the real tailnet name
+  # before that scaffolding is usable.
+  tailscale:
+    tailnet: ""
   snmpExporter:
     enabled: false
     image:

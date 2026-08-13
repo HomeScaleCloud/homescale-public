@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-apiserver-proxy
+  namespace: tailscale
+  annotations:
+    tailscale.com/tags: 'tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}'
+    tailscale.com/hostname: 'k8s-api-{{ required "cluster.name is required" .Values.cluster.name }}'
+    external-dns.alpha.kubernetes.io/hostname: 'k8s.api.{{ required "cluster.name is required" .Values.cluster.name }}REDACTED'
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  selector:
+    app: kube-apiserver-proxy
+  ports:
+    - port: 443
+      targetPort: https

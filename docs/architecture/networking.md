@@ -2,6 +2,9 @@
 
 [NetBird](https://netbird.io/) is the zero-trust WireGuard mesh that connects all humans, machines, and services in HomeScale. This page covers how services are exposed — internally to the mesh and externally to the internet.
 
+!!! note "Tailscale build in progress"
+    A [Tailscale](https://tailscale.com/)-based replacement is being built alongside NetBird (not instead of it yet) — see [Tailscale (in-progress, parallel build)](#tailscale-in-progress-parallel-build) below. Everything else on this page describes the current, live NetBird setup.
+
 ## Human and machine access
 
 NetBird is used for:
@@ -141,5 +144,16 @@ Gateway clusters (`<region>-gw`) are single-node clusters — one per region —
 
 - **Subnet routing** — runs a NetBird subnet router that exposes the region's BMC and MGMT subnets (switch management, iDRAC/IPMI, etc.) across the WireGuard mesh
 - **Region ↔ management connectivity** — bridges region-local services (accessible at `*.<region>REDACTED`) to the management cluster and vice versa
+
+## Tailscale (in-progress, parallel build)
+
+A Tailscale-based replacement for the above is being built **alongside** NetBird, not instead of it — NetBird stays live and unmodified until the new setup is validated and a separate cutover happens. Nothing under `apps/netbird/`, `infra/terraform/modules/netbird/`, or any `netbird:` app.yaml block is touched by this build-out.
+
+- **Operator** — `apps/tailscale-operator/` deploys the official Tailscale Kubernetes Operator (opt-in per cluster). It uses the Operator's own primitives rather than re-implementing NetBird's sidecar model:
+    - `Service.spec.type: LoadBalancer` + `loadBalancerClass: tailscale` exposes a Service to the tailnet (replaces `NetworkRouter`/`NetworkResource`)
+    - a shared per-cluster egress `ProxyGroup` gives pods a stable in-cluster hostname for reaching tailnet-only targets, replacing the privileged `nb-client` init containers in `apps/headlamp` and `apps/metrics` (scaffolded but not yet wired into either app)
+- **DNS** — Tailscale-exposed services live under `REDACTED`, a domain deliberately distinct from NetBird's `REDACTED` zone so the two systems can't collide while both are running. Records are published by `external-dns` from `external-dns.alpha.kubernetes.io/hostname` annotations directly on the Tailscale-exposed Service — there's no Terraform-managed DNS zone/record step the way NetBird's cname mechanism (above) has one.
+- **Per-app policy** — a `tailscale:` block (same `policy.rules` shape as `netbird:`) is read by `infra/terraform/modules/tailscale/acl.tf` and flattened into a single `tailscale_acl` resource (Tailscale's ACL model is one policy document, not many discrete objects like NetBird's). There's no equivalent of `netbird.cname:` — the external-dns annotation does that job directly.
+- **Not yet ported** — the dormant gateway/subnet-router NetBird module (`infra/terraform/modules/region/`, described above) is still NetBird-only and untouched. A Tailscale `Connector`-based design for gateway clusters is a separate future task.
 
 Naming convention: `<region>-gw`.

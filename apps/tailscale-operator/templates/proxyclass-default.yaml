@@ -1,0 +1,17 @@
+# Enables per-proxy metrics + an auto-created ServiceMonitor (operator
+# creates a <statefulset>-metrics Service and, when serviceMonitor.enable is
+# true, the ServiceMonitor itself -- see tailscale.com_proxyclasses.yaml).
+# Deliberately not building a Grafana dashboard or PrometheusRule yet: unlike
+# the netbird-operator dashboard/alerts (which mirror kube-state-metrics
+# customResourceState output we already know the shape of), the actual
+# metric names this exposes haven't been observed from a live deployment.
+# Add those once this is running for real rather than guessing at names.
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: default
+spec:
+  metrics:
+    enable: true
+    serviceMonitor:
+      enable: true

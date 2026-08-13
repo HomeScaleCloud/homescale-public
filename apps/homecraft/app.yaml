@@ -12,6 +12,14 @@ netbird:
       - sources: ["all"]
         protocol: udp
         ports: ["25565"]
+# The minecraft chart's Service only ever exposes a single TCP port -- there's
+# no UDP variant to mirror the netbird udp rule above against.
+tailscale:
+  policy:
+    rules:
+      - sources: ["all"]
+        protocol: tcp
+        ports: ["25565"]
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

@@ -1,0 +1,22 @@
+path: apps/tailscale-operator
+namespace: tailscale
+releaseName: tailscale-operator
+syncWave: -20
+podSecurity: privileged
+syncOptions:
+  - ServerSideApply=true
+# Runs alongside netbird (still defaultDeploy: true, untouched) in every
+# cluster while both systems are verified side by side.
+defaultDeploy: true
+values:
+  cluster:
+    name: '{{ .Values.cluster.name }}'
+  tailscale-operator:
+    installCRDs: true
+    operatorConfig:
+      hostname: 'ts-operator-{{ .Values.cluster.name }}'
+      defaultTags:
+        - 'tag:k8s-operator'
+    proxyConfig:
+      defaultTags: 'tag:cluster-{{ .Values.cluster.name }}'
+      defaultProxyClass: default

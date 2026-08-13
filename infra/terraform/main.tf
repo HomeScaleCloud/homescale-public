@@ -13,6 +13,14 @@ module "netbird" {
   infisical_workspace_id = module.infisical.project_id
 }
 
+# Parallel build-alongside phase (see plan): stands up Tailscale ACLs/OAuth
+# clients next to the still-untouched NetBird module above. Nothing here
+# removes or depends on module.netbird.
+module "tailscale" {
+  source                 = "./modules/tailscale"
+  infisical_workspace_id = module.infisical.project_id
+}
+
 module "mgmt_cluster" {
   source                 = "./modules/mgmt_cluster"
   vultr_api_key          = data.infisical_secrets.github_actions.secrets["VULTR_TOKEN"].value

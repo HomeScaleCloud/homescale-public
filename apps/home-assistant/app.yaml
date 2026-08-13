@@ -10,6 +10,12 @@ netbird:
       - sources: ["owners"]
         protocol: tcp
         ports: ["80", "443"]
+tailscale:
+  policy:
+    rules:
+      - sources: ["owners"]
+        protocol: tcp
+        ports: ["80", "443"]
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"

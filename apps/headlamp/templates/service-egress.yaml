@@ -1,0 +1,24 @@
+# Scaffolding only -- not yet referenced by kubeconfig-secret.yaml. Once
+# wired in, Headlamp's multicluster kubeconfig `server:` fields would point
+# at these stable in-cluster hostnames (k8s-api-<cluster>.headlamp.svc...)
+# instead of the public k8s.api.<cluster>REDACTED NetBird names,
+# removing the need for the nb-client sidecar entirely. Requires
+# .Values.tailscale.tailnet to be set for tailscale.com/tailnet-fqdn to
+# resolve to anything real.
+{{- $tailnet := .Values.tailscale.tailnet }}
+{{- range .Values.tailscale.egressClusters }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-api-{{ . }}
+  namespace: headlamp
+  annotations:
+    tailscale.com/tailnet-fqdn: "k8s-api-{{ . }}.{{ $tailnet }}"
+    tailscale.com/proxy-group: egress
+spec:
+  type: ExternalName
+  externalName: placeholder
+  ports:
+    - port: 443
+{{- end }}

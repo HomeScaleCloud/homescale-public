@@ -109,6 +109,27 @@ jobs:
           fi
         env:
           TF_VAR_netbird_token: ${{ env.NETBIRD_SA_TOKEN }}
+      - name: Extract rendered Tailscale ACL
+        id: tailscale_acl
+        if: steps.plan.outcome == 'success'
+        run: |
+          terraform show -json tfplan > /tmp/tfplan.json
+          RAW=$(jq -r '.resource_changes[]? | select(.address == "module.tailscale.tailscale_acl.this") | .change.after.acl // empty' /tmp/tfplan.json)
+          if [ -n "$RAW" ]; then
+            echo "$RAW" | jq '.' > /tmp/tailscale-acl.json
+            echo "ACL_RENDERED=true" >> "$GITHUB_ENV"
+            echo "ACL_SUMMARY=$(jq -r '"\(.tagOwners | length) tags, \(.grants | length) grants"' /tmp/tailscale-acl.json)" >> "$GITHUB_ENV"
+          else
+            echo "ACL_RENDERED=false" >> "$GITHUB_ENV"
+          fi
+      - name: Upload rendered Tailscale ACL artifact
+        id: upload_acl
+        if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: tailscale-acl
+          path: /tmp/tailscale-acl.json
+          retention-days: 30
       - name: Write plan to job summary
         if: always() && steps.plan.outcome != 'skipped'
         run: |
@@ -170,6 +191,25 @@ jobs:
               `> commit \`${{ github.sha }}\``,
             ].join('\n');
             await upsertComment(marker, body);
+
+            if (process.env.ACL_RENDERED === 'true') {
+              const aclMarker = '<!-- tailscale-acl -->';
+              const artifactUrl = `${{ steps.upload_acl.outputs.artifact-url }}`;
+              const link = artifactUrl
+                ? `[Download the rendered ACL](${artifactUrl}) `
+                : '_Artifact upload did not complete -- check the job logs._';
+              const aclBody = [
+                aclMarker,
+                '## 🔒 Rendered Tailscale ACL',
+                '',
+                `${process.env.ACL_SUMMARY || ''}`,
+                '',
+                link,
+                '',
+                `> commit \`${{ github.sha }}\``,
+              ].join('\n');
+              await upsertComment(aclMarker, aclBody);
+            }
       - name: Fail if plan failed
         if: steps.plan.outcome == 'failure'
         run: |

@@ -1,0 +1,15 @@
+# Shared egress ProxyGroup for this cluster. Consumers that need to reach
+# tailnet-only targets (cross-cluster apiserver-proxies, metrics remote
+# targets) get a stable in-cluster ExternalName Service annotated
+# `tailscale.com/proxy-group: egress` instead of running their own mesh
+# client -- replaces the netbird `nb-client` sidecar pattern in
+# apps/headlamp and apps/metrics (both still untouched/unwired for now).
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyGroup
+metadata:
+  name: egress
+spec:
+  type: egress
+  replicas: 1
+  tags:
+    - 'tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}'

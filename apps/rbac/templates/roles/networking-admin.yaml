@@ -46,6 +46,17 @@ rules:
       - setupkeys
       - sidecarprofiles
     verbs: ["*"]
+  - apiGroups: ["tailscale.com"]
+    resources:
+      - connectors
+      - dnsconfigs
+      - peerrelays
+      - proxyclasses
+      - proxygrouppolicies
+      - proxygroups
+      - recorders
+      - tailnets
+    verbs: ["*"]
   - apiGroups: ["crd.projectcalico.org"]
     resources:
       - bgpconfigurations

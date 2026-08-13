@@ -3,7 +3,13 @@ kind: Service
 metadata:
   name: api
   namespace: omni
+  annotations:
+    tailscale.com/tags: "tag:app-omni,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "omni-{{ .Values.cluster.name }}"
+    external-dns.alpha.kubernetes.io/hostname: "REDACTED"
 spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
   selector:
     app.kubernetes.io/instance: omni
     app.kubernetes.io/name: omni
@@ -22,7 +28,13 @@ kind: Service
 metadata:
   name: k8s
   namespace: omni
+  annotations:
+    tailscale.com/tags: "tag:app-omni,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "omni-k8s-{{ .Values.cluster.name }}"
+    external-dns.alpha.kubernetes.io/hostname: "REDACTED"
 spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
   selector:
     app.kubernetes.io/instance: omni
     app.kubernetes.io/name: omni

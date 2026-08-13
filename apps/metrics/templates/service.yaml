@@ -17,8 +17,12 @@ kind: Service
 metadata:
   name: prometheus-proxy
   namespace: metrics
+  annotations:
+    tailscale.com/tags: "tag:app-metrics,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "prometheus-metrics-{{ .Values.cluster.name }}"
 spec:
-  type: ClusterIP
+  type: LoadBalancer
+  loadBalancerClass: tailscale
   ports:
     - name: http-web
       port: 9090
@@ -34,8 +38,13 @@ kind: Service
 metadata:
   name: grafana
   namespace: metrics
+  annotations:
+    tailscale.com/tags: "tag:app-metrics,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "grafana-metrics-{{ .Values.cluster.name }}"
+    external-dns.alpha.kubernetes.io/hostname: "REDACTED"
 spec:
-  type: ClusterIP
+  type: LoadBalancer
+  loadBalancerClass: tailscale
   ports:
     - name: http-web
       port: 443
@@ -49,8 +58,13 @@ kind: Service
 metadata:
   name: alertmanager
   namespace: metrics
+  annotations:
+    tailscale.com/tags: "tag:app-metrics,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "alertmanager-metrics-{{ .Values.cluster.name }}"
+    external-dns.alpha.kubernetes.io/hostname: "REDACTED"
 spec:
-  type: ClusterIP
+  type: LoadBalancer
+  loadBalancerClass: tailscale
   ports:
     - name: http-web
       port: 80

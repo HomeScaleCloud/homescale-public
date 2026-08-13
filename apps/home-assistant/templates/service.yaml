@@ -4,7 +4,13 @@ metadata:
   name: ha
   labels:
     app.kubernetes.io/name: home-assistant
+  annotations:
+    tailscale.com/tags: "tag:app-home-assistant,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "ha-{{ .Values.cluster.name }}"
+    external-dns.alpha.kubernetes.io/hostname: "home-assistant.{{ .Values.cluster.name }}REDACTED"
 spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
   selector:
     app: {{ .Release.Name }}
   ports:
@@ -16,7 +22,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: homebridge
+  annotations:
+    tailscale.com/tags: "tag:app-home-assistant,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "homebridge-{{ .Values.cluster.name }}"
+    external-dns.alpha.kubernetes.io/hostname: "homebridge.{{ .Values.cluster.name }}REDACTED"
 spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
   selector:
     app: homebridge
   ports:
@@ -27,7 +39,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: z2m
+  annotations:
+    tailscale.com/tags: "tag:app-home-assistant,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "z2m-{{ .Values.cluster.name }}"
+    external-dns.alpha.kubernetes.io/hostname: "z2m.{{ .Values.cluster.name }}REDACTED"
 spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
   selector:
     app: zigbee
   ports:

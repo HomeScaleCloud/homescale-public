@@ -28,8 +28,6 @@ spec:
               values:
                 cluster:
                   name: mgmt
-            external-dns:
-              deploy: true
             headlamp:
               deploy: true
             multus:

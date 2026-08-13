@@ -1,0 +1,24 @@
+# Scaffolding only -- not yet referenced by the remoteWrite/Alloy config
+# below (both still point at the netbird-era prometheus.metrics.int/
+# loki.metrics.int hostnames). Once wired in, non-boa1-prod clusters would
+# remote-write to this stable in-cluster hostname instead, removing the
+# nb-client init containers on Prometheus and Alloy entirely.
+#
+# Loki has no equivalent ingress-side Tailscale exposure yet (unlike
+# prometheus-proxy in service.yaml, there's no single-port Loki Service in
+# this chart to tag) -- add one there before extending this to Loki.
+{{- if ne .Values.cluster.name "boa1-prod" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-boa1-prod
+  namespace: metrics
+  annotations:
+    tailscale.com/tailnet-fqdn: "prometheus-metrics-boa1-prod.{{ .Values.tailscale.tailnet }}"
+    tailscale.com/proxy-group: egress
+spec:
+  type: ExternalName
+  externalName: placeholder
+  ports:
+    - port: 9090
+{{- end }}

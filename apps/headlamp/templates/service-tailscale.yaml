@@ -1,0 +1,24 @@
+# The headlamp chart's own Service template has no loadBalancerClass support
+# (unlike argo-cd/grafana/alertmanager/minecraft), so this is a standalone
+# additive Service instead of a values override -- selector/port confirmed
+# against `helm template apps/headlamp` output, matches the chart's own
+# service.yaml exactly.
+apiVersion: v1
+kind: Service
+metadata:
+  name: headlamp-tailscale
+  namespace: headlamp
+  annotations:
+    tailscale.com/tags: "tag:app-headlamp,tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}"
+    tailscale.com/hostname: "headlamp-{{ required "cluster.name is required" .Values.cluster.name }}"
+    external-dns.alpha.kubernetes.io/hostname: "headlamp.{{ required "cluster.name is required" .Values.cluster.name }}REDACTED"
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  selector:
+    app.kubernetes.io/name: headlamp
+    app.kubernetes.io/instance: headlamp
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

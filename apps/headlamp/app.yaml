@@ -14,6 +14,14 @@ exposePublic:
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
+  # Scaffolding for the Tailscale egress path (replaces the nb-client sidecar
+  # below once cut over) -- see templates/service-egress.yaml. tailnet must be
+  # set to the real tailnet name (e.g. "example.ts.net") before it's usable;
+  # egressClusters mirrors HEADLAMP_CLUSTERS (infra/terraform/headlamp.tf) and
+  # needs to be kept in sync by hand until this is derived automatically.
+  tailscale:
+    tailnet: ""
+    egressClusters: ["boa1-prod"]
   headlamp:
     replicaCount: 1
     deploymentAnnotations:
