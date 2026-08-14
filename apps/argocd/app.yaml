@@ -21,7 +21,7 @@ values:
       cm:
         admin.enabled: "false"
         timeout.reconciliation: "30s"
-        url: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED"
+        url: "https://argocd.{{ .Values.cluster.name }}REDACTED"
         dex.config: |
           connectors:
             - type: saml
@@ -30,8 +30,8 @@ values:
               config:
                 ssoURL: "$argocd-saml:entra-saml-sso-url"
                 caData: "$argocd-saml:entra-saml-ca"
-                redirectURI: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED/api/dex/callback"
-                entityIssuer: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED/api/dex/callback"
+                redirectURI: "https://argocd.{{ .Values.cluster.name }}REDACTED/api/dex/callback"
+                entityIssuer: "https://argocd.{{ .Values.cluster.name }}REDACTED/api/dex/callback"
                 usernameAttr: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"
                 emailAttr: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
                 groupsAttr: "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups"
@@ -84,7 +84,7 @@ values:
       enabled: true
       secret:
         create: false
-      argocdUrl: "https://argocd-server.argocd.{{ .Values.cluster.name }}REDACTED"
+      argocdUrl: "https://argocd.{{ .Values.cluster.name }}REDACTED"
       notifiers:
         service.slack: |
           token: $slack-token

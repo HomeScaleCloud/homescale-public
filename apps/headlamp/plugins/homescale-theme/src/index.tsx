@@ -77,7 +77,7 @@ registerAppTheme({
 // something fixable on our end.
 function ArgoCDRedirect() {
   const cluster = K8s.useCluster();
-  const target = cluster ? `https://argocd-server.argocd.${cluster}REDACTED` : null;
+  const target = cluster ? `https://argocd.${cluster}REDACTED` : null;
 
   React.useEffect(() => {
     if (target) {
@@ -160,7 +160,7 @@ function OpenInArgoCDButton({ item }: { item?: ArgoCDTrackedResource }) {
     return null;
   }
 
-  const target = `https://argocd-server.argocd.${cluster}REDACTED/applications/${encodeURIComponent(
+  const target = `https://argocd.${cluster}REDACTED/applications/${encodeURIComponent(
     parsed.appName
   )}?node=${encodeURIComponent(parsed.node)}`;
 

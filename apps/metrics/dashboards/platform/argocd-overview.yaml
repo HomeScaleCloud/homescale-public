@@ -696,7 +696,7 @@ panels:
                 - id: links
                   value:
                     - title: Open in ArgoCD
-                      url: 'https://argocd-server.argocd.${__data.fields.Cluster}REDACTED/applications/${__data.fields.Application}'
+                      url: 'https://argocd.${__data.fields.Cluster}REDACTED/applications/${__data.fields.Application}'
                       targetBlank: true
             - matcher:
                 id: byName
