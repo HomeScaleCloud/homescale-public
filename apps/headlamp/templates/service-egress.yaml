@@ -1,4 +1,5 @@
 {{- $tailnet := .Values.tailscale.tailnet }}
+{{- $cluster := required "cluster.name is required" .Values.cluster.name }}
 {{- range .Values.tailscale.egressClusters }}
 ---
 apiVersion: v1
@@ -8,7 +9,8 @@ metadata:
   namespace: headlamp
   annotations:
     tailscale.com/tailnet-fqdn: "k8s-api-{{ . }}.{{ $tailnet }}"
-    tailscale.com/proxy-group: egress
+    tailscale.com/tags: "tag:k8s,tag:app-headlamp,tag:cluster-{{ $cluster }}"
+    tailscale.com/hostname: "headlamp-{{ $cluster }}-egress-{{ . }}"
 spec:
   type: ExternalName
   externalName: placeholder

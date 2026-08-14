@@ -40,7 +40,7 @@ Tailscale is the zero-trust mesh that connects all clusters, CI jobs, and end-us
 
 | App | What it does |
 |-----|-------------|
-| `tailscale` | Tailscale Kubernetes Operator, ingress/egress ProxyGroups, and the apiserver-proxy |
+| `tailscale` | Tailscale Kubernetes Operator, the ingress ProxyGroup, and the apiserver-proxy |
 | `cloudflared` | Cloudflare tunnel for external exposure |
 | `traefik-private` / `traefik-public` | Ingress controllers |
 | `external-dns` | Automatic DNS record management |

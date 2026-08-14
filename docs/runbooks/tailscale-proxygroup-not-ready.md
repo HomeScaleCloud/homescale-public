@@ -6,7 +6,7 @@
 
 ## What this means
 
-A `ProxyGroup` (`ingress` or `egress`, `tailscale` namespace) has not reported a `ProxyGroupReady` condition for 10 minutes. Services annotated `tailscale.com/proxy-group` to route through it may not be reachable over the tailnet — for the `ingress` group, that's every exposed app Service; for `egress`, it's the in-cluster hostnames other apps use to reach tailnet-only targets.
+The `ingress` `ProxyGroup` (`tailscale` namespace) has not reported a `ProxyGroupReady` condition for 10 minutes. Services annotated `tailscale.com/proxy-group: ingress` to route through it may not be reachable over the tailnet — that's every exposed app Service. (Outbound-only access, e.g. `headlamp`/`metrics`'s cross-cluster targets, uses dedicated per-Service egress proxies instead, not this `ProxyGroup` — see [Networking](../architecture/networking.md#internal-service-exposure).)
 
 ## Common causes
 

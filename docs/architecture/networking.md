@@ -39,7 +39,25 @@ metadata:
 REDACTED
 ```
 
-Pods that need *outbound* access to tailnet-only targets (rather than being reached) use a shared per-cluster egress `ProxyGroup` instead — a Service annotated `tailscale.com/tailnet-fqdn`/`tailscale.com/proxy-group: egress` gives them a stable in-cluster hostname, without running their own mesh client.
+Pods that need *outbound* access to tailnet-only targets (rather than being reached) use an `ExternalName` Service annotated `tailscale.com/tailnet-fqdn` — pointing at the target's own tailnet hostname — instead of `loadBalancerClass`/`tailscale.com/proxy-group`:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-egress
+  annotations:
+    tailscale.com/tailnet-fqdn: "target-app-othercluster.{{ .Values.tailscale.tailnet }}"
+    tailscale.com/tags: "tag:k8s,tag:app-myapp,tag:cluster-{{ .Values.cluster.name }}"
+    tailscale.com/hostname: "myapp-{{ .Values.cluster.name }}-egress"
+spec:
+  type: ExternalName
+  externalName: placeholder
+  ports:
+    - port: 443
+```
+
+With no `tailscale.com/proxy-group` annotation, the Operator provisions a dedicated proxy `StatefulSet` for this one Service (not routed through the shared `ingress` `ProxyGroup`), which is what makes `tailscale.com/tags` meaningful here: a `ProxyGroup` registers its member proxies under its own fixed `tags:` regardless of what any individual Service requests, but a dedicated per-Service proxy takes the Service's own `tailscale.com/tags` annotation as its identity — so it's authorized by the same ACL `app_grants` rule as everything else that app owns, with no separate egress-specific policy needed. `tailscale.com/hostname` is optional but keeps the resulting device identifiable in the tailnet admin console instead of an auto-generated name.
 
 ### Direct cluster API access
 

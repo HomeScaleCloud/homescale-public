@@ -1,11 +1,15 @@
+{{- $tailnet := .Values.tailscale.tailnet }}
+{{- $cluster := required "cluster.name is required" .Values.cluster.name }}
+---
 apiVersion: v1
 kind: Service
 metadata:
   name: prometheus-boa1-prod
   namespace: metrics
   annotations:
-    tailscale.com/tailnet-fqdn: "prometheus-metrics-boa1-prod-aggr.{{ .Values.tailscale.tailnet }}"
-    tailscale.com/proxy-group: egress
+    tailscale.com/tailnet-fqdn: "prometheus-metrics-boa1-prod-aggr.{{ $tailnet }}"
+    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-{{ $cluster }}"
+    tailscale.com/hostname: "metrics-{{ $cluster }}-egress"
 spec:
   type: ExternalName
   externalName: placeholder
@@ -18,8 +22,9 @@ metadata:
   name: loki-boa1-prod
   namespace: metrics
   annotations:
-    tailscale.com/tailnet-fqdn: "loki-metrics-boa1-prod.{{ .Values.tailscale.tailnet }}"
-    tailscale.com/proxy-group: egress
+    tailscale.com/tailnet-fqdn: "loki-metrics-boa1-prod.{{ $tailnet }}"
+    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-{{ $cluster }}"
+    tailscale.com/hostname: "metrics-{{ $cluster }}-egress-loki"
 spec:
   type: ExternalName
   externalName: placeholder
@@ -32,8 +37,9 @@ metadata:
   name: alertmanager-boa1-prod
   namespace: metrics
   annotations:
-    tailscale.com/tailnet-fqdn: "alertmanager-metrics-boa1-prod.{{ .Values.tailscale.tailnet }}"
-    tailscale.com/proxy-group: egress
+    tailscale.com/tailnet-fqdn: "alertmanager-metrics-boa1-prod.{{ $tailnet }}"
+    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-{{ $cluster }}"
+    tailscale.com/hostname: "metrics-{{ $cluster }}-egress-alertmanager"
 spec:
   type: ExternalName
   externalName: placeholder
