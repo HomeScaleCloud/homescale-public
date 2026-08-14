@@ -2,7 +2,7 @@ terraform {
   required_providers {
     infisical = {
       source  = "infisical/infisical"
-      version = "0.19.22"
+      version = "0.19.23"
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
