@@ -14,14 +14,14 @@ argocd_login() {
     local cluster="${1:-}"
     [[ -z "$cluster" ]] && { echo "Usage: hsctl argocd login <cluster>"; exit 1; }
 
-    argocd login "argocd-server.argocd.${cluster}REDACTED" --sso
+    argocd login "argocd.${cluster}REDACTED" --sso
 }
 
 argocd_open() {
     local cluster="${1:-}"
     [[ -z "$cluster" ]] && { echo "Usage: hsctl argocd open <cluster>"; exit 1; }
 
-    open "https://argocd-server.argocd.${cluster}REDACTED"
+    open "https://argocd.${cluster}REDACTED"
 }
 
 argocd_main() {
