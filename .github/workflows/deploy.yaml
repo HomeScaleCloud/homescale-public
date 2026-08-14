@@ -199,7 +199,10 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch --no-tags origin "${{ github.base_ref }}" --depth=1
+            # No --depth here: checkout already ran with fetch-depth: 0, so the
+            # repo is unshallow -- a shallow re-fetch of the base ref would
+            # sever the merge-base needed by the triple-dot diff below.
+            git fetch --no-tags origin "${{ github.base_ref }}"
             range="origin/${{ github.base_ref }}...${{ github.sha }}"
             clusters=$(
               git diff --name-only --diff-filter=d "$range" \
@@ -364,7 +367,7 @@ jobs:
           done
 
       - name: Post plan results as PR comments
-        if: always() && github.event_name == 'pull_request' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]' || steps.detect.outputs.deleted_clusters != '[]' || steps.detect.outputs.deleted_machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
+        if: always() && github.event_name == 'pull_request' && steps.detect.outcome == 'success' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]' || steps.detect.outputs.deleted_clusters != '[]' || steps.detect.outputs.deleted_machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
           CLUSTERS: ${{ steps.detect.outputs.clusters }}
