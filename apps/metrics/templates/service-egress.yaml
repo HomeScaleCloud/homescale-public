@@ -4,7 +4,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: prometheus-boa1-prod
+  name: metrics-{{ $cluster }}-egress
   namespace: metrics
   annotations:
     tailscale.com/tailnet-fqdn: "prometheus-metrics-boa1-prod-aggr.{{ $tailnet }}"
@@ -19,7 +19,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: loki-boa1-prod
+  name: metrics-{{ $cluster }}-egress-loki
   namespace: metrics
   annotations:
     tailscale.com/tailnet-fqdn: "loki-metrics-boa1-prod.{{ $tailnet }}"
@@ -34,7 +34,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: alertmanager-boa1-prod
+  name: metrics-{{ $cluster }}-egress-alertmanager
   namespace: metrics
   annotations:
     tailscale.com/tailnet-fqdn: "alertmanager-metrics-boa1-prod.{{ $tailnet }}"

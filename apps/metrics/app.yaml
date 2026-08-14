@@ -292,10 +292,10 @@ values:
         serviceMonitorSelectorNilUsesHelmValues: false
         additionalAlertManagerConfigs:
           - static_configs:
-              - targets: ["alertmanager-boa1-prod.metrics.svc.cluster.local:80"]
+              - targets: ["metrics-{{ .Values.cluster.name }}-egress-alertmanager.metrics.svc.cluster.local:80"]
         remoteWrite:
           - name: prometheus-aggregator
-            url: "http://prometheus-boa1-prod.metrics.svc.cluster.local:9090/api/v1/write"
+            url: "http://metrics-{{ .Values.cluster.name }}-egress.metrics.svc.cluster.local:9090/api/v1/write"
             remoteTimeout: 2m
             queueConfig:
               maxSamplesPerSend: 500
@@ -432,7 +432,7 @@ values:
 
           loki.write "loki" {
             endpoint {
-              url = "http://loki-boa1-prod.metrics.svc.cluster.local:3100/loki/api/v1/push"
+              url = "http://metrics-{{ .Values.cluster.name }}-egress-loki.metrics.svc.cluster.local:3100/loki/api/v1/push"
             }
             external_labels = {
               cluster = "{{ .Values.cluster.name }}",
