@@ -2,7 +2,7 @@
   "extends": [
     "config:recommended"
   ],
-  "baseBranches": [
+  "baseBranchPatterns": [
     "main"
   ],
   "semanticCommits": "enabled",
@@ -46,38 +46,40 @@
       "semanticCommitScope": "deps"
     },
     {
-      "matchPackagePatterns": ["^ghcr\\.io/homescalecloud/"],
-      "enabled": false
+      "enabled": false,
+      "matchPackageNames": [
+        "/^ghcr\\.io/homescalecloud//"
+      ]
     }
   ],
   "argocd": {
-    "fileMatch": [
-      "apps/.+/[^/]+-argocd\\.yaml$"
+    "managerFilePatterns": [
+      "/apps/.+/[^/]+-argocd\\.yaml$/"
     ]
   },
   "terraform": {
-    "fileMatch": [
-      "infra/terraform/.*\\.tf$"
+    "managerFilePatterns": [
+      "/infra/terraform/.*\\.tf$/"
     ]
   },
   "kubernetes": {
-    "fileMatch": [
-      "apps/.+/.+\\.yaml$"
+    "managerFilePatterns": [
+      "/apps/.+/.+\\.yaml$/"
     ]
   },
   "github-actions": {
-    "fileMatch": [
-      ".gitea/workflows/.*\\.yaml$"
+    "managerFilePatterns": [
+      "/.gitea/workflows/.*\\.yaml$/"
     ]
   },
   "dockerfile": {
-    "fileMatch": [
-      "apps/.+/Dockerfile"
+    "managerFilePatterns": [
+      "/apps/.+/Dockerfile/"
     ]
   },
   "ansible-galaxy": {
-    "fileMatch": [
-      "infra/ansible/requirements\\.yml$"
+    "managerFilePatterns": [
+      "/infra/ansible/requirements\\.yml$/"
     ]
   },
   "customManagers": [
