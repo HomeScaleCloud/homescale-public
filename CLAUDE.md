@@ -157,6 +157,8 @@ tailscale:
 
 **Do not remove or treat this block as dead config** — it has no effect on Helm rendering but drives real infrastructure via Terraform.
 
+In addition to the per-app rules above, the ACL always includes one tailnet-wide grant (`local.self_grant` in `acl.tf`) letting every member reach their own other devices on every port/protocol (`src: autogroup:member`, `dst: autogroup:self`, `ip: ["*"]`) — this is Tailscale's standard self-access pattern, not app-specific policy.
+
 ## VolSync Backups
 
 VolSync (`apps/volsync/`, syncWave -5) provides PVC-level backup and restore via restic repositories.

@@ -43,7 +43,13 @@ locals {
     ip  = ["tcp:443"]
   }
 
-  grants = concat(local.app_grants, [local.k8s_grant])
+  self_grant = {
+    src = ["autogroup:member"]
+    dst = ["autogroup:self"]
+    ip  = ["*"]
+  }
+
+  grants = concat(local.app_grants, [local.k8s_grant, local.self_grant])
 }
 
 resource "tailscale_acl" "this" {
