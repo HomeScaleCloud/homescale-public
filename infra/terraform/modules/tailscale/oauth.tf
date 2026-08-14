@@ -1,6 +1,6 @@
 resource "tailscale_oauth_client" "k8s_operator" {
   description = "Kubernetes Operator"
-  scopes      = ["devices:core", "auth_keys", "services:read", "services:write"]
+  scopes      = ["devices:core", "auth_keys", "services"]
   tags        = ["tag:k8s"]
 
   # Without this, Terraform may create this in parallel with tailscale_acl.this
