@@ -56,6 +56,11 @@ resource "tailscale_acl" "this" {
   acl = jsonencode({
     tagOwners = local.tag_owners
     grants    = local.grants
+    autoApprovers = {
+      services = {
+        "tag:k8s" = ["tag:k8s"]
+      }
+    }
   })
 
   # Without this, Create() 412s unless the tailnet's ACL has never been
