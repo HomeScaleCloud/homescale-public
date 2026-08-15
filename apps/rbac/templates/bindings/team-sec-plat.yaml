@@ -189,3 +189,19 @@ subjects:
   - kind: Group
     apiGroup: rbac.authorization.k8s.io
     name: 31819f74-d93b-46cf-91c8-486787219e4d
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: team-sec-plat:policy-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: policy-viewer
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: team-sec-plat
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: 31819f74-d93b-46cf-91c8-486787219e4d
