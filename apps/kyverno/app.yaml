@@ -4,3 +4,6 @@ syncWave: -25
 defaultDeploy: true
 syncOptions:
   - ServerSideApply=true
+values:
+  cluster:
+    name: "{{ .Values.cluster.name }}"
