@@ -1,0 +1,6 @@
+path: apps/kyverno
+namespace: kyverno
+syncWave: -25
+defaultDeploy: true
+syncOptions:
+  - ServerSideApply=true

@@ -1,0 +1,22 @@
+apiVersion: policies.kyverno.io/v1beta1
+kind: ValidatingPolicy
+metadata:
+  name: require-tailscale-service-tags
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["services"]
+  matchConditions:
+    - name: is-tailscale-loadbalancer
+      expression: "has(object.spec.loadBalancerClass) && object.spec.loadBalancerClass == 'tailscale'"
+  validationActions: [Deny]
+  validations:
+    - expression: >-
+        has(object.metadata.annotations) && 'tailscale.com/tags' in object.metadata.annotations &&
+        object.metadata.annotations['tailscale.com/tags'].split(',').exists(t, t == 'tag:k8s') &&
+        object.metadata.annotations['tailscale.com/tags'].split(',').exists(t, t.matches('^tag:(app-.+|k8s-api)$')) &&
+        object.metadata.annotations['tailscale.com/tags'].split(',').exists(t, t == 'tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}')
+      message: "Tailscale-exposed Services (loadBalancerClass: tailscale) must set tailscale.com/tags including tag:k8s, tag:app-<name>, and tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}."

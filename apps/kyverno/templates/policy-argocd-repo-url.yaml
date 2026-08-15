@@ -1,0 +1,18 @@
+apiVersion: policies.kyverno.io/v1beta1
+kind: ValidatingPolicy
+metadata:
+  name: require-homescale-repo-url
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["argoproj.io"]
+        apiVersions: ["v1alpha1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["applications"]
+  validationActions: [Deny]
+  validations:
+    - expression: >-
+        has(object.spec.source)
+          ? object.spec.source.repoURL == 'git@github.com:HomeScaleCloud/homescale.git'
+          : object.spec.sources.exists(s, s.repoURL == 'git@github.com:HomeScaleCloud/homescale.git')
+      message: "ArgoCD Applications must use git@github.com:HomeScaleCloud/homescale.git as their source repoURL."
