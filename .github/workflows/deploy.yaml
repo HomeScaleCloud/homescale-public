@@ -522,7 +522,7 @@ jobs:
         run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Install Ansible
-        run: pip install ansible kubernetes infisicalsdk==1.0.16
+        run: pip install ansible kubernetes infisicalsdk==1.0.17
 
       - name: Install Ansible collections
         working-directory: infra/ansible
