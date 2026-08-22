@@ -1,5 +1,6 @@
 name: "Deploy"
 permissions:
+  actions: read
   contents: read
   id-token: write
   pull-requests: write
@@ -19,9 +20,14 @@ concurrency:
   group: deploy
 
 jobs:
+  homescale-runners:
+    name: "HomeScale Runners"
+    uses: ./.github/workflows/homescale-runners.yaml
+
   terraform:
     name: "Terraform"
-    runs-on: ubuntu-latest
+    needs: [homescale-runners]
+    runs-on: ${{ needs.homescale-runners.outputs.self_hosted == 'true' && 'homescale-runners' || 'ubuntu-latest' }}
     environment: ${{ github.ref == 'refs/heads/main' && 'terraform' || null }}
     defaults:
       run:
@@ -46,6 +52,7 @@ jobs:
           secret-path: "/github-actions"
           export-type: env
       - name: Setup Terraform
+        if: needs.homescale-runners.outputs.self_hosted != 'true'
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4
       - name: Request OIDC Token
         run: |
@@ -95,7 +102,7 @@ jobs:
           path: /tmp/tailnet-acl.json
           retention-days: 30
       - name: Install uv
-        if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true'
+        if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true' && needs.homescale-runners.outputs.self_hosted != 'true'
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Generate Tailnet ACL map
         id: tailnet_acl_map
@@ -203,8 +210,8 @@ jobs:
 
   omni:
     name: "Omni"
-    runs-on: ubuntu-latest
-    needs: terraform
+    runs-on: ${{ needs.homescale-runners.outputs.self_hosted == 'true' && 'homescale-runners' || 'ubuntu-latest' }}
+    needs: [homescale-runners, terraform]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -313,7 +320,10 @@ jobs:
           curl -fsSL -o /usr/local/bin/omnictl \
             https://REDACTED/api/omnictl/omnictl-linux-amd64
           chmod +x /usr/local/bin/omnictl
-          sudo apt-get install -y yq
+
+      - name: Install yq
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && needs.homescale-runners.outputs.self_hosted != 'true'
+        run: sudo apt-get install -y yq
 
       - name: Plan
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.event_name == 'pull_request'
@@ -498,8 +508,8 @@ jobs:
 
   ansible:
     name: "Ansible"
-    runs-on: ubuntu-latest
-    needs: omni
+    runs-on: ${{ needs.homescale-runners.outputs.self_hosted == 'true' && 'homescale-runners' || 'ubuntu-latest' }}
+    needs: [homescale-runners, omni]
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
@@ -537,12 +547,15 @@ jobs:
           echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
 
       - name: Install Helm
+        if: needs.homescale-runners.outputs.self_hosted != 'true'
         run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Install Ansible
+        if: needs.homescale-runners.outputs.self_hosted != 'true'
         run: pip install ansible kubernetes infisicalsdk==1.0.17
 
       - name: Install Ansible collections
+        if: needs.homescale-runners.outputs.self_hosted != 'true'
         working-directory: infra/ansible
         run: ansible-galaxy collection install -r requirements.yml
 

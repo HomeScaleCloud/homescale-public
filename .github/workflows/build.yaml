@@ -1,5 +1,6 @@
 name: "Build"
 permissions:
+  actions: read
   contents: write
   packages: write
   id-token: write
@@ -21,9 +22,14 @@ on:
         required: false
 
 jobs:
+  homescale-runners:
+    name: "HomeScale Runners"
+    uses: ./.github/workflows/homescale-runners.yaml
+
   discover:
     name: "Discover build targets"
-    runs-on: ubuntu-latest
+    needs: [homescale-runners]
+    runs-on: ${{ needs.homescale-runners.outputs.self_hosted == 'true' && 'homescale-runners' || 'ubuntu-latest' }}
     outputs:
       docker: ${{ steps.set.outputs.docker }}
       helm: ${{ steps.set.outputs.helm }}
@@ -103,9 +109,9 @@ jobs:
 
   docker:
     name: "Docker - ${{ matrix.name }}"
-    needs: [discover]
+    needs: [homescale-runners, discover]
     if: needs.discover.outputs.docker != '[]'
-    runs-on: ubuntu-latest
+    runs-on: ${{ needs.homescale-runners.outputs.self_hosted == 'true' && 'homescale-runners' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -130,6 +136,10 @@ jobs:
             type=raw,value=${{ github.sha }}
             type=raw,value=latest,enable={{is_default_branch}}
 
+      - name: Sync Ansible requirements into build context
+        if: matrix.name == 'github-runner'
+        run: cp infra/ansible/requirements.yml apps/github-runner/requirements.yml
+
       - name: Build and push
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7.3.0
         with:
@@ -148,20 +158,31 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+          # github-runner only: skip binaries we don't build ourselves -- either bundled by the
+          # upstream ghcr.io/actions/actions-runner base image (docker/containerd/runc/buildx,
+          # the runner's own Node.js toolchain) or fetched as the latest official release of a
+          # third-party tool (gh/tailscale/terraform/helm/kubectl). Every finding here so far has
+          # been an upstream Go/Node stdlib version lag with no newer pinnable release to switch
+          # to -- accepted supply-chain risk, not something fixable from this Dockerfile.
+          skip-dirs: ${{ matrix.name == 'github-runner' && 'home/runner/externals' || '' }}
+          skip-files: ${{ matrix.name == 'github-runner' && 'usr/bin/containerd,usr/bin/containerd-shim-runc-v2,usr/bin/ctr,usr/bin/docker,usr/bin/docker-proxy,usr/bin/dockerd,usr/bin/runc,usr/local/lib/docker/cli-plugins/docker-buildx,usr/bin/gh,usr/bin/tailscale,usr/bin/terraform,usr/local/bin/helm,usr/local/bin/kubectl' || '' }}
 
   docs:
     name: "Docs"
-    runs-on: ubuntu-latest
+    needs: [homescale-runners]
+    runs-on: ${{ needs.homescale-runners.outputs.self_hosted == 'true' && 'homescale-runners' || 'ubuntu-latest' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
       - name: Setup Python
+        if: needs.homescale-runners.outputs.self_hosted != 'true'
         uses: actions/setup-python@v7
         with:
           python-version: "3.x"
       - name: Install mkdocs-material
+        if: needs.homescale-runners.outputs.self_hosted != 'true'
         run: pip install mkdocs-material
       - name: Build docs
         if: github.ref != 'refs/heads/main'

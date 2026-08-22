@@ -8,11 +8,17 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
+  homescale-runners:
+    name: "HomeScale Runners"
+    uses: ./.github/workflows/homescale-runners.yaml
+
   mirror:
-    runs-on: ubuntu-latest
+    needs: [homescale-runners]
+    runs-on: ${{ needs.homescale-runners.outputs.self_hosted == 'true' && 'homescale-runners' || 'ubuntu-latest' }}
     steps:
       - name: Checkout full history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -20,6 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install git-filter-repo
+        if: needs.homescale-runners.outputs.self_hosted != 'true'
         run: pip install git-filter-repo
 
       - name: Rewrite history — scrub internal FQDNs and Entra IDs

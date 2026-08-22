@@ -27,6 +27,10 @@ spec:
               values:
                 cluster:
                   name: boa1-prod
+            github-runner-controller:
+              deploy: true
+            github-runner:
+              deploy: true
             home-assistant:
               deploy: true
               values:

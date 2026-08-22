@@ -1,0 +1,44 @@
+name: "HomeScale Runners"
+
+permissions:
+  actions: read
+
+on:
+  workflow_call:
+    outputs:
+      self_hosted:
+        description: "true if the homescale-runners self-hosted runner pool is online"
+        value: ${{ jobs.availability.outputs.self_hosted }}
+
+jobs:
+  availability:
+    name: "Resolve availability"
+    runs-on: ubuntu-latest
+    outputs:
+      self_hosted: ${{ steps.check.outputs.self_hosted }}
+    steps:
+      - name: Check homescale-runners runner pool
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          # Any failure here (API error, rate limit, transient network blip) must
+          # degrade to "unavailable" rather than fail this job -- every downstream
+          # job needs this one, so a hard failure here would skip all of CI instead
+          # of just falling back to cloud runners.
+          online=$(gh api "/repos/${{ github.repository }}/actions/runners" --paginate \
+            --jq '[.runners[]? | select(.status == "online") | select(.labels[]?.name == "homescale-runners")] | length' \
+            2>&1) || online=0
+          online="${online:-0}"
+          if ! [[ "$online" =~ ^[0-9]+$ ]]; then
+            echo "Runner check produced non-numeric output, treating as unavailable: $online"
+            online=0
+          fi
+          if [ "$online" -gt 0 ]; then
+            echo "homescale-runners pool is online ($online runner(s))"
+            echo "self_hosted=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "homescale-runners pool is unavailable, falling back to cloud runners"
+            echo "self_hosted=false" >> "$GITHUB_OUTPUT"
+          fi

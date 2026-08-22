@@ -1,0 +1,12 @@
+path: apps/github-runner-controller
+namespace: github-runner
+releaseName: github-runner-controller
+syncWave: -12
+podSecurity: privileged
+defaultDeploy: false
+syncOptions:
+  - ServerSideApply=true
+values:
+  gha-runner-scale-set-controller:
+    flags:
+      logLevel: info

@@ -1,0 +1,26 @@
+path: apps/github-runner
+namespace: github-runner
+releaseName: github-runner
+syncWave: -8
+podSecurity: privileged
+defaultDeploy: false
+syncOptions:
+  - ServerSideApply=true
+values:
+  gha-runner-scale-set:
+    githubConfigUrl: https://github.com/HomeScaleCloud
+    githubConfigSecret: github-runner-github-app  # pragma: allowlist secret
+    runnerScaleSetName: homescale-runners
+    minRunners: 1
+    maxRunners: 4
+    containerMode:
+      type: dind
+    controllerServiceAccount:
+      namespace: github-runner
+      name: github-runner-controller-gha-rs-controller
+    template:
+      spec:
+        containers:
+          - name: runner
+            image: ghcr.io/homescalecloud/github-runner:latest
+            command: ["/home/runner/run.sh"]
