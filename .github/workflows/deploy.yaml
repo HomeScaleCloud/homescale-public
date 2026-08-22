@@ -73,46 +73,46 @@ jobs:
             echo "PLAN_STATUS=failed" >> "$GITHUB_ENV"
             exit 1
           fi
-      - name: Extract rendered Tailscale ACL
-        id: tailscale_acl
+      - name: Extract rendered Tailnet ACL
+        id: tailnet_acl
         if: steps.plan.outcome == 'success'
         run: |
           terraform show -json tfplan > /tmp/tfplan.json
           RAW=$(jq -r '.resource_changes[]? | select(.address == "module.tailscale.tailscale_acl.this") | .change.after.acl // empty' /tmp/tfplan.json)
           if [ -n "$RAW" ]; then
-            echo "$RAW" | jq '.' > /tmp/tailscale-acl.json
+            echo "$RAW" | jq '.' > /tmp/tailnet-acl.json
             echo "ACL_RENDERED=true" >> "$GITHUB_ENV"
-            echo "ACL_SUMMARY=$(jq -r '"\(.tagOwners | length) tags, \(.grants | length) grants"' /tmp/tailscale-acl.json)" >> "$GITHUB_ENV"
+            echo "ACL_SUMMARY=$(jq -r '"\(.tagOwners | length) tags, \(.grants | length) grants"' /tmp/tailnet-acl.json)" >> "$GITHUB_ENV"
           else
             echo "ACL_RENDERED=false" >> "$GITHUB_ENV"
           fi
-      - name: Upload rendered Tailscale ACL artifact
+      - name: Upload rendered Tailnet ACL artifact
         id: upload_acl
         if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: tailscale-acl
-          path: /tmp/tailscale-acl.json
+          name: tailnet-acl
+          path: /tmp/tailnet-acl.json
           retention-days: 30
       - name: Install uv
         if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true'
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - name: Generate Tailnet topology map
-        id: topology
+      - name: Generate Tailnet ACL map
+        id: tailnet_acl_map
         if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true'
         continue-on-error: true
         run: |
           uvx tailscale-network-topology-mapper \
-            --policy-file /tmp/tailscale-acl.json \
-            --output /tmp/tailnet-topology.html
-          echo "TOPOLOGY_RENDERED=true" >> "$GITHUB_ENV"
-      - name: Upload Tailnet topology map artifact
-        id: upload_topology
-        if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true' && steps.topology.outcome == 'success'
+            --policy-file /tmp/tailnet-acl.json \
+            --output /tmp/tailnet-acl-map.html
+          echo "ACL_MAP_RENDERED=true" >> "$GITHUB_ENV"
+      - name: Upload Tailnet ACL map artifact
+        id: upload_acl_map
+        if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true' && steps.tailnet_acl_map.outcome == 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: tailnet-topology-map
-          path: /tmp/tailnet-topology.html
+          name: tailnet-acl-map
+          path: /tmp/tailnet-acl-map.html
           retention-days: 30
       - name: Write plan to job summary
         if: always() && steps.plan.outcome != 'skipped'
@@ -175,14 +175,14 @@ jobs:
             ];
             if (process.env.ACL_RENDERED === 'true') {
               const aclUrl = `${{ steps.upload_acl.outputs.artifact-url }}`;
-              const topologyUrl = `${{ steps.upload_topology.outputs.artifact-url }}`;
+              const aclMapUrl = `${{ steps.upload_acl_map.outputs.artifact-url }}`;
               const links = [];
               links.push(aclUrl ? `[JSON](${aclUrl})` : '_JSON (upload failed)_');
-              if (process.env.TOPOLOGY_RENDERED === 'true') {
-                links.push(topologyUrl ? `[Map](${topologyUrl})` : '_Map (upload failed)_');
+              if (process.env.ACL_MAP_RENDERED === 'true') {
+                links.push(aclMapUrl ? `[Map](${aclMapUrl})` : '_Map (upload failed)_');
               }
               body.push(
-                '### <img src="https://github.com/tailscale.png" width="20" height="20" valign="middle" /> Tailscale ACL',
+                '### <img src="https://github.com/tailscale.png" width="20" height="20" valign="middle" /> Tailnet ACL',
                 '',
                 `${process.env.ACL_SUMMARY || ''}`,
                 '',
