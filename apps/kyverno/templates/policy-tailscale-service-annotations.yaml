@@ -1,7 +1,7 @@
 apiVersion: policies.kyverno.io/v1beta1
 kind: ValidatingPolicy
 metadata:
-  name: require-tailscale-service-tags
+  name: require-tailscale-service-annotations
 spec:
   matchConstraints:
     resourceRules:
@@ -20,3 +20,7 @@ spec:
         object.metadata.annotations['tailscale.com/tags'].split(',').exists(t, t.matches('^tag:(app-.+|k8s-api)$')) &&
         object.metadata.annotations['tailscale.com/tags'].split(',').exists(t, t == 'tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}')
       message: "Tailscale-exposed Services (loadBalancerClass: tailscale) must set tailscale.com/tags including tag:k8s, tag:app-<name>, and tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}."
+    - expression: >-
+        has(object.metadata.annotations) && 'external-dns.alpha.kubernetes.io/hostname' in object.metadata.annotations &&
+        object.metadata.annotations['external-dns.alpha.kubernetes.io/hostname'].endsWith('REDACTED')
+      message: "Tailscale-exposed Services (loadBalancerClass: tailscale) must set external-dns.alpha.kubernetes.io/hostname ending in REDACTED"
