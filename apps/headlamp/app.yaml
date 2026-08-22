@@ -105,3 +105,8 @@ values:
       - name: headlamp-multicluster
         mountPath: /home/headlamp/.config/Headlamp/kubeconfigs
         readOnly: true
+ignoreDifferences:
+  - group: ""
+    kind: Service
+    jsonPointers:
+      - /spec/externalName

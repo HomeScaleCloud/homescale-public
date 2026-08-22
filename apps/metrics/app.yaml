@@ -305,6 +305,7 @@ values:
           relabelings:
             - sourceLabels: ["__meta_kubernetes_pod_node_name"]
               targetLabel: node
+              action: replace
     kubeControllerManager:
       enabled: false
     kubeScheduler:
@@ -446,3 +447,8 @@ values:
         - effect: NoSchedule
           key: node-role.kubernetes.io/master
           operator: Exists
+ignoreDifferences:
+  - group: ""
+    kind: Service
+    jsonPointers:
+      - /spec/externalName

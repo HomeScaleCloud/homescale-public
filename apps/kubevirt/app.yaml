@@ -4,3 +4,8 @@ releaseName: kubevirt
 syncWave: 0
 podSecurity: privileged
 defaultDeploy: false
+ignoreDifferences:
+  - group: apiextensions.k8s.io
+    kind: CustomResourceDefinition
+    name: cdis.cdi.kubevirt.io
+    jsonPointers: ["/spec/versions", "/spec/conversion"]
