@@ -94,6 +94,26 @@ jobs:
           name: tailscale-acl
           path: /tmp/tailscale-acl.json
           retention-days: 30
+      - name: Install uv
+        if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true'
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Generate Tailnet topology map
+        id: topology
+        if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true'
+        continue-on-error: true
+        run: |
+          uvx tailscale-network-topology-mapper \
+            --policy-file /tmp/tailscale-acl.json \
+            --output /tmp/tailnet-topology.html
+          echo "TOPOLOGY_RENDERED=true" >> "$GITHUB_ENV"
+      - name: Upload Tailnet topology map artifact
+        id: upload_topology
+        if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true' && steps.topology.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: tailnet-topology-map
+          path: /tmp/tailnet-topology.html
+          retention-days: 30
       - name: Write plan to job summary
         if: always() && steps.plan.outcome != 'skipped'
         run: |
@@ -152,28 +172,26 @@ jobs:
               output || '(no output)',
               '```',
               '',
-              `> commit \`${{ github.sha }}\``,
-            ].join('\n');
-            await upsertComment(marker, body);
-
+            ];
             if (process.env.ACL_RENDERED === 'true') {
-              const aclMarker = '<!-- tailscale-acl -->';
-              const artifactUrl = `${{ steps.upload_acl.outputs.artifact-url }}`;
-              const link = artifactUrl
-                ? `[Download the rendered ACL](${artifactUrl}) `
-                : '_Artifact upload did not complete -- check the job logs._';
-              const aclBody = [
-                aclMarker,
-                '## 🔒 Rendered Tailscale ACL',
+              const aclUrl = `${{ steps.upload_acl.outputs.artifact-url }}`;
+              const topologyUrl = `${{ steps.upload_topology.outputs.artifact-url }}`;
+              const links = [];
+              links.push(aclUrl ? `[JSON](${aclUrl})` : '_JSON (upload failed)_');
+              if (process.env.TOPOLOGY_RENDERED === 'true') {
+                links.push(topologyUrl ? `[Map](${topologyUrl})` : '_Map (upload failed)_');
+              }
+              body.push(
+                '### <img src="https://github.com/tailscale.png" width="20" height="20" valign="middle" /> Tailscale ACL',
                 '',
                 `${process.env.ACL_SUMMARY || ''}`,
                 '',
-                link,
+                links.join(' · '),
                 '',
-                `> commit \`${{ github.sha }}\``,
-              ].join('\n');
-              await upsertComment(aclMarker, aclBody);
+              );
             }
+            body.push(`> commit \`${{ github.sha }}\``);
+            await upsertComment(marker, body.join('\n'));
       - name: Fail if plan failed
         if: steps.plan.outcome == 'failure'
         run: |
