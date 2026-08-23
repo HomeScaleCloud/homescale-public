@@ -1,7 +1,6 @@
 name: "HomeScale Runners"
 
 permissions:
-  actions: read
   id-token: write
 
 on:
@@ -23,22 +22,15 @@ jobs:
     steps:
       # The default GITHUB_TOKEN cannot list self-hosted runners at all -- confirmed
       # empirically (403 "Resource not accessible by integration") even with
-      # `actions: read` correctly granted and propagated through the whole call chain.
-      # This is a hard GitHub restriction on the ephemeral Actions token for runner-
-      # management endpoints, not a permissions misconfiguration on our side, and it
-      # applies at both repo and org scope. There's no way around it other than
-      # authenticating as something else, so mint a short-lived, org-scoped
-      # installation token from the same GitHub App already used for runner
-      # registration (it already has the organization_self_hosted_runners:read
-      # permission needed). The runner pool itself is org-scoped (githubConfigUrl in
-      # apps/github-runner/app.yaml) so any repo in the org can use it -- since this
-      # check already has to authenticate as the App regardless of scope, there's no
-      # simplicity win left in keeping the pool repo-scoped. Every step here is
-      # defensive: any failure (Infisical unreachable, App auth failure, API error)
-      # must degrade to "unavailable" rather than fail this job -- every downstream
-      # job needs this one, so a hard failure here would skip all of CI instead of
-      # just falling back to cloud runners.
-      - name: Import GitHub App credentials
+      # `actions: read` granted, at both repo and org scope. This needs a real user
+      # token instead: a fine-grained PAT (org owner, "Self-hosted runners: Read-only"
+      # organization permission), stored in Infisical at /github-actions like every
+      # other CI-only secret, not a raw GitHub Actions secret. Both steps here are
+      # defensive: if Infisical is unreachable or the token is missing/invalid, this
+      # degrades to "unavailable" rather than failing the job -- every downstream job
+      # needs this one, so a hard failure here would skip all of CI instead of just
+      # falling back to cloud runners.
+      - name: Import RUNNER_CHECK_TOKEN
         id: infisical
         continue-on-error: true
         uses: Infisical/secrets-action@v1.0.16
@@ -47,31 +39,26 @@ jobs:
           identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
           env-slug: "prod"
           project-slug: "homescale"
-          secret-path: "/k8s/github-runner"
+          secret-path: "/github-actions"
           export-type: env
-
-      - name: Mint org-scoped installation token
-        id: app_token
-        if: steps.infisical.outcome == 'success'
-        continue-on-error: true
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
-        with:
-          app-id: ${{ env.github_app_id }}
-          private-key: ${{ env.github_app_private_key }}
-          owner: HomeScaleCloud
 
       - name: Check homescale-runners runner pool
         id: check
         env:
-          GH_TOKEN: ${{ steps.app_token.outputs.token || github.token }}
+          GH_TOKEN: ${{ env.RUNNER_CHECK_TOKEN }}
         run: |
           set -uo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "RUNNER_CHECK_TOKEN unavailable, falling back to cloud runners"
+            echo "self_hosted=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           # ARC-managed runners don't populate the classic .labels[] field on this
           # API at all (confirmed empirically -- every runner reports labels: []
           # regardless of scale set), so matching has to be by runner name instead.
           # ARC always names them <runnerScaleSetName>-<suffix>-runner-<suffix>.
           online=$(gh api "/orgs/HomeScaleCloud/actions/runners" --paginate \
-            --jq '[.runners[]? | select(.status == "online") | select(.name | startswith("homescale-runners-"))] | length' \
+            --jq '[.runners[]? | select(.status == "online") | select(.busy == false) | select(.name | startswith("homescale-runners-"))] | length' \
             2>&1) || online=0
           online="${online:-0}"
           if ! [[ "$online" =~ ^[0-9]+$ ]]; then

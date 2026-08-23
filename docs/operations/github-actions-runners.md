@@ -15,9 +15,11 @@ They're **not** merged into a single chart/Application, even though `gha-runner-
 
 `minRunners` is `3`, not `0`: with autoscale-to-zero, no runner would ever be registered while idle, and CI's "is the pool available" check (below) would have nothing to observe. Warm runners keep that check meaningful, avoid cold-start delay, and let multiple jobs run in parallel without falling back to cloud runners. `maxRunners` is `6`.
 
-The runner scale set is registered at the **org** level (`githubConfigUrl: https://github.com/HomeScaleCloud`), so any repo in `HomeScaleCloud` can use the pool, not just `homescale`. This did briefly live at repo-scope (simpler API auth, see below) but there was no actual simplicity win to keep it there — the availability check already has to authenticate as a GitHub App regardless of scope (the default `GITHUB_TOKEN` can't list self-hosted runners at either scope, see below), so org-scope costs nothing extra and is strictly more useful.
+The runner scale set is registered at the **org** level (`githubConfigUrl: https://github.com/HomeScaleCloud`), so any repo in `HomeScaleCloud` can use the pool, not just `homescale`.
 
 ## Setting it up
+
+There are two, unrelated pieces of auth here — don't conflate them: the **GitHub App** is how the runner pool itself registers with GitHub (ARC's own credential, lives in the cluster); the **PAT** below is only for CI's "is the pool online" check (lives in GitHub Actions secrets, never touches the cluster). The check doesn't use the App at all.
 
 ### 1. Create a GitHub App
 
@@ -41,7 +43,13 @@ At `/k8s/github-runner` (prod env):
 
 These are synced into the `github-runner` namespace as the `github-runner-github-app` secret by `apps/github-runner/templates/secret.yaml`, and referenced by the chart's `githubConfigSecret` value.
 
-### 3. Make the runner image public
+### 3. Create a PAT for the CI availability check
+
+Org owner → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → New token**, scoped to the `HomeScaleCloud` org, with **Organization permissions → Self-hosted runners: Read-only** and nothing else. Add it to Infisical at `/github-actions` (prod env) as `RUNNER_CHECK_TOKEN` — the same path every other CI-only secret (`TAILSCALE_OAUTH_CLIENT_ID`, `VULTR_TOKEN`, etc.) already lives at, not a raw GitHub Actions secret.
+
+Fine-grained PATs belong to a user, so this needs periodic rotation (GitHub caps the max lifetime) and breaks if that user's org access ever changes — acceptable tradeoffs for a homelab; see [below](#auth-a-plain-pat-not-a-github-app) for why this is simpler than the alternative.
+
+### 4. Make the runner image public
 
 The `homescale` repo is private, so `ghcr.io/homescalecloud/github-runner` defaults to a private package on first push — which the cluster can't pull without an image pull secret. Since the image itself has no secrets baked in (just public tooling on top of the public `ghcr.io/actions/actions-runner` base), the simplest fix is to make the package public instead of managing a pull secret: after the first successful build (merge a change under `apps/github-runner/` to `main`), go to the package's settings on `github.com/orgs/HomeScaleCloud/packages` and change its visibility to public.
 
@@ -61,27 +69,40 @@ if: needs.homescale-runners.outputs.self_hosted != 'true'
 
 `claude.yml` (the `@claude` mention bot) intentionally does **not** go through this — it's not part of the build/test/deploy pipeline and has no heavy dependency-install steps to save.
 
-### Auth: the default `GITHUB_TOKEN` cannot do this check at all
+### Auth: a plain PAT, not a GitHub App
 
-The check needs to call `GET /orgs/HomeScaleCloud/actions/runners`. The automatic `GITHUB_TOKEN` **cannot call this endpoint under any circumstances** — confirmed empirically via a temporary debug run: `403 Resource not accessible by integration`, even with `actions: read` correctly granted and propagated through the entire reusable-workflow call chain. This is a hard GitHub restriction on the ephemeral Actions token for runner-management endpoints specifically (true at repo scope too, not just org scope) — GitHub's documented fine-grained permission model (`actions: read` suffices) describes PAT/GitHub-App-token behavior, not `GITHUB_TOKEN`'s.
+The check needs to call `GET /orgs/HomeScaleCloud/actions/runners`. The automatic `GITHUB_TOKEN` **cannot call this endpoint under any circumstances** — confirmed empirically via a temporary debug run: `403 Resource not accessible by integration`, even with `actions: read` correctly granted. This is a hard GitHub restriction on the ephemeral Actions token for runner-management endpoints specifically (true at repo scope too, not just org scope) — GitHub's documented fine-grained permission model (`actions: read` suffices) describes PAT/GitHub-App-token behavior, not `GITHUB_TOKEN`'s.
 
-So the check authenticates as the same GitHub App used for runner registration instead, minting a short-lived org-scoped installation token via `actions/create-github-app-token` (credentials pulled from Infisical at `/k8s/github-runner`). Every step in that chain is defensive — if Infisical or the App auth fails for any reason, it falls back to the plain `GITHUB_TOKEN`, which will 403 against the org endpoint and correctly resolve to "unavailable" rather than error out.
+An earlier version of this check authenticated as a GitHub App instead — minting a short-lived *installation* token via `actions/create-github-app-token` (on top of an Infisical import to get the App's credentials). It worked, but added a second auth layer on top of Infisical for no real benefit: an extra token-minting step, and `id-token: write` needing to be correct on every caller's permissions block. That last part bit twice — it's checked at **workflow parse time** (GitHub validates that a called reusable workflow's requested permissions are a subset of what every caller in the chain grants), so getting it wrong doesn't fail the check job, it fails the *entire run* at startup with no useful error anywhere except the run's page in the browser.
 
-This also means every reusable workflow in the call chain must grant **both** `actions: read` and `id-token: write` in its own top-level `permissions:` block — GitHub scopes what a called reusable workflow may request to the intersection of what every caller in the chain grants, checked at **workflow parse time**, not runtime. Missing either one doesn't just fail the check job at runtime — it fails the *entire run* at startup (`startup_failure`, before any job executes), since all referenced reusable workflows are validated upfront regardless of whether their job actually runs. This bit us twice: once via a mystery `startup_failure` with no useful error in the GitHub API (only visible by opening the run in the browser), and it turned out to be `mirror.yaml` missing `id-token: write`, even though the `mirror` job itself only runs on `push` events.
+The simpler fix: skip the App/installation-token layer and use a plain fine-grained PAT (`RUNNER_CHECK_TOKEN`, see setup above), pulled from Infisical at `/github-actions` exactly like every other CI-only secret already is:
+
+```yaml
+- uses: Infisical/secrets-action@v1.0.16
+  with:
+    method: "oidc"
+    secret-path: "/github-actions"
+    export-type: env
+- env:
+    GH_TOKEN: ${{ env.RUNNER_CHECK_TOKEN }}
+  run: gh api "/orgs/HomeScaleCloud/actions/runners" ...
+```
+
+`secrets: inherit` on every `homescale-runners:` job call (in `ci.yaml` and in each reusable workflow) threads `INFISICAL_GH_IDENTITY_ID` through the call chain without naming it explicitly at each level — the same mechanism `deploy.yaml` and `scan.yaml` already used for their own, unrelated Infisical needs.
 
 ### Matching: ARC runners don't populate the classic `labels` field
 
-The check matches on runner **name**, not `labels`:
+The check matches on runner **name**, not `labels`, and requires `busy == false`:
 
 ```yaml
-select(.name | startswith("homescale-runners-"))
+select(.status == "online") | select(.busy == false) | select(.name | startswith("homescale-runners-"))
 ```
 
 ARC-managed runners report `labels: []` on this API regardless of scale set — verified against the live pool, every runner. ARC always names scale-set runners `<runnerScaleSetName>-<suffix>-runner-<suffix>`, so matching by name prefix is reliable.
 
 ### Failure modes
 
-The check itself is defensive: any failure calling the GitHub API (rate limit, transient error, App auth failure) degrades to `self_hosted: false` rather than failing the `homescale-runners` job outright — since every other job `needs` it, a hard failure there would skip all of CI instead of just falling back to cloud runners. The one gap worth knowing about: the check runs once at the start of each workflow run, so if the pool disappears *mid-run* (rare — e.g. right after a passing check), a job already routed to `homescale-runners` will queue until it hits its own timeout rather than instantly falling back.
+The check itself is defensive: if `RUNNER_CHECK_TOKEN` isn't set, or any failure calling the GitHub API (rate limit, transient error), it degrades to `self_hosted: false` rather than failing the `homescale-runners` job outright — since every other job `needs` it, a hard failure there would skip all of CI instead of just falling back to cloud runners. The one gap worth knowing about: the check runs once at the start of each workflow run, so if the pool disappears *mid-run* (rare — e.g. right after a passing check), a job already routed to `homescale-runners` will queue until it hits its own timeout rather than instantly falling back.
 
 This means the pool being down, unreachable, or not yet set up is never a hard failure — CI just runs slower, exactly as it did before this pool existed.
 
