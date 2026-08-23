@@ -111,7 +111,13 @@ jobs:
     name: "Docker - ${{ matrix.name }}"
     needs: [homescale-runners, discover]
     if: needs.discover.outputs.docker != '[]'
-    runs-on: ${{ needs.homescale-runners.outputs.self_hosted == 'true' && 'homescale-runners' || 'ubuntu-latest' }}
+    # github-runner always builds on ubuntu-latest, never on the homescale-runners pool
+    # itself: this image is what powers that pool, and it's spent a full investigation
+    # stuck on repeatable, slow (multi-minute) SSL/TLS failures reaching external hosts
+    # from inside the nested dind build container specifically (not the pod's own
+    # network, which tests fine) -- a real bootstrapping trap if the pool's own image
+    # can only ever be rebuilt by a healthy pool. Every other app still prefers the pool.
+    runs-on: ${{ (needs.homescale-runners.outputs.self_hosted == 'true' && matrix.name != 'github-runner') && 'homescale-runners' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:

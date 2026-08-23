@@ -30,8 +30,15 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o 
 # Tailscale
 RUN curl -fsSL https://tailscale.com/install.sh | sh
 
-# Helm
-RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+# Helm. Not get-helm-3 (its version lookup hits api.github.com, which rate-limits
+# unauthenticated requests per source IP -- consistently failed builds from this
+# cluster's shared egress IP). get.helm.sh has its own version/download endpoints,
+# unrelated to the GitHub API and its rate limits.
+RUN curl -fsSL -o /tmp/helm.tar.gz \
+        "https://get.helm.sh/helm-$(curl -fsSL https://get.helm.sh/helm-latest-version)-linux-amd64.tar.gz" \
+    && tar -xzf /tmp/helm.tar.gz -C /tmp \
+    && mv /tmp/linux-amd64/helm /usr/local/bin/helm \
+    && rm -rf /tmp/helm.tar.gz /tmp/linux-amd64
 
 # kubectl
 RUN curl -fsSL -o /usr/local/bin/kubectl \
