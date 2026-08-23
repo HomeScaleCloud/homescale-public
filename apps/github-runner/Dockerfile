@@ -30,10 +30,10 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o 
 # Tailscale
 RUN curl -fsSL https://tailscale.com/install.sh | sh
 
-# Helm. Not get-helm-3 (its version lookup hits api.github.com, which rate-limits
-# unauthenticated requests per source IP -- consistently failed builds from this
-# cluster's shared egress IP). get.helm.sh has its own version/download endpoints,
-# unrelated to the GitHub API and its rate limits.
+# Helm, from get.helm.sh's own pinned binary download rather than get-helm-3 (whose
+# version lookup depends on api.github.com -- a smaller, more robust dependency surface;
+# see docs/operations/github-actions-runners.md for why this app never builds on the
+# homescale-runners pool regardless).
 RUN curl -fsSL -o /tmp/helm.tar.gz \
         "https://get.helm.sh/helm-$(curl -fsSL https://get.helm.sh/helm-latest-version)-linux-amd64.tar.gz" \
     && tar -xzf /tmp/helm.tar.gz -C /tmp \
@@ -54,8 +54,14 @@ RUN curl -fsSL -o /usr/local/bin/yq \
 ENV UV_INSTALL_DIR=/usr/local/bin
 RUN curl -fsSL https://astral.sh/uv/install.sh | sh
 
+# Lets pip install packages system-wide without --break-system-packages on every
+# invocation (PEP 668's externally-managed-environment guard) -- needed not just for our
+# own installs below but for third-party actions that call plain `pip install` themselves,
+# e.g. pre-commit/action, which doesn't know or care about this system's PEP 668 policy.
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
 # Python tooling used across CI jobs (pre-commit, deploy.yaml's ansible job, docs build, mirror.yaml)
-RUN pip3 install --break-system-packages --no-cache-dir \
+RUN pip3 install --no-cache-dir \
         pre-commit \
         ansible \
         kubernetes \
