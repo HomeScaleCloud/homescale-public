@@ -5,16 +5,21 @@ on:
     secrets:
       PUBLIC_DEPLOY_KEY:
         required: true
+      INFISICAL_GH_IDENTITY_ID:
+        required: false
   workflow_dispatch:
 
 permissions:
   actions: read
   contents: read
+  id-token: write
 
 jobs:
   homescale-runners:
     name: "HomeScale Runners"
     uses: ./.github/workflows/homescale-runners.yaml
+    secrets:
+      INFISICAL_GH_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
 
   mirror:
     needs: [homescale-runners]

@@ -8,6 +8,7 @@ RUN apt-get update \
         lsb-release \
         unzip \
         python3-pip \
+        python-is-python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # HashiCorp apt repo (terraform)

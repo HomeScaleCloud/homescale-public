@@ -23,6 +23,8 @@ jobs:
 
   build:
     uses: ./.github/workflows/build.yaml
+    secrets:
+      INFISICAL_GH_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
 
   deploy:
     uses: ./.github/workflows/deploy.yaml
@@ -38,3 +40,4 @@ jobs:
     if: github.event_name == 'push'
     secrets:
       PUBLIC_DEPLOY_KEY: ${{ secrets.PUBLIC_DEPLOY_KEY }}
+      INFISICAL_GH_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}

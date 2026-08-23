@@ -8,7 +8,7 @@ syncOptions:
   - ServerSideApply=true
 values:
   gha-runner-scale-set:
-    githubConfigUrl: https://github.com/HomeScaleCloud/homescale
+    githubConfigUrl: https://github.com/HomeScaleCloud
     githubConfigSecret: github-runner-github-app  # pragma: allowlist secret
     runnerScaleSetName: homescale-runners
     minRunners: 3
