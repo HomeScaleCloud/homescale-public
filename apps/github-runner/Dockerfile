@@ -9,6 +9,7 @@ RUN apt-get update \
         unzip \
         python3-pip \
         python-is-python3 \
+        gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 # HashiCorp apt repo (terraform)
