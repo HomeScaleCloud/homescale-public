@@ -31,4 +31,4 @@ values:
                   - NET_RAW
             resources:
               limits:
-                devic.es/tun: 1
+                squat.ai/tun: 1
