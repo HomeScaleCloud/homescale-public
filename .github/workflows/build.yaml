@@ -172,6 +172,7 @@ jobs:
           # to -- accepted supply-chain risk, not something fixable from this Dockerfile.
           skip-dirs: ${{ matrix.name == 'github-runner' && 'home/runner/externals' || '' }}
           skip-files: ${{ matrix.name == 'github-runner' && 'usr/bin/containerd,usr/bin/containerd-shim-runc-v2,usr/bin/ctr,usr/bin/docker,usr/bin/docker-proxy,usr/bin/dockerd,usr/bin/runc,usr/local/lib/docker/cli-plugins/docker-buildx,usr/bin/gh,usr/bin/tailscale,usr/bin/terraform,usr/local/bin/helm,usr/local/bin/kubectl' || '' }}
+          cache: false
 
   docs:
     name: "Docs"
