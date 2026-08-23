@@ -318,9 +318,9 @@ jobs:
       - name: Install omnictl
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
         run: |
-          curl -fsSL -o /usr/local/bin/omnictl \
+          sudo curl -fsSL -o /usr/local/bin/omnictl \
             https://REDACTED/api/omnictl/omnictl-linux-amd64
-          chmod +x /usr/local/bin/omnictl
+          sudo chmod +x /usr/local/bin/omnictl
 
       - name: Install yq
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && needs.homescale-runners.outputs.self_hosted != 'true'
@@ -569,9 +569,9 @@ jobs:
 
       - name: Install omnictl
         run: |
-          curl -fsSL -o /usr/local/bin/omnictl \
+          sudo curl -fsSL -o /usr/local/bin/omnictl \
             https://REDACTED/api/omnictl/omnictl-linux-amd64
-          chmod +x /usr/local/bin/omnictl
+          sudo chmod +x /usr/local/bin/omnictl
 
       - name: Run cluster bootstrap playbook
         working-directory: infra/ansible
