@@ -8,11 +8,11 @@ syncOptions:
   - ServerSideApply=true
 values:
   gha-runner-scale-set:
-    githubConfigUrl: https://github.com/HomeScaleCloud
+    githubConfigUrl: https://github.com/HomeScaleCloud/homescale
     githubConfigSecret: github-runner-github-app  # pragma: allowlist secret
     runnerScaleSetName: homescale-runners
-    minRunners: 1
-    maxRunners: 4
+    minRunners: 3
+    maxRunners: 6
     containerMode:
       type: dind
     controllerServiceAccount:

@@ -13,7 +13,9 @@ Both apps share the `github-runner` namespace — safe because they're still two
 
 They're **not** merged into a single chart/Application, even though `gha-runner-scale-set-controller` and `gha-runner-scale-set` could technically be declared as two dependencies of one `Chart.yaml`: both charts independently define a generically-named internal Helm template (`gha-base-name`, meaning something different in each), and Helm's `define` blocks share one global namespace across a parent chart and its subcharts — combining them silently corrupted the runner scale set's resource names with the controller's naming. Confirmed by testing it; reverted.
 
-`minRunners` is `1`, not `0`: with autoscale-to-zero, no runner would ever be registered while idle, and CI's "is the pool available" check (below) would have nothing to observe. One warm runner keeps that check meaningful and avoids cold-start delay on the first job of a run. `maxRunners` is `4`.
+`minRunners` is `3`, not `0`: with autoscale-to-zero, no runner would ever be registered while idle, and CI's "is the pool available" check (below) would have nothing to observe. Warm runners keep that check meaningful, avoid cold-start delay, and let multiple jobs run in parallel without falling back to cloud runners. `maxRunners` is `6`.
+
+The runner scale set is registered against the `homescale` repo specifically (`githubConfigUrl: https://github.com/HomeScaleCloud/homescale`), not the org — kept intentionally simple since `homescale` is the only repo that uses it. The availability check can therefore use the plain default `GITHUB_TOKEN` against the repo-scoped runners API; widening to org-scope later (so other repos could use the pool) would mean switching `githubConfigUrl` to the org and reworking that check to authenticate as a GitHub App instead, since the org-scoped runners API needs org-admin-grade auth the default token doesn't have.
 
 ## Setting it up
 
@@ -25,7 +27,7 @@ In the `HomeScaleCloud` org → **Settings → Developer settings → GitHub App
 - Organization permissions: `Self-hosted runners: Read & write`
 - No webhook, no user authorization needed
 - Generate a private key (downloads a `.pem`)
-- Install the app on the org (all repos, so any future repo can use the pool too)
+- Install the app on the org, scoped to at least the `homescale` repo (all repos is fine too, and makes it a smaller step later if the pool ever widens to org-scope)
 
 ### 2. Add secrets to Infisical
 
