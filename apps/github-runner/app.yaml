@@ -24,3 +24,11 @@ values:
           - name: runner
             image: ghcr.io/homescalecloud/github-runner:latest
             command: ["/home/runner/run.sh"]
+            securityContext:
+              capabilities:
+                add:
+                  - NET_ADMIN
+                  - NET_RAW
+            resources:
+              limits:
+                devic.es/tun: 1
