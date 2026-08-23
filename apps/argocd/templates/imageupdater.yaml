@@ -24,3 +24,13 @@ spec:
           manifestTargets:
             helm:
               tag: image.tag
+    - namePattern: github-runner
+      images:
+        - alias: img
+          imageName: ghcr.io/homescalecloud/github-runner:latest
+          manifestTargets:
+            helm:
+              # gha-runner-scale-set's template.spec.containers[].image is one combined
+              # field (no separate repository/tag values like our own charts have), so
+              # this writes back the full image reference rather than just the tag.
+              spec: gha-runner-scale-set.template.spec.containers[0].image
