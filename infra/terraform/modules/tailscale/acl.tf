@@ -24,6 +24,7 @@ locals {
       "tag:k8s"            = ["autogroup:admin", "tag:k8s"]
       "tag:k8s-api"        = ["tag:k8s"]
       "tag:github-actions" = ["autogroup:admin"]
+      "tag:tv"             = ["autogroup:admin"]
     },
     { for k in local.app_names : "tag:app-${k}" => ["tag:k8s"] },
     { for k in local.cluster_names : "tag:cluster-${k}" => ["tag:k8s"] },
@@ -54,6 +55,10 @@ locals {
   node_attrs = [
     {
       target = ["autogroup:member"]
+      attr   = ["mullvad"]
+    },
+    {
+      target = ["tag:tv"]
       attr   = ["mullvad"]
     },
   ]
