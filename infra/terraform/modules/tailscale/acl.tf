@@ -50,7 +50,13 @@ locals {
     ip  = ["*"]
   }
 
-  grants = concat(local.app_grants, [local.k8s_grant, local.self_grant])
+  remote_control_grant = {
+    src = ["group:team-infra-plat@REDACTED"]
+    dst = ["*"]
+    ip  = ["tcp:5252"]
+  }
+
+  grants = concat(local.app_grants, [local.k8s_grant, local.self_grant, local.remote_control_grant])
 
   node_attrs = [
     {

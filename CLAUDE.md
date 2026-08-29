@@ -157,7 +157,9 @@ tailscale:
 
 **Do not remove or treat this block as dead config** — it has no effect on Helm rendering but drives real infrastructure via Terraform.
 
-In addition to the per-app rules above, the ACL always includes one tailnet-wide grant (`local.self_grant` in `acl.tf`) letting every member reach their own other devices on every port/protocol (`src: autogroup:member`, `dst: autogroup:self`, `ip: ["*"]`) — this is Tailscale's standard self-access pattern, not app-specific policy.
+In addition to the per-app rules above, the ACL always includes two tailnet-wide grants defined directly in `acl.tf`, not app-specific policy:
+- `local.self_grant` — every member reaches their own other devices on every port/protocol (`src: autogroup:member`, `dst: autogroup:self`, `ip: ["*"]`); Tailscale's standard self-access pattern.
+- `local.remote_control_grant` — Infrastructure Platforms (`group:team-infra-plat@REDACTED`) reaches every tailnet endpoint (`dst: ["*"]`) on `tcp:5252`, the Tailscale client remote control web UI.
 
 ## VolSync Backups
 
