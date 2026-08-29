@@ -50,12 +50,20 @@ locals {
   }
 
   grants = concat(local.app_grants, [local.k8s_grant, local.self_grant])
+
+  node_attrs = [
+    {
+      target = ["autogroup:member"]
+      attr   = ["mullvad"]
+    },
+  ]
 }
 
 resource "tailscale_acl" "this" {
   acl = jsonencode({
     tagOwners = local.tag_owners
     grants    = local.grants
+    nodeAttrs = local.node_attrs
     autoApprovers = {
       services = {
         "tag:k8s" = ["tag:k8s"]
