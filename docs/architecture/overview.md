@@ -133,6 +133,8 @@ Talos clusters have their node config, k8s version, and machine assignments mana
 
 Four reusable workflows are called from `.github/workflows/ci.yaml`: `scan`, `build`, `deploy`, and `mirror` (mirrors the repo to a public read-only remote on push; not covered further here).
 
+`ci.yaml` runs on every PR and every push to `main`, and also on a published GitHub release. A release run executes `build` only (to rebuild every app image) — `deploy` and `mirror` are skipped.
+
 ### `scan` — security and lint
 
 Runs on every PR and push:
@@ -143,7 +145,7 @@ Runs on every PR and push:
 
 ### `build` — Docker images and docs
 
-- Detects which `apps/*/` directories changed (on PRs); builds all on push to `main`
+- Builds only the `apps/*/` directories that changed — on PRs (versus the base branch) and on pushes to `main` (versus the previous commit). A published GitHub release rebuilds every app.
 - Builds the `Dockerfile` if present, tags with both `<git-sha>` and `latest`, pushes to `ghcr.io/homescalecloud/<name>`
 - Runs a Trivy vulnerability scan on each built image (CRITICAL/HIGH, blocks on failure)
 - **Deploys this documentation site** to GitHub Pages (`mkdocs gh-deploy`) on every push to `main`

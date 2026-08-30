@@ -43,6 +43,7 @@ jobs:
         shell: bash
         env:
           INPUT_APP: ${{ inputs.app }}
+          EVENT_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
           # Find Dockerfiles under apps/** (supports apps/foo/src/Dockerfile or apps/foo/Dockerfile)
@@ -75,12 +76,26 @@ jobs:
             is_pr="true"
           fi
 
-          if [[ "$is_pr" == "true" ]]; then
-            if [[ -z "${GITHUB_BASE_REF:-}" ]]; then
-              echo "No base ref available; building all discovered apps."
+          # A release builds every discovered app. Every other event (PRs and
+          # pushes to main alike) builds only the apps changed since its diff base.
+          if [[ "$event" == "release" ]]; then
+            echo "Release event; building all discovered apps."
+          else
+            diff_base=""
+            if [[ "$is_pr" == "true" ]]; then
+              if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+                git fetch --no-tags origin "${GITHUB_BASE_REF}" --depth=1
+                diff_base="origin/${GITHUB_BASE_REF}"
+              fi
+            elif [[ -n "${EVENT_BEFORE:-}" && ! "$EVENT_BEFORE" =~ ^0+$ ]] \
+              && git cat-file -e "${EVENT_BEFORE}^{commit}" 2>/dev/null; then
+              diff_base="$EVENT_BEFORE"
+            fi
+
+            if [[ -z "$diff_base" ]]; then
+              echo "No diff base available; building all discovered apps."
             else
-              git fetch --no-tags origin "${GITHUB_BASE_REF}" --depth=1
-              mapfile -t changed_files < <(git diff --name-only "origin/${GITHUB_BASE_REF}" HEAD || true)
+              mapfile -t changed_files < <(git diff --name-only "$diff_base" HEAD || true)
               mapfile -t changed_apps < <(printf '%s\n' "${changed_files[@]}" | awk -F/ '($1=="apps" && $2!=""){print $2}' | sort -u)
 
               if (( ${#changed_apps[@]} )); then
@@ -89,13 +104,11 @@ jobs:
                 docker_json="$(jq --argjson apps "$apps_json" 'map(select(.name as $n | ($apps | index($n))))' <<<"$docker_json")"
                 helm_json="$(jq --argjson apps "$apps_json" 'map(select(.name as $n | ($apps | index($n))))' <<<"$helm_json")"
               else
-                echo "No app changes detected on PR; skipping Docker and Helm builds."
+                echo "No app changes detected; skipping Docker and Helm builds."
                 docker_json='[]'
                 helm_json='[]'
               fi
             fi
-          else
-            echo "Non-PR event; building all discovered apps."
           fi
 
           if [[ -n "${INPUT_APP:-}" ]]; then

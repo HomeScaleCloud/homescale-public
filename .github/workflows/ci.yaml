@@ -12,6 +12,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  release:
+    types: [published]
 
 jobs:
   scan:
@@ -27,6 +29,7 @@ jobs:
   deploy:
     uses: ./.github/workflows/deploy.yaml
     needs: [scan]
+    if: github.event_name != 'release'
     secrets: inherit  # pragma: allowlist secret
 
   mirror:

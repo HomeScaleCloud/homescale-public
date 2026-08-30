@@ -126,7 +126,7 @@ Infisical is the secrets store. The Infisical k8s operator (deployed as an ArgoC
 
 Three reusable workflows called from `ci.yaml`:
 - **scan** — pre-commit, PR title lint (Conventional Commits), CodeQL, Trivy config scan
-- **build** — detects changed apps on PRs (or builds all on push to main), builds Docker images, runs Trivy image scan; Helm charts are linted but not published
+- **build** — builds only changed apps on PRs and on pushes to main (all apps on a published release), builds Docker images, runs Trivy image scan; Helm charts are linted but not published
 - **deploy** — Terraform plan (PR) / apply (main) then Omni cluster template sync for changed clusters; the `omni`/`ansible` jobs connect to internal infrastructure via an ephemeral Tailscale node (`tailscale/github-action`, tagged `tag:github-actions`); `terraform` doesn't need mesh access at all — it only talks to public APIs
 
 ### Networking
