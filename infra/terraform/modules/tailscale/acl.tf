@@ -54,6 +54,13 @@ locals {
     src = ["group:team-infra-plat@REDACTED"]
     dst = ["*"]
     ip  = ["tcp:5252"]
+    app = {
+      "tailscale.com/cap/webui" = [
+        {
+          canEdit = ["*"]
+        }
+      ]
+    }
   }
 
   grants = concat(local.app_grants, [local.k8s_grant, local.self_grant, local.remote_control_grant])
