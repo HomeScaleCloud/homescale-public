@@ -17,7 +17,7 @@ spec:
     - expression: >-
         has(object.metadata.annotations) && 'tailscale.com/tags' in object.metadata.annotations &&
         object.metadata.annotations['tailscale.com/tags'].split(',').exists(t, t == 'tag:k8s') &&
-        object.metadata.annotations['tailscale.com/tags'].split(',').exists(t, t.matches('^tag:(app-.+|k8s-api)$')) &&
+        object.metadata.annotations['tailscale.com/tags'].split(',').exists(t, t.matches('^tag:(app-.+|k8s-api|omni-k8s)$')) &&
         object.metadata.annotations['tailscale.com/tags'].split(',').exists(t, t == 'tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}')
       message: "Tailscale-exposed Services (loadBalancerClass: tailscale) must set tailscale.com/tags including tag:k8s, tag:app-<name>, and tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}."
     - expression: >-

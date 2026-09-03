@@ -157,9 +157,11 @@ tailscale:
 
 **Do not remove or treat this block as dead config** — it has no effect on Helm rendering but drives real infrastructure via Terraform.
 
-In addition to the per-app rules above, the ACL always includes two tailnet-wide grants defined directly in `acl.tf`, not app-specific policy:
+In addition to the per-app rules above, the ACL always includes these grants defined directly in `acl.tf`, not app-specific policy:
 - `local.self_grant` — every member reaches their own other devices on every port/protocol (`src: autogroup:member`, `dst: autogroup:self`, `ip: ["*"]`); Tailscale's standard self-access pattern.
 - `local.remote_control_grant` — Infrastructure Platforms (`group:team-infra-plat@REDACTED`) reaches every tailnet endpoint (`dst: ["*"]`) on `tcp:5252`, the Tailscale client remote control web UI, and carries a `tailscale.com/cap/webui` app capability with `canEdit: ["*"]` granting full management/admin access (SSH, subnet routes, exit nodes, account settings) through that web UI on tagged devices.
+- `local.k8s_grant` — workload-cluster apiserver proxies (`dst: tag:k8s-api`, the `tailscale` app's `kube-apiserver-proxy` Service) on `tcp:443`, for Infrastructure Platforms, Security Platforms, `sg-k8s-admin`, and `tag:app-headlamp`.
+- `local.omni_k8s_grant` — the Omni Kubernetes proxy (`dst: tag:omni-k8s`, Omni's `k8s` Service at `REDACTED`) on `tcp:443`, restricted to `tag:github-actions` and `group:sg-k8s-admin@REDACTED` only. This endpoint is deliberately **not** covered by omni's `tag:app-omni` policy (which gates the Omni UI/API) — access to the Talos/Omni kube proxy requires activating `sg-k8s-admin` via PIM. A Tailscale-exposed Service reaches this grant by carrying `tag:omni-k8s` (allowed by the kyverno annotation policy alongside `tag:app-*` and `tag:k8s-api`) instead of `tag:app-<name>`.
 
 ## VolSync Backups
 
