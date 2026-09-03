@@ -1,4 +1,4 @@
-FROM docker.io/nginxinc/nginx-unprivileged:1.31.4-alpine
+FROM docker.io/nginxinc/nginx-unprivileged:1.31.5-alpine
 # Patch OS packages ahead of upstream image rebuilds (e.g. openssl CVE-2026-14456)
 USER root
 RUN apk --no-cache upgrade libssl3 libcrypto3
