@@ -15,6 +15,15 @@ on:
       INFISICAL_PROJECT_ID:
         required: true
   workflow_dispatch:
+    inputs:
+      playbook:
+        description: "Ansible playbook to run — 'bootstrap-mgmt', 'bootstrap-cluster', or any other playbook's filename (without .yml) under infra/ansible/playbooks/"
+        type: string
+        required: true
+      cluster:
+        description: "Cluster to target via -e target=<cluster> (bootstrap-cluster only; leave empty for all clusters)"
+        type: string
+        required: false
 
 concurrency:
   group: deploy
@@ -511,7 +520,7 @@ jobs:
     name: "Ansible"
     runs-on: ${{ needs.homescale-runners.outputs.self_hosted == 'true' && 'homescale-runners' || 'ubuntu-latest' }}
     needs: [homescale-runners, omni]
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -561,6 +570,7 @@ jobs:
         run: ansible-galaxy collection install -r requirements.yml
 
       - name: Run mgmt cluster bootstrap playbook
+        if: inputs.playbook == 'bootstrap-mgmt'
         working-directory: infra/ansible
         env:
           INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
@@ -568,16 +578,41 @@ jobs:
         run: ansible-playbook playbooks/bootstrap-mgmt.yml -e cluster_name=mgmt
 
       - name: Install omnictl
+        if: inputs.playbook == 'bootstrap-cluster'
         run: |
           sudo curl -fsSL -o /usr/local/bin/omnictl \
             https://REDACTED/api/omnictl/omnictl-linux-amd64
           sudo chmod +x /usr/local/bin/omnictl
 
       - name: Run cluster bootstrap playbook
+        if: inputs.playbook == 'bootstrap-cluster'
         working-directory: infra/ansible
         env:
           OMNI_ENDPOINT: https://REDACTED
           OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
           INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
-        run: ansible-playbook playbooks/bootstrap-cluster.yml
+          CLUSTER: ${{ inputs.cluster }}
+        run: |
+          if [ -n "$CLUSTER" ]; then
+            ansible-playbook playbooks/bootstrap-cluster.yml -e target="$CLUSTER"
+          else
+            ansible-playbook playbooks/bootstrap-cluster.yml
+          fi
+
+      # Fallback for any playbook under infra/ansible/playbooks/ other than the two above —
+      # e.g. one-off or future playbooks run via `hsctl run <name> --remote`.
+      - name: Run playbook
+        if: inputs.playbook != 'bootstrap-mgmt' && inputs.playbook != 'bootstrap-cluster'
+        working-directory: infra/ansible
+        env:
+          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+          PLAYBOOK: ${{ inputs.playbook }}
+          CLUSTER: ${{ inputs.cluster }}
+        run: |
+          if [ -n "$CLUSTER" ]; then
+            ansible-playbook "playbooks/$PLAYBOOK.yml" -e target="$CLUSTER"
+          else
+            ansible-playbook "playbooks/$PLAYBOOK.yml"
+          fi

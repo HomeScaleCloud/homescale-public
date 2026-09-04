@@ -1,4 +1,8 @@
 ---
+# CI authenticates via GitHub Actions OIDC (INFISICAL_IDENTITY_ID/INFISICAL_AUTH_JWT).
+# `hsctl run` (local) has no such JWT to present, so it pre-fetches the same secrets
+# itself via the already-logged-in `infisical` CLI and passes them in as
+# hsctl_local_secrets, skipping these three tasks entirely.
 - name: Login to Infisical
   infisical.vault.login:
     url: "{{ infisical_url }}"
@@ -7,6 +11,7 @@
     jwt: "{{ lookup('env', 'INFISICAL_AUTH_JWT') }}"
   register: _infisical
   no_log: true
+  when: not (hsctl_local | default(false))
 
 - name: Read ArgoCD deploy key from Infisical
   infisical.vault.read_secrets:
@@ -17,6 +22,7 @@
     as_dict: true
   register: _argocd_secrets
   no_log: true
+  when: not (hsctl_local | default(false))
 
 - name: Read Infisical operator credentials from Infisical
   infisical.vault.read_secrets:
@@ -27,6 +33,21 @@
     as_dict: true
   register: _infisical_op_secrets
   no_log: true
+  when: not (hsctl_local | default(false))
+
+- name: Use ArgoCD deploy key fetched locally via the infisical CLI
+  ansible.builtin.set_fact:
+    _argocd_secrets:
+      secrets: "{{ hsctl_local_secrets.argocd_deploy_key }}"
+  no_log: true
+  when: hsctl_local | default(false)
+
+- name: Use Infisical operator credentials fetched locally via the infisical CLI
+  ansible.builtin.set_fact:
+    _infisical_op_secrets:
+      secrets: "{{ hsctl_local_secrets.infisical_operator }}"
+  no_log: true
+  when: hsctl_local | default(false)
 
 - name: Create argocd namespace
   kubernetes.core.k8s:

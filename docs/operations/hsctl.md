@@ -64,6 +64,24 @@ Takes action directly against a physical machine — unlike `hsctl get`, this ch
 
 BMC connection info (`IP`, `VENDOR_USERNAME`, `VENDOR_PASSWORD`) is fetched at runtime from Infisical at `/bmc/<machine-id>` — this path must be populated per-machine before an IPMI-backed `hsctl machine power` action will work for it. Progress and outcome are reported via timestamped `INFO`/`ACTION`/`OK`/`ERROR` log lines (`hsctl_log_*` in `_lib.sh`) — the logging convention every future hsctl command that *takes action* (rather than just displaying data) should use.
 
+## `hsctl run`
+
+```
+hsctl run <playbook> [--cluster <name>] [--remote]
+```
+
+Runs an Ansible playbook from `infra/ansible/playbooks/` — the same ones the Deploy workflow's `ansible` job can run on `main`, which normally only fires via manual `workflow_dispatch` (see `.github/workflows/deploy.yaml`). `<playbook>` is always required — no "run everything" shortcut — and is any filename (without `.yml`) under that directory, with two built-in ones getting special handling:
+
+| Playbook | Effect |
+|----------|--------|
+| `bootstrap-mgmt` | Bootstraps the mgmt-class cluster |
+| `bootstrap-cluster` | Bootstraps workload clusters — all of them, or one via `--cluster <name>` (its Omni cluster ID, e.g. `boa1-prod`); ignored for `bootstrap-mgmt` |
+| anything else | Runs `playbooks/<playbook>.yml` as-is; `--cluster` is passed through as `-e target=<name>` regardless of playbook |
+
+By default this runs locally, over Tailscale (same requirement as most other `hsctl` commands) — pass `--remote` to instead dispatch the Deploy workflow's `ansible` job on GitHub Actions with the same `playbook`/`cluster` options and stream its logs (requires `gh` authenticated against the repo; no Tailscale needed for this path, since it's GitHub's runner reaching internal infra, not yours).
+
+CI authenticates to Infisical via GitHub Actions OIDC — a JWT that only exists inside an actual Actions run, so a local run can't reproduce it. For `bootstrap-mgmt`/`bootstrap-cluster` specifically, local runs instead pre-fetch the same secrets via your existing `infisical login` CLI session (browser SSO, prompting a fresh login if the session's expired) and hand them to Ansible directly, bypassing that OIDC login task — this only changes *how* secrets are fetched locally, the CI path in `bootstrap-mgmt.yml` and the `cluster-secrets` role is untouched. Any other playbook is run as-is with no such handling; one that needs Infisical locally has to grow its own `hsctl_local`-aware fallback the same way first (see the comment at the top of `hsctl.d/run.sh`).
+
 ## `hsctl pim`
 
 ```
