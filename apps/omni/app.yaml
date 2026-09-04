@@ -15,6 +15,10 @@ values:
   siderolinkHostname: REDACTED
   machineApiHostname: REDACTED
   omni:
+    image:
+      repository: ghcr.io/siderolabs/omni
+      tag: v1.10.6
+
     etcdEncryptionKey:
       existingSecret: omni # pragma: allowlist secret
 
