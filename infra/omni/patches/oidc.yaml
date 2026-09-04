@@ -1,7 +1,0 @@
-cluster:
-  apiServer:
-    extraArgs:
-      oidc-issuer-url: "https://login.microsoftonline.com/REDACTED/v2.0"  # pragma: allowlist secret
-      oidc-client-id: "REDACTED"  # pragma: allowlist secret
-      oidc-username-claim: email
-      oidc-groups-claim: groups

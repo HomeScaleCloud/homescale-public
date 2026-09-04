@@ -13,7 +13,6 @@ patches:
   - file: patches/allow-scheduling-on-control-plane.yaml
   - file: patches/longhorn.yaml
   - file: patches/kubelet-certs.yaml
-  - file: patches/oidc.yaml
 systemExtensions:
   - siderolabs/iscsi-tools
   - siderolabs/util-linux-tools
