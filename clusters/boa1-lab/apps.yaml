@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apps-boa1-lab
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: git@github.com:HomeScaleCloud/homescale.git
+      targetRevision: main
+      path: clusters/boa1-lab
+      directory:
+        recurse: true
+        exclude: 'cluster.yaml'
+    - repoURL: git@github.com:HomeScaleCloud/homescale.git
+      targetRevision: main
+      path: apps
+      helm:
+        releaseName: apps-boa1-lab
+        values: |
+          cluster:
+            name: boa1-lab
+            region: boa1
+          apps:
+            cloudflared:
+              deploy: true
+              values:
+                cluster:
+                  name: boa1-lab
+            multus:
+              values:
+                vlans:
+                  wlan:
+                    enabled: true
+            kubevirt:
+              deploy: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  ignoreDifferences:
+    - group: argoproj.io
+      kind: Application
+      jsonPointers:
+        - /metadata/finalizers
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
