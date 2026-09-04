@@ -331,6 +331,7 @@ get_kubeconfig() {
 }
 
 HSCTL_PIM_GRAPH_SCOPES="https://graph.microsoft.com/RoleManagement.ReadWrite.Directory https://graph.microsoft.com/PrivilegedAccess.ReadWrite.AzureADGroup https://graph.microsoft.com/PrivilegedAccess.ReadWrite.AzureAD offline_access"
+HSCTL_TENANT_ID="REDACTED"  # pragma: allowlist secret
 
 _pim_require_deps() {
     command -v az &>/dev/null || { echo "hsctl: the Azure CLI is required (brew install azure-cli)" >&2; exit 1; }
@@ -343,16 +344,7 @@ _pim_require_deps() {
 }
 
 _pim_resolve_ids() {
-    [[ -n "${HSCTL_TENANT_ID:-}" && -n "${HSCTL_CLIENT_ID:-}" ]] && return 0
-
-    if ! HSCTL_TENANT_ID=$(infisical secrets get entra-tenant --env=prod --path=/ --plain --silent </dev/null 2>/dev/null); then
-        hsctl_infisical_login || { echo "hsctl: infisical login failed" >&2; exit 1; }
-        if ! HSCTL_TENANT_ID=$(infisical secrets get entra-tenant --env=prod --path=/ --plain --silent </dev/null 2>/dev/null); then
-            echo "hsctl: could not fetch entra-tenant from Infisical (/)" >&2
-            exit 1
-        fi
-    fi
-    [[ -z "$HSCTL_TENANT_ID" ]] && { echo "hsctl: entra-tenant in Infisical is empty" >&2; exit 1; }
+    [[ -n "${HSCTL_CLIENT_ID:-}" ]] && return 0
 
     if ! HSCTL_CLIENT_ID=$(infisical secrets get CLIENT_ID --env=prod --path=/hsctl --plain --silent </dev/null 2>/dev/null); then
         hsctl_infisical_login || { echo "hsctl: infisical login failed" >&2; exit 1; }
