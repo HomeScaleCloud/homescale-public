@@ -1,16 +1,15 @@
 kind: Cluster
 name: boa1-prod
 kubernetes:
-  version: v1.36.3
+  version: v1.37.0
 talos:
-  version: v1.13.8
+  version: v1.14.0
 features:
   useEmbeddedDiscoveryService: true
   backupConfiguration:
     interval: 1h
 patches:
   - file: patches/base.yaml
-  - file: patches/allow-scheduling-on-control-plane.yaml
   - file: patches/longhorn.yaml
   - file: patches/kubelet-certs.yaml
 systemExtensions:

@@ -9,8 +9,8 @@ features:
   backupConfiguration:
     interval: 1h
 patches:
-  - file: patches/base-1.14.yaml
-  - file: patches/kubelet-certs-1.14.yaml
+  - file: patches/base.yaml
+  - file: patches/kubelet-certs.yaml
 ---
 kind: ControlPlane
 machines:

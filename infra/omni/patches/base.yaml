@@ -1,15 +1,3 @@
-cluster:
-  network:
-    cni:
-      name: none
-  proxy:
-    disabled: true
-  apiServer:
-    extraArgs:
-      oidc-issuer-url: "https://login.microsoftonline.com/REDACTED/v2.0"  # pragma: allowlist secret
-      oidc-client-id: "REDACTED"  # pragma: allowlist secret
-      oidc-username-claim: email
-      oidc-groups-claim: groups
 machine:
   files:
     - path: /var/etc/cri/conf.d/20-spegel.part
@@ -18,5 +6,37 @@ machine:
       content: |
         [plugins."io.containerd.cri.v1.images"]
           discard_unpacked_layers = false
-  nodeLabels:
-    REDACTED/name: ${CLUSTER_NAME}
+---
+apiVersion: v1alpha1
+kind: KubeNodeConfig
+taints:
+  node-role.kubernetes.io/control-plane:
+    $patch: delete
+labels:
+  REDACTED/name: ${CLUSTER_NAME}
+---
+apiVersion: v1alpha1
+kind: KubeAuthenticationConfig
+configuration:
+  apiVersion: apiserver.config.k8s.io/v1beta1
+  kind: AuthenticationConfiguration
+  jwt:
+    - issuer:
+        url: "https://login.microsoftonline.com/REDACTED/v2.0"  # pragma: allowlist secret
+        audiences:
+          - "REDACTED"  # pragma: allowlist secret
+      claimMappings:
+        username:
+          claim: email
+          prefix: ""
+        groups:
+          claim: groups
+          prefix: ""
+---
+apiVersion: v1alpha1
+kind: KubeProxyConfig
+enabled: false
+---
+apiVersion: v1alpha1
+kind: KubeFlannelCNIConfig
+$patch: delete
