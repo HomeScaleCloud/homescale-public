@@ -22,11 +22,6 @@ spec:
             name: boa1-lab
             region: boa1
           apps:
-            cloudflared:
-              deploy: true
-              values:
-                cluster:
-                  name: boa1-lab
             multus:
               values:
                 vlans:
