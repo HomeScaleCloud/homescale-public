@@ -1,0 +1,6 @@
+path: apps/k8s-gang
+namespace: k8s-gang
+releaseName: k8s-gang
+syncWave: 5
+podSecurity: privileged
+defaultDeploy: false
