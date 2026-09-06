@@ -47,6 +47,7 @@ Both resolve to `argocd.<cluster>REDACTED` — the [Tailscale internal service a
 
 ```
 hsctl machine power on|off|reset [--force] <id|node-name>
+hsctl machine bmcreset <id|node-name>
 ```
 
 Takes action directly against a physical machine — unlike `hsctl get`, this changes real hardware state. Accepts an Omni machine ID or a Kubernetes node name (resolved the same way as `hsctl get machine`).
@@ -57,10 +58,35 @@ Takes action directly against a physical machine — unlike `hsctl get`, this ch
 | `off` | `talosctl shutdown` | Graceful OS shutdown (cordon/drain, then power off) |
 | `off --force` | `ipmitool chassis power off` | Immediate hard power off, bypassing Talos |
 | `reset` | `ipmitool chassis power reset` | Warm reset (equivalent to the physical reset button) |
+| `bmcreset` | `ipmitool mc reset cold` | Cold-restart the BMC itself — **host power is left untouched**; the controller takes ~1–2 min to come back |
 
 `off` requires [`talosctl`](https://www.talos.dev/latest/introduction/getting-started/#talosctl) (`brew install talosctl`). If a graceful shutdown isn't possible or desired, pass `--force` to hard-cut power via IPMI instead — the previous behavior for `off`.
 
-`on` and `reset` (and `off --force`) go over the BMC via IPMI (via [`ipmitool`](https://github.com/ipmitool/ipmitool), `brew install ipmitool`). Redfish was tried first, but this fleet's Supermicro BMCs gate every Redfish endpoint behind a paid `SUM DCMS OOB` license regardless of auth method — IPMI-over-LAN works unlicensed with the same credentials.
+`on`, `reset`, `off --force` and `bmcreset` go over the BMC via IPMI (via [`ipmitool`](https://github.com/ipmitool/ipmitool), `brew install ipmitool`). Redfish was tried first, but this fleet's Supermicro BMCs gate every Redfish endpoint behind a paid `SUM DCMS OOB` license regardless of auth method — IPMI-over-LAN works unlicensed with the same credentials.
+
+Each `ipmitool` call prefers RMCP+ (`-I lanplus`) but falls back to legacy IPMI 1.5 (`-I lan`) when the RMCP+ session can't be established, so `hsctl machine` keeps working even when a BMC's RMCP+ stack is broken. `bmcreset` itself is almost always carried by the 1.5 fallback, since the reason to run it is that `lanplus` is down.
+
+### `Error in open session response message : invalid role`
+
+Seen on the X11SSH-F BMCs: every `-I lanplus` session fails with `invalid role` / `Unable to establish IPMI v2 / RMCP+ session` (RMCP+ status `0x09`), while `-I lan` (IPMI 1.5) keeps working normally.
+
+**Cause:** the BMC's cipher-suite privilege table is corrupt — no *usable* RMCP+ cipher suite has a privilege level assigned, so the BMC can't grant any role and rejects the Open Session Request outright.
+
+```bash
+ipmitool -I lan -H <bmc-ip> -U <user> -P <pass> lan print 1 | grep -A1 'Cipher Suite'
+#   RMCP+ Cipher Suites   : 3,17          <- the only suites this BMC offers
+#   Cipher Suite Priv Max : aXXXXXXXXXXXXXX   <- only suite 0 has a priv; suites 3 & 17 are "unused"
+```
+
+`hsctl machine bmcreset` does **not** fix this (it survives a cold reset — it's persisted NVRAM config, not a transient hang), and this firmware **rejects rewriting the table over IPMI** — both `ipmitool ... lan set 1 cipher_privs ...` (`LAN Parameter Data does not match!`) and a raw `Set LAN Config Parameters` for parameter 24 (`rsp=0xcc: Invalid data field in request`).
+
+**Remediation, in order:**
+
+1. **Do nothing to the BMC** — `hsctl machine`'s `-I lan` fallback already carries every power/reset action. Only pursue a fix if you need `lanplus` specifically (e.g. an external tool that can't do 1.5).
+2. **BMC web UI** (`https://<bmc-ip>/`, reachable even in this state) → if it exposes cipher-suite privileges, set suite 3 (and 17) to Administrator there; otherwise **Maintenance → Factory Default** rebuilds the config. A factory reset wipes the `ADMIN` password (back to `ADMIN`/`ADMIN`), the `talos-agent` user, and any static LAN settings — re-set the password afterward and update Infisical at `/bmc/<machine-id>`.
+3. **Reflash the BMC firmware** (reload/upgrade from 1.78) to rebuild NVRAM.
+
+If one X11SSH-F BMC is in this state, check the others: `ipmitool -I lanplus -H <bmc> -U … -P … mc info` succeeding is the all-clear.
 
 BMC connection info (`IP`, `VENDOR_USERNAME`, `VENDOR_PASSWORD`) is fetched at runtime from Infisical at `/bmc/<machine-id>` — this path must be populated per-machine before an IPMI-backed `hsctl machine power` action will work for it. Progress and outcome are reported via timestamped `INFO`/`ACTION`/`OK`/`ERROR` log lines (`hsctl_log_*` in `_lib.sh`) — the logging convention every future hsctl command that *takes action* (rather than just displaying data) should use.
 

@@ -14,6 +14,15 @@
 # goes through ipmitool instead — except for a graceful "power off", which
 # prefers talosctl (cordons/drains before shutdown). --force skips talosctl
 # and hard-cuts power via IPMI instead, same as the other actions.
+#
+# ipmitool calls prefer RMCP+ (-I lanplus) but fall back to legacy IPMI 1.5
+# (-I lan) when the RMCP+ session can't be established, so these commands keep
+# working even when a BMC's RMCP+/RAKP stack is broken ("invalid role" / "Unable
+# to establish IPMI v2 / RMCP+ session"). On these X11SSH-F BMCs that break is a
+# corrupt cipher-suite privilege table that survives a cold reset and can't be
+# rewritten over IPMI — see the troubleshooting section in docs/operations/hsctl.md.
+# "bmcreset" cold-restarts the BMC (host power untouched); like every other action
+# here it rides the 1.5 fallback when lanplus is the thing that's down.
 
 machine_usage() {
     echo "Usage: hsctl machine <action> [args...]"
@@ -22,7 +31,31 @@ machine_usage() {
     echo "  power on|reset <id|node-name>          Power on/reset a machine via its BMC (IPMI)"
     echo "  power off [--force] <id|node-name>      Gracefully shut down a machine via talosctl;"
     echo "                                           --force hard-cuts power via IPMI instead"
+    echo "  bmcreset <id|node-name>                 Cold-restart the machine's BMC (host power untouched)"
     exit 1
+}
+
+# Run an ipmitool command against a BMC, preferring RMCP+ (IPMI 2.0 / lanplus) but
+# falling back to legacy IPMI 1.5 (-I lan) if the lanplus session can't be
+# established (RAKP "invalid role" / "Unable to establish IPMI v2 / RMCP+
+# session") — on these Supermicro BMCs the RMCP+ path can break while the 1.5
+# session path keeps working. Prints ipmitool's output on stdout either way.
+# Usage: out=$(_machine_ipmi <bmc-ip> <user> <pass> <ipmitool args...>) || return 1
+_machine_ipmi() {
+    local ip="$1" user="$2" pass="$3"; shift 3
+    local out
+    if out=$(ipmitool -I lanplus -H "$ip" -U "$user" -P "$pass" "$@" 2>&1); then
+        printf '%s' "$out"
+        return 0
+    fi
+    if [[ "$out" == *"RMCP+"* || "$out" == *"RAKP"* || "$out" == *"invalid role"* ]]; then
+        if out=$(ipmitool -I lan -H "$ip" -U "$user" -P "$pass" "$@" 2>&1); then
+            printf '%s' "$out"
+            return 0
+        fi
+    fi
+    printf '%s' "$out"
+    return 1
 }
 
 # Issue an IPMI chassis power command against a machine's BMC
@@ -32,10 +65,28 @@ _machine_ipmi_power() {
     local out
 
     hsctl_log_action "sending IPMI chassis power $verb to machine $id ($ip)"
-    if out=$(ipmitool -I lanplus -H "$ip" -U "$user" -P "$pass" chassis power "$verb" 2>&1); then
+    if out=$(_machine_ipmi "$ip" "$user" "$pass" chassis power "$verb"); then
         hsctl_log_success "machine $id: $out"
     else
         hsctl_log_error "machine $id: ipmitool chassis power $verb failed: $out"
+        exit 1
+    fi
+}
+
+# Cold-restart a machine's BMC. The host's power state is unaffected — this only
+# reboots the management controller itself (~1-2 min to come back). The usual
+# reason to run this is a BMC whose RMCP+/lanplus stack has wedged, so
+# _machine_ipmi's IPMI 1.5 fallback is what carries the reset in practice.
+# Usage: _machine_bmc_reset <machine-id> <bmc-ip> <user> <pass>
+_machine_bmc_reset() {
+    local id="$1" ip="$2" user="$3" pass="$4"
+    local out
+
+    hsctl_log_action "sending IPMI 'mc reset cold' to machine $id BMC ($ip)"
+    if out=$(_machine_ipmi "$ip" "$user" "$pass" mc reset cold); then
+        hsctl_log_success "machine $id: BMC cold reset issued${out:+ ($out)} — allow 1-2 min for it to come back"
+    else
+        hsctl_log_error "machine $id: ipmitool mc reset cold failed: $out"
         exit 1
     fi
 }
@@ -93,6 +144,22 @@ machine_power() {
     _machine_ipmi_power "$id" "$ip" "$user" "$pass" "$action"
 }
 
+machine_bmcreset() {
+    local input="${1:-}"
+    [[ -z "$input" ]] && { echo "Usage: hsctl machine bmcreset <id|node-name>" >&2; exit 1; }
+
+    command -v ipmitool &>/dev/null || { echo "hsctl machine bmcreset: ipmitool is required (brew install ipmitool)" >&2; exit 1; }
+
+    local id
+    id=$(hsctl_resolve_machine_id "$input") || { hsctl_log_error "no machine found for '$input'"; exit 1; }
+
+    local creds ip user pass
+    creds=$(hsctl_bmc_creds "$id") || exit 1
+    IFS=$'\t' read -r ip user pass <<< "$creds"
+
+    _machine_bmc_reset "$id" "$ip" "$user" "$pass"
+}
+
 machine_main() {
     [[ $# -eq 0 ]] && machine_usage
 
@@ -100,6 +167,9 @@ machine_main() {
     case "$action" in
         power|pow)
             machine_power "$@"
+            ;;
+        bmcreset|bmc-reset)
+            machine_bmcreset "$@"
             ;;
         *) echo "hsctl machine: unknown action '$action'" >&2; machine_usage ;;
     esac
