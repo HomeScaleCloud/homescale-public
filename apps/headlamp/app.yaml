@@ -49,13 +49,10 @@ values:
             value: "true"
           - name: TS_ENABLE_HEALTH_CHECK
             value: "true"
-          - name: TS_LOCAL_ADDR_PORT
-            value: "127.0.0.1:9002"
         startupProbe:
           httpGet:
             path: /healthz
             port: 9002
-            host: 127.0.0.1
           periodSeconds: 3
           failureThreshold: 40
         securityContext:
