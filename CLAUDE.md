@@ -95,7 +95,7 @@ Apps that contain a `Chart.yaml` and `Dockerfile` under `apps/<name>/` are built
 
 ### Clusters (`clusters/`)
 
-One directory per cluster: `mgmt`, `boa1-prod`. Cluster names follow the `<region>-<name>` convention (e.g. `boa1-prod`); `mgmt` is the exception. Each cluster maps to exactly one region.
+One directory per cluster. The set of clusters changes often — read `clusters/` for the current list rather than relying on any list here. Cluster names follow the `<region>-<name>` convention (e.g. `boa1-prod`); `mgmt` is the exception. Each cluster maps to exactly one region.
 
 - `clusters/<cluster>/apps.yaml` — the bootstrap ArgoCD app-of-apps (applied manually once)
 - `clusters/<cluster>/cluster.yaml` — Omni cluster template (Talos/k8s versions, machine assignments, patches); uses `$CLUSTER_NAME` envsubst substitution at deploy time
