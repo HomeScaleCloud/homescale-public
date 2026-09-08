@@ -67,11 +67,6 @@
       "/apps/.+/.+\\.yaml$/"
     ]
   },
-  "github-actions": {
-    "managerFilePatterns": [
-      "/.gitea/workflows/.*\\.yaml$/"
-    ]
-  },
   "dockerfile": {
     "managerFilePatterns": [
       "/apps/.+/Dockerfile/"

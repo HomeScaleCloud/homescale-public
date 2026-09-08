@@ -33,7 +33,7 @@ jobs:
       - name: Import RUNNER_CHECK_TOKEN
         id: infisical
         continue-on-error: true
-        uses: Infisical/secrets-action@v1.0.17
+        uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db  # v1.0.17
         with:
           method: "oidc"
           identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
