@@ -32,8 +32,6 @@ apps/argocd/                                    @HomeScaleCloud/team-infra-plat
 # Networking & ingress
 apps/tailscale/                                 @HomeScaleCloud/team-infra-plat
 apps/cloudflared/                               @HomeScaleCloud/team-infra-plat
-apps/traefik-private/                           @HomeScaleCloud/team-infra-plat
-apps/traefik-public/                            @HomeScaleCloud/team-infra-plat
 apps/external-dns/                              @HomeScaleCloud/team-infra-plat
 
 # TLS
