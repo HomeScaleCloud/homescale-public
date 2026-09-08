@@ -38,7 +38,7 @@ values:
                 nameIDPolicyFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
       rbac:
         scopes: "[groups]"
-        policy.default: '{{ if eq .Values.cluster.name "lab" }}role:admin{{ end }}'
+        policy.default: '{{ if hasSuffix "-lab" .Values.cluster.name }}role:admin{{ end }}'
         policy.csv: |
           g, sg-k8s-admin, role:admin
           g, team-infra-plat, role:readonly
