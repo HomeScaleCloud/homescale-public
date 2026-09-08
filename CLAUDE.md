@@ -23,6 +23,8 @@ Every `PrometheusRule` alert must have a corresponding runbook in `docs/runbooks
 - **Changed alert** (severity, thresholds, description, rename) → update the runbook to match.
 - **Deleted alert** → remove the runbook page and `mkdocs.yml` entry.
 
+This is enforced by `.github/scripts/check-runbooks.sh` (a `runbook-coverage` pre-commit hook, also run in CI): every repo-defined alert needs a `runbook_url` of the form above with a matching `docs/runbooks/<slug>.md` and `mkdocs.yml` nav entry, and every `docs/runbooks/*.md` must be claimed by an alert. The `<slug>` is taken from the `runbook_url` itself, so it doesn't have to be a mechanical kebab-case of the alert name.
+
 Runbooks live under `docs/runbooks/` grouped by system (e.g. Omni alerts → `omni-*.md`, PDU alerts → `apc-pdu-*.md`). See existing runbooks for the expected format: header with severity/alert/dashboard, "What this means" section, "Common causes" table, remediation steps. No "Diagnosis" section — the alert firing is the diagnosis.
 
 ## Key Commands

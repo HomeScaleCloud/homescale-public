@@ -42,3 +42,11 @@ repos:
     hooks:
       - id: gitlint
         stages: [commit-msg]
+  - repo: local
+    hooks:
+      - id: runbook-coverage
+        name: runbook coverage for PrometheusRule alerts
+        entry: .github/scripts/check-runbooks.sh
+        language: script
+        pass_filenames: false
+        files: '^(apps/.+/templates/.+\.yaml|docs/runbooks/.+\.md|mkdocs\.yml)$'
