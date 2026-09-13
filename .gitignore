@@ -46,8 +46,6 @@ Chart.lock
 **/charts/**.tgz
 **/charts/*/
 
-# build-time copy of infra/ansible/requirements.yml, synced in by build.yaml
-apps/github-runner/requirements.yml
 
 # Headlamp plugin dev (apps/headlamp/plugins/*)
 # dist/ is intentionally NOT ignored: the built bundle is what gets deployed
