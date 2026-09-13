@@ -44,9 +44,15 @@ helm template <app-name> apps/<app-name>/
 
 # Render the top-level app catalog (requires cluster.name)
 helm template apps -f apps/values.yaml --set cluster.name=mgmt
+
+# Render every catalog + per-app chart the way ArgoCD would, for every cluster,
+# then kubeconform the output against Kubernetes + datreeio CRD schemas. A CR
+# whose kind has no schema fails the run unless allowlisted in the script.
+# Needs helm, yq, kubeconform 0.7.x. Runs in CI on PRs.
+.github/scripts/validate-manifests.sh
 ```
 
-Pre-commit runs automatically on commit (includes yamllint and detect-secrets among its hooks). CI runs pre-commit and a Trivy config scan on every PR.
+Pre-commit runs automatically on commit (includes yamllint and detect-secrets among its hooks). CI runs pre-commit, a Trivy config scan, and a Helm render + kubeconform pass (`validate-manifests.sh`) on every PR.
 
 ## Commit Convention
 
