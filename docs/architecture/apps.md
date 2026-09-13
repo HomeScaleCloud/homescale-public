@@ -169,7 +169,7 @@ metadata:
     tailscale.com/tags: "tag:k8s,tag:app-myapp,tag:cluster-{{ .Values.cluster.name }}"
     tailscale.com/hostname: "myapp-{{ .Values.cluster.name }}"
     tailscale.com/proxy-group: ingress
-    external-dns.alpha.kubernetes.io/hostname: "myapp.{{ .Values.cluster.name }}REDACTED"
+    external-dns.kubernetes.io/hostname: "myapp.{{ .Values.cluster.name }}REDACTED"
 ```
 
 | Annotation | Description |
@@ -177,7 +177,7 @@ metadata:
 | `tailscale.com/tags` | Tags applied to the tailnet device for this Service. Always include `tag:k8s` and `tag:app-<name>`; add `tag:cluster-<name>` for anything cluster-scoped |
 | `tailscale.com/hostname` | The MagicDNS label for this device (`<hostname>.<tailnet>.ts.net`) |
 | `tailscale.com/proxy-group` | Set to `ingress` to route through the cluster's shared ingress `ProxyGroup` (from the `tailscale` app) instead of provisioning a dedicated proxy pod |
-| `external-dns.alpha.kubernetes.io/hostname` | Optional. Publishes a friendly `REDACTED` CNAME (via `external-dns`, running in every cluster) pointing at whatever tailnet hostname the Operator assigns |
+| `external-dns.kubernetes.io/hostname` | Optional. Publishes a friendly `REDACTED` CNAME (via `external-dns`, running in every cluster) pointing at whatever tailnet hostname the Operator assigns |
 
 Requires a matching [`tailscale.policy`](#tailscale-access-policy-tailscale) rule to actually grant access — exposing the Service alone doesn't open the tailnet.
 
@@ -237,7 +237,7 @@ dnsNames:
 {{- end }}
 ```
 
-Tailscale-side internal hostnames don't go through this mechanism — a Service's `external-dns.alpha.kubernetes.io/hostname` annotation (see [Exposing a Service on the tailnet](#exposing-a-service-on-the-tailnet)) is what actually publishes the DNS record, so a chart's `Certificate` `dnsNames` should list those hostnames directly rather than reading them from `.Values.homescale`. See `apps/omni/templates/certificate.yaml` for a real example, including keeping old hostnames around as a static fallback SAN when renaming.
+Tailscale-side internal hostnames don't go through this mechanism — a Service's `external-dns.kubernetes.io/hostname` annotation (see [Exposing a Service on the tailnet](#exposing-a-service-on-the-tailnet)) is what actually publishes the DNS record, so a chart's `Certificate` `dnsNames` should list those hostnames directly rather than reading them from `.Values.homescale`. See `apps/omni/templates/certificate.yaml` for a real example, including keeping old hostnames around as a static fallback SAN when renaming.
 
 ---
 

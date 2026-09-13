@@ -178,10 +178,10 @@ metadata:
     tailscale.com/tags: "tag:k8s,tag:app-my-app,tag:cluster-{{ .Values.cluster.name }}"
     tailscale.com/hostname: "my-app-{{ .Values.cluster.name }}"
     tailscale.com/proxy-group: ingress
-    external-dns.alpha.kubernetes.io/hostname: "my-app.{{ .Values.cluster.name }}REDACTED"
+    external-dns.kubernetes.io/hostname: "my-app.{{ .Values.cluster.name }}REDACTED"
 ```
 
-`tailscale.com/proxy-group: ingress` routes the Service through the cluster's shared ingress `ProxyGroup` (from the `tailscale` app) instead of provisioning a dedicated proxy pod. `external-dns` (running in every cluster) publishes the `external-dns.alpha.kubernetes.io/hostname` value as a CNAME to whatever tailnet hostname the Operator assigns.
+`tailscale.com/proxy-group: ingress` routes the Service through the cluster's shared ingress `ProxyGroup` (from the `tailscale` app) instead of provisioning a dedicated proxy pod. `external-dns` (running in every cluster) publishes the `external-dns.kubernetes.io/hostname` value as a CNAME to whatever tailnet hostname the Operator assigns.
 
 ### Public internet
 

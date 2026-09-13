@@ -82,10 +82,10 @@ metadata:
     tailscale.com/tags: "tag:k8s,tag:app-<name>,tag:cluster-{{ .Values.cluster.name }}"
     tailscale.com/hostname: "<name>-{{ .Values.cluster.name }}"
     tailscale.com/proxy-group: ingress
-    external-dns.alpha.kubernetes.io/hostname: "<name>.{{ .Values.cluster.name }}REDACTED"
+    external-dns.kubernetes.io/hostname: "<name>.{{ .Values.cluster.name }}REDACTED"
 ```
 
-The policy specifically requires: `tailscale.com/tags` containing both `tag:k8s` and a `tag:app-*`/`tag:k8s-api`/`tag:omni-k8s` entry and `tag:cluster-<cluster.name>`, and `external-dns.alpha.kubernetes.io/hostname` ending in `REDACTED`.
+The policy specifically requires: `tailscale.com/tags` containing both `tag:k8s` and a `tag:app-*`/`tag:k8s-api`/`tag:omni-k8s` entry and `tag:cluster-<cluster.name>`, and `external-dns.kubernetes.io/hostname` ending in `REDACTED`.
 
 ## 6. External exposure (optional, public internet)
 

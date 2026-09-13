@@ -65,7 +65,7 @@ values:
           tailscale.com/tags: "tag:k8s,tag:app-argocd,tag:cluster-{{ .Values.cluster.name }}"
           tailscale.com/hostname: "argocd-{{ .Values.cluster.name }}"
           tailscale.com/proxy-group: ingress
-          external-dns.alpha.kubernetes.io/hostname: "argocd.{{ .Values.cluster.name }}REDACTED"
+          external-dns.kubernetes.io/hostname: "argocd.{{ .Values.cluster.name }}REDACTED"
       metrics:
         enabled: true
         serviceMonitor:

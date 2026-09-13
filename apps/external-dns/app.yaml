@@ -14,6 +14,14 @@ values:
     name: "{{ .Values.cluster.name }}"
   external-dns:
     policy: sync
+    # external-dns v0.22.0 (chart 1.22.0) moved the annotation prefix from
+    # external-dns.alpha.kubernetes.io/ (alpha) to external-dns.kubernetes.io/
+    # (GA), with no fallback -- every Service/Ingress annotation in this repo
+    # has been migrated to the new prefix to match. Pinned explicitly (rather
+    # than relying on the chart default) so a future upstream default change
+    # can't silently break annotation recognition again -- combined with
+    # policy:sync, that previously caused a full DNS wipe fleet-wide.
+    annotationPrefix: "external-dns.kubernetes.io/"
     sources:
       - service
       - ingress

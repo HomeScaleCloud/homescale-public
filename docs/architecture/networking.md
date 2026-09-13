@@ -30,10 +30,10 @@ metadata:
     tailscale.com/tags: "tag:k8s,tag:app-myapp,tag:cluster-{{ .Values.cluster.name }}"
     tailscale.com/hostname: "myapp-{{ .Values.cluster.name }}"
     tailscale.com/proxy-group: ingress
-    external-dns.alpha.kubernetes.io/hostname: "myapp.{{ .Values.cluster.name }}REDACTED"
+    external-dns.kubernetes.io/hostname: "myapp.{{ .Values.cluster.name }}REDACTED"
 ```
 
-`tailscale.com/proxy-group: ingress` routes the Service through the cluster's shared ingress `ProxyGroup` instead of provisioning a dedicated proxy pod per Service. `external-dns` (running in every cluster) publishes the `external-dns.alpha.kubernetes.io/hostname` value as a CNAME in Cloudflare, pointing at whatever `<hostname>.<tailnet>.ts.net` address the Operator assigns the proxy. For example, the ArgoCD server on the management cluster is reachable at:
+`tailscale.com/proxy-group: ingress` routes the Service through the cluster's shared ingress `ProxyGroup` instead of provisioning a dedicated proxy pod per Service. `external-dns` (running in every cluster) publishes the `external-dns.kubernetes.io/hostname` value as a CNAME in Cloudflare, pointing at whatever `<hostname>.<tailnet>.ts.net` address the Operator assigns the proxy. For example, the ArgoCD server on the management cluster is reachable at:
 
 ```
 REDACTED
