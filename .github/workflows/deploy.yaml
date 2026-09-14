@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Import Secrets
         id: infisical
-        uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db  # v1.0.17
+        uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
         with:
           method: "oidc"
           identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
@@ -289,7 +289,7 @@ jobs:
 
       - name: Import Secrets
         if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
-        uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db  # v1.0.17
+        uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
         with:
           method: "oidc"
           identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
@@ -519,7 +519,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Import Secrets
-        uses: Infisical/secrets-action@6cd3f7c0e4cc0d2395ee4ef414eb6eeb5d3e73db  # v1.0.17
+        uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
         with:
           method: "oidc"
           identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
