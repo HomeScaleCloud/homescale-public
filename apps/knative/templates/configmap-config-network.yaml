@@ -188,3 +188,4 @@ data:
     # Knative doesn't know about that otherwise.
     default-external-scheme: "http"
   ingress-class: kourier.ingress.networking.knative.dev
+  autocreate-cluster-domain-claims: "true"
