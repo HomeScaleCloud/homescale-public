@@ -2,6 +2,7 @@ path: apps/slurm
 namespace: slurm
 releaseName: slurm
 syncWave: 0
+podSecurity: privileged
 defaultDeploy: false
 # slurm-auth-slurm/slurm-auth-jwt use Helm's lookup() to generate once, which
 # Argo CD's helm template doesn't support (always nil) — without this they'd
