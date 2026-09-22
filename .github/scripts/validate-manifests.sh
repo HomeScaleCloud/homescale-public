@@ -32,7 +32,10 @@ CRD_CATALOG='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Gro
 # CustomResourceDefinition, and the CRD objects themselves come from pinned
 # upstream charts that Helm has already rendered — validating their structure
 # adds nothing.
-NO_SCHEMA_OK=(CustomResourceDefinition)
+#   Controller/NodeSet/RestApi/Accounting — slinky.slurm.net CRs from the
+#   slurm-operator chart (apps/slurm). Too new/niche to be in datreeio's
+#   CRDs-catalog; no public schema to validate against.
+NO_SCHEMA_OK=(CustomResourceDefinition Controller NodeSet RestApi Accounting)
 
 # Kinds whose catalog schema is known wrong for the chart version we pin, so a
 # validation failure is not actionable. Revisit whenever the chart is bumped.

@@ -1,0 +1,56 @@
+path: apps/slurm
+namespace: slurm
+releaseName: slurm
+syncWave: 0
+defaultDeploy: false
+# Argo CD renders Helm via `helm template`, where `lookup()` always returns
+# nil (github.com/argoproj/argo-cd/issues/5202) — so every generated-once
+# secret below would get a fresh random value on every reconcile without
+# this. Applies whatever's generated on first creation, then never touches
+# /data again. slurm-auth-slurm/slurm-auth-jwt come from the vendored slurm
+# chart (charts/slurm/templates/secrets/); mariadb-password is ours.
+ignoreDifferences:
+  - group: ""
+    kind: Secret
+    name: slurm-auth-slurm
+    jsonPointers:
+      - /data
+  - group: ""
+    kind: Secret
+    name: slurm-auth-jwt
+    jsonPointers:
+      - /data
+  - group: ""
+    kind: Secret
+    name: mariadb-password
+    jsonPointers:
+      - /data
+extraSources:
+  - repoURL: oci://ghcr.io/slinkyproject/charts
+    chart: slurm-operator-crds
+    targetRevision: "1.2.2"
+    helm:
+      releaseName: slurm-operator-crds
+  - repoURL: oci://ghcr.io/slinkyproject/charts
+    chart: slurm-operator
+    targetRevision: "1.2.2"
+    helm:
+      releaseName: slurm-operator
+      valuesObject:
+        certManager:
+          enabled: true
+values:
+  slurm:
+    accounting:
+      enabled: true
+    controller:
+      persistence:
+        storageClassName: longhorn
+    nodesets:
+      compute:
+        replicas: 3
+        partition:
+          enabled: false
+    partitions:
+      all:
+        enabled: true

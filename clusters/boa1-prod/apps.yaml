@@ -332,6 +332,8 @@ spec:
               deploy: true
             k8s-gang:
               deploy: true
+            slurm:
+              deploy: true
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
