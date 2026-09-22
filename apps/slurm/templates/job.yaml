@@ -1,0 +1,45 @@
+{{- /* checks-then-creates against the live API: genuinely exactly-once, unlike a Helm-templated randAlphaNum secret. */}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mariadb-password-init # pragma: allowlist secret
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      serviceAccountName: mariadb-password-init
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: init
+          image: docker.io/alpine/k8s:1.32.1
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              if kubectl get secret mariadb-password -n "$NAMESPACE" >/dev/null 2>&1; then
+                echo "mariadb-password already exists, leaving it alone"
+                exit 0
+              fi
+              password="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c32)"
+              kubectl create secret generic mariadb-password -n "$NAMESPACE" \
+                --from-literal="password=${password}"
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
