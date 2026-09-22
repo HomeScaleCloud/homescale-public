@@ -1,0 +1,135 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-kourier
+  namespace: knative-serving
+  labels:
+    networking.knative.dev/ingress-provider: kourier
+    app.kubernetes.io/component: net-kourier
+    app.kubernetes.io/version: 1.23.0
+    app.kubernetes.io/name: knative-serving
+data:
+  _example: |
+    ################################
+    #                              #
+    #    EXAMPLE CONFIGURATION     #
+    #                              #
+    ################################
+
+    # This block is not actually functional configuration,
+    # but serves to illustrate the available configuration
+    # options and document them in a way that is accessible
+    # to users that `kubectl edit` this config map.
+    #
+    # These sample configuration options may be copied out of
+    # this example block and unindented to be in the data block
+    # to actually change the configuration.
+
+    # Specifies whether requests reaching the Kourier gateway
+    # in the context of services should be logged. Readiness
+    # probes etc. must be configured via the bootstrap config.
+    enable-service-access-logging: "true"
+
+    # Specifies the format of the access log used by the Kourier gateway.
+    # This template follows the envoy format.
+    # see: https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#access-logging
+    service-access-log-template: ""
+
+    # Specifies whether to use proxy-protocol in order to safely
+    # transport connection information such as a client's address
+    # across multiple layers of TCP proxies.
+    # NOTE THAT THIS IS AN EXPERIMENTAL / ALPHA FEATURE
+    enable-proxy-protocol: "false"
+
+    # The server certificates to serve the internal TLS traffic for Kourier Gateway.
+    # It is specified by the secret name in controller namespace, which has
+    # the "tls.crt" and "tls.key" data field.
+    # Use an empty value to disable the feature (default).
+    #
+    # NOTE: This flag is in an alpha state and is mostly here to enable internal testing
+    #       for now. Use with caution.
+    cluster-cert-secret: ""
+
+    # Specifies the amount of time that Kourier waits for the incoming requests.
+    # The default, 0s, imposes no timeout at all.
+    stream-idle-timeout: "0s"
+
+    # Specifies whether to use CryptoMB private key provider in order to
+    # acclerate the TLS handshake.
+    # NOTE THAT THIS IS AN EXPERIMENTAL / ALPHA FEATURE.
+    enable-cryptomb: "false"
+
+    # Configures the number of additional ingress proxy hops from the
+    # right side of the x-forwarded-for HTTP header to trust.
+    trusted-hops-count: "0"
+
+    # Configures the connection manager to use the real remote address
+    # of the client connection when determining internal versus external origin and manipulating various headers.
+    use-remote-address: "false"
+
+    # Specifies the cipher suites for TLS external listener.
+    # Use ',' separated values like "ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-ECDSA-CHACHA20-POLY1305"
+    # The default uses the default cipher suites of the envoy version.
+    cipher-suites: ""
+
+    # Disable the Envoy server header injection in the response when response has no such header.
+    disable-envoy-server-header: "false"
+
+    # The external authorization service and port, my-auth:2222.
+    # This value overrides environment variable if defined.
+    extauthz-host: ""
+
+    # The protocol used to query the ext auth service. Can be one of : grpc, http, https. Defaults to grpc
+    # This value overrides environment variable if defined.
+    extauthz-protocol: "grpc"
+
+    # Allow traffic to go through if the ext auth service is down. Accepts true/false.
+    # This value overrides environment variable if defined.
+    extauthz-failure-mode-allow: ""
+
+    # Max request bytes, if not set, defaults to 8192 Bytes. More info Envoy Docs
+    # see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto.html#extensions-filters-http-ext-authz-v3-buffersettings
+    # This value overrides environment variable if defined.
+    extauthz-max-request-body-bytes: 8192
+
+    # Max time in ms to wait for the ext authz service. Defaults to 2000 ms
+    # This value overrides environment variable if defined.
+    extauthz-timeout: 2000
+
+    # If extauthz-protocol is equal to http or https, path to query the ext auth service.
+    # Example : if set to /verify, it will query /verify/ (notice the trailing /). If not set, it will query /
+    # This value overrides environment variable if defined.
+    extauthz-path-prefix: ""
+
+    # If extauthz-protocol is equal to grpc, sends the body as raw bytes instead of a UTF-8 string.
+    # Accepts only true/false, t/f or 1/0. Attempting to set another value will throw an error.
+    # Defaults to false. More info Envoy Docs.
+    # see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto.html#extensions-filters-http-ext-authz-v3-buffersettings
+    # This value overrides environment variable if defined.
+    extauthz-pack-as-byte: "false"
+
+    # Specifies the secret that contains the TLS certificate and key pair when using HTTPS communication with Kourier Ingress.
+    # This value overrides environment variable if defined.
+    certs-secret-name: ""
+    certs-secret-namespace: ""
+
+    # Specifies the OTLP collector endpoint for distributed tracing.
+    # The endpoint format depends on the protocol (see tracing-protocol).
+    # Examples:
+    # - For HTTP: "http://otel-collector.observability.svc:4318/v1/traces"
+    # - For gRPC: "http://otel-collector.observability.svc:4317"
+    # Use an empty value to disable distributed tracing (default).
+    tracing-endpoint: ""
+
+    # Protocol for tracing collector communication.
+    # Valid values: http/protobuf, grpc
+    tracing-protocol: "grpc"
+
+    # Tracing sampling rate (0.0 to 1.0)
+    # Controls the percentage of requests that are traced.
+    # Example: "1.0" traces 100% of requests.
+    tracing-sampling-rate: "1.0"
+
+    # Service name for traces
+    # This identifies the Kourier gateway in your tracing system.
+    tracing-service-name: "kourier-knative"

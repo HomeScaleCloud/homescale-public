@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: 3scale-kourier-gateway-pdb
+  namespace: kourier-system
+  labels:
+    networking.knative.dev/ingress-provider: kourier
+    app.kubernetes.io/component: net-kourier
+    app.kubernetes.io/version: 1.23.0
+    app.kubernetes.io/name: knative-serving
+spec:
+  minAvailable: 80%
+  selector:
+    matchLabels:
+      app: 3scale-kourier-gateway

@@ -241,6 +241,23 @@ Tailscale-side internal hostnames don't go through this mechanism — a Service'
 
 ---
 
+## Knative Serving apps
+
+`apps/knative` deploys [Knative Serving](https://knative.dev/docs/serving/) plus its [Kourier](https://github.com/knative-extensions/net-kourier) networking layer as a platform component, `defaultDeploy: false` and currently enabled on boa1-prod only. Kourier was picked over net-istio/net-contour because this repo runs neither Istio nor Contour — it's the only zero-new-dependency networking layer for Knative. The upstream `serving-crds.yaml`/`serving-core.yaml`/`kourier.yaml` releases have no official Helm chart, so they're vendored as raw manifests split one-resource-per-file under `templates/`, following the same pattern as `apps/multus` and `apps/kubevirt`. The vendored `kourier` Service is patched to `type: ClusterIP` (nothing needs to reach it from outside the cluster) and `config-network`'s `ingress-class` is set to Kourier.
+
+An app that wants scale-to-zero autoscaling instead of a plain `Deployment`+`Service` can define a `serving.knative.dev/v1 Kind: Service` in `templates/service.yaml` instead — see `apps/maxmorris-io` and `apps/homepage` for real examples. Key points:
+
+- A Knative `Service` named `{{ .Release.Name }}` automatically creates a matching cluster-local `Service` object (same name/namespace, port 80) that always routes to the active revision — this is why `exposePublic`'s default `service: <releaseName>` target (see [above](#public-exposure-exposepublic)) keeps working unchanged when converting an app from `Deployment` to Knative.
+- Autoscaling is controlled by annotations on `spec.template.metadata.annotations`, e.g.:
+  ```yaml
+  autoscaling.knative.dev/min-scale: "0"   # scale to zero when idle (adds cold-start latency)
+  autoscaling.knative.dev/max-scale: "3"
+  ```
+- The pod spec under `spec.template.spec` is otherwise a normal `PodSpec` (containers, volumes, `securityContext`, etc.) — converting an existing `Deployment` template is close to a straight copy of `spec.template.spec` from the Deployment into the ksvc.
+- Apps enabled only on clusters that run `knative` should not be deployed to other clusters, since there's no networking layer there to route to them.
+
+---
+
 ## Sync wave order
 
 See [sync wave order](overview.md#sync-wave-order) in the architecture overview.

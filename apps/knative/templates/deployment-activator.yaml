@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: activator
+  namespace: knative-serving
+  labels:
+    app.kubernetes.io/component: activator
+    app.kubernetes.io/version: 1.23.0
+    app.kubernetes.io/name: knative-serving
+spec:
+  selector:
+    matchLabels:
+      app: activator
+      role: activator
+  template:
+    metadata:
+      labels:
+        app: activator
+        role: activator
+        app.kubernetes.io/component: activator
+        app.kubernetes.io/name: knative-serving
+        app.kubernetes.io/version: 1.23.0
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: activator
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      serviceAccountName: activator
+      securityContext:
+        runAsNonRoot: true
+      containers:
+      - name: activator
+        image: gcr.io/knative-releases/knative.dev/serving/cmd/activator@sha256:e5ab46f3b73fa2e3898fe47f6a3a0c2bd765596f4fb36ceb4c28c35d0a74b2e5
+        resources:
+          requests:
+            cpu: 300m
+            memory: 60Mi
+          limits:
+            cpu: 1000m
+            memory: 600Mi
+        env:
+        - name: GOGC
+          value: '500'
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        ports:
+        - name: metrics
+          containerPort: 9090
+        - name: profiling
+          containerPort: 8008
+        - name: http1
+          containerPort: 8012
+        - name: h2c
+          containerPort: 8013
+        readinessProbe:
+          httpGet:
+            port: 8012
+          periodSeconds: 5
+          failureThreshold: 5
+        livenessProbe:
+          httpGet:
+            port: 8012
+          periodSeconds: 10
+          failureThreshold: 12
+          initialDelaySeconds: 15
+      terminationGracePeriodSeconds: 600

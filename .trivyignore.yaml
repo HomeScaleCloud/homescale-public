@@ -49,3 +49,33 @@ misconfigurations:
       - "apps/metrics/templates/service-egress.yaml"
       - "apps/headlamp/templates/service-egress.yaml"
     statement: "Intentional: type: ExternalName is required by the Tailscale Kubernetes operator's egress ProxyGroup pattern. The tailscale.com/tailnet-fqdn annotation is resolved against the tailnet's own netmap by the operator's admission webhook, not an attacker-controlled public DNS name, so CVE-2020-8554's MITM risk model doesn't apply"
+  - id: KSV-0041
+    paths:
+      - "apps/knative/templates/clusterrole-knative-serving-core.yaml"
+      - "apps/knative/templates/clusterrole-net-kourier.yaml"
+    statement: "Vendored upstream Knative Serving/Kourier RBAC: the controller manages TLS Secrets for its own webhook certs and Knative Certificates (webhook-certs, routing-serving-certs); net-kourier reads the TLS Secret referenced by config-kourier's cluster-cert-secret for the Kourier gateway"
+  - id: KSV-0046
+    paths:
+      - "apps/knative/templates/clusterrole-knative-serving-core.yaml"
+      - "apps/knative/templates/clusterrole-knative-serving-namespaced-admin.yaml"
+      - "apps/knative/templates/clusterrole-knative-serving-namespaced-edit.yaml"
+      - "apps/knative/templates/clusterrole-knative-serving-namespaced-view.yaml"
+    statement: "Vendored upstream Knative Serving RBAC: knative-serving-core is the controller's own reconciler role spanning many resource kinds; the namespaced-admin/edit/view roles are RBAC-aggregation roles for end users to manage or view Knative resources, mirroring Kubernetes' own built-in admin/edit/view ClusterRoles"
+  - id: KSV-0056
+    paths:
+      - "apps/knative/templates/clusterrole-knative-serving-core.yaml"
+      - "apps/knative/templates/clusterrole-knative-serving-podspecable-binding.yaml"
+      - "apps/knative/templates/clusterrole-net-kourier.yaml"
+    statement: "Vendored upstream Knative Serving/Kourier RBAC: the controller creates and manages the per-revision Services/EndpointSlices backing every Knative Service; net-kourier manages the networking resources backing its Envoy gateway"
+  - id: KSV-0109
+    paths:
+      - "apps/knative/templates/configmap-config-kourier.yaml"
+    statement: "Vendored upstream Kourier config: 'cluster-cert-secret' is a Secret *name* reference (empty by default), not an actual secret value"
+  - id: KSV-0114
+    paths:
+      - "apps/knative/templates/clusterrole-knative-serving-core.yaml"
+    statement: "Vendored upstream Knative Serving RBAC: the webhook controller reconciles the caBundle/rules on its own MutatingWebhookConfiguration/ValidatingWebhookConfiguration objects at runtime"
+  - id: KSV-0014
+    paths:
+      - "apps/knative/templates/deployment-3scale-kourier-gateway.yaml"
+    statement: "Vendored upstream Kourier gateway: the Envoy container writes its own runtime files (hot-restart shared-memory files, admin interface) to the root filesystem; upstream provides no writable volume for these"

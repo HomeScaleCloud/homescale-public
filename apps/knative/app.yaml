@@ -1,0 +1,28 @@
+path: apps/knative
+namespace: knative-serving
+releaseName: knative
+syncWave: -10
+defaultDeploy: false
+syncOptions:
+  - ServerSideApply=true
+ignoreDifferences:
+  - group: admissionregistration.k8s.io
+    kind: MutatingWebhookConfiguration
+    name: webhook.serving.knative.dev
+    jsonPointers:
+      - /webhooks
+  - group: admissionregistration.k8s.io
+    kind: ValidatingWebhookConfiguration
+    name: config.webhook.serving.knative.dev
+    jsonPointers:
+      - /webhooks
+  - group: admissionregistration.k8s.io
+    kind: ValidatingWebhookConfiguration
+    name: validation.webhook.serving.knative.dev
+    jsonPointers:
+      - /webhooks
+  - group: ""
+    kind: Secret
+    name: webhook-certs
+    jsonPointers:
+      - /data

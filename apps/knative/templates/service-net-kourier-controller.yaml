@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: net-kourier-controller
+  namespace: knative-serving
+  labels:
+    networking.knative.dev/ingress-provider: kourier
+    app.kubernetes.io/component: net-kourier
+    app.kubernetes.io/version: 1.23.0
+    app.kubernetes.io/name: knative-serving
+spec:
+  ports:
+  - name: grpc-xds
+    port: 18000
+    protocol: TCP
+    targetPort: 18000
+  - name: http-metrics
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: net-kourier-controller
+  type: ClusterIP

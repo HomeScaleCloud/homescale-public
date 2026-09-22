@@ -1,0 +1,5 @@
+apiVersion: v2
+name: knative
+description: Knative Serving (with the Kourier networking layer) for scale-to-zero HTTP apps
+type: application
+version: 0.1.0

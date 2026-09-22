@@ -35,6 +35,8 @@ spec:
                     serialPort: "tcp://10.1.246.11:6638"
             homepage:
               deploy: true
+            knative:
+              deploy: true
             longhorn:
               deploy: true
             maxmorris-io:

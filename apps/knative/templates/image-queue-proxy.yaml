@@ -1,0 +1,11 @@
+apiVersion: caching.internal.knative.dev/v1alpha1
+kind: Image
+metadata:
+  name: queue-proxy
+  namespace: knative-serving
+  labels:
+    app.kubernetes.io/component: queue-proxy
+    app.kubernetes.io/name: knative-serving
+    app.kubernetes.io/version: 1.23.0
+spec:
+  image: gcr.io/knative-releases/knative.dev/serving/cmd/queue@sha256:a3cc71ce80dbc6df8781f15eac2cf3531a4c9815271799afd8776bef9e6aeaf2
