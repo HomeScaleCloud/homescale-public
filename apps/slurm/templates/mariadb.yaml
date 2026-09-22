@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
         - name: mariadb
-          image: docker.io/library/mariadb:11.4
+          image: docker.io/library/mariadb:11.8
           ports:
             - name: mysql
               containerPort: 3306
