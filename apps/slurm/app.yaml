@@ -26,12 +26,12 @@ ignoreDifferences:
     jsonPointers:
       - /data
 extraSources:
-  - repoURL: oci://ghcr.io/slinkyproject/charts
+  - repoURL: ghcr.io/slinkyproject/charts
     chart: slurm-operator-crds
     targetRevision: "1.2.2"
     helm:
       releaseName: slurm-operator-crds
-  - repoURL: oci://ghcr.io/slinkyproject/charts
+  - repoURL: ghcr.io/slinkyproject/charts
     chart: slurm-operator
     targetRevision: "1.2.2"
     helm:
