@@ -1,0 +1,13 @@
+{{- $homescale := default (dict) .Values.homescale }}
+{{- range (default (list) $homescale.exposePublicFqdns) }}
+---
+apiVersion: serving.knative.dev/v1beta1
+kind: DomainMapping
+metadata:
+  name: {{ . }}
+spec:
+  ref:
+    name: {{ $.Release.Name }}
+    kind: Service
+    apiVersion: serving.knative.dev/v1
+{{- end }}
