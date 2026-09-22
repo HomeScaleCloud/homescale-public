@@ -1,0 +1,24 @@
+# PAM configuration for sshd — identity comes from Tailscale (see
+# pam-tailscale-whois.sh), not passwords or keys. Real Unix auth
+# (pam_unix/common-auth) is intentionally not used: dynamically-created
+# accounts have no password to check.
+
+auth    sufficient   pam_exec.so quiet /usr/local/bin/pam-tailscale-whois.sh
+auth    requisite    pam_deny.so
+
+account required     pam_nologin.so
+@include common-account
+
+session [success=ok ignore=ignore module_unknown=ignore default=bad]        pam_selinux.so close
+session    required     pam_loginuid.so
+session    optional     pam_keyinit.so force revoke
+@include common-session
+session    optional     pam_motd.so  motd=/run/motd.dynamic
+session    optional     pam_motd.so noupdate
+session    optional     pam_mail.so standard noenv
+session    required     pam_limits.so
+session    required     pam_env.so
+session    required     pam_env.so envfile=/etc/default/locale
+session [success=ok ignore=ignore module_unknown=ignore default=bad]        pam_selinux.so open
+
+@include common-password
