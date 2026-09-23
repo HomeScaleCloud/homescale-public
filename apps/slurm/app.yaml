@@ -64,6 +64,7 @@ values:
               mountPath: /var/run/tailscale
         podSpec:
           serviceAccountName: slurm-login
+          automountServiceAccountToken: true
           initContainers:
             - name: tailscale
               image: tailscale/tailscale:v1.102.4
