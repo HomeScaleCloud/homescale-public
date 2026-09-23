@@ -1,0 +1,19 @@
+{{- /*
+Shared $HOME across the login pod and every compute node, so job output
+(default stdout/stderr lands in the submission CWD, normally $HOME) and
+input files are visible everywhere without any extra path wiring — both
+pam-tailscale-whois.sh (login) and the Prolog script (compute) just do
+useradd --create-home, so this only has to be mounted at /home once.
+*/}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: slurm-home
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 50Gi
