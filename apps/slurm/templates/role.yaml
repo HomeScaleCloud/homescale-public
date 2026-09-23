@@ -15,3 +15,17 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: slurm-login
+  namespace: {{ .Release.Namespace }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "update", "patch"]
+    resourceNames: ["slurm-login-tailscale-state"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create"]

@@ -57,12 +57,13 @@ values:
             type: ClusterIP
         login:
           image:
-            repository: ghcr.io/homescalecloud/slurm
+            repository: ghcr.io/homescalecloud/slurm-login
             tag: "latest"  # pragma: allowlist secret
           volumeMounts:
             - name: tailscale-socket
               mountPath: /var/run/tailscale
         podSpec:
+          serviceAccountName: slurm-login
           initContainers:
             - name: tailscale
               image: tailscale/tailscale:v1.102.4
@@ -81,9 +82,7 @@ values:
                 - name: TS_USERSPACE
                   value: "false"
                 - name: TS_KUBE_SECRET
-                  value: ""
-                - name: TS_STATE_DIR
-                  value: /var/lib/tailscale
+                  value: slurm-login-tailscale-state  # pragma: allowlist secret
                 - name: TS_SOCKET
                   value: /var/run/tailscale/tailscaled.sock
                 - name: TS_HOSTNAME
@@ -98,12 +97,8 @@ values:
                 capabilities:
                   add: ["NET_ADMIN"]
               volumeMounts:
-                - name: tailscale-state
-                  mountPath: /var/lib/tailscale
                 - name: tailscale-socket
                   mountPath: /var/run/tailscale
           volumes:
-            - name: tailscale-state
-              emptyDir: {}
             - name: tailscale-socket
               emptyDir: {}
