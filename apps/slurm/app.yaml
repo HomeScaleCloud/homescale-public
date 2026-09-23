@@ -10,20 +10,6 @@ tailscale:
       - sources: ["group:owners@REDACTED"]
         protocol: tcp
         ports: ["22"]
-# slurm-auth-slurm/slurm-auth-jwt use Helm's lookup() to generate once, which
-# Argo CD's helm template doesn't support (always nil) — without this they'd
-# get a fresh random value every reconcile.
-ignoreDifferences:
-  - group: ""
-    kind: Secret
-    name: slurm-auth-slurm
-    jsonPointers:
-      - /data
-  - group: ""
-    kind: Secret
-    name: slurm-auth-jwt
-    jsonPointers:
-      - /data
 extraSources:
   - repoURL: ghcr.io/slinkyproject/charts
     chart: slurm-operator-crds
@@ -40,6 +26,16 @@ extraSources:
           enabled: true
 values:
   slurm:
+    slurmKey:
+      create: false
+      secretRef:
+        name: slurm-auth-slurm
+        key: slurm.key
+    jwtKey:
+      create: false
+      secretRef:
+        name: slurm-auth-jwt
+        key: jwt.key
     accounting:
       enabled: true
     controller:
@@ -69,7 +65,7 @@ values:
         podSpec:
           initContainers:
             - name: tailscale
-              image: tailscale/tailscale:v1.102.2
+              image: tailscale/tailscale:v1.102.4
               restartPolicy: Always
               env:
                 - name: TS_CLIENT_ID

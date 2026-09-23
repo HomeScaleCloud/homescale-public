@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: mariadb-password-init # pragma: allowlist secret
+  name: secrets-init
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
@@ -9,9 +9,9 @@ metadata:
     "helm.sh/hook-delete-policy": before-hook-creation
 subjects:
   - kind: ServiceAccount
-    name: mariadb-password-init
+    name: secrets-init
     namespace: {{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: mariadb-password-init
+  name: secrets-init

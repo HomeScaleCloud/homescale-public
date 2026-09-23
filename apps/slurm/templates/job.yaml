@@ -1,8 +1,17 @@
-{{- /* checks-then-creates against the live API: genuinely exactly-once, unlike a Helm-templated randAlphaNum secret. */}}
+{{- /*
+Checks-then-creates against the live API: genuinely exactly-once, unlike a
+Helm-templated randAlphaNum/randAscii secret (which Argo CD re-renders fresh
+on every sync since it doesn't support Helm's lookup()). This also takes
+over slurm-auth-slurm/slurm-auth-jwt from the vendored slurm chart's own
+generation (slurmKey.create/jwtKey.create: false below) — those are marked
+immutable: true, so a fresh render on every sync doesn't just get ignored,
+it hard-fails the whole Application's sync ("field is immutable when
+`immutable` is set") the moment any patch touches /data.
+*/}}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mariadb-password-init # pragma: allowlist secret
+  name: secrets-init
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
@@ -12,7 +21,7 @@ spec:
   backoffLimit: 3
   template:
     spec:
-      serviceAccountName: mariadb-password-init
+      serviceAccountName: secrets-init
       restartPolicy: OnFailure
       securityContext:
         runAsNonRoot: true
@@ -31,13 +40,21 @@ spec:
             - -c
             - |
               set -eu
-              if kubectl get secret mariadb-password -n "$NAMESPACE" >/dev/null 2>&1; then
-                echo "mariadb-password already exists, leaving it alone"
-                exit 0
-              fi
-              password="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c32)"
-              kubectl create secret generic mariadb-password -n "$NAMESPACE" \
-                --from-literal="password=${password}"
+
+              ensure_secret() {
+                name="$1"; key="$2"; length="$3"
+                if kubectl get secret "$name" -n "$NAMESPACE" >/dev/null 2>&1; then
+                  echo "$name already exists, leaving it alone"
+                  return
+                fi
+                value="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c "$length")"
+                kubectl create secret generic "$name" -n "$NAMESPACE" \
+                  --from-literal="${key}=${value}"
+              }
+
+              ensure_secret mariadb-password password 32
+              ensure_secret slurm-auth-slurm slurm.key 1024
+              ensure_secret slurm-auth-jwt jwt.key 1024
           env:
             - name: NAMESPACE
               valueFrom:

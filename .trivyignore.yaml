@@ -1,4 +1,22 @@
+vulnerabilities:
+  - id: CVE-2026-56854
+    paths:
+      - "usr/local/bin/tailscale"
+    statement: "golang.org/x/crypto/ssh auth-bypass is in the SSH server/client code path bundled in the tailscale binary (apps/slurm/src/Dockerfile); this image only ever calls `tailscale whois` (LocalAPI client over the tailscaled socket), never anything ssh-related from this binary"
+  - id: CVE-2026-46602
+    paths:
+      - "usr/local/bin/tailscale"
+    statement: "golang.org/x/image TIFF decoder DoS is unreachable — this image (apps/slurm/src/Dockerfile) only calls `tailscale whois`, never any image-decoding code path"
+  - id: CVE-2026-46603
+    paths:
+      - "usr/local/bin/tailscale"
+    statement: "golang.org/x/image vp8l decoder DoS is unreachable — this image (apps/slurm/src/Dockerfile) only calls `tailscale whois`, never any image-decoding code path"
+
 misconfigurations:
+  - id: DS-0002
+    paths:
+      - "apps/slurm/src/Dockerfile"
+    statement: "sshd binds port 22 and useradd writes /etc/passwd,/etc/shadow — both need root; this is the login node's sshd process, not a workload container"
   - id: KSV-0045
     paths:
       - "apps/rbac/templates/roles/workloads-admin.yaml"

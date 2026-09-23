@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: mariadb-password-init # pragma: allowlist secret
+  name: secrets-init
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
@@ -11,7 +11,7 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get"]
-    resourceNames: ["mariadb-password"]
+    resourceNames: ["mariadb-password", "slurm-auth-slurm", "slurm-auth-jwt"]
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["create"]
