@@ -52,15 +52,17 @@ jobs:
               name="$(basename "$dir")"
               context="$dir"
             fi
-            # Optional per-image name override (ghcr.io repo name), when it
-            # should differ from the app directory name — e.g. one app
-            # building more than one image. Doesn't affect the app's own
-            # catalog/Helm name, only which ghcr.io/homescalecloud/<name>
-            # this particular Dockerfile is pushed to.
+            # `name` stays the app directory name — it's matched against
+            # changed-apps below to decide whether to build at all. `image`
+            # is what actually gets pushed to ghcr.io/homescalecloud/<image>;
+            # it defaults to `name` but can be overridden by an optional
+            # .image-name marker file, when the pushed image should be
+            # called something other than the app directory name.
+            image="$name"
             if [[ -f "$context/.image-name" ]]; then
-              name="$(<"$context/.image-name")"
+              image="$(<"$context/.image-name")"
             fi
-            docker_json="$(jq --arg n "$name" --arg c "$context" '. + [{name:$n, context:$c}]' <<<"$docker_json")"
+            docker_json="$(jq --arg n "$name" --arg i "$image" --arg c "$context" '. + [{name:$n, image:$i, context:$c}]' <<<"$docker_json")"
           done < <(find apps -type f -iname Dockerfile | sort)
 
           # Find Helm charts as any apps/*/Chart.yaml (and apps/*/charts/<subchart>/Chart.yaml ignored)
@@ -146,7 +148,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6
         with:
-          images: ghcr.io/homescalecloud/${{ matrix.name }}
+          images: ghcr.io/homescalecloud/${{ matrix.image }}
           tags: |
             type=raw,value=${{ github.sha }}
             type=raw,value=latest,enable={{is_default_branch}}
@@ -163,7 +165,7 @@ jobs:
       - name: Run Trivy scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
-          image-ref: ghcr.io/homescalecloud/${{ matrix.name }}:${{ github.sha }}
+          image-ref: ghcr.io/homescalecloud/${{ matrix.image }}:${{ github.sha }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
