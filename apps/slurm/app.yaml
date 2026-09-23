@@ -26,6 +26,24 @@ extraSources:
           enabled: true
 values:
   slurm:
+    prologScripts:
+      00-provision-user.sh: |
+        #!/usr/bin/env bash
+        # Mirrors the login node's account for this job's owner onto every
+        # compute node the job lands on. Runs as root, before the job's
+        # tasks start (Prolog, not PrologSlurmctld) — this is what makes
+        # dynamically-created login users (see apps/slurm/src/) usable for
+        # actual jobs: the login node creates the account on SSH, but that
+        # never reaches the compute nodes on its own. No re-verification
+        # against Tailscale here — SLURM_JOB_UID/USER/GID are already the
+        # UID the login node assigned at submission time; the controller
+        # already trusts that job, so this just replicates it locally.
+        set -euo pipefail
+        if id "$SLURM_JOB_USER" >/dev/null 2>&1; then
+          exit 0
+        fi
+        groupadd --gid "$SLURM_JOB_GID" "$SLURM_JOB_USER" 2>/dev/null || true
+        useradd --uid "$SLURM_JOB_UID" --gid "$SLURM_JOB_GID" --create-home --shell /bin/bash "$SLURM_JOB_USER"
     slurmKey:
       create: false
       secretRef:
