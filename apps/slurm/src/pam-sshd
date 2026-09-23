@@ -2,10 +2,39 @@
 # pam-tailscale-whois.sh), not passwords or keys. Real Unix auth
 # (pam_unix/common-auth) is intentionally not used: dynamically-created
 # accounts have no password to check.
+#
+# Split across two phases rather than one "auth" line, both running the
+# same script:
+#
+# - auth: side-effecting only, never decisive (`[success=ignore
+#   default=ignore]` maps every outcome to ignore). This exists purely so
+#   sshd's real (if ultimately overridden) PAM conversation still creates
+#   the account on a brand-new user's first, doomed-to-fail attempt —
+#   sshd decides "invalid user" from its own pre-PAM NSS lookup and skips
+#   the *account* phase entirely for it, so bootstrapping a new account
+#   has to happen here or not at all. pam_permit provides the actual
+#   (trivial) auth verdict.
+# - account: the real identity check and rejection gate, reached for any
+#   user sshd already considers to exist (i.e. every attempt after the
+#   first for a given identity).
+#
+# Why not one decisive "auth" line, the obvious design: pam_exec has no
+# real pam_sm_setcred() — it always returns PAM_IGNORE for it. When a
+# module's authenticate() call was genuinely consulted (not ignored),
+# libpam treats its setcred() return as required rather than ignoring it
+# too, so that IGNORE gets treated as a failure and sshd drops the
+# session right after a successful login ("PAM: pam_setcred(): ...").
+# Keeping auth's contribution mapped to ignore for every outcome avoids
+# that: setcred only ever sees pam_permit, which is well-behaved. This
+# is a documented pam_exec limitation, not a config mistake — see
+# https://github.com/linux-pam/linux-pam/issues/583 for the same
+# pam_setcred() failure in a different pam_exec setup, left unresolved
+# upstream.
 
-auth    sufficient   pam_exec.so quiet /usr/local/bin/pam-tailscale-whois.sh
-auth    requisite    pam_deny.so
+auth    [success=ignore default=ignore]   pam_exec.so quiet /usr/local/bin/pam-tailscale-whois.sh
+auth    required                          pam_permit.so
 
+account required     pam_exec.so quiet /usr/local/bin/pam-tailscale-whois.sh
 account required     pam_nologin.so
 @include common-account
 
