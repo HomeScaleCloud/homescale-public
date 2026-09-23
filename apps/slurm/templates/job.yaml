@@ -56,7 +56,22 @@ spec:
 
               ensure_secret mariadb-password password 32
               ensure_secret slurm-auth-slurm slurm.key 1024
-              ensure_secret slurm-auth-jwt jwt.key 1024
+
+              # auth/jwt's key must be raw random bytes, not ASCII text
+              # (https://slurm.schedmd.com/jwt.html: "dd if=/dev/random
+              # ... bs=32 count=1") — confirmed the hard way: an
+              # ensure_secret-generated (tr -dc alnum filtered) jwt.key
+              # byte-for-byte identical between slurmctld and slurmrestd
+              # still failed every internal RPC with "cred_verify:
+              # jwt_decode failure: Invalid argument", ruling out a
+              # mount/config mismatch and pointing at the content itself.
+              if kubectl get secret slurm-auth-jwt -n "$NAMESPACE" >/dev/null 2>&1; then
+                echo "slurm-auth-jwt already exists, leaving it alone"
+              else
+                head -c 32 /dev/urandom > /tmp/jwt.key
+                kubectl create secret generic slurm-auth-jwt -n "$NAMESPACE" \
+                  --from-file="jwt.key=/tmp/jwt.key"
+              fi
 
               # Shared keypair for login-node -> compute-node SSH hops.
               # Not a secret-per-user credential — authorization there is
