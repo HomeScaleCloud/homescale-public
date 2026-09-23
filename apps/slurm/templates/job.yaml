@@ -24,14 +24,16 @@ spec:
       serviceAccountName: secrets-init
       restartPolicy: OnFailure
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 65534
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: init
           image: docker.io/alpine/k8s:1.37.0
+          # Root (not the usual nonroot default) — apk add needs to write
+          # /lib/apk/db to install ssh-keygen (not bundled in this image),
+          # for the shared login->compute SSH keypair below.
           securityContext:
+            runAsUser: 0
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
@@ -55,6 +57,22 @@ spec:
               ensure_secret mariadb-password password 32
               ensure_secret slurm-auth-slurm slurm.key 1024
               ensure_secret slurm-auth-jwt jwt.key 1024
+
+              # Shared keypair for login-node -> compute-node SSH hops.
+              # Not a secret-per-user credential — authorization there is
+              # pam_slurm_adopt (does this Unix user have a job on this
+              # node), not this key; it only proves "came from our login
+              # pod". Public half goes on every compute node's authorized_keys
+              # (see prologScripts), private half on the login node.
+              if kubectl get secret slurm-ssh-hop-key -n "$NAMESPACE" >/dev/null 2>&1; then
+                echo "slurm-ssh-hop-key already exists, leaving it alone"
+              else
+                apk add --no-cache openssh-keygen >/dev/null
+                ssh-keygen -t ed25519 -N "" -C "slurm-ssh-hop" -f /tmp/hop-key
+                kubectl create secret generic slurm-ssh-hop-key -n "$NAMESPACE" \
+                  --from-file="id_ed25519=/tmp/hop-key" \
+                  --from-file="id_ed25519.pub=/tmp/hop-key.pub"
+              fi
           env:
             - name: NAMESPACE
               valueFrom:

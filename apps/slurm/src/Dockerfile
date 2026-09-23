@@ -16,6 +16,7 @@ RUN chmod 0755 /usr/local/bin/pam-tailscale-whois.sh
 
 COPY pam-sshd /etc/pam.d/sshd
 COPY sshd-tailscale.conf /etc/ssh/sshd_config.d/10-tailscale-whois.conf
+COPY ssh_config-compute-hop /etc/ssh/ssh_config.d/10-compute-hop.conf
 
 LABEL org.opencontainers.image.source="https://github.com/HomeScaleCloud/homescale" \
       org.opencontainers.image.description="Slinky Slurm login node with Tailscale-identity SSH (no keys, no static user list)"

@@ -11,7 +11,7 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get"]
-    resourceNames: ["mariadb-password", "slurm-auth-slurm", "slurm-auth-jwt"]
+    resourceNames: ["mariadb-password", "slurm-auth-slurm", "slurm-auth-jwt", "slurm-ssh-hop-key"]
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["create"]

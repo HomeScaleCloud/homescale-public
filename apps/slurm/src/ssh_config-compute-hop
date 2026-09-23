@@ -1,0 +1,10 @@
+# Lets `ssh compute-N` from the login node work with zero flags — no
+# per-user key management, since pam_slurm_adopt (does this user have a
+# job on this node) is the real gate on the compute side, not this key.
+# Compute node host keys are ephemeral (regenerated every pod restart),
+# hence skipping host key checking here.
+Host compute-*
+    IdentityFile /etc/ssh/cluster-hop-key
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    IdentitiesOnly yes

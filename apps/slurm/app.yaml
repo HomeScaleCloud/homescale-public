@@ -39,11 +39,19 @@ values:
         # UID the login node assigned at submission time; the controller
         # already trusts that job, so this just replicates it locally.
         set -euo pipefail
-        if id "$SLURM_JOB_USER" >/dev/null 2>&1; then
-          exit 0
+        if ! id "$SLURM_JOB_USER" >/dev/null 2>&1; then
+          groupadd --gid "$SLURM_JOB_GID" "$SLURM_JOB_USER" 2>/dev/null || true
+          useradd --uid "$SLURM_JOB_UID" --gid "$SLURM_JOB_GID" --create-home --shell /bin/bash "$SLURM_JOB_USER"
         fi
-        groupadd --gid "$SLURM_JOB_GID" "$SLURM_JOB_USER" 2>/dev/null || true
-        useradd --uid "$SLURM_JOB_UID" --gid "$SLURM_JOB_GID" --create-home --shell /bin/bash "$SLURM_JOB_USER"
+        # Trust the shared login->compute hop key for pam_slurm_adopt SSH
+        # (see nodesets.compute.podSpec.volumes below) — authorization there
+        # is the job check itself, not this key.
+        home="$(getent passwd "$SLURM_JOB_USER" | cut -d: -f6)"
+        mkdir -p "$home/.ssh"
+        cp /etc/slurm-ssh/id_ed25519.pub "$home/.ssh/authorized_keys"
+        chown -R "$SLURM_JOB_UID:$SLURM_JOB_GID" "$home/.ssh"
+        chmod 700 "$home/.ssh"
+        chmod 600 "$home/.ssh/authorized_keys"
     slurmKey:
       create: false
       secretRef:
@@ -57,6 +65,15 @@ values:
     accounting:
       enabled: true
     controller:
+      extraConfMap:
+        # Required for pam_slurm_adopt (the compute-node SSH gate) to see
+        # a job at all — without it, jobs get no "extern" step and every
+        # SSH attempt is denied with "no active jobs" even while one is
+        # genuinely running. Confirmed live in minikube: SSH to a node
+        # with a real running job failed with exactly that message until
+        # this was set, then worked immediately.
+        PrologFlags:
+          - Contain
       persistence:
         storageClassName: longhorn
     nodesets:
@@ -64,6 +81,19 @@ values:
         replicas: 3
         partition:
           enabled: false
+        slurmd:
+          volumeMounts:
+            - name: ssh-hop-pubkey
+              mountPath: /etc/slurm-ssh
+              readOnly: true
+        podSpec:
+          volumes:
+            - name: ssh-hop-pubkey
+              secret:
+                secretName: slurm-ssh-hop-key  # pragma: allowlist secret
+                items:
+                  - key: id_ed25519.pub
+                    path: id_ed25519.pub
     partitions:
       all:
         enabled: true
@@ -80,6 +110,10 @@ values:
           volumeMounts:
             - name: tailscale-socket
               mountPath: /var/run/tailscale
+            - name: ssh-hop-key
+              mountPath: /etc/ssh/cluster-hop-key
+              subPath: cluster-hop-key
+              readOnly: true
         podSpec:
           serviceAccountName: slurm-login
           automountServiceAccountToken: true
@@ -121,3 +155,10 @@ values:
           volumes:
             - name: tailscale-socket
               emptyDir: {}
+            - name: ssh-hop-key
+              secret:
+                secretName: slurm-ssh-hop-key  # pragma: allowlist secret
+                items:
+                  - key: id_ed25519
+                    path: cluster-hop-key
+                    mode: 0444
