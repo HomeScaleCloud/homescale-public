@@ -107,16 +107,47 @@ values:
       # never exists there and every slurmctld RPC slurmrestd makes fails
       # auth ("jwt_decode failure: Invalid argument" on the controller
       # side), which also breaks the operator's own reconciliation since it
-      # talks to slurmctld through slurmrestd's REST API. Mounting the same
-      # secret directly onto that one path (RestApi has no jwtKeyRef-style
-      # field to do this via the CR itself) works around it.
+      # talks to slurmctld through slurmrestd's REST API. RestApi has no
+      # jwtKeyRef-style field to fix this via the CR itself.
+      #
+      # Can't just subPath-mount jwt.key straight into /etc/slurm/jwt.key
+      # either (tried first, reverted) — /etc/slurm there is entirely owned
+      # by the operator's own read-only projected slurm-etc volume, which
+      # never had a jwt.key entry to begin with, and runc can't bind a new
+      # file into a path that volume never provisioned a slot for ("not a
+      # directory" on container start). So: mount the secret at its own
+      # standalone path, use an initContainer to copy slurm.conf out to a
+      # writable emptyDir with just its jwt_key= line repointed there, and
+      # tell slurmrestd to use that copy via SLURM_CONF instead of the
+      # default /etc/slurm/slurm.conf. Leaves the original /etc/slurm
+      # mount (and its slurm.key, used for auth/slurm) untouched.
       slurmrestd:
+        env:
+          - name: SLURM_CONF
+            value: /etc/slurm-full/slurm.conf
         volumeMounts:
           - name: jwt-key
-            mountPath: /etc/slurm/jwt.key
-            subPath: jwt.key
+            mountPath: /etc/slurm-jwt
             readOnly: true
+          - name: slurm-full-conf
+            mountPath: /etc/slurm-full
       podSpec:
+        initContainers:
+          - name: patch-slurm-conf
+            image: docker.io/alpine/k8s:1.37.0
+            command:
+              - sh
+              - -c
+              - |
+                set -eu
+                sed 's#jwt_key=/etc/slurm/jwt.key#jwt_key=/etc/slurm-jwt/jwt.key#' \
+                  /etc/slurm/slurm.conf > /etc/slurm-full/slurm.conf
+            volumeMounts:
+              - name: slurm-etc
+                mountPath: /etc/slurm
+                readOnly: true
+              - name: slurm-full-conf
+                mountPath: /etc/slurm-full
         volumes:
           - name: jwt-key
             secret:
@@ -124,6 +155,8 @@ values:
               items:
                 - key: jwt.key
                   path: jwt.key
+          - name: slurm-full-conf
+            emptyDir: {}
     loginsets:
       login:
         replicas: 1
