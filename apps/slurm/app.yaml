@@ -97,6 +97,33 @@ values:
     partitions:
       all:
         enabled: true
+    restapi:
+      # slurmrestd's own slurm.conf (shared via the same configmap as the
+      # controller) sets AuthAltParameters=jwt_key=/etc/slurm/jwt.key, but
+      # the operator's RestApi reconciliation doesn't project the jwt-auth
+      # secret into that pod the way it does for Controller (confirmed by
+      # comparing live pod specs: slurm-controller-0's slurm-etc volume has
+      # a slurm-auth-jwt source, slurm-restapi's doesn't) — so the file
+      # never exists there and every slurmctld RPC slurmrestd makes fails
+      # auth ("jwt_decode failure: Invalid argument" on the controller
+      # side), which also breaks the operator's own reconciliation since it
+      # talks to slurmctld through slurmrestd's REST API. Mounting the same
+      # secret directly onto that one path (RestApi has no jwtKeyRef-style
+      # field to do this via the CR itself) works around it.
+      slurmrestd:
+        volumeMounts:
+          - name: jwt-key
+            mountPath: /etc/slurm/jwt.key
+            subPath: jwt.key
+            readOnly: true
+      podSpec:
+        volumes:
+          - name: jwt-key
+            secret:
+              secretName: slurm-auth-jwt  # pragma: allowlist secret
+              items:
+                - key: jwt.key
+                  path: jwt.key
     loginsets:
       login:
         replicas: 1
