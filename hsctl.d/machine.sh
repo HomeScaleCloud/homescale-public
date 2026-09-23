@@ -28,10 +28,10 @@ machine_usage() {
     echo "Usage: hsctl machine <action> [args...]"
     echo ""
     echo "Actions:"
-    echo "  power on|reset <id|node-name>          Power on/reset a machine via its BMC (IPMI)"
-    echo "  power off [--force] <id|node-name>      Gracefully shut down a machine via talosctl;"
-    echo "                                           --force hard-cuts power via IPMI instead"
-    echo "  bmcreset <id|node-name>                 Cold-restart the machine's BMC (host power untouched)"
+    echo "  power on|reset <id|node-name>...          Power on/reset one or more machines via their BMC (IPMI)"
+    echo "  power off [--force] <id|node-name>...     Gracefully shut down one or more machines via talosctl;"
+    echo "                                              --force hard-cuts power via IPMI instead"
+    echo "  bmcreset <id|node-name>                   Cold-restart the machine's BMC (host power untouched)"
     exit 1
 }
 
@@ -69,7 +69,7 @@ _machine_ipmi_power() {
         hsctl_log_success "machine $id: $out"
     else
         hsctl_log_error "machine $id: ipmitool chassis power $verb failed: $out"
-        exit 1
+        return 1
     fi
 }
 
@@ -117,31 +117,41 @@ machine_power() {
         *) echo "hsctl machine power: unknown action '$action'" >&2; machine_usage ;;
     esac
 
-    local input="" force=false
+    local -a inputs=()
+    local force=false
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --force) force=true; shift ;;
-            *) input="$1"; shift ;;
+            *) inputs+=("$1"); shift ;;
         esac
     done
-    [[ -z "$input" ]] && { echo "Usage: hsctl machine power <on|off|reset> [--force] <id|node-name>" >&2; exit 1; }
-
-    local id
-    id=$(hsctl_resolve_machine_id "$input") || { hsctl_log_error "no machine found for '$input'"; exit 1; }
+    [[ ${#inputs[@]} -eq 0 ]] && { echo "Usage: hsctl machine power <on|off|reset> [--force] <id|node-name> [<id|node-name>...]" >&2; exit 1; }
 
     if [[ "$action" == "off" && "$force" == false ]]; then
         command -v talosctl &>/dev/null || { echo "hsctl machine power: talosctl is required for a graceful power off (brew install talosctl), or pass --force to hard-cut power via IPMI" >&2; exit 1; }
-        _machine_talos_shutdown "$id" || exit 1
-        return 0
+    else
+        command -v ipmitool &>/dev/null || { echo "hsctl machine power: ipmitool is required (brew install ipmitool)" >&2; exit 1; }
     fi
 
-    command -v ipmitool &>/dev/null || { echo "hsctl machine power: ipmitool is required (brew install ipmitool)" >&2; exit 1; }
+    local failed=false
+    local input id
+    for input in "${inputs[@]}"; do
+        id=$(hsctl_resolve_machine_id "$input") || { hsctl_log_error "no machine found for '$input'"; failed=true; continue; }
 
-    local creds ip user pass
-    creds=$(hsctl_bmc_creds "$id") || exit 1
-    IFS=$'\t' read -r ip user pass <<< "$creds"
+        if [[ "$action" == "off" && "$force" == false ]]; then
+            _machine_talos_shutdown "$id" || failed=true
+            continue
+        fi
 
-    _machine_ipmi_power "$id" "$ip" "$user" "$pass" "$action"
+        local creds ip user pass
+        creds=$(hsctl_bmc_creds "$id") || { failed=true; continue; }
+        IFS=$'\t' read -r ip user pass <<< "$creds"
+
+        _machine_ipmi_power "$id" "$ip" "$user" "$pass" "$action" || failed=true
+    done
+
+    [[ "$failed" == true ]] && exit 1
+    return 0
 }
 
 machine_bmcreset() {

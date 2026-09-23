@@ -46,11 +46,11 @@ Both resolve to `argocd.<cluster>REDACTED` — the [Tailscale internal service a
 ## `hsctl machine`
 
 ```
-hsctl machine power on|off|reset [--force] <id|node-name>
+hsctl machine power on|off|reset [--force] <id|node-name> [<id|node-name>...]
 hsctl machine bmcreset <id|node-name>
 ```
 
-Takes action directly against a physical machine — unlike `hsctl get`, this changes real hardware state. Accepts an Omni machine ID or a Kubernetes node name (resolved the same way as `hsctl get machine`).
+Takes action directly against a physical machine — unlike `hsctl get`, this changes real hardware state. Accepts an Omni machine ID or a Kubernetes node name (resolved the same way as `hsctl get machine`). `power` accepts multiple space-separated `<id|node-name>` targets and acts on each in turn, continuing past any single machine's failure (unresolved name, credential fetch, or ipmitool/talosctl error) and exiting non-zero if any of them failed.
 
 | Action | Mechanism | Effect |
 |--------|-----------|--------|
