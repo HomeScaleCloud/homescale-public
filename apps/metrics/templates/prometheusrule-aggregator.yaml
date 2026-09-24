@@ -22,7 +22,7 @@ spec:
         - alert: ClusterMetricsMissing
           annotations:
             summary: "Cluster {{ "{{" }}$labels.cluster{{ "}}" }} has stopped reporting metrics to the aggregator."
-            description: "Cluster {{ "{{" }}$labels.cluster{{ "}}" }} reported metrics to the aggregator at some point in the last 6 hours but has not remote-written any samples recently, while at least one other cluster is still reporting normally. This points at that cluster's local Prometheus or its Tailscale path to the aggregator rather than the aggregator itself — this happened once with the mgmt cluster's Prometheus pod silently wedging."
+            description: "Cluster {{ "{{" }}$labels.cluster{{ "}}" }} reported metrics to the aggregator at some point in the last 6 hours but has not remote-written any samples recently, while at least one other cluster is still reporting normally. This points at that cluster's local Prometheus or its Tailscale path to the aggregator rather than the aggregator itself — this happened once with the core cluster's Prometheus pod silently wedging."
             runbook_url: "https://REDACTED/runbooks/cluster-metrics-missing/"
             dashboard_url: "https://REDACTED/d/k8s_addons_prometheus"
           expr: |

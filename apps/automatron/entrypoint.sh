@@ -21,9 +21,9 @@ ansible-galaxy collection install -r requirements.yml
 
 extra_args=(-e "dry_run=$DRY_RUN")
 case "$PLAYBOOK" in
-    bootstrap-mgmt)
-        playbook_file=playbooks/bootstrap-mgmt.yml
-        extra_args+=(-e cluster_name=mgmt)
+    bootstrap-core)
+        playbook_file=playbooks/bootstrap-core.yml
+        extra_args+=(-e cluster_name=core)
         ;;
     bootstrap-cluster)
         playbook_file=playbooks/bootstrap-cluster.yml

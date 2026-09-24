@@ -2,7 +2,7 @@
 
 ## Overview
 
-Each Talos cluster is managed by [Omni](https://omni.siderolabs.com/), a self-hosted cluster lifecycle manager running on the `mgmt` cluster. Omni handles provisioning, upgrades, and machine assignments. ArgoCD handles application state.
+Each Talos cluster is managed by [Omni](https://omni.siderolabs.com/), a self-hosted cluster lifecycle manager running on the `core` cluster. Omni handles provisioning, upgrades, and machine assignments. ArgoCD handles application state.
 
 ## Cluster directory structure
 
@@ -11,13 +11,13 @@ Each cluster has a directory at `clusters/<cluster>/`:
 | File | Purpose |
 |------|---------|
 | `apps.yaml` | Bootstrap ArgoCD app-of-apps — applied manually once to seed the cluster |
-| `cluster.yaml` | Omni cluster template (Talos/k8s versions, machine selectors, patch overrides). **Not present for `mgmt`** — see below. |
+| `cluster.yaml` | Omni cluster template (Talos/k8s versions, machine selectors, patch overrides). **Not present for `core`** — see below. |
 
 Raw Kubernetes manifests placed in `clusters/<cluster>/` are picked up directly by the app-of-apps as a second source and applied to the cluster (`cluster.yaml` is excluded from this source). This is used for cluster-scoped resources that don't belong in any app chart (e.g. cluster-level RBAC, storage class config).
 
-### The `mgmt` cluster
+### The `core` cluster
 
-`mgmt` is a managed [Vultr Kubernetes Engine](https://www.vultr.com/kubernetes/) cluster provisioned by Terraform (`infra/terraform/modules/mgmt_cluster/`, a single `vultr_kubernetes` resource). It does **not** have a `cluster.yaml` — Talos and Omni are not involved. Omni itself runs *on* `mgmt`, managing all
+`core` is a managed [Vultr Kubernetes Engine](https://www.vultr.com/kubernetes/) cluster provisioned by Terraform (`infra/terraform/modules/core_cluster/`, a single `vultr_kubernetes` resource). It does **not** have a `cluster.yaml` — Talos and Omni are not involved. Omni itself runs *on* `core`, managing all
  other clusters.
 
 ## Cluster naming
@@ -27,7 +27,7 @@ Clusters follow the `<region>-<role>` convention:
 | Pattern | Example | Role |
 |---------|---------|------|
 | `<region>-prod` | `boa1-prod` | Production workloads |
-| `mgmt` | `mgmt` | Management (exception to the naming convention) |
+| `core` | `core` | Management (exception to the naming convention) |
 
 Each cluster maps to exactly one region. Region codes are short datacenter identifiers (e.g. `boa1`).
 
@@ -108,7 +108,7 @@ Omni handles the upgrade sequence — control plane nodes first, then workers �
 
 ## Terraform
 
-Cloud resources (Cloudflare DNS, Vultr, Infisical project setup, Tailscale configuration, mgmt cluster provisioning) live in `infra/terraform/`. State is in [Terraform Cloud](https://developer.hashicorp.com/terraform/cloud-docs) (`homescale` org, `homescale` workspace).
+Cloud resources (Cloudflare DNS, Vultr, Infisical project setup, Tailscale configuration, core cluster provisioning) live in `infra/terraform/`. State is in [Terraform Cloud](https://developer.hashicorp.com/terraform/cloud-docs) (`homescale` org, `homescale` workspace).
 
 Terraform runs only in CI — it uses GitHub OIDC for Infisical auth and cannot be run locally. On merge to `main`, CI runs `terraform apply` automatically (after `scan` and `build` pass). On PRs, CI runs `terraform plan` and posts the plan as a PR comment.
 
@@ -125,4 +125,4 @@ terraform -chdir=infra/terraform fmt
 | `modules/tailscale/` | Tailscale ACL, tags, and OAuth clients — reads `tailscale:` blocks from `app.yaml` files via `fileset` |
 | `modules/cloudflare/` | DNS records and Cloudflare Zero Trust Tunnel config — reads `exposePublic:` from `app.yaml` |
 | `modules/infisical/` | Infisical project structure and machine identities. VolSync's per-app secret scaffolding is separate — see `volsync.tf` in the Terraform root |
-| `modules/mgmt_cluster/` | The `mgmt` Vultr Kubernetes cluster and its Infisical kubeconfig secret. Does not bootstrap ArgoCD — the bootstrap `apps.yaml` is applied manually once, per cluster |
+| `modules/core_cluster/` | The `core` Vultr Kubernetes cluster and its Infisical kubeconfig secret. Does not bootstrap ArgoCD — the bootstrap `apps.yaml` is applied manually once, per cluster |

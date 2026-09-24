@@ -1,5 +1,5 @@
-resource "vultr_kubernetes" "mgmt" {
-  label   = "mgmt"
+resource "vultr_kubernetes" "core" {
+  label   = "core"
   region  = var.region
   version = var.k8s_version
 
@@ -9,7 +9,7 @@ resource "vultr_kubernetes" "mgmt" {
   oidc_groups_claim   = var.oidc_groups_claim
 
   node_pools {
-    label         = "mgmt-node"
+    label         = "core-node"
     plan          = var.node_plan
     node_quantity = var.node_count
     auto_scaler   = false

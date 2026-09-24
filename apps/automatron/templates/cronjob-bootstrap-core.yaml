@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: automatron-bootstrap-core
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.automatron.schedule | quote }}
+  # No automatic trigger at all (core changes rarely) — this CronJob exists purely
+  # so `hsctl run bootstrap-core -e remote` has a jobTemplate to clone.
+  suspend: true
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        {{- include "automatron.podTemplate" (dict "root" $ "playbook" "bootstrap-core") | nindent 8 }}

@@ -43,7 +43,7 @@ pre-commit run --all-files
 helm template <app-name> apps/<app-name>/
 
 # Render the top-level app catalog (requires cluster.name)
-helm template apps -f apps/values.yaml --set cluster.name=mgmt
+helm template apps -f apps/values.yaml --set cluster.name=core
 
 # Render every catalog + per-app chart the way ArgoCD would, for every cluster,
 # then kubeconform the output against Kubernetes + datreeio CRD schemas. A CR
@@ -103,7 +103,7 @@ Apps that contain a `Chart.yaml` and `Dockerfile` under `apps/<name>/` are built
 
 ### Clusters (`clusters/`)
 
-One directory per cluster. The set of clusters changes often — read `clusters/` for the current list rather than relying on any list here. Cluster names follow the `<region>-<name>` convention (e.g. `boa1-prod`); `mgmt` is the exception. Each cluster maps to exactly one region.
+One directory per cluster. The set of clusters changes often — read `clusters/` for the current list rather than relying on any list here. Cluster names follow the `<region>-<name>` convention (e.g. `boa1-prod`); `core` is the exception. Each cluster maps to exactly one region.
 
 - `clusters/<cluster>/apps.yaml` — the bootstrap ArgoCD app-of-apps (applied manually once)
 - `clusters/<cluster>/cluster.yaml` — Omni cluster template (Talos/k8s versions, machine assignments, patches); uses `$CLUSTER_NAME` envsubst substitution at deploy time
@@ -122,7 +122,7 @@ Full walkthrough: `docs/operations/registering-machines.md`.
 
 ### Infrastructure (`infra/`)
 
-- `infra/terraform/` — Terraform for cloud resources (Cloudflare DNS, DigitalOcean, Infisical project setup, Tailscale ACL/tags, mgmt cluster bootstrap). State is in Terraform Cloud (`homescale` org, `homescale` workspace).
+- `infra/terraform/` — Terraform for cloud resources (Cloudflare DNS, DigitalOcean, Infisical project setup, Tailscale ACL/tags, core cluster bootstrap). State is in Terraform Cloud (`homescale` org, `homescale` workspace).
 - `infra/ansible/` — Bootstrapping playbooks (e.g., Omni bootstrap)
 - `infra/omni/patches/` — shared Talos machine config patches applied to clusters during Omni template sync
 
@@ -169,24 +169,24 @@ In addition to the per-app rules above, the ACL always includes these grants def
 - `local.self_grant` — every member reaches their own other devices on every port/protocol (`src: autogroup:member`, `dst: autogroup:self`, `ip: ["*"]`); Tailscale's standard self-access pattern.
 - `local.remote_control_grant` — Infrastructure Platforms (`group:team-infra-plat@REDACTED`) reaches every tailnet endpoint (`dst: ["*"]`) on `tcp:5252`, the Tailscale client remote control web UI, and carries a `tailscale.com/cap/webui` app capability with `canEdit: ["*"]` granting full management/admin access (SSH, subnet routes, exit nodes, account settings) through that web UI on tagged devices.
 - `local.k8s_grant` — workload-cluster apiserver proxies (`dst: tag:k8s-api`, the `tailscale` app's `kube-apiserver-proxy` Service) on `tcp:443`, for Infrastructure Platforms, Security Platforms, `sg-k8s-admin`, and `tag:app-headlamp`.
-- `local.omni_k8s_grant` — the Omni Kubernetes proxy (`dst: tag:omni-k8s`, Omni's `k8s` Service at `REDACTED`) on `tcp:443`, restricted to `group:sg-k8s-admin@REDACTED` only (PIM activation required). This endpoint is deliberately **not** covered by omni's `tag:app-omni` policy (which gates the Omni UI/API) — it's the Talos/Omni kube proxy, break-glass human access only. Automatron, which also fetches per-cluster kubeconfigs through this same proxy, doesn't need this grant at all — it reaches Omni entirely in-cluster (same `mgmt` cluster), not over Tailscale; see [Automatron](#automatron-ansible-cluster-bootstrap--omni-sync). A Tailscale-exposed Service reaches this grant by carrying `tag:omni-k8s` (allowed by the kyverno annotation policy alongside `tag:app-*` and `tag:k8s-api`) instead of `tag:app-<name>`.
+- `local.omni_k8s_grant` — the Omni Kubernetes proxy (`dst: tag:omni-k8s`, Omni's `k8s` Service at `REDACTED`) on `tcp:443`, restricted to `group:sg-k8s-admin@REDACTED` only (PIM activation required). This endpoint is deliberately **not** covered by omni's `tag:app-omni` policy (which gates the Omni UI/API) — it's the Talos/Omni kube proxy, break-glass human access only. Automatron, which also fetches per-cluster kubeconfigs through this same proxy, doesn't need this grant at all — it reaches Omni entirely in-cluster (same `core` cluster), not over Tailscale; see [Automatron](#automatron-ansible-cluster-bootstrap--omni-sync). A Tailscale-exposed Service reaches this grant by carrying `tag:omni-k8s` (allowed by the kyverno annotation policy alongside `tag:app-*` and `tag:k8s-api`) instead of `tag:app-<name>`.
 
 ## Automatron (Ansible cluster bootstrap + Omni sync)
 
-`apps/automatron` (syncWave 0, `mgmt` only) is the in-cluster runner for `infra/ansible/playbooks/`. It replaced two GitHub Actions jobs (`ansible`, and the state-changing half of `omni`) — that work now runs inside the cluster it's bootstrapping instead of on billed GH-hosted runners.
+`apps/automatron` (syncWave 0, `core` only) is the in-cluster runner for `infra/ansible/playbooks/`. It replaced two GitHub Actions jobs (`ansible`, and the state-changing half of `omni`) — that work now runs inside the cluster it's bootstrapping instead of on billed GH-hosted runners.
 
 - Three CronJobs, one per playbook, sharing one pod spec (`templates/_pod.tpl`):
   - `automatron-omni-sync` — **the only one that actually fires on its own** (every 15 minutes). Runs `omni-sync.yml`, syncing every `clusters/*/cluster.yaml` and `infra/omni/machineclasses/*.yaml` into Omni. On success (and unless `dry_run` is set), it chains a Job cloned from `automatron-bootstrap-cluster`'s `jobTemplate`, named `automatron-bootstrap-cluster-<timestamp>` (see `CHAIN_NEXT_CRONJOB` in `_pod.tpl`/`entrypoint.sh`) — so clusters always exist in Omni before bootstrap-cluster runs against them, without relying on schedule offsets. A `REDACTED/chained-from` label plus an active-Job lookup (needs the `job-operator` ClusterRole's `get`/`list` on `jobs`) skips chaining another one if a previous chained run is still active, since the timestamped name no longer gives that dedup for free the way a fixed name did.
   - `automatron-bootstrap-cluster` — `suspend: true`, never auto-fires. Only ever runs via that chain, or ad hoc.
-  - `automatron-bootstrap-mgmt` — `suspend: true`, never auto-fires (mgmt changes rarely). Ad hoc only.
+  - `automatron-bootstrap-core` — `suspend: true`, never auto-fires (core changes rarely). Ad hoc only.
   - The suspended two exist purely so `hsctl run <playbook> -e remote` has a `jobTemplate` to clone — see below.
 - Each run's pod: `git-key-prep` initContainer (root, on automatron's own image running `git-key-prep.sh` — see below) → `git-clone` (`git-sync` image in one-time mode, checks out `main` via SSH) → `automatron` container (ansible-core/kubectl/helm/omnictl/envsubst baked into the image, running as a non-root user; ansible collections installed at start from the git-cloned `requirements.yml`).
-- **No Tailscale anywhere in this app** — Omni lives in the same cluster (`mgmt`), so automatron reaches it entirely in-cluster. `_pod.tpl` sets `hostAliases` pointing `REDACTED`/`REDACTED` at the real ClusterIPs of `apps/omni`'s `api`/`k8s` Services (via Helm's `lookup`, which only resolves against a live cluster — offline rendering, e.g. `validate-manifests.sh`, falls back to a dummy `0.0.0.0` so it still renders), so `OMNI_ENDPOINT` and the rest of the ansible/omnictl config need no changes at all — same hostnames, same real cert, just resolved differently. `omni_k8s_grant` in `acl.tf` is back to `sg-k8s-admin`-only (break-glass) now that nothing else needs Tailscale access to Omni's k8s-proxy.
+- **No Tailscale anywhere in this app** — Omni lives in the same cluster (`core`), so automatron reaches it entirely in-cluster. `_pod.tpl` sets `hostAliases` pointing `REDACTED`/`REDACTED` at the real ClusterIPs of `apps/omni`'s `api`/`k8s` Services (via Helm's `lookup`, which only resolves against a live cluster — offline rendering, e.g. `validate-manifests.sh`, falls back to a dummy `0.0.0.0` so it still renders), so `OMNI_ENDPOINT` and the rest of the ansible/omnictl config need no changes at all — same hostnames, same real cert, just resolved differently. `omni_k8s_grant` in `acl.tf` is back to `sg-k8s-admin`-only (break-glass) now that nothing else needs Tailscale access to Omni's k8s-proxy.
 - Automatron's own credentials are mostly *reused*, not re-provisioned, since identities/service accounts are billed or administratively heavier than plain secrets: its Infisical login reuses the k8s Infisical Operator's own identity (`INFISICAL_OPERATOR_CLIENT_ID`/`_SECRET` at `/k8s/infisical`, synced via the `automatron-infisical-operator-creds` CR), and `GIT_DEPLOY_KEY` in `/k8s/automatron` is an Infisical secret *reference* pointing at the same value as `/k8s/argocd/deploy-key`'s `sshPrivateKey`, not a separately-minted key. Its Omni access (`OMNI_SERVICE_ACCOUNT_KEY`) lives directly in `/k8s/automatron` alongside those, synced by the same `automatron-secrets` CR as everything else there — no dedicated CR, and no longer tied to the `omni` CI job's `/github-actions` credential the way it originally was. `git-key-prep` (`apps/automatron/git-key-prep.sh`, baked into the automatron image) runs as root because secret-mounted files come out root-owned at mode `0600` (required — sshd's strict key-perm check rejects any group/other bits); it copies the key into a writable volume (restoring a trailing newline the stored value is missing, which OpenSSH's parser needs) and hands ownership to `git-clone`'s actual non-root UID, so `git-clone` itself doesn't need root.
-- `bootstrap-mgmt`/`cluster-secrets` still separately read `/k8s/argocd/deploy-key` and `/k8s/infisical` at runtime — that's automatron *propagating* ArgoCD's/the k8s-operator's own credentials into whatever cluster it's bootstrapping, unrelated to the reuse above.
-- `MGMT_KUBECONFIG` (mgmt is Vultr VKE, reached over the public internet — no Tailscale needed for `bootstrap-mgmt`, or for the `deploy.yaml` Sync step below) is Terraform-managed, under `/k8s/automatron`.
+- `bootstrap-core`/`cluster-secrets` still separately read `/k8s/argocd/deploy-key` and `/k8s/infisical` at runtime — that's automatron *propagating* ArgoCD's/the k8s-operator's own credentials into whatever cluster it's bootstrapping, unrelated to the reuse above.
+- `CORE_KUBECONFIG` (core is Vultr VKE, reached over the public internet — no Tailscale needed for `bootstrap-core`, or for the `deploy.yaml` Sync step below) is Terraform-managed, under `/k8s/automatron`.
 - Ad hoc / on-demand runs: `hsctl run <playbook> -e remote [--dry-run] [--chain <playbook>[,<playbook>...]]` (see `docs/operations/hsctl.md`) clones the relevant CronJob's `jobTemplate` into a one-off `Job` and streams its logs. These never auto-chain via the in-cluster `CHAIN_NEXT_CRONJOB` mechanism — that's only ever baked into the scheduled `automatron-omni-sync` CronJob's own template — so an ad hoc `omni-sync` run is standalone unless `--chain` says otherwise. `--chain` is a client-side loop in `hsctl.d/run.sh`'s `run_main`, not automatron: it runs each comma-separated playbook in turn after the previous one succeeds, mirroring `--cluster`/`--dry-run` to all of them, stopping at the first failure. `team-infra-plat`/`team-sec-plat` can do this without PIM (`job-operator` ClusterRole in `apps/rbac`, also bound to automatron's own ServiceAccount for its self-chaining); log reading already worked via the existing `pod-operator` binding.
-- `deploy.yaml`'s `omni` job: the PR-time dry-run + per-cluster/machineclass comment functionality is unchanged (still calls `omnictl` directly — it's read-only and diff-scoped, not worth routing through automatron). Only the merge-to-`main` **Sync** step changed: it now builds a `mgmt` kubectl context from `MGMT_KUBECONFIG` and runs `./hsctl run omni-sync -e remote --chain bootstrap-cluster`, so the actual state-changing sync *and* the bootstrap-cluster run after it happen on automatron with their logs streamed straight into the GitHub Actions log — not executed directly on the runner. The `--chain` is explicit here since ad hoc runs no longer auto-chain by default.
+- `deploy.yaml`'s `omni` job: the PR-time dry-run + per-cluster/machineclass comment functionality is unchanged (still calls `omnictl` directly — it's read-only and diff-scoped, not worth routing through automatron). Only the merge-to-`main` **Sync** step changed: it now builds a `core` kubectl context from `CORE_KUBECONFIG` and runs `./hsctl run omni-sync -e remote --chain bootstrap-cluster`, so the actual state-changing sync *and* the bootstrap-cluster run after it happen on automatron with their logs streamed straight into the GitHub Actions log — not executed directly on the runner. The `--chain` is explicit here since ad hoc runs no longer auto-chain by default.
 
 ## VolSync Backups
 
@@ -203,7 +203,7 @@ values:
     backupSchedule: "0 */2 * * *"  # every 2 hours
 ```
 
-The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a secret named `<app>-volsync-repo` in the app's namespace, synced from Infisical at `/k8s/volsync/<cluster-name>/<app>` via an `InfisicalSecret` CR in the app's `templates/secret.yaml`.
+The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a secret named `<app>-volsync-repo` in the app's namespace, synced from Infisical at `/k8s/volsync/<cluster-name>/<app>` via an `InfisicalSecret` CR in the app's `templates/secret.yaml`. Since that repository path is derived from the deploying cluster's own `.Values.cluster.name`, restoring into a cluster under a different name than the one the backup was written under (e.g. after a rename, or standing up a replacement cluster) needs an explicit `volsync.restore.sourceCluster` override — otherwise it resolves to a fresh, empty path under the new name instead of the old backup data. `apps/omni/templates/secret.yaml` implements this (`{{ (((.Values.volsync).restore).sourceCluster) | default .Values.cluster.name }}`); other apps' `secret.yaml` would need the same pattern added before they could use it. It's a one-time bootstrap workaround, not a standing feature — remove the `sourceCluster` override (along with `restore.enabled`) once the restore is confirmed, so ongoing backups resume writing under the cluster's real name.
 
 ### Restore procedure
 
@@ -212,9 +212,9 @@ The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a 
    hsctl get snapshot <app>
    ```
 
-2. **Scale down and enable restore** in `clusters/<cluster>/apps.yaml`'s `apps` source values. For example, for omni on `mgmt`:
+2. **Scale down and enable restore** in `clusters/<cluster>/apps.yaml`'s `apps` source values. For example, for omni on `core`:
    ```yaml
-   # clusters/mgmt/apps.yaml, spec.sources[1].helm.values
+   # clusters/core/apps.yaml, spec.sources[1].helm.values
    apps:
      omni:
        values:

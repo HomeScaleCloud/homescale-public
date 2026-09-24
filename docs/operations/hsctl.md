@@ -100,21 +100,21 @@ BMC connection info (`IP`, `VENDOR_USERNAME`, `VENDOR_PASSWORD`) is fetched at r
 hsctl run <playbook> [--cluster <name>] [-e|--execution-mode local|remote] [--dry-run] [--chain <playbook>[,<playbook>...]]
 ```
 
-Runs an Ansible playbook from `infra/ansible/playbooks/` — the same ones [automatron](../architecture/overview.md#automatron--ansible-cluster-bootstrap--omni-sync) (the in-cluster runner on `mgmt`) runs on a schedule or ad hoc. `<playbook>` is required (no "run everything" shortcut) and is any filename under that directory, minus `.yml`.
+Runs an Ansible playbook from `infra/ansible/playbooks/` — the same ones [automatron](../architecture/overview.md#automatron--ansible-cluster-bootstrap--omni-sync) (the in-cluster runner on `core`) runs on a schedule or ad hoc. `<playbook>` is required (no "run everything" shortcut) and is any filename under that directory, minus `.yml`.
 
 Three playbooks get special handling and each has its own CronJob on automatron (`automatron-<playbook>`), so `-e remote` always has a `jobTemplate` to clone:
 
 | Playbook | Effect |
 |----------|--------|
 | `omni-sync` | Syncs every cluster template and machine class into Omni. Runs automatically every 15 minutes — the only one of the three with an active schedule — and on success chains a `bootstrap-cluster` run, but only when fired that way (see [Automatron](../architecture/overview.md#automatron--ansible-cluster-bootstrap--omni-sync)). An ad hoc `hsctl run omni-sync` doesn't chain unless you pass `--chain` |
-| `bootstrap-cluster` | Bootstraps workload clusters — all of them, or one via `--cluster <name>` (its Omni cluster ID, e.g. `boa1-prod`); ignored for `bootstrap-mgmt`. Its CronJob is suspended — only ever runs via the scheduled chain, `--chain`, or ad hoc on its own |
-| `bootstrap-mgmt` | Bootstraps the mgmt-class cluster. Its CronJob is suspended too — ad hoc only, since mgmt changes rarely |
+| `bootstrap-cluster` | Bootstraps workload clusters — all of them, or one via `--cluster <name>` (its Omni cluster ID, e.g. `boa1-prod`); ignored for `bootstrap-core`. Its CronJob is suspended — only ever runs via the scheduled chain, `--chain`, or ad hoc on its own |
+| `bootstrap-core` | Bootstraps the core cluster. Its CronJob is suspended too — ad hoc only, since core changes rarely |
 | anything else | Runs `playbooks/<playbook>.yml` as-is; `--cluster` is passed through as `-e target=<name>` regardless of playbook. `-e remote` falls back to cloning `omni-sync`'s `jobTemplate` |
 
 `-e`/`--execution-mode` is `local` or `remote` (default `remote`):
 
-- **`remote`** creates a one-off Kubernetes `Job` on automatron (cloned from the matching `CronJob`'s template) in the `mgmt` cluster, and streams its logs immediately. Requires a Tailscale-reachable `mgmt` apiserver (same as `hsctl switch`/`hsctl get kubeconfig`) and `team-infra-plat`/`team-sec-plat` membership — no PIM needed. If a `mgmt` kubectl context already exists (e.g. CI pre-seeds one from `MGMT_KUBECONFIG`), it's reused as-is instead of triggering an interactive OIDC login.
-- **`local`** clones `HomeScaleCloud/homescale@main` fresh into a temp directory (`gh repo clone`, requires `gh auth login`) and runs `ansible-playbook` against that checkout, cleaning it up afterward — never against whatever's checked out locally, which could be a branch, stale, or have uncommitted changes. Still needed for the very first mgmt bootstrap, before automatron exists, or for disaster recovery if automatron itself is down.
+- **`remote`** creates a one-off Kubernetes `Job` on automatron (cloned from the matching `CronJob`'s template) in the `core` cluster, and streams its logs immediately. Requires a Tailscale-reachable `core` apiserver (same as `hsctl switch`/`hsctl get kubeconfig`) and `team-infra-plat`/`team-sec-plat` membership — no PIM needed. If a `core` kubectl context already exists (e.g. CI pre-seeds one from `CORE_KUBECONFIG`), it's reused as-is instead of triggering an interactive OIDC login.
+- **`local`** clones `HomeScaleCloud/homescale@main` fresh into a temp directory (`gh repo clone`, requires `gh auth login`) and runs `ansible-playbook` against that checkout, cleaning it up afterward — never against whatever's checked out locally, which could be a branch, stale, or have uncommitted changes. Still needed for the very first core bootstrap, before automatron exists, or for disaster recovery if automatron itself is down.
 
 `--dry-run` is passed through as `-e dry_run=true`. Only `omni-sync` currently acts on it (adds `--dry-run` to its `omnictl` calls) — `deploy.yaml`'s PR-time Omni plan does its own dry-run directly instead, since that check is read-only and diff-scoped.
 
@@ -122,7 +122,7 @@ Three playbooks get special handling and each has its own CronJob on automatron 
 
 This is separate from the in-cluster chaining the scheduled `automatron-omni-sync` CronJob does on its own (see `CHAIN_NEXT_CRONJOB` in `apps/automatron/entrypoint.sh`) — ad hoc runs never auto-chain unless you pass `--chain`. `deploy.yaml`'s merge-to-`main` Sync step relies on this: it runs `hsctl run omni-sync -e remote --chain bootstrap-cluster` so a push to `main` re-syncs Omni *and* re-bootstraps every cluster in one dispatch.
 
-Automatron authenticates to Infisical by reusing the k8s Infisical Operator's own identity (`INFISICAL_OPERATOR_CLIENT_ID`/`INFISICAL_OPERATOR_CLIENT_SECRET`), a credential only its pod has. Local runs of `bootstrap-mgmt`/`bootstrap-cluster` can't reproduce that, so they pre-fetch the same secrets via your own `infisical login` CLI session (browser SSO) and hand them to Ansible directly. Any other playbook run locally gets no such handling — one that needs Infisical secrets has to add its own `hsctl_local`-aware fallback first (see `hsctl.d/run.sh`).
+Automatron authenticates to Infisical by reusing the k8s Infisical Operator's own identity (`INFISICAL_OPERATOR_CLIENT_ID`/`INFISICAL_OPERATOR_CLIENT_SECRET`), a credential only its pod has. Local runs of `bootstrap-core`/`bootstrap-cluster` can't reproduce that, so they pre-fetch the same secrets via your own `infisical login` CLI session (browser SSO) and hand them to Ansible directly. Any other playbook run locally gets no such handling — one that needs Infisical secrets has to add its own `hsctl_local`-aware fallback first (see `hsctl.d/run.sh`).
 
 ## `hsctl pim`
 

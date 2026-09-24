@@ -361,10 +361,10 @@ jobs:
           done
           [ "$failed" = "false" ]
 
-      # From here on, the actual sync runs on automatron in mgmt rather than on
+      # From here on, the actual sync runs on automatron in core rather than on
       # this runner, dispatched as `hsctl run omni-sync -e remote --chain bootstrap-cluster`
       # would be by hand, with its logs streamed into this job's log.
-      - name: Import mgmt kubeconfig
+      - name: Import core kubeconfig
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
         uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
         with:
@@ -382,14 +382,14 @@ jobs:
             "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo chmod +x /usr/local/bin/kubectl
 
-      - name: Build mgmt kubeconfig context
+      - name: Build core kubeconfig context
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
         run: | # pragma: allowlist secret
           set -euo pipefail
-          echo "$MGMT_KUBECONFIG" > /tmp/mgmt-kubeconfig
-          export KUBECONFIG=/tmp/mgmt-kubeconfig
-          kubectl config rename-context "$(kubectl config current-context)" mgmt
-          echo "KUBECONFIG=/tmp/mgmt-kubeconfig" >> "$GITHUB_ENV"
+          echo "$CORE_KUBECONFIG" > /tmp/core-kubeconfig
+          export KUBECONFIG=/tmp/core-kubeconfig
+          kubectl config rename-context "$(kubectl config current-context)" core
+          echo "KUBECONFIG=/tmp/core-kubeconfig" >> "$GITHUB_ENV"
 
       - name: Sync via automatron
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'

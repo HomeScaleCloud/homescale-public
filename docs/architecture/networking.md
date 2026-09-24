@@ -73,7 +73,7 @@ It terminates TLS with a real cert-manager/Let's Encrypt certificate (`apps/tail
 
 `hsctl get kubeconfig`/`hsctl switch` default to this direct path (`kubectl-oidc_login` handles the OIDC login, PKCE, no client secret); `--omni`/`--break-glass` delegate straight to `omnictl kubeconfig` (see [`hsctl` reference](../operations/hsctl.md)).
 
-Headlamp shows every other cluster in its picker via this same direct path, with the same per-user RBAC it already has for `mgmt`. Which clusters appear is derived automatically: Terraform (`infra/terraform/headlamp.tf`) enumerates every Omni-managed cluster (each `clusters/*/` with a `cluster.yaml`; their apiservers all trust the shared OIDC issuer via `infra/omni/patches/base.yaml`) and publishes the list to Infisical, which `apps/headlamp/templates/kubeconfig-secret.yaml` renders into one kubeconfig context per cluster pointing straight at `k8s.api.<cluster>REDACTED`.
+Headlamp shows every other cluster in its picker via this same direct path, with the same per-user RBAC it already has for `core`. Which clusters appear is derived automatically: Terraform (`infra/terraform/headlamp.tf`) enumerates every Omni-managed cluster (each `clusters/*/` with a `cluster.yaml`; their apiservers all trust the shared OIDC issuer via `infra/omni/patches/base.yaml`) and publishes the list to Infisical, which `apps/headlamp/templates/kubeconfig-secret.yaml` renders into one kubeconfig context per cluster pointing straight at `k8s.api.<cluster>REDACTED`.
 
 Headlamp's pod carries a Tailscale sidecar (`tag:app-headlamp`) so the backend dials those addresses directly over the tailnet — no per-cluster egress Services, and adding a cluster needs no Headlamp change at all. The `tag:app-headlamp` → `tag:k8s-api` grant that authorizes this is `local.k8s_grant` in `infra/terraform/modules/tailscale/acl.tf`.
 
@@ -108,7 +108,7 @@ Add an `access:` block to an `exposePublic:` entry to require Entra ID (or which
 
 ```yaml
 exposePublic:
-  - cluster: mgmt
+  - cluster: core
     fqdn: REDACTED
     port: 443
     tls: true

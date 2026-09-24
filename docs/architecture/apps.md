@@ -316,5 +316,5 @@ Deployment overrides for `my-app` go in `clusters/<cluster>/apps.yaml` instead â
 helm template <app-name> apps/<app-name>/
 
 # Render the full app catalog for a cluster
-helm template apps -f apps/values.yaml --set cluster.name=mgmt
+helm template apps -f apps/values.yaml --set cluster.name=core
 ```

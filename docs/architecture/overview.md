@@ -20,7 +20,7 @@ PR merged to main
               │
               ├─► terraform apply ── Cloudflare DNS, Tailscale ACL/tags,
               │                      Infisical project structure, VolSync secret paths,
-              │                      Vultr (mgmt cluster)
+              │                      Vultr (core cluster)
               │
               └─► omni sync ──────── cluster.yaml → Omni (Talos node config,
                                      k8s version, machine assignments)
@@ -108,10 +108,10 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 
 | Type | Kind | Role |
 |------|------|------|
-| `mgmt` | Vultr Kubernetes Engine (VKE) | Single management cluster. Hosts Omni, ArgoCD, Infisical operator, and shared infrastructure. Provisioned by Vultr via Terraform. |
+| `core` | Vultr Kubernetes Engine (VKE) | Single management cluster. Hosts Omni, ArgoCD, Infisical operator, and shared infrastructure. Provisioned by Vultr via Terraform. |
 | `<region>-*` | Talos (Omni-managed) | General compute clusters for production workloads. |
 
-Talos clusters have their node config, k8s version, and machine assignments managed entirely by Omni, which runs on the `mgmt` cluster. The CI deploy workflow syncs `clusters/<name>/cluster.yaml` to Omni on every merge to `main`.
+Talos clusters have their node config, k8s version, and machine assignments managed entirely by Omni, which runs on the `core` cluster. The CI deploy workflow syncs `clusters/<name>/cluster.yaml` to Omni on every merge to `main`.
 
 ## Sync wave order
 
@@ -164,23 +164,23 @@ Runs on every PR and push to `main` (after `scan` and `build` pass), serialized 
 Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files. First checks that Omni is reachable (`REDACTED/healthz`) — if it isn't, the plan/sync steps are skipped entirely rather than failing.
 
 - **On PR**: dry-runs each changed cluster template and machine class with `omnictl ... --dry-run` directly on the runner, posts results as PR comments — unchanged, read-only and diff-scoped, so it isn't worth routing through automatron
-- **On merge to `main`**: builds a `mgmt` kubectl context from `MGMT_KUBECONFIG` and runs `./hsctl run omni-sync -e remote` — the actual sync now happens on automatron (see below), with its logs streamed into this job's log instead of running `omnictl` on the runner directly
+- **On merge to `main`**: builds a `core` kubectl context from `CORE_KUBECONFIG` and runs `./hsctl run omni-sync -e remote` — the actual sync now happens on automatron (see below), with its logs streamed into this job's log instead of running `omnictl` on the runner directly
 
 Shared Talos patches from `infra/omni/patches/` are applied alongside each cluster template.
 
-Ansible cluster bootstrap (`bootstrap-mgmt.yml`/`bootstrap-cluster.yml`) no longer runs here at all — see [Automatron](#automatron--ansible-cluster-bootstrap--omni-sync) below.
+Ansible cluster bootstrap (`bootstrap-core.yml`/`bootstrap-cluster.yml`) no longer runs here at all — see [Automatron](#automatron--ansible-cluster-bootstrap--omni-sync) below.
 
 ---
 
 ## Automatron — Ansible cluster bootstrap + Omni sync
 
-`apps/automatron` is a Kubernetes-native runner deployed to `mgmt` that replaced the old GitHub Actions `ansible` job and the state-changing half of the `omni` job. Three CronJobs share one pod spec, one playbook each:
+`apps/automatron` is a Kubernetes-native runner deployed to `core` that replaced the old GitHub Actions `ansible` job and the state-changing half of the `omni` job. Three CronJobs share one pod spec, one playbook each:
 
 - **`automatron-omni-sync`** — the only one on an active schedule (every 15 minutes). Runs `omni-sync.yml`, syncing every cluster template and machine class into Omni. On success, it chains a Job cloned from `automatron-bootstrap-cluster`'s template, so clusters always exist in Omni before that run starts.
 - **`automatron-bootstrap-cluster`** — `suspend: true`. Only runs via that chain, or ad hoc — never on its own schedule.
-- **`automatron-bootstrap-mgmt`** — `suspend: true`, ad hoc only (mgmt itself changes rarely).
+- **`automatron-bootstrap-core`** — `suspend: true`, ad hoc only (core itself changes rarely).
 
-Each run: a `git-key-prep` initContainer (root, to read the mounted deploy key) preps it for a non-root `git-clone` to check out `main`, then the `automatron` container (also non-root) runs the playbook. No Tailscale anywhere — Omni lives in the same `mgmt` cluster, so automatron reaches it entirely in-cluster via `hostAliases` pointing the usual `REDACTED` hostnames at Omni's real ClusterIPs.
+Each run: a `git-key-prep` initContainer (root, to read the mounted deploy key) preps it for a non-root `git-clone` to check out `main`, then the `automatron` container (also non-root) runs the playbook. No Tailscale anywhere — Omni lives in the same `core` cluster, so automatron reaches it entirely in-cluster via `hostAliases` pointing the usual `REDACTED` hostnames at Omni's real ClusterIPs.
 
 All of automatron's own credentials (Infisical login, git deploy key, and Omni access, all reused from existing identities rather than newly minted — see CLAUDE.md for the full breakdown) live under Infisical folder `/k8s/automatron`.
 

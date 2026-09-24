@@ -50,7 +50,7 @@ infra/terraform/modules/cloudflare/             @HomeScaleCloud/team-infra-plat
 infra/terraform/modules/tailscale/              @HomeScaleCloud/team-infra-plat
 
 # Terraform – public cloud modules (both teams: infra-plat operates, sec-plat reviews for security posture)
-infra/terraform/modules/mgmt_cluster/           @HomeScaleCloud/team-infra-plat @HomeScaleCloud/team-sec-plat
+infra/terraform/modules/core_cluster/           @HomeScaleCloud/team-infra-plat @HomeScaleCloud/team-sec-plat
 
 # ── Security Platforms ────────────────────────────────────────────────────────
 

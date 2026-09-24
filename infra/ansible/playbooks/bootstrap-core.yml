@@ -1,10 +1,10 @@
 ---
-- name: Bootstrap mgmt-class cluster
+- name: Bootstrap core cluster
   hosts: localhost
   gather_facts: false
 
   vars:
-    cluster_name: mgmt
+    cluster_name: core
     kubeconfig_secret_key: "{{ cluster_name | upper | replace('-', '_') }}_KUBECONFIG"
     kubeconfig_path: "/tmp/kubeconfig-{{ cluster_name }}"
     omni_cluster_name: "{{ cluster_name }}"
@@ -39,26 +39,26 @@
         env_slug: "{{ infisical_env_slug }}"
         path: /k8s/automatron
         as_dict: true
-      register: _mgmt_kubeconfig_secrets
+      register: _core_kubeconfig_secrets
       no_log: true
       when: not (hsctl_local | default(false))
 
     - name: Use cluster kubeconfig fetched locally via the infisical CLI
       ansible.builtin.set_fact:
-        _mgmt_kubeconfig_secrets:
-          secrets: "{{ hsctl_local_secrets.mgmt_kubeconfig }}"
+        _core_kubeconfig_secrets:
+          secrets: "{{ hsctl_local_secrets.core_kubeconfig }}"
       no_log: true
       when: hsctl_local | default(false)
 
     - name: Skip if kubeconfig not yet available
       when: >
-        _mgmt_kubeconfig_secrets.secrets[kubeconfig_secret_key] is not defined
-        or not _mgmt_kubeconfig_secrets.secrets[kubeconfig_secret_key]
+        _core_kubeconfig_secrets.secrets[kubeconfig_secret_key] is not defined
+        or not _core_kubeconfig_secrets.secrets[kubeconfig_secret_key]
       ansible.builtin.meta: end_play
 
     - name: Write kubeconfig
       ansible.builtin.copy:
-        content: "{{ _mgmt_kubeconfig_secrets.secrets[kubeconfig_secret_key] }}"
+        content: "{{ _core_kubeconfig_secrets.secrets[kubeconfig_secret_key] }}"
         dest: "{{ kubeconfig_path }}"
         mode: "0600"
       no_log: true

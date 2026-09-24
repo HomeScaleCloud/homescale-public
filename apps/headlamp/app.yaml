@@ -5,7 +5,7 @@ syncWave: 0
 defaultDeploy: false
 podSecurity: privileged
 exposePublic:
-  - cluster: mgmt
+  - cluster: core
     fqdn: REDACTED
     port: 443
     tls: true

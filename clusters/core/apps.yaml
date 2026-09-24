@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: apps-mgmt
+  name: apps-core
   namespace: argocd
 spec:
   project: default
   sources:
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
-      path: clusters/mgmt
+      path: clusters/core
       directory:
         recurse: true
         exclude: 'cluster.yaml'
@@ -16,10 +16,10 @@ spec:
       targetRevision: main
       path: apps
       helm:
-        releaseName: apps-mgmt
+        releaseName: apps-core
         values: |
           cluster:
-            name: mgmt
+            name: core
           apps:
             automatron:
               deploy: true
@@ -29,7 +29,7 @@ spec:
               deploy: true
               values:
                 cluster:
-                  name: mgmt
+                  name: core
             headlamp:
               deploy: true
             multus:
@@ -44,6 +44,7 @@ spec:
                 volsync:
                   restore:
                     enabled: true
+                    sourceCluster: mgmt
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

@@ -1,5 +1,5 @@
 # Every Omni-managed cluster (clusters/*/cluster.yaml) is federated into
-# Headlamp's cluster picker. mgmt has no cluster.yaml (Vultr VKE, not Omni), so
+# Headlamp's cluster picker. core has no cluster.yaml (Vultr VKE, not Omni), so
 # it's excluded here and served as Headlamp's in-cluster context instead.
 locals {
   headlamp_clusters = sort([

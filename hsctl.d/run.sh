@@ -2,14 +2,14 @@
 # hsctl run — run an Ansible playbook from infra/ansible/playbooks/, either locally or
 # remotely as a one-off Kubernetes Job on automatron (apps/automatron).
 #
-# bootstrap-mgmt/bootstrap-cluster get special local-secrets handling (see
+# bootstrap-core/bootstrap-cluster get special local-secrets handling (see
 # _run_bootstrap_local); any other playbook runs as-is with no Infisical fallback of its
 # own, so a new one needing local secrets must add hsctl_local-aware handling itself.
 #
 # Local mode never runs against $HSCTL_REPO_ROOT — it clones HomeScaleCloud/homescale@main
 # fresh into a temp dir instead (_run_local_clone_repo), so it always matches main.
 
-_run_bootstrap_playbooks=(bootstrap-mgmt bootstrap-cluster)
+_run_bootstrap_playbooks=(bootstrap-core bootstrap-cluster)
 
 # Cleanup registry: a later `trap ... EXIT` call replaces any earlier one instead of
 # stacking, so independent cleanups register a path here rather than trapping directly.
@@ -27,7 +27,7 @@ run_usage() {
     echo "Usage: hsctl run <playbook> [--cluster <name>] [-e|--execution-mode local|remote] [--dry-run] [--chain <playbook>[,<playbook>...]]"
     echo ""
     echo "<playbook> is any filename (without .yml) under infra/ansible/playbooks/, e.g.:"
-    echo "  bootstrap-mgmt      bootstrap the mgmt-class cluster"
+    echo "  bootstrap-core      bootstrap the core cluster"
     echo "  bootstrap-cluster   bootstrap workload clusters (all, or one via --cluster)"
     echo "  omni-sync           sync every cluster template + machine class into Omni;"
     echo "                      the scheduled CronJob run also chains bootstrap-cluster on"
@@ -39,12 +39,12 @@ run_usage() {
     echo "                              bootstrap-cluster (its Omni cluster ID, e.g. boa1-prod);"
     echo "                              mirrored to every --chain'd playbook too"
     echo "  -e, --execution-mode <mode> 'local' or 'remote' (default: remote). remote creates a"
-    echo "                              one-off Job on automatron (in the mgmt cluster) and"
-    echo "                              streams its logs; requires a Tailscale-reachable mgmt"
+    echo "                              one-off Job on automatron (in the core cluster) and"
+    echo "                              streams its logs; requires a Tailscale-reachable core"
     echo "                              apiserver and team-infra-plat/team-sec-plat membership"
     echo "                              (no PIM needed). local clones main fresh (via gh) into a"
     echo "                              temp dir and runs ansible-playbook against that — still"
-    echo "                              required for the very first mgmt bootstrap, before"
+    echo "                              required for the very first core bootstrap, before"
     echo "                              automatron exists to dispatch to."
     echo "  --dry-run                   passed through as -e dry_run=true; only omni-sync acts"
     echo "                              on it today (adds --dry-run to its omnictl calls);"
@@ -70,7 +70,7 @@ _run_infisical_secrets() {
     jq 'map({(.key): .value}) | add // {}' <<< "$raw"
 }
 
-# Run bootstrap-mgmt or bootstrap-cluster locally, pre-fetching secrets via the local
+# Run bootstrap-core or bootstrap-cluster locally, pre-fetching secrets via the local
 # Infisical CLI session and handing them to Ansible as hsctl_local_secrets.
 _run_bootstrap_local() {
     local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4"
@@ -78,13 +78,13 @@ _run_bootstrap_local() {
     command -v infisical &>/dev/null || { echo "hsctl run: the infisical CLI is required (brew install infisical)" >&2; exit 1; }
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
 
-    [[ -n "$cluster" && "$playbook" == "bootstrap-mgmt" ]] && hsctl_log_info "--cluster is ignored for bootstrap-mgmt"
+    [[ -n "$cluster" && "$playbook" == "bootstrap-core" ]] && hsctl_log_info "--cluster is ignored for bootstrap-core"
 
     hsctl_log_info "fetching secrets from Infisical via local CLI session"
-    local argocd_secrets infisical_op_secrets mgmt_kubeconfig_secrets='{}'
+    local argocd_secrets infisical_op_secrets core_kubeconfig_secrets='{}'
     argocd_secrets=$(_run_infisical_secrets /k8s/argocd/deploy-key) || exit 1
     infisical_op_secrets=$(_run_infisical_secrets /k8s/infisical) || exit 1
-    [[ "$playbook" == "bootstrap-mgmt" ]] && { mgmt_kubeconfig_secrets=$(_run_infisical_secrets /k8s/automatron) || exit 1; }
+    [[ "$playbook" == "bootstrap-core" ]] && { core_kubeconfig_secrets=$(_run_infisical_secrets /k8s/automatron) || exit 1; }
 
     local extra_vars_file
     extra_vars_file=$(mktemp)
@@ -94,8 +94,8 @@ _run_bootstrap_local() {
     jq -n \
         --argjson argocd "$argocd_secrets" \
         --argjson infisical_op "$infisical_op_secrets" \
-        --argjson mgmt_kubeconfig "$mgmt_kubeconfig_secrets" \
-        '{hsctl_local: true, hsctl_local_secrets: {argocd_deploy_key: $argocd, infisical_operator: $infisical_op, mgmt_kubeconfig: $mgmt_kubeconfig}}' \
+        --argjson core_kubeconfig "$core_kubeconfig_secrets" \
+        '{hsctl_local: true, hsctl_local_secrets: {argocd_deploy_key: $argocd, infisical_operator: $infisical_op, core_kubeconfig: $core_kubeconfig}}' \
         > "$extra_vars_file"
 
     (
@@ -103,9 +103,9 @@ _run_bootstrap_local() {
         cd "$repo_root/infra/ansible" || exit 1
 
         case "$playbook" in
-            bootstrap-mgmt)
-                hsctl_log_action "running bootstrap-mgmt.yml"
-                ansible-playbook playbooks/bootstrap-mgmt.yml -e cluster_name=mgmt -e "dry_run=$dry_run" --extra-vars "@$extra_vars_file"
+            bootstrap-core)
+                hsctl_log_action "running bootstrap-core.yml"
+                ansible-playbook playbooks/bootstrap-core.yml -e cluster_name=core -e "dry_run=$dry_run" --extra-vars "@$extra_vars_file"
                 ;;
             bootstrap-cluster)
                 hsctl_log_action "running bootstrap-cluster.yml${cluster:+ (target: $cluster)}"
@@ -174,23 +174,23 @@ _run_remote() {
     # omni-sync's jobTemplate (same pod shape, different PLAYBOOK/CLUSTER override).
     local cronjob="automatron-$playbook"
     case "$playbook" in
-        bootstrap-mgmt|bootstrap-cluster|omni-sync) ;;
+        bootstrap-core|bootstrap-cluster|omni-sync) ;;
         *) cronjob="automatron-omni-sync" ;;
     esac
 
     command -v kubectl &>/dev/null || { echo "hsctl run: kubectl is required" >&2; exit 1; }
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
 
-    # A `mgmt` context, if already present, is reused via explicit --context mgmt below.
+    # A `core` context, if already present, is reused via explicit --context core below.
     # Otherwise, authenticate via OIDC (hsctl get kubeconfig), which switches
     # current-context as a side effect — restore it immediately after.
-    if ! kubectl config get-contexts -o name 2>/dev/null | grep -qx mgmt; then
+    if ! kubectl config get-contexts -o name 2>/dev/null | grep -qx core; then
         local prev_ctx
         prev_ctx=$(kubectl config current-context 2>/dev/null || true)
         # shellcheck source=/dev/null
         source "$HSCTL_ROOT/hsctl.d/get.sh"
-        hsctl_log_info "no mgmt context found — authenticating via OIDC"
-        get_kubeconfig mgmt >/dev/null
+        hsctl_log_info "no core context found — authenticating via OIDC"
+        get_kubeconfig core >/dev/null
         [[ -n "$prev_ctx" ]] && kubectl config use-context "$prev_ctx" >/dev/null 2>&1
     fi
 
@@ -198,7 +198,7 @@ _run_remote() {
     # the source template carried — ad hoc runs never auto-chain in-cluster; --chain above
     # is what handles chaining from hsctl instead.
     hsctl_log_action "creating Job $job_name (playbook=$playbook${cluster:+, cluster=$cluster}${dry_run:+, dry_run=$dry_run}) on automatron"
-    kubectl get cronjob "$cronjob" -n "$namespace" --context mgmt -o json | \
+    kubectl get cronjob "$cronjob" -n "$namespace" --context core -o json | \
         jq --arg name "$job_name" --arg playbook "$playbook" --arg cluster "$cluster" --arg dry_run "$dry_run" '
           {
             apiVersion: "batch/v1",
@@ -211,19 +211,19 @@ _run_remote() {
                   + [{name: "PLAYBOOK", value: $playbook}, {name: "CLUSTER", value: $cluster}, {name: "DRY_RUN", value: $dry_run}])
               else . end
             ])
-          }' | kubectl create -f - --context mgmt
+          }' | kubectl create -f - --context core
 
     hsctl_log_info "waiting for the pod to appear..."
     local attempt pod=""
     for attempt in $(seq 1 30); do
         sleep 2
-        pod=$(kubectl get pods -n "$namespace" --context mgmt -l "job-name=$job_name" \
+        pod=$(kubectl get pods -n "$namespace" --context core -l "job-name=$job_name" \
             -o jsonpath='{.items[0].metadata.name}' 2>/dev/null) || true
         [[ -n "$pod" ]] && break
     done
 
     if [[ -z "$pod" ]]; then
-        hsctl_log_error "pod never appeared — check: kubectl get pods -n $namespace --context mgmt -l job-name=$job_name"
+        hsctl_log_error "pod never appeared — check: kubectl get pods -n $namespace --context core -l job-name=$job_name"
         exit 1
     fi
 
@@ -232,14 +232,14 @@ _run_remote() {
     hsctl_log_info "waiting for the automatron container to start..."
     local started=""
     for attempt in $(seq 1 60); do
-        started=$(kubectl get pod "$pod" -n "$namespace" --context mgmt \
+        started=$(kubectl get pod "$pod" -n "$namespace" --context core \
             -o jsonpath='{.status.containerStatuses[?(@.name=="automatron")].started}' 2>/dev/null) || true
         [[ "$started" == "true" ]] && break
         sleep 3
     done
 
     if [[ "$started" != "true" ]]; then
-        hsctl_log_error "automatron container never started — check: kubectl describe pod $pod -n $namespace --context mgmt"
+        hsctl_log_error "automatron container never started — check: kubectl describe pod $pod -n $namespace --context core"
         exit 1
     fi
 
@@ -247,22 +247,22 @@ _run_remote() {
     # every other kubectl call above parses structured output and must stay plain.
     local log_cmd="kubectl"
     command -v kubecolor &>/dev/null && log_cmd="kubecolor"
-    "$log_cmd" logs -f "$pod" -c automatron -n "$namespace" --context mgmt
+    "$log_cmd" logs -f "$pod" -c automatron -n "$namespace" --context core
 
     # The Job controller can lag behind the log stream closing, so poll briefly for
     # .status rather than checking once immediately.
     local succeeded="" failed=""
     for attempt in $(seq 1 10); do
-        succeeded=$(kubectl get job "$job_name" -n "$namespace" --context mgmt \
+        succeeded=$(kubectl get job "$job_name" -n "$namespace" --context core \
             -o jsonpath='{.status.succeeded}' 2>/dev/null) || true
-        failed=$(kubectl get job "$job_name" -n "$namespace" --context mgmt \
+        failed=$(kubectl get job "$job_name" -n "$namespace" --context core \
             -o jsonpath='{.status.failed}' 2>/dev/null) || true
         [[ "$succeeded" == "1" || -n "$failed" ]] && break
         sleep 3
     done
 
     if [[ "$succeeded" != "1" ]]; then
-        hsctl_log_error "job $job_name did not succeed — check: kubectl describe job $job_name -n $namespace --context mgmt"
+        hsctl_log_error "job $job_name did not succeed — check: kubectl describe job $job_name -n $namespace --context core"
         exit 1
     fi
     hsctl_log_success "job $job_name completed"
