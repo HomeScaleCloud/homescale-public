@@ -365,10 +365,11 @@ jobs:
 
       # From here on, the actual sync (state-changing, unlike the read-only Plan
       # above) runs on automatron in mgmt rather than directly on this runner —
-      # dispatched the same way `hsctl run omni-sync -e remote` would be run by
-      # hand, so its logs stream straight into this job's log. Since omni-sync
-      # chains a bootstrap-cluster run on success (see apps/automatron), a push to
-      # main re-syncs Omni *and* re-bootstraps every cluster in one dispatch.
+      # dispatched the same way `hsctl run omni-sync -e remote --chain bootstrap-cluster`
+      # would be run by hand, so its logs stream straight into this job's log.
+      # --chain is required explicitly here: ad hoc omni-sync runs never auto-chain into
+      # bootstrap-cluster on their own (only the scheduled CronJob does) — this makes a
+      # push to main still re-sync Omni *and* re-bootstrap every cluster in one dispatch.
       - name: Import mgmt kubeconfig
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
         uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
@@ -400,7 +401,7 @@ jobs:
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
         run: |
           chmod +x hsctl
-          ./hsctl run omni-sync -e remote
+          ./hsctl run omni-sync -e remote --chain bootstrap-cluster
 
       - name: Post plan results as PR comments
         if: always() && github.event_name == 'pull_request' && steps.detect.outcome == 'success' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]' || steps.detect.outputs.deleted_clusters != '[]' || steps.detect.outputs.deleted_machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'

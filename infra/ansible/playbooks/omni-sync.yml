@@ -9,7 +9,14 @@
   connection: local
 
   vars:
-    dry_run: "{{ dry_run | default(false) | bool }}"
+    # Named distinctly from the `dry_run` extra var (-e dry_run=...) rather than
+    # reusing that name here — extra vars have higher precedence than anything a play's
+    # own `vars:` block computes, even a self-referencing one, so `dry_run: "{{ dry_run
+    # | default(false) | bool }}"` would silently keep the raw extra-var STRING
+    # ("false") instead of the cast bool below, and Jinja treats any non-empty string
+    # (including "false") as truthy — every non-dry-run invocation was actually adding
+    # --dry-run to every omnictl call, unconditionally, until this was caught.
+    is_dry_run: "{{ dry_run | default(false) | bool }}"
     repo_root: "{{ playbook_dir }}/../../.."
     omni_endpoint: "{{ lookup('env', 'OMNI_ENDPOINT') | default('https://REDACTED', true) }}"
 
@@ -47,7 +54,7 @@
           [ -f "$pf" ] || continue
           CLUSTER_NAME="$cluster_name" envsubst '${CLUSTER_NAME}' < "$pf" > "$tmpdir/patches/$(basename "$pf")"
         done
-        omnictl cluster template sync -f "$tmpdir/cluster.yaml"{{ ' --dry-run' if dry_run else '' }}
+        omnictl cluster template sync -f "$tmpdir/cluster.yaml"{{ ' --dry-run' if is_dry_run else '' }}
       args:
         executable: /bin/bash
       loop: "{{ _cluster_find.stdout_lines }}"
@@ -57,7 +64,7 @@
 
     - name: Apply each machine class
       ansible.builtin.command:
-        cmd: "omnictl apply -f {{ item.path }}{{ ' --dry-run' if dry_run else '' }}"
+        cmd: "omnictl apply -f {{ item.path }}{{ ' --dry-run' if is_dry_run else '' }}"
       loop: "{{ _machineclass_files.files | default([]) }}"
       loop_control:
         label: "{{ item.path | basename }}"

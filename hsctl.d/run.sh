@@ -21,31 +21,60 @@
 # that needs Infisical locally must add its own hsctl_local-aware fallback the same way
 # before `hsctl run` can help it — this module doesn't know its secret paths, so it just
 # runs it and lets any Infisical lookup inside fail on its own.
+#
+# Local repo source: -e local never runs against $HSCTL_REPO_ROOT (whatever's checked
+# out on the caller's machine — could be a branch, stale, or have uncommitted changes).
+# It clones HomeScaleCloud/homescale@main fresh into a temp dir via `gh repo clone`
+# instead (see _run_local_clone_repo), so a local run always executes the same code
+# that's actually live on main, and cleans that clone up on exit. HSCTL_REPO_ROOT stays
+# relevant for hsctl's *other* commands (e.g. `hsctl get`), just not this module.
 
 _run_bootstrap_playbooks=(bootstrap-mgmt bootstrap-cluster)
 
+# Every EXIT-time cleanup this module needs (temp files/dirs) goes through this
+# registry instead of each function calling `trap ... EXIT` directly — a later
+# `trap` call replaces any earlier one instead of stacking, so two independent
+# cleanups (e.g. the cloned-repo tempdir below and _run_bootstrap_local's
+# extra-vars file) would silently clobber each other otherwise.
+_run_cleanup_paths=()
+_run_register_cleanup() { _run_cleanup_paths+=("$1"); }
+_run_cleanup() {
+    local p
+    for p in "${_run_cleanup_paths[@]:-}"; do
+        [[ -n "$p" ]] && rm -rf "$p"
+    done
+}
+trap _run_cleanup EXIT
+
 run_usage() {
-    echo "Usage: hsctl run <playbook> [--cluster <name>] [-e|--execution-mode local|remote] [--dry-run]"
+    echo "Usage: hsctl run <playbook> [--cluster <name>] [-e|--execution-mode local|remote] [--dry-run] [--chain <playbook>[,<playbook>...]]"
     echo ""
     echo "<playbook> is any filename (without .yml) under infra/ansible/playbooks/, e.g.:"
     echo "  bootstrap-mgmt      bootstrap the mgmt-class cluster"
     echo "  bootstrap-cluster   bootstrap workload clusters (all, or one via --cluster)"
     echo "  omni-sync           sync every cluster template + machine class into Omni;"
-    echo "                      on success, chains a bootstrap-cluster run (see CLAUDE.md)"
+    echo "                      the scheduled CronJob run also chains bootstrap-cluster on"
+    echo "                      success (see CLAUDE.md) — ad hoc runs here don't unless"
+    echo "                      you pass --chain"
     echo ""
     echo "Options:"
     echo "  --cluster <name>            passed through as -e target=<name>; meaningful for"
-    echo "                              bootstrap-cluster (its Omni cluster ID, e.g. boa1-prod)"
+    echo "                              bootstrap-cluster (its Omni cluster ID, e.g. boa1-prod);"
+    echo "                              mirrored to every --chain'd playbook too"
     echo "  -e, --execution-mode <mode> 'local' or 'remote' (default: remote). remote creates a"
     echo "                              one-off Job on automatron (in the mgmt cluster) and"
     echo "                              streams its logs; requires a Tailscale-reachable mgmt"
     echo "                              apiserver and team-infra-plat/team-sec-plat membership"
-    echo "                              (no PIM needed). local runs ansible-playbook right here"
-    echo "                              — still required for the very first mgmt bootstrap,"
-    echo "                              before automatron exists to dispatch to."
+    echo "                              (no PIM needed). local clones main fresh (via gh) into a"
+    echo "                              temp dir and runs ansible-playbook against that — still"
+    echo "                              required for the very first mgmt bootstrap, before"
+    echo "                              automatron exists to dispatch to."
     echo "  --dry-run                   passed through as -e dry_run=true; only omni-sync acts"
-    echo "                              on it today (adds --dry-run to its omnictl calls, and"
-    echo "                              skips chaining into bootstrap-cluster)"
+    echo "                              on it today (adds --dry-run to its omnictl calls);"
+    echo "                              mirrored to every --chain'd playbook too"
+    echo "  --chain <playbook>[,...]    after <playbook> succeeds, run each of these in turn"
+    echo "                              (comma-separated, no spaces) — same --cluster/--dry-run"
+    echo "                              for all of them, stops at the first one that fails"
     exit 1
 }
 
@@ -68,7 +97,7 @@ _run_infisical_secrets() {
 # get via CI's OIDC login (see the module-level comment) and handing them to Ansible as
 # hsctl_local_secrets.
 _run_bootstrap_local() {
-    local playbook="$1" cluster="$2" dry_run="$3"
+    local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4"
 
     command -v infisical &>/dev/null || { echo "hsctl run: the infisical CLI is required (brew install infisical)" >&2; exit 1; }
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
@@ -84,8 +113,7 @@ _run_bootstrap_local() {
     local extra_vars_file
     extra_vars_file=$(mktemp)
     chmod 600 "$extra_vars_file"
-    # shellcheck disable=SC2064 # extra_vars_file is fixed at trap-set time, not re-evaluated later
-    trap "rm -f '$extra_vars_file'" EXIT
+    _run_register_cleanup "$extra_vars_file"
 
     jq -n \
         --argjson argocd "$argocd_secrets" \
@@ -95,7 +123,8 @@ _run_bootstrap_local() {
         > "$extra_vars_file"
 
     (
-        cd "$HSCTL_REPO_ROOT/infra/ansible" || exit 1
+        export HSCTL_REPO_ROOT="$repo_root" # so a nested `hsctl get machines` (via omni.py) resolves against the same fresh checkout
+        cd "$repo_root/infra/ansible" || exit 1
 
         case "$playbook" in
             bootstrap-mgmt)
@@ -116,13 +145,14 @@ _run_bootstrap_local() {
 
 # Run any other playbook locally, as-is — no local secrets handling (see module comment).
 _run_generic_local() {
-    local playbook="$1" cluster="$2" dry_run="$3"
-    local playbook_file="$HSCTL_REPO_ROOT/infra/ansible/playbooks/$playbook.yml"
+    local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4"
+    local playbook_file="$repo_root/infra/ansible/playbooks/$playbook.yml"
 
     [[ -f "$playbook_file" ]] || { hsctl_log_error "no such playbook: infra/ansible/playbooks/$playbook.yml"; exit 1; }
 
     (
-        cd "$HSCTL_REPO_ROOT/infra/ansible" || exit 1
+        export HSCTL_REPO_ROOT="$repo_root" # so a nested `hsctl get machines` (via omni.py) resolves against the same fresh checkout
+        cd "$repo_root/infra/ansible" || exit 1
         hsctl_log_action "running $playbook.yml${cluster:+ (target: $cluster)}"
         if [[ -n "$cluster" ]]; then
             ansible-playbook "playbooks/$playbook.yml" -e target="$cluster" -e "dry_run=$dry_run"
@@ -132,15 +162,37 @@ _run_generic_local() {
     )
 }
 
+# Clones `main` fresh into a temp dir rather than trusting whatever's checked out at
+# HSCTL_REPO_ROOT — that could be a feature branch, stale, or have uncommitted local
+# changes, none of which local mode should silently run against. Cloned once per
+# `hsctl run` invocation (even across a --chain, not once per chained playbook).
+# Deliberately does NOT call _run_register_cleanup itself: this runs inside a
+# subshell when captured via $(...) at the call site, so registering there would
+# mutate the subshell's copy of _run_cleanup_paths and vanish with it — the caller
+# registers the returned path instead, in its own (non-subshell) scope.
+_run_local_clone_repo() {
+    command -v gh &>/dev/null || { echo "hsctl run: gh is required for local runs (brew install gh)" >&2; exit 1; }
+
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    hsctl_log_info "cloning HomeScaleCloud/homescale@main into a temp checkout for this local run..."
+    if ! gh repo clone HomeScaleCloud/homescale "$tmpdir" -- --depth 1 --branch main --quiet 2>/dev/null; then
+        hsctl_log_error "failed to clone HomeScaleCloud/homescale@main (check: gh auth status)"
+        rm -rf "$tmpdir"
+        return 1
+    fi
+    echo "$tmpdir"
+}
+
 _run_local() {
-    local playbook="$1" cluster="$2" dry_run="$3"
+    local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4"
 
     command -v ansible-playbook &>/dev/null || { echo "hsctl run: ansible-playbook is required (pip install ansible)" >&2; exit 1; }
 
     if [[ " ${_run_bootstrap_playbooks[*]} " == *" $playbook "* ]]; then
-        _run_bootstrap_local "$playbook" "$cluster" "$dry_run"
+        _run_bootstrap_local "$playbook" "$cluster" "$dry_run" "$repo_root"
     else
-        _run_generic_local "$playbook" "$cluster" "$dry_run"
+        _run_generic_local "$playbook" "$cluster" "$dry_run" "$repo_root"
     fi
 }
 
@@ -179,10 +231,10 @@ _run_remote() {
     fi
 
     # Whatever CronJob we clone the jobTemplate from, always pin its PLAYBOOK/CLUSTER/
-    # DRY_RUN to what was actually asked for, and only carry over CHAIN_NEXT_CRONJOB
-    # (chaining into bootstrap-cluster on success) when the playbook being dispatched is
-    # actually omni-sync — a generic/other playbook falling back to omni-sync's
-    # jobTemplate as its clone source shouldn't inherit that side effect.
+    # DRY_RUN to what was actually asked for, and strip any CHAIN_NEXT_CRONJOB the source
+    # template carried — ad hoc runs never auto-chain via that in-cluster mechanism
+    # (only the scheduled omni-sync CronJob does); chaining multiple playbooks together
+    # from hsctl is run_main's --chain loop instead, above.
     hsctl_log_action "creating Job $job_name (playbook=$playbook${cluster:+, cluster=$cluster}${dry_run:+, dry_run=$dry_run}) on automatron"
     kubectl get cronjob "$cronjob" -n "$namespace" --context mgmt -o json | \
         jq --arg name "$job_name" --arg playbook "$playbook" --arg cluster "$cluster" --arg dry_run "$dry_run" '
@@ -194,8 +246,7 @@ _run_remote() {
               .template.spec.containers[] |
               if .name == "automatron" then
                 .env = ((.env // []) | map(select(.name != "PLAYBOOK" and .name != "CLUSTER" and .name != "DRY_RUN" and .name != "CHAIN_NEXT_CRONJOB"))
-                  + [{name: "PLAYBOOK", value: $playbook}, {name: "CLUSTER", value: $cluster}, {name: "DRY_RUN", value: $dry_run}]
-                  + (if $playbook == "omni-sync" then [{name: "CHAIN_NEXT_CRONJOB", value: "automatron-bootstrap-cluster"}] else [] end))
+                  + [{name: "PLAYBOOK", value: $playbook}, {name: "CLUSTER", value: $cluster}, {name: "DRY_RUN", value: $dry_run}])
               else . end
             ])
           }' | kubectl create -f - --context mgmt
@@ -263,6 +314,7 @@ _run_remote() {
 
 run_main() {
     local playbook="" cluster="" mode="remote" dry_run="false" playbook_set=false
+    local chain=() chain_raw=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -272,6 +324,10 @@ run_main() {
                 [[ "$mode" != "local" && "$mode" != "remote" ]] && run_usage
                 shift 2 ;;
             --dry-run) dry_run="true"; shift ;;
+            --chain)
+                chain_raw="${2:-}"; [[ -z "$chain_raw" ]] && run_usage
+                IFS=',' read -r -a chain <<< "$chain_raw"
+                shift 2 ;;
             -h|--help) run_usage ;;
             --*) echo "hsctl run: unknown flag '$1'" >&2; run_usage ;;
             *)
@@ -282,9 +338,25 @@ run_main() {
 
     [[ -z "$playbook" ]] && { echo "hsctl run: a playbook name is required" >&2; run_usage; }
 
-    if [[ "$mode" == "remote" ]]; then
-        _run_remote "$playbook" "$cluster" "$dry_run"
-    else
-        _run_local "$playbook" "$cluster" "$dry_run"
+    local local_repo_root=""
+    if [[ "$mode" == "local" ]]; then
+        local_repo_root=$(_run_local_clone_repo) || exit 1
+        _run_register_cleanup "$local_repo_root"
     fi
+
+    # --chain runs each listed playbook in turn after the first succeeds, mirroring
+    # --cluster/--dry-run to every one of them — a client-side loop, not the in-cluster
+    # CHAIN_NEXT_CRONJOB mechanism (see apps/automatron/entrypoint.sh) that the scheduled
+    # omni-sync CronJob uses; ad hoc runs never chain unless --chain says so. Each
+    # _run_*/exit 1 on failure, so the loop naturally stops at the first one that fails.
+    # This applies identically in local mode — same loop, same --chain, just against
+    # the one cloned checkout above instead of a Job per playbook.
+    local p
+    for p in "$playbook" "${chain[@]}"; do
+        if [[ "$mode" == "remote" ]]; then
+            _run_remote "$p" "$cluster" "$dry_run"
+        else
+            _run_local "$p" "$cluster" "$dry_run" "$local_repo_root"
+        fi
+    done
 }
