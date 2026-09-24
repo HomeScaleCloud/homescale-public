@@ -1,0 +1,14 @@
+path: apps/automatron
+namespace: automatron
+releaseName: automatron
+syncWave: 0
+defaultDeploy: false
+podSecurity: privileged
+values:
+  cluster:
+    name: "{{ .Values.cluster.name }}"
+  automatron:
+    image:
+      repository: ghcr.io/homescalecloud/automatron
+      tag: latest
+    schedule: "*/5 * * * *"

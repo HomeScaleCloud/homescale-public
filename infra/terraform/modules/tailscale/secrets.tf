@@ -15,3 +15,19 @@ resource "infisical_secret" "tailscale_k8s_operator_client_secret" {
   workspace_id = var.infisical_workspace_id
   folder_path  = "/k8s/tailscale"
 }
+
+resource "infisical_secret" "tailscale_automatron_client_id" {
+  name         = "TAILSCALE_CLIENT_ID"
+  value        = tailscale_oauth_client.automatron.id
+  env_slug     = "prod"
+  workspace_id = var.infisical_workspace_id
+  folder_path  = "/k8s/automatron"
+}
+
+resource "infisical_secret" "tailscale_automatron_client_secret" {
+  name         = "TAILSCALE_CLIENT_SECRET"
+  value        = tailscale_oauth_client.automatron.key
+  env_slug     = "prod"
+  workspace_id = var.infisical_workspace_id
+  folder_path  = "/k8s/automatron"
+}

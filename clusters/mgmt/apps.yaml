@@ -21,6 +21,8 @@ spec:
           cluster:
             name: mgmt
           apps:
+            automatron:
+              deploy: true
             cilium:
               deploy: false
             cloudflared:

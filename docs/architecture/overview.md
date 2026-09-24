@@ -150,9 +150,9 @@ Runs on every PR and push:
 - Runs a Trivy vulnerability scan on each built image (CRITICAL/HIGH, blocks on failure)
 - **Deploys this documentation site** to GitHub Pages (`mkdocs gh-deploy`) on every push to `main`
 
-### `deploy` — infrastructure and cluster sync/bootstrap
+### `deploy` — infrastructure and cluster sync
 
-Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has three sequential jobs — `terraform` → `omni` → `ansible` (main only). The `omni` and `ansible` jobs each independently join the tailnet via `tailscale/github-action` (ephemeral node, tagged `tag:github-actions`, auto-removed when the job ends) to reach Omni's internal API; `terraform` doesn't need to join the mesh at all — it only talks to public APIs (Cloudflare, Vultr, Infisical, Tailscale).
+Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has two sequential jobs — `terraform` → `omni`. The `omni` job joins the tailnet via `tailscale/github-action` (ephemeral node, tagged `tag:github-actions`, auto-removed when the job ends) to reach Omni's internal API; `terraform` doesn't need to join the mesh at all — it only talks to public APIs (Cloudflare, Vultr, Infisical, Tailscale).
 
 #### 1. `terraform`
 
@@ -163,17 +163,28 @@ Runs on every PR and push to `main` (after `scan` and `build` pass), serialized 
 
 Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files. First checks that Omni is reachable (`REDACTED/healthz`) — if it isn't, the plan/sync steps are skipped entirely rather than failing.
 
-- **On PR**: dry-runs each changed cluster template and machine class with `omnictl ... --dry-run`, posts results as PR comments
-- **On merge to `main`**: runs `omnictl cluster template sync` for all clusters and `omnictl apply` for all machine classes
+- **On PR**: dry-runs each changed cluster template and machine class with `omnictl ... --dry-run` directly on the runner, posts results as PR comments — unchanged, read-only and diff-scoped, so it isn't worth routing through automatron
+- **On merge to `main`**: builds a `mgmt` kubectl context from `MGMT_KUBECONFIG` and runs `./hsctl run omni-sync -e remote` — the actual sync now happens on automatron (see below), with its logs streamed into this job's log instead of running `omnictl` on the runner directly
 
 Shared Talos patches from `infra/omni/patches/` are applied alongside each cluster template.
 
-#### 3. `ansible` (after omni, main only)
+Ansible cluster bootstrap (`bootstrap-mgmt.yml`/`bootstrap-cluster.yml`) no longer runs here at all — see [Automatron](#automatron--ansible-cluster-bootstrap--omni-sync) below.
 
-Runs two Ansible playbooks in sequence against the live clusters via Tailscale:
+---
 
-- **`bootstrap-mgmt.yml`** — bootstraps the `mgmt` cluster specifically (reads its kubeconfig from Infisical)
-- **`bootstrap-cluster.yml`** — ensures every cluster has its `cluster-secrets`, `cilium`, and `argocd` roles applied (idempotent)
+## Automatron — Ansible cluster bootstrap + Omni sync
+
+`apps/automatron` is a Kubernetes-native runner deployed to `mgmt` that replaced the old GitHub Actions `ansible` job and the state-changing half of the `omni` job. Three CronJobs share one pod spec, one playbook each:
+
+- **`automatron-omni-sync`** — the only one on an active schedule (every 5 minutes). Runs `omni-sync.yml`, syncing every cluster template and machine class into Omni. On success, it chains a Job cloned from `automatron-bootstrap-cluster`'s template, so clusters always exist in Omni before that run starts.
+- **`automatron-bootstrap-cluster`** — `suspend: true`. Only runs via that chain, or ad hoc — never on its own schedule.
+- **`automatron-bootstrap-mgmt`** — `suspend: true`, ad hoc only (mgmt itself changes rarely).
+
+Each run: a `git-clone` initContainer checks out `main`, a `tailscale` sidecar joins the mesh (`tag:app-automatron`) to reach Omni and workload-cluster apiservers, then the `automatron` container runs the playbook.
+
+All of automatron's own credentials (Tailscale OAuth client, plus its Infisical login, git deploy key, and Omni access reused from existing identities rather than newly minted — see CLAUDE.md for the full breakdown) live under Infisical folder `/k8s/automatron`.
+
+Ad hoc runs: `hsctl run <playbook> -e remote [--dry-run]` clones the relevant CronJob's `jobTemplate` into a one-off Job and streams its logs — see `hsctl run` in [Operations → hsctl](../operations/hsctl.md).
 
 ---
 

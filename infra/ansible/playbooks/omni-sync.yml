@@ -1,0 +1,65 @@
+---
+# Syncs every cluster template and machine class into Omni — the same work
+# .github/workflows/deploy.yaml's old `omni` job did directly with omnictl.
+# Idempotent reconciliation: always processes everything, no diff detection
+# (that's fine for both the 5-minute schedule and a PR dry-run check).
+- name: Sync Omni cluster templates and machine classes
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  vars:
+    dry_run: "{{ dry_run | default(false) | bool }}"
+    repo_root: "{{ playbook_dir }}/../../.."
+    omni_endpoint: "{{ lookup('env', 'OMNI_ENDPOINT') | default('https://REDACTED', true) }}"
+
+  environment:
+    OMNI_ENDPOINT: "{{ omni_endpoint }}"
+    OMNI_SERVICE_ACCOUNT_KEY: "{{ lookup('env', 'OMNI_SERVICE_ACCOUNT_KEY') }}"
+
+  tasks:
+    # ansible.builtin.find's recurse has no depth limit (unlike the old bash
+    # `find clusters -mindepth 2 -maxdepth 2`), which would wrongly pick up any
+    # cluster.yaml nested deeper than clusters/<name>/ and derive the wrong cluster
+    # name from it — a plain find call reproduces the exact original depth bound.
+    - name: Discover cluster templates
+      ansible.builtin.command:
+        cmd: "find {{ repo_root }}/clusters -mindepth 2 -maxdepth 2 -name cluster.yaml"
+      register: _cluster_find
+      changed_when: false
+
+    - name: Discover machine classes
+      ansible.builtin.find:
+        paths: "{{ repo_root }}/infra/omni/machineclasses"
+        patterns: "*.yaml"
+      register: _machineclass_files
+      ignore_errors: true
+
+    - name: Sync each cluster template
+      ansible.builtin.shell: |
+        set -euo pipefail
+        tmpdir=$(mktemp -d)
+        trap 'rm -rf "$tmpdir"' EXIT
+        cluster_name={{ (item | dirname | basename) | quote }}
+        CLUSTER_NAME="$cluster_name" envsubst '${CLUSTER_NAME}' < {{ item | quote }} > "$tmpdir/cluster.yaml"
+        mkdir -p "$tmpdir/patches"
+        for pf in {{ repo_root | quote }}/infra/omni/patches/*.yaml; do
+          [ -f "$pf" ] || continue
+          CLUSTER_NAME="$cluster_name" envsubst '${CLUSTER_NAME}' < "$pf" > "$tmpdir/patches/$(basename "$pf")"
+        done
+        omnictl cluster template sync -f "$tmpdir/cluster.yaml"{{ ' --dry-run' if dry_run else '' }}
+      args:
+        executable: /bin/bash
+      loop: "{{ _cluster_find.stdout_lines }}"
+      loop_control:
+        label: "{{ item | dirname | basename }}"
+      changed_when: true
+
+    - name: Apply each machine class
+      ansible.builtin.command:
+        cmd: "omnictl apply -f {{ item.path }}{{ ' --dry-run' if dry_run else '' }}"
+      loop: "{{ _machineclass_files.files | default([]) }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+      when: _machineclass_files.files is defined
+      changed_when: true

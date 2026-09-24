@@ -42,3 +42,15 @@ resource "infisical_secret" "k8s_operator_client_secret" {
   workspace_id = data.infisical_projects.homescale.id
   folder_path  = "/k8s/infisical"
 }
+
+// Automatron reuses this same k8s_operator identity for its own Infisical login
+// (see INFISICAL_OPERATOR_CLIENT_ID/SECRET above) rather than getting a dedicated
+// identity of its own — Infisical machine identities are billed per-identity.
+
+resource "infisical_secret" "automatron_project_id" {
+  name         = "INFISICAL_PROJECT_ID"
+  value        = data.infisical_projects.homescale.id
+  env_slug     = var.environment
+  workspace_id = data.infisical_projects.homescale.id
+  folder_path  = "/k8s/automatron"
+}

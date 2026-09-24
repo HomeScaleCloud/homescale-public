@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: automatron-omni-sync
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.automatron.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        {{- include "automatron.podTemplate" (dict "root" $ "playbook" "omni-sync" "chainNext" "automatron-bootstrap-cluster") | nindent 8 }}

@@ -14,16 +14,7 @@ on:
         required: true
       INFISICAL_PROJECT_ID:
         required: true
-  workflow_dispatch:
-    inputs:
-      playbook:
-        description: "Ansible playbook to run — 'bootstrap-mgmt', 'bootstrap-cluster', or any other playbook's filename (without .yml) under infra/ansible/playbooks/"
-        type: string
-        required: true
-      cluster:
-        description: "Cluster to target via -e target=<cluster> (bootstrap-cluster only; leave empty for all clusters)"
-        type: string
-        required: false
+  workflow_dispatch: {}
 
 concurrency:
   group: deploy
@@ -372,30 +363,44 @@ jobs:
           done
           [ "$failed" = "false" ]
 
-      - name: Sync
+      # From here on, the actual sync (state-changing, unlike the read-only Plan
+      # above) runs on automatron in mgmt rather than directly on this runner —
+      # dispatched the same way `hsctl run omni-sync -e remote` would be run by
+      # hand, so its logs stream straight into this job's log. Since omni-sync
+      # chains a bootstrap-cluster run on success (see apps/automatron), a push to
+      # main re-syncs Omni *and* re-bootstraps every cluster in one dispatch.
+      - name: Import mgmt kubeconfig
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
-        env:
-          OMNI_ENDPOINT: https://REDACTED
-          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
-        shell: bash
+        uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
+        with:
+          method: "oidc"
+          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          env-slug: "prod"
+          project-slug: "homescale"
+          secret-path: "/k8s/automatron"
+          export-type: env
+
+      - name: Install kubectl
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
         run: |
+          curl -fsSL -o /usr/local/bin/kubectl \
+            "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo chmod +x /usr/local/bin/kubectl
+
+      - name: Build mgmt kubeconfig context
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
+        run: | # pragma: allowlist secret
           set -euo pipefail
-          for mc in $(echo "$MACHINECLASSES" | jq -r '.[]'); do
-            echo "Applying machine class: $mc"
-            omnictl apply -f "infra/omni/machineclasses/$mc.yaml"
-          done
-          for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
-            echo "Syncing cluster: $cluster"
-            tmpdir=$(mktemp -d)
-            CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "clusters/$cluster/cluster.yaml" \
-              > "$tmpdir/cluster.yaml"
-            mkdir -p "$tmpdir/patches"
-            for pf in infra/omni/patches/*.yaml; do
-              CLUSTER_NAME="$cluster" envsubst '${CLUSTER_NAME}' < "$pf" > "$tmpdir/patches/$(basename "$pf")"
-            done
-            omnictl cluster template sync -f "$tmpdir/cluster.yaml"
-            rm -rf "$tmpdir"
-          done
+          echo "$MGMT_KUBECONFIG" > /tmp/mgmt-kubeconfig
+          export KUBECONFIG=/tmp/mgmt-kubeconfig
+          kubectl config rename-context "$(kubectl config current-context)" mgmt
+          echo "KUBECONFIG=/tmp/mgmt-kubeconfig" >> "$GITHUB_ENV"
+
+      - name: Sync via automatron
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
+        run: |
+          chmod +x hsctl
+          ./hsctl run omni-sync -e remote
 
       - name: Post plan results as PR comments
         if: always() && github.event_name == 'pull_request' && steps.detect.outcome == 'success' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]' || steps.detect.outputs.deleted_clusters != '[]' || steps.detect.outputs.deleted_machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
@@ -508,101 +513,3 @@ jobs:
         run: |
           echo "One or more cluster template plans failed. See PR comments for details."
           exit 1
-
-  ansible:
-    name: "Ansible"
-    runs-on: ubuntu-latest
-    needs: [omni]
-    if: github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-
-      - name: Import Secrets
-        uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
-        with:
-          method: "oidc"
-          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          env-slug: "prod"
-          project-slug: "homescale"
-          secret-path: "/github-actions"
-          export-type: env
-
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd  # v4.2.0
-        with:
-          oauth-client-id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ env.TAILSCALE_OAUTH_CLIENT_SECRET }}
-          tags: tag:github-actions
-
-      - name: Request OIDC Token
-        run: |
-          TOKEN=$(curl -s \
-            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL" \
-            | jq -r '.value')
-          echo "::add-mask::$TOKEN"
-          echo "INFISICAL_AUTH_JWT=$TOKEN" >> "$GITHUB_ENV"
-
-      - name: Install hsctl
-        run: |
-          chmod +x hsctl
-          echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
-
-      - name: Install Helm
-        run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
-      - name: Install Ansible
-        run: pip install ansible kubernetes infisicalsdk==1.0.17
-
-      - name: Install Ansible collections
-        working-directory: infra/ansible
-        run: ansible-galaxy collection install -r requirements.yml
-
-      - name: Run mgmt cluster bootstrap playbook
-        if: inputs.playbook == 'bootstrap-mgmt'
-        working-directory: infra/ansible
-        env:
-          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
-        run: ansible-playbook playbooks/bootstrap-mgmt.yml -e cluster_name=mgmt
-
-      - name: Install omnictl
-        if: inputs.playbook == 'bootstrap-cluster'
-        run: |
-          sudo curl -fsSL -o /usr/local/bin/omnictl \
-            https://REDACTED/api/omnictl/omnictl-linux-amd64
-          sudo chmod +x /usr/local/bin/omnictl
-
-      - name: Run cluster bootstrap playbook
-        if: inputs.playbook == 'bootstrap-cluster'
-        working-directory: infra/ansible
-        env:
-          OMNI_ENDPOINT: https://REDACTED
-          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
-          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
-          CLUSTER: ${{ inputs.cluster }}
-        run: |
-          if [ -n "$CLUSTER" ]; then
-            ansible-playbook playbooks/bootstrap-cluster.yml -e target="$CLUSTER"
-          else
-            ansible-playbook playbooks/bootstrap-cluster.yml
-          fi
-
-      # Fallback for any playbook under infra/ansible/playbooks/ other than the two above —
-      # e.g. one-off or future playbooks run via `hsctl run <name> --remote`.
-      - name: Run playbook
-        if: inputs.playbook != 'bootstrap-mgmt' && inputs.playbook != 'bootstrap-cluster'
-        working-directory: infra/ansible
-        env:
-          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
-          PLAYBOOK: ${{ inputs.playbook }}
-          CLUSTER: ${{ inputs.cluster }}
-        run: |
-          if [ -n "$CLUSTER" ]; then
-            ansible-playbook "playbooks/$PLAYBOOK.yml" -e target="$CLUSTER"
-          else
-            ansible-playbook "playbooks/$PLAYBOOK.yml"
-          fi
