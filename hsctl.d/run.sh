@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # hsctl run — run an Ansible playbook from infra/ansible/playbooks/, either locally or
 # remotely as a one-off Kubernetes Job on automatron (apps/automatron), the in-cluster
-# runner deployed to mgmt that also runs bootstrap-cluster on a 5-minute schedule.
+# runner deployed to mgmt that also runs bootstrap-cluster on a 15-minute schedule.
 #
 # `bootstrap-mgmt`/`bootstrap-cluster` are the built-in cluster bootstrap playbooks and get
 # special handling below — see "Local secrets" — but any other playbook name under

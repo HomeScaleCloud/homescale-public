@@ -96,7 +96,7 @@ Machines must be registered with Omni before they can be claimed here — see [R
        values:
          someKey: clusterSpecificValue
    ```
-4. **Merge to `main`** — CI runs the Omni template sync. Within 5 minutes, automatron's `bootstrap-cluster.yml` CronJob run picks up the new cluster automatically (or run it immediately with `hsctl run bootstrap-cluster --cluster <name> -e remote`). The bootstrap playbook applies `apps.yaml` to the new cluster and seeds critical credentials (Infisical machine identities, kubeconfig, etc.) that apps depend on at startup.
+4. **Merge to `main`** — CI runs the Omni template sync. Within 15 minutes, automatron's `bootstrap-cluster.yml` CronJob run picks up the new cluster automatically (or run it immediately with `hsctl run bootstrap-cluster --cluster <name> -e remote`). The bootstrap playbook applies `apps.yaml` to the new cluster and seeds critical credentials (Infisical machine identities, kubeconfig, etc.) that apps depend on at startup.
 
 5. **ArgoCD takes over** — it syncs the app catalog and deploys all enabled apps in sync-wave order
 

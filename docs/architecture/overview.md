@@ -176,7 +176,7 @@ Ansible cluster bootstrap (`bootstrap-mgmt.yml`/`bootstrap-cluster.yml`) no long
 
 `apps/automatron` is a Kubernetes-native runner deployed to `mgmt` that replaced the old GitHub Actions `ansible` job and the state-changing half of the `omni` job. Three CronJobs share one pod spec, one playbook each:
 
-- **`automatron-omni-sync`** — the only one on an active schedule (every 5 minutes). Runs `omni-sync.yml`, syncing every cluster template and machine class into Omni. On success, it chains a Job cloned from `automatron-bootstrap-cluster`'s template, so clusters always exist in Omni before that run starts.
+- **`automatron-omni-sync`** — the only one on an active schedule (every 15 minutes). Runs `omni-sync.yml`, syncing every cluster template and machine class into Omni. On success, it chains a Job cloned from `automatron-bootstrap-cluster`'s template, so clusters always exist in Omni before that run starts.
 - **`automatron-bootstrap-cluster`** — `suspend: true`. Only runs via that chain, or ad hoc — never on its own schedule.
 - **`automatron-bootstrap-mgmt`** — `suspend: true`, ad hoc only (mgmt itself changes rarely).
 

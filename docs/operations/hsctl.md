@@ -100,7 +100,7 @@ Runs an Ansible playbook from `infra/ansible/playbooks/` — the same ones [auto
 
 | Playbook | Effect |
 |----------|--------|
-| `omni-sync` | Syncs every cluster template and machine class into Omni. Runs automatically every 5 minutes — the only one of the three with an active schedule. On success (unless `--dry-run`), chains a `bootstrap-cluster` run afterward |
+| `omni-sync` | Syncs every cluster template and machine class into Omni. Runs automatically every 15 minutes — the only one of the three with an active schedule. On success (unless `--dry-run`), chains a `bootstrap-cluster` run afterward |
 | `bootstrap-cluster` | Bootstraps workload clusters — all of them, or one via `--cluster <name>` (its Omni cluster ID, e.g. `boa1-prod`); ignored for `bootstrap-mgmt`. Its CronJob is suspended — only ever runs via the chain above, or ad hoc |
 | `bootstrap-mgmt` | Bootstraps the mgmt-class cluster. Its CronJob is suspended too — ad hoc only, since mgmt changes rarely |
 | anything else | Runs `playbooks/<playbook>.yml` as-is; `--cluster` is passed through as `-e target=<name>` regardless of playbook. `-e remote` falls back to cloning `omni-sync`'s `jobTemplate` (without inheriting its chain-on-success) |
