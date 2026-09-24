@@ -38,13 +38,6 @@ spec:
               deploy: true
             omni:
               deploy: true
-              values:
-                omni:
-                  replicaCount: 0
-                volsync:
-                  restore:
-                    enabled: true
-                    sourceCluster: mgmt
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
