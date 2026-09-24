@@ -6,7 +6,7 @@ rules:
   - apiGroups: ["batch"]
     resources:
       - jobs
-    verbs: ["create", "delete"]
+    verbs: ["create", "delete", "get", "list"]
   - apiGroups: ["batch"]
     resources:
       - cronjobs

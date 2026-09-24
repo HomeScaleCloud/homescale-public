@@ -5,11 +5,12 @@
 # shape as hsctl run's local execution mode (hsctl.d/run.sh).
 #
 # CHAIN_NEXT_CRONJOB (optional): on success, clone that CronJob's jobTemplate into
-# a one-off Job in this pod's own namespace, using kubectl's in-cluster auth (this
-# pod's own ServiceAccount — see apps/rbac's job-operator binding for automatron).
-# Used so bootstrap-cluster's CronJob always runs after omni-sync's, without
-# relying on schedule offsets: omni-sync chains it, bootstrap-cluster's own
-# CronJob stays suspended (its jobTemplate is only ever cloned, never auto-fired).
+# a one-off, normally-timestamped Job in this pod's own namespace, using kubectl's
+# in-cluster auth (this pod's own ServiceAccount — see apps/rbac's job-operator
+# binding for automatron). Used so bootstrap-cluster's CronJob always runs after
+# omni-sync's, without relying on schedule offsets: omni-sync chains it,
+# bootstrap-cluster's own CronJob stays suspended (its jobTemplate is only ever
+# cloned, never auto-fired).
 set -euo pipefail
 
 REPO_DIR="${REPO_DIR:-/repo/current}"
@@ -47,24 +48,23 @@ ansible-playbook "$playbook_file" "${extra_args[@]}"
 
 if [[ -n "${CHAIN_NEXT_CRONJOB:-}" && "$DRY_RUN" != "true" ]]; then
     namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
-    # Fixed name (not timestamped) + ttlSecondsAfterFinished: the CronJob's own
+    # Timestamped name, matching every other Job in this app (CronJob-fired and
+    # hsctl's ad hoc ones) so `kubectl get jobs` shows what it's actually running.
     # concurrencyPolicy: Forbid only throttles CronJob-scheduled Jobs, not ones
-    # created this way, so without this a slow bootstrap-cluster run could still be
-    # going when the next omni-sync cycle tries to chain another one. With a fixed
-    # name, that kubectl create just hits AlreadyExists and this cycle skips
-    # chaining instead of running two concurrently; the TTL controller reaps a
-    # finished Job so the name frees up again for the next successful run to chain.
-    chain_job="automatron-sync"
-    echo "chaining into $CHAIN_NEXT_CRONJOB as Job $chain_job"
-    manifest=$(kubectl get cronjob "$CHAIN_NEXT_CRONJOB" -n "$namespace" -o json | \
-        jq --arg name "$chain_job" \
-           '{apiVersion: "batch/v1", kind: "Job", metadata: {name: $name, namespace: .metadata.namespace}, spec: (.spec.jobTemplate.spec + {ttlSecondsAfterFinished: 300})}')
-    if ! create_err=$(echo "$manifest" | kubectl create -f - 2>&1); then
-        if grep -q AlreadyExists <<< "$create_err"; then
-            echo "chained Job $chain_job already exists (still running from a previous cycle) — skipping"
-        else
-            echo "$create_err" >&2
-            exit 1
-        fi
+    # created this way, so a slow bootstrap-cluster run could still be going when
+    # the next omni-sync cycle tries to chain another one — guarded against below
+    # via a label instead of the old fixed-name/AlreadyExists trick.
+    chain_label="REDACTED/chained-from=$CHAIN_NEXT_CRONJOB"
+    active=$(kubectl get jobs -n "$namespace" -l "$chain_label" \
+        -o jsonpath='{range .items[?(@.status.active>0)]}{.metadata.name}{"\n"}{end}')
+    if [[ -n "$active" ]]; then
+        echo "a chained Job is already running ($active) — skipping"
+    else
+        chain_job="${CHAIN_NEXT_CRONJOB}-$(date +%s)"
+        echo "chaining into $CHAIN_NEXT_CRONJOB as Job $chain_job"
+        manifest=$(kubectl get cronjob "$CHAIN_NEXT_CRONJOB" -n "$namespace" -o json | \
+            jq --arg name "$chain_job" --arg src "$CHAIN_NEXT_CRONJOB" \
+               '{apiVersion: "batch/v1", kind: "Job", metadata: {name: $name, namespace: .metadata.namespace, labels: {"REDACTED/chained-from": $src}}, spec: (.spec.jobTemplate.spec + {ttlSecondsAfterFinished: 300})}')
+        echo "$manifest" | kubectl create -f -
     fi
 fi
