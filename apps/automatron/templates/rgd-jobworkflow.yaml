@@ -72,17 +72,23 @@ spec:
                       # Builds manifests with `jq -n` rather than heredocs — a heredoc's
                       # closing delimiter must sit at column 0 (or be tab-indented with
                       # <<-), which a shell script embedded in a YAML block scalar inside
-                      # a Helm template can't reliably guarantee.
+                      # a Helm template can't reliably guarantee. Also: no ${VAR}-braced
+                      # bash expansion anywhere in this script — kro's CEL substitution
+                      # scans the whole template text and misparses "${...}" as a CEL
+                      # expression regardless of what's actually inside it, wherever it
+                      # appears (confirmed live: "$WORKFLOW_NAME" broke exactly this way).
+                      # Bare $VAR is safe here since every use is immediately followed by
+                      # "-", which isn't a valid identifier character.
                       args:
                         - |
                           set -e
-                          run_name="${WORKFLOW_NAME}-run-$(date +%s)"
+                          run_name="$WORKFLOW_NAME-run-$(date +%s)"
                           step0=$(kubectl get jobworkflow "$WORKFLOW_NAME" -o json | jq -c '.spec.steps[0]')
                           jq -n --arg name "$run_name" --arg wf "$WORKFLOW_NAME" '
                             {apiVersion: "REDACTED/v1alpha1", kind: "JobWorkflowRun",
                              metadata: {name: $name, labels: {"REDACTED/workflow": $wf}},
                              spec: {workflowRef: $wf}}' | kubectl apply -f -
-                          echo "$step0" | jq --arg name "${run_name}-step0" --arg wf "$WORKFLOW_NAME" --arg run "$run_name" '
+                          echo "$step0" | jq --arg name "$run_name-step0" --arg wf "$WORKFLOW_NAME" --arg run "$run_name" '
                             {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
                              metadata: {name: $name, labels: {"REDACTED/workflow": $wf, "REDACTED/workflow-run": $run}},
                              spec: {templateRef: .templateRef, cluster: (.cluster // ""), dryRun: (.dryRun // false),
