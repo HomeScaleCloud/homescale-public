@@ -98,7 +98,7 @@ spec:
                     - name: git-ssh-key-fixed
                       mountPath: /fixed
                 - name: git-clone
-                  image: registry.k8s.io/git-sync/git-sync:v4.2.4
+                  image: registry.k8s.io/git-sync/git-sync:v4.7.1
                   args:
                     - --repo=git@github.com:HomeScaleCloud/homescale.git
                     - --ref=main
