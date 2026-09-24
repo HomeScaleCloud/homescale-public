@@ -1,9 +1,0 @@
-apiVersion: REDACTED/v1alpha1
-kind: JobWorkflow
-metadata:
-  name: omni-sync-and-bootstrap
-spec:
-  schedule: "*/15 * * * *"
-  steps:
-    - templateRef: omni-sync
-    - templateRef: bootstrap-cluster

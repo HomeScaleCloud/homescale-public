@@ -24,13 +24,10 @@ _run_cleanup() {
 trap _run_cleanup EXIT
 
 run_usage() {
-    echo "Usage: hsctl run <name> [--cluster <name>] [-e|--execution-mode local|remote] [--dry-run]"
+    echo "Usage: hsctl run <name> [--cluster <name>] [-e|--execution-mode local|remote] [--dry-run] [--chain <name>[,<name>...]]"
     echo ""
-    echo "In remote mode (default), <name> is the name of an AutomatronJobTemplate or"
-    echo "AutomatronJobWorkflow CR (see infra/automatron/job-templates/, infra/automatron/workflows/,"
-    echo "and CLAUDE.md's Automatron section) — hsctl checks JobTemplate first, then JobWorkflow."
-    echo "Running a workflow kicks off its first step; the remaining steps chain themselves on"
-    echo "success, same as a scheduled workflow run."
+    echo "In remote mode (default), <name> is the name of an AutomatronJobTemplate CR (see"
+    echo "infra/automatron/job-templates/ and CLAUDE.md's Automatron section)."
     echo ""
     echo "In local mode, <name> is any filename (without .yml) under infra/ansible/playbooks/, e.g.:"
     echo "  bootstrap-core      bootstrap the core cluster"
@@ -50,6 +47,13 @@ run_usage() {
     echo "                              automatron exists to dispatch to."
     echo "  --dry-run                   passed through as a dry-run override; only omni-sync acts"
     echo "                              on it today (adds --dry-run to its omnictl calls)"
+    echo "  --chain <name>[,...]        after <name> succeeds, run each of these in turn"
+    echo "                              (comma-separated, no spaces), stopping at the first failure."
+    echo "                              In -e remote mode this is the same mechanism a scheduled"
+    echo "                              JobTemplate's own spec.chain uses (see entrypoint.sh) —"
+    echo "                              each hop gets its own JobRun/Job, and this command follows"
+    echo "                              each one's pod logs in turn as they're created. In -e local"
+    echo "                              mode they just run sequentially against the same checkout."
     exit 1
 }
 
@@ -164,81 +168,12 @@ _run_local() {
     fi
 }
 
-_run_remote() {
-    local name="$1" cluster="$2" dry_run="$3"
-    local namespace="automatron"
-    local run_name="automatron-adhoc-${name}-$(date +%s)"
-
-    command -v kubectl &>/dev/null || { echo "hsctl run: kubectl is required" >&2; exit 1; }
-    command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
-
-    # A `core` context, if already present, is reused via explicit --context core below.
-    # Otherwise, authenticate via OIDC (hsctl get kubeconfig), which switches
-    # current-context as a side effect — restore it immediately after.
-    if ! kubectl config get-contexts -o name 2>/dev/null | grep -qx core; then
-        local prev_ctx
-        prev_ctx=$(kubectl config current-context 2>/dev/null || true)
-        # shellcheck source=/dev/null
-        source "$HSCTL_ROOT/hsctl.d/get.sh"
-        hsctl_log_info "no core context found — authenticating via OIDC"
-        get_kubeconfig core >/dev/null
-        [[ -n "$prev_ctx" ]] && kubectl config use-context "$prev_ctx" >/dev/null 2>&1
-    fi
-
-    # <name> is either a JobTemplate (run it directly) or a JobWorkflow (create a
-    # JobWorkflowRun + run its step 0 — the rest chains itself via entrypoint.sh on
-    # success, same as a scheduled workflow run). All 4 automatron CRDs are cluster-scoped
-    # (single automatron install per cluster, no per-namespace isolation needed), so none
-    # of these `kubectl get`/`create` calls take a `-n` — only the native Job/Pod calls
-    # further down do, since batch/v1 Job has no cluster-scoped form.
-    local template_ref="" workflow_ref="" workflow_run_ref="" workflow_step_index="-1"
-    local run_cluster="$cluster" run_dry_run="$dry_run"
-    if kubectl get jobtemplate "$name" --context core &>/dev/null; then
-        template_ref="$name"
-    elif kubectl get jobworkflow "$name" --context core &>/dev/null; then
-        local step0
-        step0=$(kubectl get jobworkflow "$name" --context core -o json | jq -c '.spec.steps[0] // empty')
-        [[ -z "$step0" ]] && { hsctl_log_error "workflow $name has no steps"; exit 1; }
-        template_ref=$(jq -r '.templateRef' <<<"$step0")
-        workflow_ref="$name"
-        workflow_step_index="0"
-        [[ -z "$run_cluster" ]] && run_cluster=$(jq -r '.cluster // ""' <<<"$step0")
-        [[ "$run_dry_run" != "true" ]] && run_dry_run=$(jq -r '.dryRun // false' <<<"$step0")
-
-        workflow_run_ref="${name}-run-$(date +%s)"
-        hsctl_log_action "creating JobWorkflowRun $workflow_run_ref (workflow=$name) on automatron"
-        jq -n --arg name "$workflow_run_ref" --arg wf "$name" '
-          {apiVersion: "REDACTED/v1alpha1", kind: "JobWorkflowRun",
-           metadata: {name: $name, labels: {"REDACTED/workflow": $wf}},
-           spec: {workflowRef: $wf}}' | kubectl create --context core -f -
-    else
-        hsctl_log_error "no such JobTemplate or JobWorkflow: $name (check: kubectl get jobtemplate,jobworkflow --context core)"
-        exit 1
-    fi
-
-    hsctl_log_action "creating JobRun $run_name (template=$template_ref${run_cluster:+, cluster=$run_cluster}${run_dry_run:+, dry_run=$run_dry_run}) on automatron"
-    jq -n --arg name "$run_name" --arg template "$template_ref" \
-        --arg cluster "$run_cluster" --argjson dryrun "$run_dry_run" \
-        --arg wf "$workflow_ref" --arg run "$workflow_run_ref" --argjson idx "$workflow_step_index" '
-      {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
-       metadata: {name: $name, labels: {"REDACTED/workflow": $wf, "REDACTED/workflow-run": $run}},
-       spec: {templateRef: $template, cluster: $cluster, dryRun: $dryrun,
-              workflowRef: $wf, workflowRunRef: $run, workflowStepIndex: $idx}}' \
-        | kubectl create --context core -f -
-
-    hsctl_log_info "waiting for Automatron to materialize the Job..."
-    local attempt job_name=""
-    for attempt in $(seq 1 30); do
-        job_name=$(kubectl get jobrun "$run_name" --context core \
-            -o jsonpath='{.status.jobName}' 2>/dev/null) || true
-        [[ -n "$job_name" ]] && break
-        sleep 2
-    done
-
-    if [[ -z "$job_name" ]]; then
-        hsctl_log_error "JobRun $run_name never produced a Job — check: kubectl describe jobrun $run_name --context core"
-        exit 1
-    fi
+# _run_stream_job <job_name> <namespace> — wait for the Job's pod, stream its logs, wait
+# for the Job to finish. Returns 0 on success, 1 on failure/timeout (with an error already
+# logged) — never exits itself, so callers streaming a chain of jobs can stop at whichever
+# one actually failed rather than the whole function call stack unwinding silently.
+_run_stream_job() {
+    local job_name="$1" namespace="$2"
 
     hsctl_log_info "waiting for the pod to appear..."
     local attempt pod=""
@@ -251,7 +186,7 @@ _run_remote() {
 
     if [[ -z "$pod" ]]; then
         hsctl_log_error "pod never appeared — check: kubectl get pods -n $namespace --context core -l job-name=$job_name"
-        exit 1
+        return 1
     fi
 
     # `kubectl logs -f` errors immediately if called before the container has started
@@ -267,7 +202,7 @@ _run_remote() {
 
     if [[ "$started" != "true" ]]; then
         hsctl_log_error "automatron container never started — check: kubectl describe pod $pod -n $namespace --context core"
-        exit 1
+        return 1
     fi
 
     # kubecolor, if present, colorizes this like an interactive `kubectl logs` would;
@@ -290,13 +225,104 @@ _run_remote() {
 
     if [[ "$succeeded" != "1" ]]; then
         hsctl_log_error "job $job_name did not succeed — check: kubectl describe job $job_name -n $namespace --context core"
-        exit 1
+        return 1
     fi
     hsctl_log_success "job $job_name completed"
 }
 
+# _run_wait_for_chained_job <chain_root> <template> <namespace> — poll for the Job that
+# entrypoint.sh's chaining creates for <template> as part of the chain rooted at
+# <chain_root> (see rgd-jobrun.yaml's chain-root/template labels), printing its name on
+# stdout once found. Playbooks can take a while, so this waits up to ~2 minutes.
+_run_wait_for_chained_job() {
+    local chain_root="$1" template="$2" namespace="$3"
+    local attempt job_name=""
+    for attempt in $(seq 1 60); do
+        job_name=$(kubectl get jobs -n "$namespace" --context core \
+            -l "REDACTED/chain-root=$chain_root,REDACTED/template=$template" \
+            -o jsonpath='{.items[0].metadata.name}' 2>/dev/null) || true
+        [[ -n "$job_name" ]] && { echo "$job_name"; return 0; }
+        sleep 2
+    done
+    return 1
+}
+
+_run_remote() {
+    local name="$1" cluster="$2" dry_run="$3" chain_raw="$4"
+    local namespace="automatron"
+    local run_name="automatron-adhoc-${name}-$(date +%s)"
+
+    command -v kubectl &>/dev/null || { echo "hsctl run: kubectl is required" >&2; exit 1; }
+    command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
+
+    # A `core` context, if already present, is reused via explicit --context core below.
+    # Otherwise, authenticate via OIDC (hsctl get kubeconfig), which switches
+    # current-context as a side effect — restore it immediately after.
+    if ! kubectl config get-contexts -o name 2>/dev/null | grep -qx core; then
+        local prev_ctx
+        prev_ctx=$(kubectl config current-context 2>/dev/null || true)
+        # shellcheck source=/dev/null
+        source "$HSCTL_ROOT/hsctl.d/get.sh"
+        hsctl_log_info "no core context found — authenticating via OIDC"
+        get_kubeconfig core >/dev/null
+        [[ -n "$prev_ctx" ]] && kubectl config use-context "$prev_ctx" >/dev/null 2>&1
+    fi
+
+    # JobTemplate/JobRun are cluster-scoped (single automatron install per cluster, no
+    # per-namespace isolation needed), so these `kubectl get`/`create` calls take no `-n`
+    # — only the native Job/Pod calls in _run_stream_job do.
+    kubectl get jobtemplate "$name" --context core &>/dev/null || {
+        hsctl_log_error "no such JobTemplate: $name (check: kubectl get jobtemplate --context core)"
+        exit 1
+    }
+
+    hsctl_log_action "creating JobRun $run_name (template=$name${cluster:+, cluster=$cluster}${dry_run:+, dry_run=$dry_run}${chain_raw:+, chain=$chain_raw}) on automatron"
+    jq -n --arg name "$run_name" --arg template "$name" --arg cluster "$cluster" \
+        --argjson dryrun "$dry_run" --arg chain "$chain_raw" '
+      {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
+       metadata: {name: $name},
+       spec: {templateRef: $template, cluster: $cluster, dryRun: $dryrun, chain: $chain}}' \
+        | kubectl create --context core -f -
+
+    hsctl_log_info "waiting for Automatron to materialize the Job..."
+    local attempt job_name=""
+    for attempt in $(seq 1 30); do
+        job_name=$(kubectl get jobrun "$run_name" --context core \
+            -o jsonpath='{.status.jobName}' 2>/dev/null) || true
+        [[ -n "$job_name" ]] && break
+        sleep 2
+    done
+
+    if [[ -z "$job_name" ]]; then
+        hsctl_log_error "JobRun $run_name never produced a Job — check: kubectl describe jobrun $run_name --context core"
+        exit 1
+    fi
+
+    _run_stream_job "$job_name" "$namespace" || exit 1
+
+    # --chain: entrypoint.sh's own chaining creates the next hop's JobRun one at a time
+    # (same mechanism a scheduled JobTemplate's spec.chain uses) — this run's own JobRun
+    # name is the chain root (rgd-jobrun.yaml defaults spec.chainRoot to it when unset),
+    # so follow along and stream each subsequent hop's logs too as they appear.
+    if [[ -n "$chain_raw" ]]; then
+        local chain_templates=() next_template
+        local IFS=','
+        read -r -a chain_templates <<< "$chain_raw"
+        unset IFS
+        for next_template in "${chain_templates[@]}"; do
+            hsctl_log_info "waiting for chained JobRun (template=$next_template)..."
+            job_name=$(_run_wait_for_chained_job "$run_name" "$next_template" "$namespace") || {
+                hsctl_log_error "no Job appeared for chained template $next_template (chain root: $run_name) — check: kubectl get jobs -l REDACTED/chain-root=$run_name --context core"
+                exit 1
+            }
+            _run_stream_job "$job_name" "$namespace" || exit 1
+        done
+    fi
+}
+
 run_main() {
     local playbook="" cluster="" mode="remote" dry_run="false" playbook_set=false
+    local chain_raw=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -306,6 +332,9 @@ run_main() {
                 [[ "$mode" != "local" && "$mode" != "remote" ]] && run_usage
                 shift 2 ;;
             --dry-run) dry_run="true"; shift ;;
+            --chain)
+                chain_raw="${2:-}"; [[ -z "$chain_raw" ]] && run_usage
+                shift 2 ;;
             -h|--help) run_usage ;;
             --*) echo "hsctl run: unknown flag '$1'" >&2; run_usage ;;
             *)
@@ -323,8 +352,17 @@ run_main() {
     fi
 
     if [[ "$mode" == "remote" ]]; then
-        _run_remote "$playbook" "$cluster" "$dry_run"
+        _run_remote "$playbook" "$cluster" "$dry_run" "$chain_raw"
     else
-        _run_local "$playbook" "$cluster" "$dry_run" "$local_repo_root"
+        local chain_templates=() p
+        if [[ -n "$chain_raw" ]]; then
+            local IFS=','
+            read -r -a chain_templates <<< "$chain_raw"
+            unset IFS
+        fi
+        for p in "$playbook" "${chain_templates[@]:-}"; do
+            [[ -z "$p" ]] && continue
+            _run_local "$p" "$cluster" "$dry_run" "$local_repo_root"
+        done
     fi
 }

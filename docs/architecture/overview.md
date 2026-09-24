@@ -122,7 +122,7 @@ Talos clusters have their node config, k8s version, and machine assignments mana
 | -40 | `cilium` | CNI must be ready before any other pod can schedule |
 | -35 | `infisical`, `multus` | Secrets operator must be ready so other apps can pull secrets; Multus for multi-homed pods |
 | -30 | `cert-manager`, `argocd`, `rbac` | TLS, GitOps and access control |
-| -25 | `generic-device-plugin-tun`, `node-inotify-limits`, `kro` | Node resource registration and sysctl tuning before consumers; kro's CRDs must exist before automatron's JobTemplate/JobRun/JobWorkflow instances |
+| -25 | `generic-device-plugin-tun`, `node-inotify-limits`, `kro` | Node resource registration and sysctl tuning before consumers; kro's CRDs must exist before automatron's JobTemplate/JobRun instances |
 | -20 | `tailscale`, `spegel` | Mesh access and network routing before services need them |
 | -10 | `external-dns`, `kubelet-serving-cert-approver` | DNS registration before apps |
 | -5 | `volsync` | Backup operator ready before app PVCs need it |
@@ -164,7 +164,7 @@ Runs on every PR and push to `main` (after `scan` and `build` pass), serialized 
 Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files. First checks that Omni is reachable (`REDACTED/healthz`) — if it isn't, the plan/sync steps are skipped entirely rather than failing.
 
 - **On PR**: dry-runs each changed cluster template and machine class with `omnictl ... --dry-run` directly on the runner, posts results as PR comments — unchanged, read-only and diff-scoped, so it isn't worth routing through automatron
-- **On merge to `main`**: builds a `core` kubectl context from `CORE_KUBECONFIG` and runs `./hsctl run omni-sync -e remote` followed by `./hsctl run bootstrap-cluster -e remote` — the actual sync and bootstrap now happen on automatron (see below), with their logs streamed into this job's log instead of running `omnictl`/Ansible on the runner directly
+- **On merge to `main`**: builds a `core` kubectl context from `CORE_KUBECONFIG` and runs `./hsctl run omni-sync --chain bootstrap-cluster -e remote` — the actual sync and bootstrap now happen on automatron (see below), with both steps' logs streamed into this job's log in turn instead of running `omnictl`/Ansible on the runner directly
 
 Shared Talos patches from `infra/omni/patches/` are applied alongside each cluster template.
 
@@ -174,19 +174,20 @@ Ansible cluster bootstrap (`bootstrap-core.yml`/`bootstrap-cluster.yml`) no long
 
 ## Automatron — kro-backed job runner
 
-`apps/automatron` is a Kubernetes-native runner deployed to `core` that replaced the old GitHub Actions `ansible` job and the state-changing half of the `omni` job. What it runs — a playbook from `infra/ansible/playbooks/`, or an arbitrary script — is defined by CRDs rather than hand-written CronJobs, backed by [kro](https://kro.run) (`apps/kro`):
+`apps/automatron` is a Kubernetes-native runner deployed to `core` that replaced the old GitHub Actions `ansible` job and the state-changing half of the `omni` job. What it runs — a playbook from `infra/ansible/playbooks/`, or an arbitrary script — is defined by two CRDs rather than hand-written CronJobs, backed by [kro](https://kro.run) (`apps/kro`):
 
-- **`JobTemplate`** — one playbook or script, optionally scheduled (kro creates a `CronJob` when it is).
-- **`JobRun`** — a one-off instance of a `JobTemplate`; the only path a one-off `Job` is ever created through, whether committed, triggered ad hoc via `hsctl`, or chained by a workflow.
-- **`JobWorkflow`** — an ordered list of `JobTemplate` refs; steps run one after another, chained by automatron itself on success.
+- **`JobTemplate`** — one playbook or script, optionally scheduled (kro creates a `CronJob` when it is) and/or chained (`spec.chain`, a comma-separated list of `JobTemplate` names to run next on success).
+- **`JobRun`** — a one-off instance of a `JobTemplate`; the only path a one-off `Job` is ever created through, whether committed, triggered ad hoc via `hsctl`, or created by a chain hop.
 
-Instances live under `infra/automatron/` (`job-templates/`, `workflows/`, `job-runs/`, `scripts/`), synced straight onto the cluster — no Helm chart to edit to add a new job. The default set migrated from the old setup: `omni-sync` and `bootstrap-cluster` templates plus an `omni-sync-and-bootstrap` workflow (runs both, every 15 minutes) and a standalone `bootstrap-core` template (ad hoc only, core changes rarely).
+A chain walks one hop at a time — automatron creates the next `JobRun` itself on success, carrying the rest of the chain forward — rather than being a separate object kro manages up front.
+
+Instances live under `infra/automatron/` (`job-templates/`, `job-runs/`, `scripts/`), synced by their own standalone ArgoCD Application (independent of the rest of `core`'s bootstrap, so a not-yet-registered CRD can't block anything else's sync) — no Helm chart to edit to add a new job. The default set migrated from the old setup: `omni-sync` (scheduled every 15 minutes, chains into `bootstrap-cluster`), `bootstrap-cluster`, and `bootstrap-core` (both ad hoc only).
 
 Each run: a `git-key-prep` initContainer (root, to read the mounted deploy key) preps it for a non-root `git-clone` to check out `main`, then the `automatron` container (also non-root) runs the playbook or script. No Tailscale anywhere — Omni lives in the same `core` cluster, so automatron reaches it entirely in-cluster via `hostAliases` pointing the usual `REDACTED` hostnames at Omni's real ClusterIPs.
 
 All of automatron's own credentials (Infisical login, git deploy key, and Omni access, all reused from existing identities rather than newly minted — see CLAUDE.md for the full breakdown) live under Infisical folder `/k8s/automatron`.
 
-Ad hoc runs: `hsctl run <name> -e remote [--dry-run] [--cluster <name>]` applies a `JobRun` CR and streams the resulting `Job`'s logs — see `hsctl run` and "Automatron job CRDs" in [Operations → hsctl](../operations/hsctl.md).
+Ad hoc runs: `hsctl run <name> [--chain <name>[,...]] -e remote [--dry-run] [--cluster <name>]` applies a `JobRun` CR and streams the resulting `Job`'s logs (following each chained hop's logs too, if `--chain` is given) — see `hsctl run` and "Automatron job CRDs" in [Operations → hsctl](../operations/hsctl.md).
 
 ---
 

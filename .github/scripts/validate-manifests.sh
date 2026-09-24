@@ -23,7 +23,7 @@ CRD_CATALOG='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Gro
 # none), the slinky.slurm.net CRs from apps/slurm — too new/niche for
 # datreeio's CRDs-catalog — and REDACTED's kro-generated CRDs
 # (repo-local, will never appear in a public catalog).
-NO_SCHEMA_OK=(CustomResourceDefinition Controller NodeSet RestApi Accounting LoginSet JobTemplate JobRun JobWorkflow JobWorkflowRun)
+NO_SCHEMA_OK=(CustomResourceDefinition Controller NodeSet RestApi Accounting LoginSet JobTemplate JobRun)
 
 # Kinds whose catalog schema is known wrong for the chart version we pin (revisit
 # on bump). ImageUpdater: datreeio's schema marks fields required that

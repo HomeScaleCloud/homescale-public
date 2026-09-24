@@ -14,10 +14,8 @@ rules:
   - apiGroups: ["REDACTED"]
     resources:
       - jobruns
-      - jobworkflowruns
     verbs: ["create", "get", "list"]
   - apiGroups: ["REDACTED"]
     resources:
       - jobtemplates
-      - jobworkflows
     verbs: ["get", "list"]

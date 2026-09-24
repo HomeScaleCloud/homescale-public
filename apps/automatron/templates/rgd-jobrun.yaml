@@ -1,14 +1,14 @@
 # Defines the AutomatronJobRun CRD (REDACTED/v1alpha1, kind JobRun):
 # a one-off instance of a JobTemplate. This is the *only* place a one-off Job gets
 # created from a JobTemplate — a human commits one under infra/automatron/job-runs/,
-# `hsctl run <template> -e remote` creates one ad hoc, and a JobWorkflow's step-chaining
-# (see apps/automatron/entrypoint.sh) creates one for each step after the first.
+# `hsctl run <template> [--chain ...] -e remote` creates one ad hoc, and chaining
+# (see apps/automatron/entrypoint.sh) creates one for each subsequent hop.
 #
-# workflowRef/workflowRunRef/workflowStepIndex are not user-facing — they're set only by
-# the code that creates a JobRun as part of a workflow (the JobWorkflow RGD's kickoff
-# container, or entrypoint.sh's chaining — see rgd-jobworkflow.yaml) so the resulting Job
-# carries enough context to continue the workflow on success, and so this JobRun (and its
-# Job) can be found by JobWorkflowRun's status aggregation via the workflow-run label.
+# chain/chainRoot are mostly not user-facing (chain is, for a hand-committed "run this,
+# then that" JobRun; chainRoot isn't) — see rgd-jobtemplate.yaml's spec.chain comment for
+# the full mechanism. chainRoot defaults to this JobRun's own name when unset, so the
+# first hop of a chain doesn't need to set it explicitly; entrypoint.sh threads the
+# actual root name through CHAIN_ROOT for every hop after that.
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
@@ -20,15 +20,34 @@ spec:
     kind: JobRun
     group: REDACTED
     scope: Cluster
+    additionalPrinterColumns:
+      - name: Template
+        type: string
+        jsonPath: .spec.templateRef
+      - name: Cluster
+        type: string
+        jsonPath: .spec.cluster
+      - name: Chain
+        type: string
+        jsonPath: .spec.chain
+      - name: Job
+        type: string
+        jsonPath: .status.jobName
+      - name: Phase
+        type: string
+        jsonPath: .status.phase
+      - name: Age
+        type: date
+        jsonPath: .metadata.creationTimestamp
     spec:
       templateRef: string
       cluster: string | default=""
       dryRun: boolean | default=false
-      workflowRef: string | default=""
-      workflowRunRef: string | default=""
-      workflowStepIndex: integer | default=-1
+      chain: string | default=""
+      chainRoot: string | default=""
     status:
       jobName: '${job.?metadata.name}'
+      phase: '${job.?status.succeeded.orValue(0) == 1 ? "Succeeded" : (job.?status.failed.orValue(0) > 0 ? "Failed" : (job.?status.active.orValue(0) > 0 ? "Running" : "Pending"))}'
   resources:
     # Dynamic name lookup (CEL over schema.spec) — see CLAUDE.md's Automatron section
     # for the fallback if this doesn't resolve: JobRun carrying its own playbook/script
@@ -48,8 +67,8 @@ spec:
           namespace: {{ .Release.Namespace }}
           labels:
             app: automatron
-            REDACTED/workflow: '${schema.spec.workflowRef}'
-            REDACTED/workflow-run: '${schema.spec.workflowRunRef}'
+            REDACTED/template: '${schema.spec.templateRef}'
+            REDACTED/chain-root: '${schema.spec.chainRoot != "" ? schema.spec.chainRoot : schema.metadata.name}'
         spec:
           backoffLimit: 0
           template:
@@ -132,12 +151,10 @@ spec:
                       value: '${string(schema.spec.dryRun)}'
                     - name: REPO_DIR
                       value: /repo/current
-                    - name: WORKFLOW_NAME
-                      value: '${schema.spec.workflowRef}'
-                    - name: WORKFLOW_RUN_NAME
-                      value: '${schema.spec.workflowRunRef}'
-                    - name: WORKFLOW_STEP_INDEX
-                      value: '${string(schema.spec.workflowStepIndex)}'
+                    - name: CHAIN_JOBS
+                      value: '${schema.spec.chain}'
+                    - name: CHAIN_ROOT
+                      value: '${schema.spec.chainRoot != "" ? schema.spec.chainRoot : schema.metadata.name}'
                   envFrom:
                     - secretRef:
                         name: automatron-secrets

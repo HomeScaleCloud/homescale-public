@@ -362,11 +362,9 @@ jobs:
           [ "$failed" = "false" ]
 
       # From here on, the actual sync runs on automatron in core rather than on this
-      # runner, dispatched as `hsctl run omni-sync -e remote` and
-      # `hsctl run bootstrap-cluster -e remote` would be by hand, with their logs
-      # streamed into this job's log. Run as two explicit hsctl calls (not the
-      # omni-sync-and-bootstrap JobWorkflow's own chaining, which is fire-and-forget)
-      # so this job blocks on and surfaces both steps' logs/failures, not just the first.
+      # runner, dispatched as `hsctl run omni-sync --chain bootstrap-cluster -e remote`
+      # would be by hand — hsctl follows and streams both steps' logs into this job's
+      # log in turn, and fails this job if either one fails.
       - name: Import core kubeconfig
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
         uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
@@ -398,8 +396,7 @@ jobs:
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
         run: |
           chmod +x hsctl
-          ./hsctl run omni-sync -e remote
-          ./hsctl run bootstrap-cluster -e remote
+          ./hsctl run omni-sync --chain bootstrap-cluster -e remote
 
       - name: Post plan results as PR comments
         if: always() && github.event_name == 'pull_request' && steps.detect.outcome == 'success' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]' || steps.detect.outputs.deleted_clusters != '[]' || steps.detect.outputs.deleted_machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
