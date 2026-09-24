@@ -214,10 +214,9 @@ _run_remote() {
         exit 1
     fi
 
-    # The automatron container sits behind the git-clone initContainer and the
-    # tailscale sidecar's startupProbe (up to ~120s) before it starts — `kubectl logs
-    # -f` errors out immediately rather than waiting if called before then, so poll
-    # until it's actually running.
+    # The automatron container sits behind the git-key-prep/git-clone initContainers
+    # — `kubectl logs -f` errors out immediately rather than waiting if called before
+    # it's actually started, so poll until it is.
     hsctl_log_info "waiting for the automatron container to start..."
     local started=""
     for attempt in $(seq 1 60); do
@@ -232,7 +231,14 @@ _run_remote() {
         exit 1
     fi
 
-    kubectl logs -f "$pod" -c automatron -n "$namespace" --context mgmt
+    # kubecolor (if the caller has it — an interactive-shell tool, not assumed on
+    # PATH e.g. in CI) colorizes this the same way `kubectl logs` would look run
+    # by hand; every other kubectl call above parses structured output (json/
+    # jsonpath) and must stay plain, since injected ANSI codes there breaks
+    # parsing rather than just being cosmetic.
+    local log_cmd="kubectl"
+    command -v kubecolor &>/dev/null && log_cmd="kubecolor"
+    "$log_cmd" logs -f "$pod" -c automatron -n "$namespace" --context mgmt
 
     local status
     status=$(kubectl get job "$job_name" -n "$namespace" --context mgmt \

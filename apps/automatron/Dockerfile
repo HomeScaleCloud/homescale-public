@@ -32,5 +32,11 @@ RUN chmod +x /entrypoint.sh
 RUN useradd --create-home --uid 1000 --shell /usr/sbin/nologin automatron
 USER automatron
 ENV HOME=/home/automatron
+# Python fully-buffers stdout when it isn't a TTY (as in a container), so without
+# this `kubectl logs -f` only sees output in one dump at exit instead of live.
+# ANSIBLE_FORCE_COLOR keeps ansible's own OK/CHANGED/FAILED coloring, which it
+# otherwise also disables when stdout isn't a TTY.
+ENV PYTHONUNBUFFERED=1
+ENV ANSIBLE_FORCE_COLOR=1
 
 ENTRYPOINT ["/entrypoint.sh"]
