@@ -27,6 +27,12 @@ spec:
   initContainers:
     - name: git-clone
       image: registry.k8s.io/git-sync/git-sync:v4.2.4
+      # Secret-mounted files are root-owned with mode 0600 — sshd's strict key-perm
+      # check requires exactly that (no group/other bits), which also means only
+      # root can actually read it; git-sync's image otherwise runs as a non-root
+      # UID by default and gets "Permission denied" loading the key.
+      securityContext:
+        runAsUser: 0
       args:
         - --repo=git@github.com:HomeScaleCloud/homescale.git
         - --ref=main
