@@ -122,7 +122,7 @@ Talos clusters have their node config, k8s version, and machine assignments mana
 | -40 | `cilium` | CNI must be ready before any other pod can schedule |
 | -35 | `infisical`, `multus` | Secrets operator must be ready so other apps can pull secrets; Multus for multi-homed pods |
 | -30 | `cert-manager`, `argocd`, `rbac` | TLS, GitOps and access control |
-| -25 | `generic-device-plugin-tun`, `node-inotify-limits` | Node resource registration and sysctl tuning before consumers |
+| -25 | `generic-device-plugin-tun`, `node-inotify-limits`, `kro` | Node resource registration and sysctl tuning before consumers; kro's CRDs must exist before automatron's JobTemplate/JobRun/JobWorkflow instances |
 | -20 | `tailscale`, `spegel` | Mesh access and network routing before services need them |
 | -10 | `external-dns`, `kubelet-serving-cert-approver` | DNS registration before apps |
 | -5 | `volsync` | Backup operator ready before app PVCs need it |
@@ -164,27 +164,29 @@ Runs on every PR and push to `main` (after `scan` and `build` pass), serialized 
 Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files. First checks that Omni is reachable (`REDACTED/healthz`) — if it isn't, the plan/sync steps are skipped entirely rather than failing.
 
 - **On PR**: dry-runs each changed cluster template and machine class with `omnictl ... --dry-run` directly on the runner, posts results as PR comments — unchanged, read-only and diff-scoped, so it isn't worth routing through automatron
-- **On merge to `main`**: builds a `core` kubectl context from `CORE_KUBECONFIG` and runs `./hsctl run omni-sync -e remote` — the actual sync now happens on automatron (see below), with its logs streamed into this job's log instead of running `omnictl` on the runner directly
+- **On merge to `main`**: builds a `core` kubectl context from `CORE_KUBECONFIG` and runs `./hsctl run omni-sync -e remote` followed by `./hsctl run bootstrap-cluster -e remote` — the actual sync and bootstrap now happen on automatron (see below), with their logs streamed into this job's log instead of running `omnictl`/Ansible on the runner directly
 
 Shared Talos patches from `infra/omni/patches/` are applied alongside each cluster template.
 
-Ansible cluster bootstrap (`bootstrap-core.yml`/`bootstrap-cluster.yml`) no longer runs here at all — see [Automatron](#automatron--ansible-cluster-bootstrap--omni-sync) below.
+Ansible cluster bootstrap (`bootstrap-core.yml`/`bootstrap-cluster.yml`) no longer runs here at all — see [Automatron](#automatron--kro-backed-job-runner) below.
 
 ---
 
-## Automatron — Ansible cluster bootstrap + Omni sync
+## Automatron — kro-backed job runner
 
-`apps/automatron` is a Kubernetes-native runner deployed to `core` that replaced the old GitHub Actions `ansible` job and the state-changing half of the `omni` job. Three CronJobs share one pod spec, one playbook each:
+`apps/automatron` is a Kubernetes-native runner deployed to `core` that replaced the old GitHub Actions `ansible` job and the state-changing half of the `omni` job. What it runs — a playbook from `infra/ansible/playbooks/`, or an arbitrary script — is defined by CRDs rather than hand-written CronJobs, backed by [kro](https://kro.run) (`apps/kro`):
 
-- **`automatron-omni-sync`** — the only one on an active schedule (every 15 minutes). Runs `omni-sync.yml`, syncing every cluster template and machine class into Omni. On success, it chains a Job cloned from `automatron-bootstrap-cluster`'s template, so clusters always exist in Omni before that run starts.
-- **`automatron-bootstrap-cluster`** — `suspend: true`. Only runs via that chain, or ad hoc — never on its own schedule.
-- **`automatron-bootstrap-core`** — `suspend: true`, ad hoc only (core itself changes rarely).
+- **`JobTemplate`** — one playbook or script, optionally scheduled (kro creates a `CronJob` when it is).
+- **`JobRun`** — a one-off instance of a `JobTemplate`; the only path a one-off `Job` is ever created through, whether committed, triggered ad hoc via `hsctl`, or chained by a workflow.
+- **`JobWorkflow`** — an ordered list of `JobTemplate` refs; steps run one after another, chained by automatron itself on success.
 
-Each run: a `git-key-prep` initContainer (root, to read the mounted deploy key) preps it for a non-root `git-clone` to check out `main`, then the `automatron` container (also non-root) runs the playbook. No Tailscale anywhere — Omni lives in the same `core` cluster, so automatron reaches it entirely in-cluster via `hostAliases` pointing the usual `REDACTED` hostnames at Omni's real ClusterIPs.
+Instances live under `infra/automatron/` (`job-templates/`, `workflows/`, `job-runs/`, `scripts/`), synced straight onto the cluster — no Helm chart to edit to add a new job. The default set migrated from the old setup: `omni-sync` and `bootstrap-cluster` templates plus an `omni-sync-and-bootstrap` workflow (runs both, every 15 minutes) and a standalone `bootstrap-core` template (ad hoc only, core changes rarely).
+
+Each run: a `git-key-prep` initContainer (root, to read the mounted deploy key) preps it for a non-root `git-clone` to check out `main`, then the `automatron` container (also non-root) runs the playbook or script. No Tailscale anywhere — Omni lives in the same `core` cluster, so automatron reaches it entirely in-cluster via `hostAliases` pointing the usual `REDACTED` hostnames at Omni's real ClusterIPs.
 
 All of automatron's own credentials (Infisical login, git deploy key, and Omni access, all reused from existing identities rather than newly minted — see CLAUDE.md for the full breakdown) live under Infisical folder `/k8s/automatron`.
 
-Ad hoc runs: `hsctl run <playbook> -e remote [--dry-run]` clones the relevant CronJob's `jobTemplate` into a one-off Job and streams its logs — see `hsctl run` in [Operations → hsctl](../operations/hsctl.md).
+Ad hoc runs: `hsctl run <name> -e remote [--dry-run] [--cluster <name>]` applies a `JobRun` CR and streams the resulting `Job`'s logs — see `hsctl run` and "Automatron job CRDs" in [Operations → hsctl](../operations/hsctl.md).
 
 ---
 

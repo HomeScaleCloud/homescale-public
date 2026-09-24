@@ -20,14 +20,17 @@ KUBERNETES_VERSION="${KUBERNETES_VERSION:-1.34.0}"
 CRD_CATALOG='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
 
 # Kinds allowed to have no schema: CustomResourceDefinition (kubeconform ships
-# none), plus the slinky.slurm.net CRs from apps/slurm — too new/niche for
-# datreeio's CRDs-catalog.
-NO_SCHEMA_OK=(CustomResourceDefinition Controller NodeSet RestApi Accounting LoginSet)
+# none), the slinky.slurm.net CRs from apps/slurm — too new/niche for
+# datreeio's CRDs-catalog — and REDACTED's kro-generated CRDs
+# (repo-local, will never appear in a public catalog).
+NO_SCHEMA_OK=(CustomResourceDefinition Controller NodeSet RestApi Accounting LoginSet JobTemplate JobRun JobWorkflow JobWorkflowRun)
 
 # Kinds whose catalog schema is known wrong for the chart version we pin (revisit
 # on bump). ImageUpdater: datreeio's schema marks fields required that
-# argocd-image-updater 1.3.1's actual CRD doesn't.
-KNOWN_BAD_SCHEMA=(ImageUpdater)
+# argocd-image-updater 1.3.1's actual CRD doesn't. ResourceGraphDefinition:
+# datreeio's schema is stale for kro 0.9.4 — missing spec.schema.scope (and
+# shortNames/categories), and sets additionalProperties: false so it hard-rejects them.
+KNOWN_BAD_SCHEMA=(ImageUpdater ResourceGraphDefinition)
 
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
@@ -124,6 +127,23 @@ for cluster_dir in clusters/*/; do
     fi
 
     bootstrap_name="$(yq e '.metadata.name' "$apps_yaml")"
+
+    # Raw `directory` sources (clusters/<cluster>/ itself, and anything else synced
+    # straight from git with no Helm rendering, e.g. infra/automatron/'s job/workflow
+    # CRs) aren't covered by the catalog/per-app render below, so conform them directly —
+    # every *.yaml/*.yml under the source path, minus its own `directory.exclude` file.
+    while IFS= read -r dir_path; do
+        [[ -n "$dir_path" && -d "$dir_path" ]] || continue
+        exclude="$(yq e ".spec.sources[] | select(.path == \"$dir_path\") | .directory.exclude // \"\"" "$apps_yaml")"
+        raw="$tmp/$cluster-$(echo "$dir_path" | tr '/' '-').yaml"
+        : > "$raw"
+        while IFS= read -r -d '' f; do
+            [[ -n "$exclude" && "$(basename "$f")" == "$exclude" ]] && continue
+            cat "$f" >> "$raw"
+            echo -e "\n---" >> "$raw"
+        done < <(find "$dir_path" -type f \( -name '*.yaml' -o -name '*.yml' \) -print0 | sort -z)
+        [[ -s "$raw" ]] && { conform "$dir_path ($cluster)" "$raw" || fail=1; }
+    done < <(yq e -N '.spec.sources[] | select(has("directory")) | .path' "$apps_yaml")
 
     catalog="$tmp/$cluster-catalog.yaml"
     if ! helm template apps apps/ -f - <<<"$apps_values" >"$catalog" 2>"$tmp/err"; then

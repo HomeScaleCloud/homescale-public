@@ -11,4 +11,3 @@ values:
     image:
       repository: ghcr.io/homescalecloud/automatron
       tag: latest
-    schedule: "*/15 * * * *"

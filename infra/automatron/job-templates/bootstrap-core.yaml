@@ -1,0 +1,6 @@
+apiVersion: REDACTED/v1alpha1
+kind: JobTemplate
+metadata:
+  name: bootstrap-core
+spec:
+  playbook: bootstrap-core

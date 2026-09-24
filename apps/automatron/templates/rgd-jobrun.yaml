@@ -1,0 +1,152 @@
+# Defines the AutomatronJobRun CRD (REDACTED/v1alpha1, kind JobRun):
+# a one-off instance of a JobTemplate. This is the *only* place a one-off Job gets
+# created from a JobTemplate — a human commits one under infra/automatron/job-runs/,
+# `hsctl run <template> -e remote` creates one ad hoc, and a JobWorkflow's step-chaining
+# (see apps/automatron/entrypoint.sh) creates one for each step after the first.
+#
+# workflowRef/workflowRunRef/workflowStepIndex are not user-facing — they're set only by
+# the code that creates a JobRun as part of a workflow (the JobWorkflow RGD's kickoff
+# container, or entrypoint.sh's chaining — see rgd-jobworkflow.yaml) so the resulting Job
+# carries enough context to continue the workflow on success, and so this JobRun (and its
+# Job) can be found by JobWorkflowRun's status aggregation via the workflow-run label.
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: automatron-jobrun
+  namespace: {{ .Release.Namespace }}
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: JobRun
+    group: REDACTED
+    scope: Cluster
+    spec:
+      templateRef: string
+      cluster: string | default=""
+      dryRun: boolean | default=false
+      workflowRef: string | default=""
+      workflowRunRef: string | default=""
+      workflowStepIndex: integer | default=-1
+    status:
+      jobName: '${job.?metadata.name}'
+  resources:
+    # Dynamic name lookup (CEL over schema.spec) — see CLAUDE.md's Automatron section
+    # for the fallback if this doesn't resolve: JobRun carrying its own playbook/script
+    # fields instead of inheriting them from the referenced JobTemplate.
+    - id: template
+      externalRef:
+        apiVersion: REDACTED/v1alpha1
+        kind: JobTemplate
+        metadata:
+          name: '${schema.spec.templateRef}'
+    - id: job
+      template:
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: '${schema.metadata.name}'
+          namespace: {{ .Release.Namespace }}
+          labels:
+            app: automatron
+            REDACTED/workflow: '${schema.spec.workflowRef}'
+            REDACTED/workflow-run: '${schema.spec.workflowRunRef}'
+        spec:
+          backoffLimit: 0
+          template:
+            metadata:
+              labels:
+                app: automatron
+            spec:
+              serviceAccountName: automatron
+              restartPolicy: Never
+              volumes:
+                - name: repo
+                  emptyDir: {}
+                - name: hosts
+                  emptyDir: {}
+                - name: git-ssh-key
+                  secret:
+                    secretName: automatron-secrets
+                    items:
+                      - key: GIT_DEPLOY_KEY
+                        path: sshPrivateKey
+                        mode: 0600
+                - name: git-ssh-key-fixed
+                  emptyDir: {}
+              initContainers:
+                - name: omni-hosts
+                  image: "{{ .Values.automatron.image.repository }}:{{ .Values.automatron.image.tag }}"
+                  command: ["sh", "-c"]
+                  args:
+                    - |
+                      set -e
+                      cp /etc/hosts /shared/hosts
+                      echo "$(kubectl get svc api -n omni -o jsonpath='{.spec.clusterIP}') REDACTED" >> /shared/hosts
+                      echo "$(kubectl get svc k8s -n omni -o jsonpath='{.spec.clusterIP}') REDACTED" >> /shared/hosts
+                  volumeMounts:
+                    - name: hosts
+                      mountPath: /shared
+                - name: git-key-prep
+                  image: "{{ .Values.automatron.image.repository }}:{{ .Values.automatron.image.tag }}"
+                  securityContext:
+                    runAsUser: 0
+                  command: ["/git-key-prep.sh"]
+                  volumeMounts:
+                    - name: git-ssh-key
+                      mountPath: /etc/git-secret
+                      readOnly: true
+                    - name: git-ssh-key-fixed
+                      mountPath: /fixed
+                - name: git-clone
+                  image: registry.k8s.io/git-sync/git-sync:v4.2.4
+                  args:
+                    - --repo=git@github.com:HomeScaleCloud/homescale.git
+                    - --ref=main
+                    - --root=/repo
+                    - --link=current
+                    - --one-time
+                    - --ssh
+                    - --ssh-known-hosts=false
+                  env:
+                    - name: GITSYNC_SSH_KEY_FILE
+                      value: /etc/git-secret/sshPrivateKey
+                  volumeMounts:
+                    - name: repo
+                      mountPath: /repo
+                    - name: git-ssh-key-fixed
+                      mountPath: /etc/git-secret
+                      readOnly: true
+              containers:
+                - name: automatron
+                  image: "{{ .Values.automatron.image.repository }}:{{ .Values.automatron.image.tag }}"
+                  env:
+                    - name: PLAYBOOK
+                      value: '${template.spec.playbook}'
+                    - name: SCRIPT_PATH
+                      value: '${template.spec.scriptPath}'
+                    - name: SCRIPT_INTERPRETER
+                      value: '${template.spec.scriptInterpreter}'
+                    - name: CLUSTER
+                      value: '${schema.spec.cluster != "" ? schema.spec.cluster : template.spec.defaultCluster}'
+                    - name: DRY_RUN
+                      value: '${string(schema.spec.dryRun)}'
+                    - name: REPO_DIR
+                      value: /repo/current
+                    - name: WORKFLOW_NAME
+                      value: '${schema.spec.workflowRef}'
+                    - name: WORKFLOW_RUN_NAME
+                      value: '${schema.spec.workflowRunRef}'
+                    - name: WORKFLOW_STEP_INDEX
+                      value: '${string(schema.spec.workflowStepIndex)}'
+                  envFrom:
+                    - secretRef:
+                        name: automatron-secrets
+                    - secretRef:
+                        name: automatron-infisical-operator-creds
+                  volumeMounts:
+                    - name: repo
+                      mountPath: /repo
+                      readOnly: true
+                    - name: hosts
+                      mountPath: /etc/hosts
+                      subPath: hosts

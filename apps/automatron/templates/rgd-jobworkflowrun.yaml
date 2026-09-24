@@ -1,0 +1,42 @@
+# Defines the AutomatronJobWorkflowRun CRD (REDACTED/v1alpha1, kind
+# JobWorkflowRun): one execution of a JobWorkflow, tracking its steps' progress in a
+# central place (rather than making callers hunt down scattered JobRun/Job objects by
+# label). Purely a status-aggregation view — it has no `resources` of its own to manage;
+# kro's job here is only to define the CRD and project child Jobs' status into it via a
+# label-selector externalRef collection. The actual JobWorkflowRun object, and the JobRun
+# for each step, are created by the JobWorkflow RGD's kickoff container (scheduled runs)
+# or by `hsctl run <workflow> -e remote` (ad hoc runs) — see rgd-jobworkflow.yaml.
+#
+# This CRD is cluster-scoped (like the other 3 automatron CRDs), but its target here
+# (batch/v1 Job) is always namespaced — with no instance namespace to default to, the
+# externalRef below needs an explicit namespace, hardcoded to automatron's own since
+# that's the only place kro ever creates these Jobs (see rgd-jobrun.yaml).
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: automatron-jobworkflowrun
+  namespace: {{ .Release.Namespace }}
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: JobWorkflowRun
+    group: REDACTED
+    scope: Cluster
+    spec:
+      workflowRef: string
+    status:
+      # One entry per step Job labeled with this run's workflow-run label — Job names
+      # embed the step index (<run>-step<N>), so a reader can sort/order by name; not
+      # attempted here in CEL to keep this projection simple.
+      steps: '${stepJobs.map(j, {"jobName": j.metadata.name, "active": j.status.?active.orValue(0), "succeeded": j.status.?succeeded.orValue(0), "failed": j.status.?failed.orValue(0)})}'
+      phase: '${stepJobs.exists(j, j.status.?failed.orValue(0) > 0) ? "Failed" : (stepJobs.size() > 0 && stepJobs.all(j, j.status.?succeeded.orValue(0) == 1) ? "Succeeded" : "Running")}'
+  resources:
+    - id: stepJobs
+      externalRef:
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          namespace: {{ .Release.Namespace }}
+          selector:
+            matchLabels:
+              REDACTED/workflow-run: '${schema.metadata.name}'
