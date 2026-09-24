@@ -240,10 +240,21 @@ _run_remote() {
     command -v kubecolor &>/dev/null && log_cmd="kubecolor"
     "$log_cmd" logs -f "$pod" -c automatron -n "$namespace" --context mgmt
 
-    local status
-    status=$(kubectl get job "$job_name" -n "$namespace" --context mgmt \
-        -o jsonpath='{.status.succeeded}' 2>/dev/null) || true
-    if [[ "$status" != "1" ]]; then
+    # `kubectl logs -f` returns as soon as the container's log stream closes, which
+    # can be a moment before the Job controller has actually observed completion and
+    # updated .status — checking once, immediately, can race and see neither field
+    # set yet even though the run genuinely succeeded. Poll briefly instead.
+    local succeeded="" failed=""
+    for attempt in $(seq 1 10); do
+        succeeded=$(kubectl get job "$job_name" -n "$namespace" --context mgmt \
+            -o jsonpath='{.status.succeeded}' 2>/dev/null) || true
+        failed=$(kubectl get job "$job_name" -n "$namespace" --context mgmt \
+            -o jsonpath='{.status.failed}' 2>/dev/null) || true
+        [[ "$succeeded" == "1" || -n "$failed" ]] && break
+        sleep 3
+    done
+
+    if [[ "$succeeded" != "1" ]]; then
         hsctl_log_error "job $job_name did not succeed — check: kubectl describe job $job_name -n $namespace --context mgmt"
         exit 1
     fi
