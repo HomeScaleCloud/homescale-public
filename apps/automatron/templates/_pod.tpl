@@ -36,7 +36,7 @@ spec:
     # only where they resolve to changes. Helm's `lookup` (resolved at render time)
     # isn't reliable here — ArgoCD's own renders have been observed returning empty
     # for it — so this resolves the real ClusterIPs at pod start instead, via a
-    # scoped Role/RoleBinding (templates/rbac-omni.yaml) letting automatron's own
+    # scoped Role/RoleBinding (templates/role.yaml, templates/rolebinding.yaml) letting automatron's own
     # ServiceAccount `get` just these two Services in the omni namespace, and writes
     # a corrected /etc/hosts to a shared volume — the automatron container mounts it
     # over its own (non-root, and /etc/hosts isn't group/other-writable, so it can't
@@ -125,8 +125,6 @@ spec:
             name: automatron-secrets
         - secretRef:
             name: automatron-infisical-operator-creds
-        - secretRef:
-            name: automatron-omni-creds
       volumeMounts:
         - name: repo
           mountPath: /repo
