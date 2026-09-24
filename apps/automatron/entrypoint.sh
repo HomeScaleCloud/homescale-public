@@ -54,7 +54,7 @@ if [[ -n "${CHAIN_NEXT_CRONJOB:-}" && "$DRY_RUN" != "true" ]]; then
     # name, that kubectl create just hits AlreadyExists and this cycle skips
     # chaining instead of running two concurrently; the TTL controller reaps a
     # finished Job so the name frees up again for the next successful run to chain.
-    chain_job="${CHAIN_NEXT_CRONJOB}-chained"
+    chain_job="automatron-sync"
     echo "chaining into $CHAIN_NEXT_CRONJOB as Job $chain_job"
     manifest=$(kubectl get cronjob "$CHAIN_NEXT_CRONJOB" -n "$namespace" -o json | \
         jq --arg name "$chain_job" \

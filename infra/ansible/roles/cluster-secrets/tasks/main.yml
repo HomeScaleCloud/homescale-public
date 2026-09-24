@@ -10,8 +10,8 @@
   infisical.vault.login:
     url: "{{ infisical_url }}"
     auth_method: universal_auth
-    client_id: "{{ lookup('env', 'INFISICAL_OPERATOR_CLIENT_ID') }}"
-    client_secret: "{{ lookup('env', 'INFISICAL_OPERATOR_CLIENT_SECRET') }}"
+    universal_auth_client_id: "{{ lookup('env', 'INFISICAL_OPERATOR_CLIENT_ID') }}"
+    universal_auth_client_secret: "{{ lookup('env', 'INFISICAL_OPERATOR_CLIENT_SECRET') }}"
   register: _infisical
   no_log: true
   when: not (hsctl_local | default(false))

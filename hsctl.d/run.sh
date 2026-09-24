@@ -147,7 +147,7 @@ _run_local() {
 _run_remote() {
     local playbook="$1" cluster="$2" dry_run="$3"
     local namespace="automatron"
-    local job_name="${playbook}-$(date +%s)"
+    local job_name="automatron-adhoc-${playbook}-$(date +%s)"
     # Every built-in playbook has its own CronJob (bootstrap-cluster's is suspended —
     # see apps/automatron/templates/cronjob-bootstrap-cluster.yaml); anything else falls
     # back to cloning omni-sync's jobTemplate, which is just this same pod shape with a
