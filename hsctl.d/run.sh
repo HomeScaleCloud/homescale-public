@@ -146,8 +146,7 @@ _run_local_clone_repo() {
 
     local tmpdir
     tmpdir=$(mktemp -d)
-    hsctl_log_info "cloning HomeScaleCloud/homescale@main into a temp checkout for this local run..."
-    if ! gh repo clone HomeScaleCloud/homescale "$tmpdir" -- --depth 1 --branch main --quiet 2>/dev/null; then
+    if ! gh repo clone HomeScaleCloud/homescale "$tmpdir" -- --depth 1 --branch main --quiet; then
         hsctl_log_error "failed to clone HomeScaleCloud/homescale@main (check: gh auth status)"
         rm -rf "$tmpdir"
         return 1
@@ -304,7 +303,8 @@ run_main() {
     # --chain runs each listed playbook in turn after the first succeeds, mirroring
     # --cluster/--dry-run to all of them; each _run_*/exit 1 on failure stops the loop.
     local p
-    for p in "$playbook" "${chain[@]}"; do
+    for p in "$playbook" "${chain[@]:-}"; do
+        [[ -z "$p" ]] && continue
         if [[ "$mode" == "remote" ]]; then
             _run_remote "$p" "$cluster" "$dry_run"
         else
