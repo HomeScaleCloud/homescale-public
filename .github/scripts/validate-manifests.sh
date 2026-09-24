@@ -132,18 +132,25 @@ for cluster_dir in clusters/*/; do
     # straight from git with no Helm rendering, e.g. infra/automatron/'s job/workflow
     # CRs) aren't covered by the catalog/per-app render below, so conform them directly —
     # every *.yaml/*.yml under the source path, minus its own `directory.exclude` file.
-    while IFS= read -r dir_path; do
-        [[ -n "$dir_path" && -d "$dir_path" ]] || continue
-        exclude="$(yq e ".spec.sources[] | select(.path == \"$dir_path\") | .directory.exclude // \"\"" "$apps_yaml")"
-        raw="$tmp/$cluster-$(echo "$dir_path" | tr '/' '-').yaml"
-        : > "$raw"
-        while IFS= read -r -d '' f; do
-            [[ -n "$exclude" && "$(basename "$f")" == "$exclude" ]] && continue
-            cat "$f" >> "$raw"
-            echo -e "\n---" >> "$raw"
-        done < <(find "$dir_path" -type f \( -name '*.yaml' -o -name '*.yml' \) -print0 | sort -z)
-        [[ -s "$raw" ]] && { conform "$dir_path ($cluster)" "$raw" || fail=1; }
-    done < <(yq e -N '.spec.sources[] | select(has("directory")) | .path' "$apps_yaml")
+    # Scans every Application-kind manifest directly under clusters/<cluster>/, not just
+    # apps.yaml — a directory-synced CR tree may deliberately live in its own independently
+    # -synced Application instead of as another source on apps.yaml's (e.g. so a CRD-not-
+    # -registered-yet retry on that tree can't block apps.yaml's own multi-source sync).
+    for app_manifest in "$cluster_dir"*.yaml; do
+        [[ "$(yq e '.kind' "$app_manifest")" == "Application" ]] || continue
+        while IFS= read -r dir_path; do
+            [[ -n "$dir_path" && -d "$dir_path" ]] || continue
+            exclude="$(yq e "(.spec.sources // [.spec.source])[] | select(.path == \"$dir_path\") | .directory.exclude // \"\"" "$app_manifest")"
+            raw="$tmp/$cluster-$(echo "$dir_path" | tr '/' '-').yaml"
+            : > "$raw"
+            while IFS= read -r -d '' f; do
+                [[ -n "$exclude" && "$(basename "$f")" == "$exclude" ]] && continue
+                cat "$f" >> "$raw"
+                echo -e "\n---" >> "$raw"
+            done < <(find "$dir_path" -type f \( -name '*.yaml' -o -name '*.yml' \) -print0 | sort -z)
+            [[ -s "$raw" ]] && { conform "$dir_path ($cluster)" "$raw" || fail=1; }
+        done < <(yq e -N '(.spec.sources // [.spec.source])[] | select(has("directory")) | .path' "$app_manifest")
+    done
 
     catalog="$tmp/$cluster-catalog.yaml"
     if ! helm template apps apps/ -f - <<<"$apps_values" >"$catalog" 2>"$tmp/err"; then

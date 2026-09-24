@@ -14,11 +14,6 @@ spec:
         exclude: 'cluster.yaml'
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
-      path: infra/automatron
-      directory:
-        recurse: true
-    - repoURL: git@github.com:HomeScaleCloud/homescale.git
-      targetRevision: main
       path: apps
       helm:
         releaseName: apps-core
