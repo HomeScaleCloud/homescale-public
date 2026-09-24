@@ -53,32 +53,17 @@ spec:
       volumeMounts:
         - name: hosts
           mountPath: /shared
-    # Secret-mounted files are root-owned with mode 0600 (required — sshd's strict
-    # key-perm check rejects any group/other bits), so git-sync's own non-root UID
-    # can't read it directly. Separately, the key's stored value (an Infisical
-    # secret reference to the same value ArgoCD's deploy key uses) is missing the
-    # trailing newline after "-----END OPENSSH PRIVATE KEY-----" that OpenSSH's
-    # new-format key parser needs — without it, ssh fails with a generic "error in
-    # libcrypto" trying to load it (confirmed directly: identical content with the
-    # newline restored authenticates fine, without it it doesn't, regardless of
-    # which user reads it). This prep step (root, to read the secret at all) fixes
-    # both: copies the key into a writable volume, restores the trailing newline if
-    # missing, and hands ownership to git-sync's actual non-root UID so git-clone
-    # can run as its normal user rather than needing root itself.
+    # Fixes the deploy key's ownership (k8s secret files are always root-owned; git-sync's
+    # non-root UID can't read them, and widening via fsGroup won't work either since
+    # sshd rejects any group/other bits) and a missing trailing newline the stored value
+    # needs OpenSSH's parser to accept — see git-key-prep.sh for the full why. Runs as
+    # root (only this container needs to) on automatron's own image, not git-sync's, so
+    # this logic is a real versioned script rather than inline shell here.
     - name: git-key-prep
-      image: registry.k8s.io/git-sync/git-sync:v4.2.4
+      image: "{{ $root.Values.automatron.image.repository }}:{{ $root.Values.automatron.image.tag }}"
       securityContext:
         runAsUser: 0
-      command: ["sh", "-c"]
-      args:
-        - |
-          set -e
-          cp /etc/git-secret/sshPrivateKey /fixed/sshPrivateKey
-          if [ -n "$(tail -c1 /fixed/sshPrivateKey)" ]; then
-            printf '\n' >> /fixed/sshPrivateKey
-          fi
-          chown 65533:65533 /fixed/sshPrivateKey
-          chmod 600 /fixed/sshPrivateKey
+      command: ["/git-key-prep.sh"]
       volumeMounts:
         - name: git-ssh-key
           mountPath: /etc/git-secret

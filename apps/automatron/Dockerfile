@@ -25,7 +25,8 @@ RUN curl -fsSL -o /usr/local/bin/yq \
 RUN pip install --no-cache-dir ansible-core kubernetes infisicalsdk==1.0.17
 
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY git-key-prep.sh /git-key-prep.sh
+RUN chmod +x /entrypoint.sh /git-key-prep.sh
 
 # ansible-galaxy installs collections under $HOME/.ansible at runtime, so this
 # needs a real writable home dir, not just a bare non-root UID.
