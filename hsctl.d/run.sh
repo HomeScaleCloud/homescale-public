@@ -161,18 +161,21 @@ _run_remote() {
     command -v kubectl &>/dev/null || { echo "hsctl run: kubectl is required" >&2; exit 1; }
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
 
-    local prev_ctx
-    prev_ctx=$(kubectl config current-context 2>/dev/null || true)
-    trap '[[ -n "${prev_ctx:-}" ]] && kubectl config use-context "$prev_ctx" >/dev/null 2>&1' EXIT
-
     # A `mgmt` context already present (e.g. CI pre-seeded one from MGMT_KUBECONFIG, or
-    # a previous interactive run) is reused as-is; only fall back to the interactive
-    # OIDC flow (hsctl get kubeconfig) when there isn't one yet.
+    # a previous interactive run) is reused as-is via explicit --context mgmt on every
+    # kubectl call below — the default/current-context is never touched in this case.
+    # Only the first-ever bootstrap (no mgmt context yet) needs the interactive OIDC
+    # flow (hsctl get kubeconfig), which — as a side effect of that shared function —
+    # switches current-context to mgmt; restore it immediately afterward rather than
+    # leaving it switched for the duration of this run.
     if ! kubectl config get-contexts -o name 2>/dev/null | grep -qx mgmt; then
+        local prev_ctx
+        prev_ctx=$(kubectl config current-context 2>/dev/null || true)
         # shellcheck source=/dev/null
         source "$HSCTL_ROOT/hsctl.d/get.sh"
         hsctl_log_info "no mgmt context found — authenticating via OIDC"
         get_kubeconfig mgmt >/dev/null
+        [[ -n "$prev_ctx" ]] && kubectl config use-context "$prev_ctx" >/dev/null 2>&1
     fi
 
     # Whatever CronJob we clone the jobTemplate from, always pin its PLAYBOOK/CLUSTER/

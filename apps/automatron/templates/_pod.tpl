@@ -24,15 +24,43 @@ spec:
           - key: GIT_DEPLOY_KEY
             path: sshPrivateKey
             mode: 0600
+    - name: git-ssh-key-fixed
+      emptyDir: {}
   initContainers:
-    - name: git-clone
+    # Secret-mounted files are root-owned with mode 0600 (required — sshd's strict
+    # key-perm check rejects any group/other bits), so git-sync's own non-root UID
+    # can't read it directly. Separately, the key's stored value (an Infisical
+    # secret reference to the same value ArgoCD's deploy key uses) is missing the
+    # trailing newline after "-----END OPENSSH PRIVATE KEY-----" that OpenSSH's
+    # new-format key parser needs — without it, ssh fails with a generic "error in
+    # libcrypto" trying to load it (confirmed directly: identical content with the
+    # newline restored authenticates fine, without it it doesn't, regardless of
+    # which user reads it). This prep step (root, to read the secret at all) fixes
+    # both: copies the key into a writable volume, restores the trailing newline if
+    # missing, and hands ownership to git-sync's actual non-root UID so git-clone
+    # can run as its normal user rather than needing root itself.
+    - name: git-key-prep
       image: registry.k8s.io/git-sync/git-sync:v4.2.4
-      # Secret-mounted files are root-owned with mode 0600 — sshd's strict key-perm
-      # check requires exactly that (no group/other bits), which also means only
-      # root can actually read it; git-sync's image otherwise runs as a non-root
-      # UID by default and gets "Permission denied" loading the key.
       securityContext:
         runAsUser: 0
+      command: ["sh", "-c"]
+      args:
+        - |
+          set -e
+          cp /etc/git-secret/sshPrivateKey /fixed/sshPrivateKey
+          if [ -n "$(tail -c1 /fixed/sshPrivateKey)" ]; then
+            printf '\n' >> /fixed/sshPrivateKey
+          fi
+          chown 65533:65533 /fixed/sshPrivateKey
+          chmod 600 /fixed/sshPrivateKey
+      volumeMounts:
+        - name: git-ssh-key
+          mountPath: /etc/git-secret
+          readOnly: true
+        - name: git-ssh-key-fixed
+          mountPath: /fixed
+    - name: git-clone
+      image: registry.k8s.io/git-sync/git-sync:v4.2.4
       args:
         - --repo=git@github.com:HomeScaleCloud/homescale.git
         - --ref=main
@@ -47,7 +75,7 @@ spec:
       volumeMounts:
         - name: repo
           mountPath: /repo
-        - name: git-ssh-key
+        - name: git-ssh-key-fixed
           mountPath: /etc/git-secret
           readOnly: true
     - name: tailscale

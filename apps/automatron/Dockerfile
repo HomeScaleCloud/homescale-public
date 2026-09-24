@@ -27,4 +27,10 @@ RUN pip install --no-cache-dir ansible-core kubernetes infisicalsdk==1.0.17
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# ansible-galaxy installs collections under $HOME/.ansible at runtime, so this
+# needs a real writable home dir, not just a bare non-root UID.
+RUN useradd --create-home --uid 1000 --shell /usr/sbin/nologin automatron
+USER automatron
+ENV HOME=/home/automatron
+
 ENTRYPOINT ["/entrypoint.sh"]
