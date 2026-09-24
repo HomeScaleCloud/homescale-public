@@ -16,7 +16,7 @@ module "tailscale" {
 module "core_cluster" {
   source                 = "./modules/core_cluster"
   vultr_api_key          = data.infisical_secrets.github_actions.secrets["VULTR_TOKEN"].value
-  k8s_version            = "v1.37.0+1"
+  k8s_version            = "v1.37.1+1"
   region                 = "lhr"
   infisical_workspace_id = module.infisical.project_id
   oidc_issuer_url        = data.infisical_secrets.oidc.secrets["OIDC_ISSUER_URL"].value
