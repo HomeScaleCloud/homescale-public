@@ -25,9 +25,8 @@ jobs:
       - name: Rewrite history — scrub internal FQDNs and Entra IDs
         run: |
           # Any FQDN ending in REDACTED → REDACTED, across every blob in every commit.
-          # Also scrub Entra tenant/client IDs committed in infra/omni/patches/oidc.yaml (the
-          # kube-apiserver's own OIDC config) and hsctl.d/get.sh (hardcoded HSCTL_TENANT_ID) —
-          # neither is a secret, but there's no reason to publicly identify the tenant either.
+          # Also scrubs the Entra tenant/client IDs below — not secrets, but no reason to
+          # publicize the tenant.
           {
             printf 'regex:([a-zA-Z0-9*._-]+\\.)?homescale\\.cloud==>REDACTED\n'
             printf 'REDACTED==>REDACTED\n'

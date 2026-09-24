@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # Called by pam_exec during sshd's auth phase (see pam-sshd). Resolves the
-# connecting peer's real Tailscale identity via the tailscaled sidecar's
-# socket (shared over an emptyDir at /var/run/tailscale), refuses any
-# identity outside our own domain, requires the requested SSH username to
-# match the identity's local-part, and creates that Unix account on first
-# login if it doesn't exist yet.
+# connecting peer's Tailscale identity, requires it to be a REDACTED
+# account matching the requested SSH username, and provisions that Unix
+# account on first login.
 set -euo pipefail
 
 : "${PAM_RHOST:?}"

@@ -3,8 +3,6 @@ resource "tailscale_oauth_client" "k8s_operator" {
   scopes      = ["devices:core", "auth_keys", "services"]
   tags        = ["tag:k8s"]
 
-  # Without this, Terraform may create this in parallel with tailscale_acl.this
-  # and race the tag:k8s registration, failing with "requested tags ... invalid
-  # or not permitted".
+  # Avoids racing tag:k8s registration in tailscale_acl.this.
   depends_on = [tailscale_acl.this]
 }

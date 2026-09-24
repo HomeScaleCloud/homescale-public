@@ -50,9 +50,8 @@ rules:
       - datavolumes
       - datasources
     verbs: ["get", "list", "watch"]
-  # Read-only introspection subresources — mirrors KubeVirt's own upstream
-  # kubevirt.io:view ClusterRole. Interactive-access subresources
-  # (console/vnc/portforward) are intentionally excluded; see vm-console.
+  # Mirrors upstream kubevirt.io:view. Interactive subresources (console/vnc/
+  # portforward) are excluded; see vm-console.
   - apiGroups: ["subresources.kubevirt.io"]
     resources:
       - virtualmachineinstances/guestosinfo

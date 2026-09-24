@@ -13,9 +13,6 @@ locals {
     split("/", f)[0]
   ])
 
-  # clusters/<cluster>/apps.yaml is the bootstrap ArgoCD app-of-apps; its
-  # "apps" source carries an inline Helm values block (a YAML string) that
-  # holds per-cluster app deploy toggles and overrides.
   volsync_cluster_manifests = {
     for cluster in local.volsync_cluster_names :
     cluster => yamldecode(file("${path.root}/../../clusters/${cluster}/apps.yaml"))

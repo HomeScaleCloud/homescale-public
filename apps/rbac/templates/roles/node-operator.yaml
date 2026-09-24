@@ -3,10 +3,7 @@ kind: ClusterRole
 metadata:
   name: node-operator
 rules:
-  # Cordon/uncordon and taint (spec.taints, part of the main object) for
-  # maintenance and incident response. No delete — that detaches the Node
-  # object from the cluster, distinct from node-viewer/node-admin's broader
-  # (and read-only or full-CRUD) grants.
+  # Cordon/uncordon and taint. No delete — that detaches the Node from the cluster.
   - apiGroups: [""]
     resources:
       - nodes

@@ -300,8 +300,8 @@ _pim_resolve_pending_step_graph() {
     printf '%s\n' "$step_id"
 }
 
-# roleAssignmentApprovals/assignmentApprovals only exist under Graph's beta segment, unlike the rest of this
-# file's v1.0 endpoints. The approval object's id is always the same as the id of the request that needed approval.
+# roleAssignmentApprovals/assignmentApprovals only exist under Graph's beta segment,
+# unlike the rest of this file's v1.0 endpoints.
 _pim_decide_role() {
     local approval_id="$1" result="$2" reason="$3"
     local base="https://graph.microsoft.com/beta/roleManagement/directory/roleAssignmentApprovals/${approval_id}"

@@ -91,12 +91,8 @@ values:
           - name: kubevirt
             source: https://artifacthub.io/packages/headlamp/headlamp-kubevirt/headlamp_kubevirt
             version: 0.3.1
-    # homescale-theme-plugin and homescale-favicon are mounted via subPath,
-    # which Kubernetes never hot-reloads — kubelet only re-syncs
-    # whole-directory ConfigMap mounts. These checksums (computed from the
-    # actual file contents via the apps/ chart's .Files access into this
-    # app dir) change automatically whenever the plugin bundle or favicon
-    # assets change, forcing a pod restart without a manual version bump.
+    # subPath mounts never hot-reload; these checksums force a pod restart
+    # whenever the plugin bundle or favicon assets change.
     podAnnotations:
       homescale-theme-plugin-checksum: "{{ printf \"%s%s\" ($.Files.Get \"headlamp/plugins/homescale-theme/dist/main.js\") ($.Files.Get \"headlamp/plugins/homescale-theme/package.json\") | sha256sum }}"
       homescale-favicon-checksum: "{{ printf \"%s%s%s%s\" ($.Files.Get \"headlamp/assets/favicon/favicon.ico\") ($.Files.Get \"headlamp/assets/favicon/favicon.ico.br\") ($.Files.Get \"headlamp/assets/favicon/favicon-16x16.png\") ($.Files.Get \"headlamp/assets/favicon/favicon-32x32.png\") | sha256sum }}"

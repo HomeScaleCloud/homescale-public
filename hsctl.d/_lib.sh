@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
 # hsctl shared utilities — auto-sourced by hsctl before every command module
 #
-# Convention for read-only modules (e.g. get.sh):
-#   1. module_main() pre-parses -o <format> and exports HSCTL_OUTPUT (default: table)
-#   2. Call: hsctl_validate_output "$HSCTL_OUTPUT" || exit 1
-#   3. Subcommand handlers read $HSCTL_OUTPUT and call hsctl_omni_output for yaml/json pass-through
-#   4. Table rendering is resource-specific; yaml/json rendering is generic via hsctl_omni_output
+# Read-only modules (e.g. get.sh): module_main() pre-parses -o <format>, exports
+# HSCTL_OUTPUT (default: table), calls hsctl_validate_output, and handlers use
+# hsctl_omni_output for yaml/json pass-through.
 #
-# Convention for modules that take action against infrastructure (e.g. machine.sh):
-#   report progress/outcome via hsctl_log_info/hsctl_log_action/hsctl_log_success/hsctl_log_error
-#   rather than plain echo, so status output is consistent and timestamped.
+# Action modules (e.g. machine.sh): report via hsctl_log_info/action/success/error
+# rather than plain echo, for consistent timestamped status output.
 
 # Validate -o output format; writes error and returns 1 on failure
 hsctl_validate_output() {
@@ -49,9 +46,7 @@ hsctl_resolve_machine_id() {
     printf '%s\n' "$id"
 }
 
-# Interactively runs `infisical login`, to auto-retry a secret fetch that failed because
-# there's no valid session. stdin/stdout/stderr are left connected to the terminal so the
-# browser-based login flow can prompt the user.
+# Interactively runs `infisical login` to retry a secret fetch after an invalid session.
 # Usage: hsctl_infisical_login || return 1
 hsctl_infisical_login() {
     echo "hsctl: no valid Infisical session — starting 'infisical login'" >&2
@@ -63,13 +58,8 @@ hsctl_infisical_login() {
 #        IFS=$'\t' read -r bmc_ip bmc_user bmc_pass <<< "$creds"
 hsctl_bmc_creds() {
     local id="$1" secrets_json
-    # stdin is /dev/null so a missing session can't drop into infisical's interactive login
-    # wizard — that TUI renders over stdout, which we're capturing here, so it would otherwise
-    # sit blocked on keystrokes the terminal never shows. Without a session it now fails fast
-    # instead, and we run our own interactive login (unredirected) and retry once. stderr is
-    # left alone so infisical's own error output still reaches the terminal.
-    # Uses if/else (rather than `cmd || true`) so a failed fetch is caught by its exit code here,
-    # instead of tripping `set -e` or silently falling through with empty/garbage stdout.
+    # stdin is /dev/null so a missing session fails fast instead of blocking on infisical's
+    # interactive login wizard (which would otherwise render over the stdout we're capturing).
     if ! secrets_json=$(infisical export --silent --env=prod --path="/bmc/$id" --format=json </dev/null); then
         hsctl_infisical_login || { hsctl_log_error "infisical login failed"; return 1; }
         if ! secrets_json=$(infisical export --silent --env=prod --path="/bmc/$id" --format=json </dev/null); then

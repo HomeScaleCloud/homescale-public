@@ -11,9 +11,8 @@ locals {
   ])
 }
 
-# One http_request_cache_settings entry-point ruleset per zone (Cloudflare allows only
-# one per zone/phase), containing one bypass rule per cacheBypass-opted-in hostname in
-# that zone.
+# One ruleset per zone (Cloudflare allows only one per zone/phase), with one
+# bypass rule per cacheBypass-opted-in hostname in that zone.
 resource "cloudflare_ruleset" "cache_bypass" {
   for_each = local.cache_bypass_zone_ids
 

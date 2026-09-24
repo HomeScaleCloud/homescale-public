@@ -52,12 +52,9 @@ jobs:
               name="$(basename "$dir")"
               context="$dir"
             fi
-            # `name` stays the app directory name — it's matched against
-            # changed-apps below to decide whether to build at all. `image`
-            # is what actually gets pushed to ghcr.io/homescalecloud/<image>;
-            # it defaults to `name` but can be overridden by an optional
-            # .image-name marker file, when the pushed image should be
-            # called something other than the app directory name.
+            # `name` (matched against changed-apps below) is the app directory
+            # name; `image`, what's pushed to ghcr.io/homescalecloud/<image>,
+            # defaults to `name` but can be overridden by .image-name.
             image="$name"
             if [[ -f "$context/.image-name" ]]; then
               image="$(<"$context/.image-name")"

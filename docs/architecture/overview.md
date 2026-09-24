@@ -152,7 +152,7 @@ Runs on every PR and push:
 
 ### `deploy` — infrastructure and cluster sync
 
-Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has two sequential jobs — `terraform` → `omni`. The `omni` job joins the tailnet via `tailscale/github-action` (ephemeral node, tagged `tag:github-actions`, auto-removed when the job ends) to reach Omni's internal API; `terraform` doesn't need to join the mesh at all — it only talks to public APIs (Cloudflare, Vultr, Infisical, Tailscale).
+Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has two sequential jobs — `terraform` → `omni`. The `omni` job joins the tailnet via `tailscale/github-action` (ephemeral node, tagged `tag:github-actions`, auto-removed when the job ends) to reach Omni's internal API. `terraform` doesn't need to join the mesh at all — it only talks to public APIs (Cloudflare, Vultr, Infisical, Tailscale).
 
 #### 1. `terraform`
 

@@ -29,23 +29,17 @@ values:
     prologScripts:
       00-provision-user.sh: |
         #!/usr/bin/env bash
-        # Mirrors the login node's account for this job's owner onto every
-        # compute node the job lands on. Runs as root, before the job's
-        # tasks start (Prolog, not PrologSlurmctld) — this is what makes
-        # dynamically-created login users (see apps/slurm/src/) usable for
-        # actual jobs: the login node creates the account on SSH, but that
-        # never reaches the compute nodes on its own. No re-verification
-        # against Tailscale here — SLURM_JOB_UID/USER/GID are already the
-        # UID the login node assigned at submission time; the controller
-        # already trusts that job, so this just replicates it locally.
+        # Mirrors the login node's dynamically-created account (see apps/slurm/src/)
+        # onto each compute node the job lands on, since account creation on the
+        # login node doesn't otherwise reach them. Runs as root before job tasks
+        # start (Prolog, not PrologSlurmctld).
         set -euo pipefail
         if ! id "$SLURM_JOB_USER" >/dev/null 2>&1; then
           groupadd --gid "$SLURM_JOB_GID" "$SLURM_JOB_USER" 2>/dev/null || true
           useradd --uid "$SLURM_JOB_UID" --gid "$SLURM_JOB_GID" --create-home --shell /bin/bash "$SLURM_JOB_USER"
         fi
-        # Trust the shared login->compute hop key for pam_slurm_adopt SSH
-        # (see nodesets.compute.podSpec.volumes below) — authorization there
-        # is the job check itself, not this key.
+        # Trust the shared login->compute hop key (nodesets.compute.podSpec.volumes
+        # below) — pam_slurm_adopt does the actual authorization, not this key.
         home="$(getent passwd "$SLURM_JOB_USER" | cut -d: -f6)"
         mkdir -p "$home/.ssh"
         cp /etc/slurm-ssh/id_ed25519.pub "$home/.ssh/authorized_keys"
@@ -66,12 +60,9 @@ values:
       enabled: true
     controller:
       extraConfMap:
-        # Required for pam_slurm_adopt (the compute-node SSH gate) to see
-        # a job at all — without it, jobs get no "extern" step and every
-        # SSH attempt is denied with "no active jobs" even while one is
-        # genuinely running. Confirmed live in minikube: SSH to a node
-        # with a real running job failed with exactly that message until
-        # this was set, then worked immediately.
+        # Required for pam_slurm_adopt (the compute-node SSH gate) to see a job at
+        # all — without it, jobs get no "extern" step and every SSH attempt is
+        # denied with "no active jobs" even while one is genuinely running.
         PrologFlags:
           - Contain
       persistence:
@@ -103,29 +94,14 @@ values:
       all:
         enabled: true
     restapi:
-      # slurmrestd's own slurm.conf (shared via the same configmap as the
-      # controller) sets AuthAltParameters=jwt_key=/etc/slurm/jwt.key, but
-      # the operator's RestApi reconciliation doesn't project the jwt-auth
-      # secret into that pod the way it does for Controller (confirmed by
-      # comparing live pod specs: slurm-controller-0's slurm-etc volume has
-      # a slurm-auth-jwt source, slurm-restapi's doesn't) — so the file
-      # never exists there and every slurmctld RPC slurmrestd makes fails
-      # auth ("jwt_decode failure: Invalid argument" on the controller
-      # side), which also breaks the operator's own reconciliation since it
-      # talks to slurmctld through slurmrestd's REST API. RestApi has no
-      # jwtKeyRef-style field to fix this via the CR itself.
-      #
-      # Can't just subPath-mount jwt.key straight into /etc/slurm/jwt.key
-      # either (tried first, reverted) — /etc/slurm there is entirely owned
-      # by the operator's own read-only projected slurm-etc volume, which
-      # never had a jwt.key entry to begin with, and runc can't bind a new
-      # file into a path that volume never provisioned a slot for ("not a
-      # directory" on container start). So: mount the secret at its own
-      # standalone path, use an initContainer to copy slurm.conf out to a
-      # writable emptyDir with just its jwt_key= line repointed there, and
-      # tell slurmrestd to use that copy via SLURM_CONF instead of the
-      # default /etc/slurm/slurm.conf. Leaves the original /etc/slurm
-      # mount (and its slurm.key, used for auth/slurm) untouched.
+      # slurm.conf points AuthAltParameters at /etc/slurm/jwt.key, but the
+      # operator doesn't project the jwt-auth secret into the RestApi pod the way
+      # it does for Controller, and RestApi has no jwtKeyRef field to fix that via
+      # the CR. Can't subPath-mount jwt.key directly into /etc/slurm either — that
+      # path is owned by the operator's read-only projected volume, which has no
+      # slot for it. So: mount the secret at its own path, use an initContainer to
+      # copy slurm.conf to a writable emptyDir with jwt_key= repointed there, and
+      # point slurmrestd at that copy via SLURM_CONF.
       slurmrestd:
         env:
           - name: SLURM_CONF

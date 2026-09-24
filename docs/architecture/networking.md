@@ -57,7 +57,7 @@ spec:
     - port: 443
 ```
 
-With no `tailscale.com/proxy-group` annotation, the Operator provisions a dedicated proxy `StatefulSet` for this one Service (not routed through the shared `ingress` `ProxyGroup`), which is what makes `tailscale.com/tags` meaningful here: a `ProxyGroup` registers its member proxies under its own fixed `tags:` regardless of what any individual Service requests, but a dedicated per-Service proxy takes the Service's own `tailscale.com/tags` annotation as its identity — so it's authorized by the same ACL `app_grants` rule as everything else that app owns, with no separate egress-specific policy needed. `tailscale.com/hostname` is optional but keeps the resulting device identifiable in the tailnet admin console instead of an auto-generated name.
+With no `tailscale.com/proxy-group` annotation, the Operator provisions a dedicated proxy `StatefulSet` for this one Service instead of routing through the shared `ingress` `ProxyGroup`. That's what makes `tailscale.com/tags` meaningful here: a `ProxyGroup` registers its member proxies under its own fixed tags regardless of what a Service requests, but a dedicated per-Service proxy takes the Service's own `tailscale.com/tags` as its identity — so it's authorized by the same ACL rule as everything else that app owns, with no separate egress policy needed. `tailscale.com/hostname` is optional but keeps the device identifiable in the tailnet admin console instead of showing an auto-generated name.
 
 ### Direct cluster API access
 
@@ -67,11 +67,15 @@ Each cluster's kube-apiserver is reachable, via a small TLS-terminating reverse 
 k8s.api.<cluster>REDACTED
 ```
 
-`tailscale` runs this proxy (`kube-apiserver-proxy`, an `nginx` Deployment in the `tailscale` namespace) rather than exposing the cluster's built-in `kubernetes` Service directly, since the built-in Service is backed by `hostNetwork` apiserver pods rather than a normal selector-based ClusterIP. The proxy is a normal ClusterIP Service in front of it, forwarding to `kubernetes.default.svc.cluster.local` — the same in-cluster address every pod already uses, which Kubernetes itself load-balances across every control-plane replica. It terminates TLS with a real cert-manager/LetsEncrypt certificate (`apps/tailscale/templates/certificate-apiserver-proxy.yaml`, same `letsencrypt` `ClusterIssuer` Headlamp's own cert uses) rather than the cluster's internal CA, so clients get standard, publicly-trusted TLS verification — no `insecure-skip-tls-verify`, no CA to distribute. Whatever auth the client presents (e.g. a forwarded per-user OIDC bearer token) passes straight through in the `Authorization` header; the real apiserver still does the actual authn/authz.
+`tailscale` runs this proxy (`kube-apiserver-proxy`, an `nginx` Deployment in the `tailscale` namespace) instead of exposing the cluster's built-in `kubernetes` Service directly, since that Service is backed by `hostNetwork` apiserver pods rather than a normal selector-based ClusterIP. The proxy is a normal ClusterIP Service in front of it, forwarding to `kubernetes.default.svc.cluster.local` — the same in-cluster address every pod already uses, load-balanced by Kubernetes across every control-plane replica.
+
+It terminates TLS with a real cert-manager/Let's Encrypt certificate (`apps/tailscale/templates/certificate-apiserver-proxy.yaml`, the same `letsencrypt` `ClusterIssuer` Headlamp's own cert uses) rather than the cluster's internal CA, so clients get standard, publicly-trusted TLS verification — no `insecure-skip-tls-verify`, no CA to distribute. Whatever auth the client presents (e.g. a forwarded per-user OIDC bearer token) passes straight through in the `Authorization` header; the real apiserver still does authn/authz.
 
 `hsctl get kubeconfig`/`hsctl switch` default to this direct path (`kubectl-oidc_login` handles the OIDC login, PKCE, no client secret); `--omni`/`--break-glass` delegate straight to `omnictl kubeconfig` (see [`hsctl` reference](../operations/hsctl.md)).
 
-Headlamp shows every other cluster in its picker via this same direct path, with the same per-user RBAC it already has for `mgmt`. Which clusters appear is derived automatically — Terraform (`infra/terraform/headlamp.tf`) enumerates every Omni-managed cluster (each `clusters/*/` with a `cluster.yaml`; their apiservers all trust the shared OIDC issuer via `infra/omni/patches/base.yaml`) and publishes the list to Infisical, which `apps/headlamp/templates/kubeconfig-secret.yaml` renders into one kubeconfig context per cluster pointing straight at `k8s.api.<cluster>REDACTED`. Headlamp's pod carries a Tailscale sidecar (kernel networking, `tag:app-headlamp`) so the backend dials those addresses directly over the tailnet — no per-cluster egress Services, and adding a cluster needs no Headlamp change at all. The `tag:app-headlamp` → `tag:k8s-api` grant that authorizes this is `local.k8s_grant` in `infra/terraform/modules/tailscale/acl.tf`.
+Headlamp shows every other cluster in its picker via this same direct path, with the same per-user RBAC it already has for `mgmt`. Which clusters appear is derived automatically: Terraform (`infra/terraform/headlamp.tf`) enumerates every Omni-managed cluster (each `clusters/*/` with a `cluster.yaml`; their apiservers all trust the shared OIDC issuer via `infra/omni/patches/base.yaml`) and publishes the list to Infisical, which `apps/headlamp/templates/kubeconfig-secret.yaml` renders into one kubeconfig context per cluster pointing straight at `k8s.api.<cluster>REDACTED`.
+
+Headlamp's pod carries a Tailscale sidecar (`tag:app-headlamp`) so the backend dials those addresses directly over the tailnet — no per-cluster egress Services, and adding a cluster needs no Headlamp change at all. The `tag:app-headlamp` → `tag:k8s-api` grant that authorizes this is `local.k8s_grant` in `infra/terraform/modules/tailscale/acl.tf`.
 
 ## External service exposure
 
@@ -113,7 +117,7 @@ exposePublic:
       sessionDuration: "24h" # optional
 ```
 
-Terraform (`infra/terraform/modules/cloudflare/access.tf`) creates a `cloudflare_zero_trust_access_application` for the FQDN with a single "allow everyone" policy — i.e. any user who authenticates via an allowed identity provider is granted access, with no group or email restriction. Restricting to specific groups isn't implemented — extend the module's `policies` block if that's ever needed. See the [App reference](apps.md#public-exposure-exposepublic) for the full `access:` field reference.
+Terraform (`infra/terraform/modules/cloudflare/access.tf`) creates a `cloudflare_zero_trust_access_application` for the FQDN with a single "allow everyone" policy: any user who authenticates via an allowed identity provider is granted access, with no group or email restriction. Restricting to specific groups isn't implemented — extend the module's `policies` block if that's ever needed. See the [App reference](apps.md#public-exposure-exposepublic) for the full `access:` field reference.
 
 ## Access policies
 

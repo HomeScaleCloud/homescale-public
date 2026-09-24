@@ -50,9 +50,7 @@ rules:
       - datavolumes
       - datasources
     verbs: ["*"]
-  # Lifecycle and interactive-access subresources — these are distinct RBAC
-  # resources from their parent object, so the "*" grants above don't cover
-  # them. Mirrors KubeVirt's own upstream kubevirt.io:admin ClusterRole.
+  # Subresources aren't covered by the "*" grants above. Mirrors upstream kubevirt.io:admin.
   - apiGroups: ["subresources.kubevirt.io"]
     resources:
       - virtualmachines/start

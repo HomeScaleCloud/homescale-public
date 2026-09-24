@@ -1,14 +1,8 @@
 #!/usr/bin/env bash
-# volsync-restore skill helper — renders the *actual* merged manifests for one
-# app on one cluster (catalog override -> app chart) and reports:
-#   - every Deployment/StatefulSet's replica count
-#   - whether ReplicationSource / ReplicationDestination are present
-#
-# This exists because `clusters/<cluster>/apps.yaml` overrides are a deep
-# merge on maps -- a typo'd or wrong value path (e.g. `replicaCount` when the
-# chart actually reads `controller.replicaCount`) merges in silently and does
-# nothing, with no error anywhere. Rendering is the only way to catch that
-# before it reaches a live cluster mid-restore.
+# volsync-restore skill helper — renders the actual merged manifests for one app
+# on one cluster and reports replica counts plus ReplicationSource/Destination
+# presence. Catches a typo'd or wrong values path (e.g. `replicaCount` when the
+# chart reads `controller.replicaCount`) silently merging in and doing nothing.
 #
 # Usage: render-check.sh <cluster> <app>
 set -euo pipefail
@@ -34,14 +28,10 @@ for bin in helm yq; do
     command -v "$bin" &>/dev/null || { echo "render-check.sh: '$bin' is required" >&2; exit 1; }
 done
 
-# `helm template apps -f apps/values.yaml --set cluster.name=<cluster>` (the
-# command in CLAUDE.md / docs) only renders apps with `defaultDeploy: true` --
-# it does NOT apply the per-cluster `apps:` overrides in
-# clusters/<cluster>/apps.yaml. Apps enabled only via that override (the
-# common case for anything with a volsync restore, e.g. omni, home-assistant)
-# won't show up. So render with the real embedded values block instead: find
-# the `apps` source (not the `clusters/<cluster>` directory source) and feed
-# its `helm.values` string straight into the catalog chart.
+# The CLAUDE.md/docs `helm template apps ...` command only renders apps with
+# `defaultDeploy: true`, missing anything enabled only via the per-cluster
+# `apps:` override (the common case here). So render with the real embedded
+# values block from the `apps` source instead.
 apps_values=$(yq e '.spec.sources[] | select(.path == "apps") | .helm.values' "clusters/$cluster/apps.yaml")
 if [[ -z "$apps_values" || "$apps_values" == "null" ]]; then
     echo "render-check.sh: couldn't find the 'apps' source in clusters/$cluster/apps.yaml" >&2

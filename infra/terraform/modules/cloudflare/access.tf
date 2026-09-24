@@ -12,11 +12,10 @@ data "cloudflare_zero_trust_access_identity_providers" "account" {
 }
 
 locals {
-  # Resolve each app's allowedIdps (by identity provider name) to Cloudflare IdP IDs.
-  # An app that omits allowedIdps resolves to every identity provider configured in
-  # the account. allowed_idps is always set explicitly (never left null) so that
-  # auto_redirect_to_identity below can skip the IdP picker whenever exactly one
-  # provider is in play.
+  # Resolve each app's allowedIdps (by name) to Cloudflare IdP IDs; an app that
+  # omits allowedIdps resolves to every provider configured in the account.
+  # Always set explicitly (never null) so auto_redirect_to_identity below can
+  # skip the IdP picker whenever exactly one provider is in play.
   access_app_idp_ids = {
     for fqdn, access in local.access_apps :
     fqdn => length(try(access.allowedIdps, [])) > 0 ? [

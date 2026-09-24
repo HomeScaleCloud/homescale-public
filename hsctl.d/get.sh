@@ -22,10 +22,9 @@ get_usage() {
     exit 1
 }
 
-# Maps MachineStatus .spec.connected (true/false) to a power state label.
-# Omni doesn't track physical power state directly — a connected agent is the
-# closest signal it has, so "off" here really means "not connected" (which
-# includes powered off, but also e.g. a network-unreachable machine).
+# Maps MachineStatus .spec.connected to a power state label. Omni doesn't track
+# physical power state, so "off" really means "not connected" (could also be a
+# network-unreachable machine).
 _machine_power_state() {
     [[ "$1" == "true" ]] && echo "on" || echo "off"
 }
@@ -55,8 +54,7 @@ get_machines() {
         esac
     done
 
-    # status_tsv: id, connected (power state proxy), IPv4 addresses — from MachineStatus, exists for all connected machines
-    # Note: no 2>&1 here so omnictl's stderr reaches the terminal (auth flow, errors)
+    # status_tsv: id, connected, IPv4 addresses — from MachineStatus, for all connected machines
     local status_tsv identity_tsv
     status_tsv=$(omnictl get machinestatus -o yaml | \
         yq e '[

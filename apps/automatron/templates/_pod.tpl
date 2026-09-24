@@ -1,8 +1,7 @@
 {{/*
 Shared jobTemplate.spec.template for automatron's CronJobs. Call with:
   include "automatron.podTemplate" (dict "root" $ "playbook" "bootstrap-cluster" "chainNext" "automatron-bootstrap-cluster")
-"playbook" is the default PLAYBOOK env value; "chainNext" (optional) sets
-CHAIN_NEXT_CRONJOB so this run triggers that CronJob's jobTemplate on success.
+"chainNext" (optional) sets CHAIN_NEXT_CRONJOB so this run triggers that CronJob's jobTemplate on success.
 */}}
 {{- define "automatron.podTemplate" -}}
 {{- $root := .root -}}
@@ -27,20 +26,11 @@ spec:
     - name: git-ssh-key-fixed
       emptyDir: {}
   initContainers:
-    # Omni lives in this same cluster (mgmt) — its `api`/`k8s` Services (apps/omni/
-    # templates/service.yaml) already have ClusterIPs regardless of their Tailscale
-    # LoadBalancer status, so automatron reaches Omni entirely in-cluster rather than
-    # over Tailscale, keeping the client-facing hostnames (and therefore TLS cert
-    # validation against the real REDACTED cert — a real Let's
-    # Encrypt cert, so it can't cover .svc.cluster.local names instead) unchanged —
-    # only where they resolve to changes. Helm's `lookup` (resolved at render time)
-    # isn't reliable here — ArgoCD's own renders have been observed returning empty
-    # for it — so this resolves the real ClusterIPs at pod start instead, via a
-    # scoped Role/RoleBinding (templates/role.yaml, templates/rolebinding.yaml) letting automatron's own
-    # ServiceAccount `get` just these two Services in the omni namespace, and writes
-    # a corrected /etc/hosts to a shared volume — the automatron container mounts it
-    # over its own (non-root, and /etc/hosts isn't group/other-writable, so it can't
-    # patch this itself).
+    # Resolves REDACTED / REDACTED to their
+    # real in-cluster ClusterIPs and writes a corrected /etc/hosts to a shared volume,
+    # so automatron reaches Omni in-cluster while keeping the real hostnames (and TLS
+    # cert validation) unchanged. Done at pod start rather than via Helm's `lookup`,
+    # which ArgoCD's renders have been observed returning empty for.
     - name: omni-hosts
       image: "{{ $root.Values.automatron.image.repository }}:{{ $root.Values.automatron.image.tag }}"
       command: ["sh", "-c"]
@@ -53,12 +43,8 @@ spec:
       volumeMounts:
         - name: hosts
           mountPath: /shared
-    # Fixes the deploy key's ownership (k8s secret files are always root-owned; git-sync's
-    # non-root UID can't read them, and widening via fsGroup won't work either since
-    # sshd rejects any group/other bits) and a missing trailing newline the stored value
-    # needs OpenSSH's parser to accept — see git-key-prep.sh for the full why. Runs as
-    # root (only this container needs to) on automatron's own image, not git-sync's, so
-    # this logic is a real versioned script rather than inline shell here.
+    # Fixes the deploy key's ownership and a missing trailing newline OpenSSH needs —
+    # see git-key-prep.sh.
     - name: git-key-prep
       image: "{{ $root.Values.automatron.image.repository }}:{{ $root.Values.automatron.image.tag }}"
       securityContext:

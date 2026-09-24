@@ -1,41 +1,18 @@
 #!/usr/bin/env bash
 # hsctl run — run an Ansible playbook from infra/ansible/playbooks/, either locally or
-# remotely as a one-off Kubernetes Job on automatron (apps/automatron), the in-cluster
-# runner deployed to mgmt that also runs bootstrap-cluster on a 15-minute schedule.
+# remotely as a one-off Kubernetes Job on automatron (apps/automatron).
 #
-# `bootstrap-mgmt`/`bootstrap-cluster` are the built-in cluster bootstrap playbooks and get
-# special handling below — see "Local secrets" — but any other playbook name under
-# infra/ansible/playbooks/ works too, both locally and remotely; it's just run as-is with
-# no local secrets handling (see below). A playbook is always named explicitly — there's no
-# "run everything" shortcut, since that's an easy way to fire off more infra changes than
-# you meant to.
+# bootstrap-mgmt/bootstrap-cluster get special local-secrets handling (see
+# _run_bootstrap_local); any other playbook runs as-is with no Infisical fallback of its
+# own, so a new one needing local secrets must add hsctl_local-aware handling itself.
 #
-# Local secrets: automatron authenticates to Infisical by reusing the k8s Infisical
-# Operator's own identity (INFISICAL_OPERATOR_CLIENT_ID/SECRET), mounted into its pod as
-# env vars — nothing a laptop run can reproduce. For bootstrap-mgmt/bootstrap-cluster, local
-# runs instead pre-fetch the same secrets via the caller's own `infisical` CLI session
-# (browser SSO, same as hsctl_bmc_creds in _lib.sh) and hand them to Ansible as
-# hsctl_local_secrets, which bootstrap-mgmt.yml and the cluster-secrets role use in place
-# of their own Infisical login when hsctl_local is set. automatron is unaffected — those
-# tasks still run their normal universal_auth login there. A playbook outside this pair
-# that needs Infisical locally must add its own hsctl_local-aware fallback the same way
-# before `hsctl run` can help it — this module doesn't know its secret paths, so it just
-# runs it and lets any Infisical lookup inside fail on its own.
-#
-# Local repo source: -e local never runs against $HSCTL_REPO_ROOT (whatever's checked
-# out on the caller's machine — could be a branch, stale, or have uncommitted changes).
-# It clones HomeScaleCloud/homescale@main fresh into a temp dir via `gh repo clone`
-# instead (see _run_local_clone_repo), so a local run always executes the same code
-# that's actually live on main, and cleans that clone up on exit. HSCTL_REPO_ROOT stays
-# relevant for hsctl's *other* commands (e.g. `hsctl get`), just not this module.
+# Local mode never runs against $HSCTL_REPO_ROOT — it clones HomeScaleCloud/homescale@main
+# fresh into a temp dir instead (_run_local_clone_repo), so it always matches main.
 
 _run_bootstrap_playbooks=(bootstrap-mgmt bootstrap-cluster)
 
-# Every EXIT-time cleanup this module needs (temp files/dirs) goes through this
-# registry instead of each function calling `trap ... EXIT` directly — a later
-# `trap` call replaces any earlier one instead of stacking, so two independent
-# cleanups (e.g. the cloned-repo tempdir below and _run_bootstrap_local's
-# extra-vars file) would silently clobber each other otherwise.
+# Cleanup registry: a later `trap ... EXIT` call replaces any earlier one instead of
+# stacking, so independent cleanups register a path here rather than trapping directly.
 _run_cleanup_paths=()
 _run_register_cleanup() { _run_cleanup_paths+=("$1"); }
 _run_cleanup() {
@@ -93,9 +70,8 @@ _run_infisical_secrets() {
     jq 'map({(.key): .value}) | add // {}' <<< "$raw"
 }
 
-# Run bootstrap-mgmt or bootstrap-cluster locally, pre-fetching the secrets they'd otherwise
-# get via CI's OIDC login (see the module-level comment) and handing them to Ansible as
-# hsctl_local_secrets.
+# Run bootstrap-mgmt or bootstrap-cluster locally, pre-fetching secrets via the local
+# Infisical CLI session and handing them to Ansible as hsctl_local_secrets.
 _run_bootstrap_local() {
     local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4"
 
@@ -162,14 +138,9 @@ _run_generic_local() {
     )
 }
 
-# Clones `main` fresh into a temp dir rather than trusting whatever's checked out at
-# HSCTL_REPO_ROOT — that could be a feature branch, stale, or have uncommitted local
-# changes, none of which local mode should silently run against. Cloned once per
-# `hsctl run` invocation (even across a --chain, not once per chained playbook).
-# Deliberately does NOT call _run_register_cleanup itself: this runs inside a
-# subshell when captured via $(...) at the call site, so registering there would
-# mutate the subshell's copy of _run_cleanup_paths and vanish with it — the caller
-# registers the returned path instead, in its own (non-subshell) scope.
+# Clones `main` fresh into a temp dir, once per `hsctl run` invocation (not per chained
+# playbook). Doesn't call _run_register_cleanup itself — this runs in a $(...) subshell,
+# so the caller registers the returned path in its own, non-subshell scope instead.
 _run_local_clone_repo() {
     command -v gh &>/dev/null || { echo "hsctl run: gh is required for local runs (brew install gh)" >&2; exit 1; }
 
@@ -200,10 +171,8 @@ _run_remote() {
     local playbook="$1" cluster="$2" dry_run="$3"
     local namespace="automatron"
     local job_name="automatron-adhoc-${playbook}-$(date +%s)"
-    # Every built-in playbook has its own CronJob (bootstrap-cluster's is suspended —
-    # see apps/automatron/templates/cronjob-bootstrap-cluster.yaml); anything else falls
-    # back to cloning omni-sync's jobTemplate, which is just this same pod shape with a
-    # different PLAYBOOK/CLUSTER override anyway.
+    # Every built-in playbook has its own CronJob; anything else falls back to cloning
+    # omni-sync's jobTemplate (same pod shape, different PLAYBOOK/CLUSTER override).
     local cronjob="automatron-$playbook"
     case "$playbook" in
         bootstrap-mgmt|bootstrap-cluster|omni-sync) ;;
@@ -213,13 +182,9 @@ _run_remote() {
     command -v kubectl &>/dev/null || { echo "hsctl run: kubectl is required" >&2; exit 1; }
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
 
-    # A `mgmt` context already present (e.g. CI pre-seeded one from MGMT_KUBECONFIG, or
-    # a previous interactive run) is reused as-is via explicit --context mgmt on every
-    # kubectl call below — the default/current-context is never touched in this case.
-    # Only the first-ever bootstrap (no mgmt context yet) needs the interactive OIDC
-    # flow (hsctl get kubeconfig), which — as a side effect of that shared function —
-    # switches current-context to mgmt; restore it immediately afterward rather than
-    # leaving it switched for the duration of this run.
+    # A `mgmt` context, if already present, is reused via explicit --context mgmt below.
+    # Otherwise, authenticate via OIDC (hsctl get kubeconfig), which switches
+    # current-context as a side effect — restore it immediately after.
     if ! kubectl config get-contexts -o name 2>/dev/null | grep -qx mgmt; then
         local prev_ctx
         prev_ctx=$(kubectl config current-context 2>/dev/null || true)
@@ -230,11 +195,9 @@ _run_remote() {
         [[ -n "$prev_ctx" ]] && kubectl config use-context "$prev_ctx" >/dev/null 2>&1
     fi
 
-    # Whatever CronJob we clone the jobTemplate from, always pin its PLAYBOOK/CLUSTER/
-    # DRY_RUN to what was actually asked for, and strip any CHAIN_NEXT_CRONJOB the source
-    # template carried — ad hoc runs never auto-chain via that in-cluster mechanism
-    # (only the scheduled omni-sync CronJob does); chaining multiple playbooks together
-    # from hsctl is run_main's --chain loop instead, above.
+    # Pin PLAYBOOK/CLUSTER/DRY_RUN to what was asked for, and strip any CHAIN_NEXT_CRONJOB
+    # the source template carried — ad hoc runs never auto-chain in-cluster; --chain above
+    # is what handles chaining from hsctl instead.
     hsctl_log_action "creating Job $job_name (playbook=$playbook${cluster:+, cluster=$cluster}${dry_run:+, dry_run=$dry_run}) on automatron"
     kubectl get cronjob "$cronjob" -n "$namespace" --context mgmt -o json | \
         jq --arg name "$job_name" --arg playbook "$playbook" --arg cluster "$cluster" --arg dry_run "$dry_run" '
@@ -265,9 +228,8 @@ _run_remote() {
         exit 1
     fi
 
-    # The automatron container sits behind the git-key-prep/git-clone initContainers
-    # — `kubectl logs -f` errors out immediately rather than waiting if called before
-    # it's actually started, so poll until it is.
+    # `kubectl logs -f` errors immediately if called before the container has started
+    # (it sits behind the git-key-prep/git-clone initContainers), so poll until it has.
     hsctl_log_info "waiting for the automatron container to start..."
     local started=""
     for attempt in $(seq 1 60); do
@@ -282,19 +244,14 @@ _run_remote() {
         exit 1
     fi
 
-    # kubecolor (if the caller has it — an interactive-shell tool, not assumed on
-    # PATH e.g. in CI) colorizes this the same way `kubectl logs` would look run
-    # by hand; every other kubectl call above parses structured output (json/
-    # jsonpath) and must stay plain, since injected ANSI codes there breaks
-    # parsing rather than just being cosmetic.
+    # kubecolor, if present, colorizes this like an interactive `kubectl logs` would;
+    # every other kubectl call above parses structured output and must stay plain.
     local log_cmd="kubectl"
     command -v kubecolor &>/dev/null && log_cmd="kubecolor"
     "$log_cmd" logs -f "$pod" -c automatron -n "$namespace" --context mgmt
 
-    # `kubectl logs -f` returns as soon as the container's log stream closes, which
-    # can be a moment before the Job controller has actually observed completion and
-    # updated .status — checking once, immediately, can race and see neither field
-    # set yet even though the run genuinely succeeded. Poll briefly instead.
+    # The Job controller can lag behind the log stream closing, so poll briefly for
+    # .status rather than checking once immediately.
     local succeeded="" failed=""
     for attempt in $(seq 1 10); do
         succeeded=$(kubectl get job "$job_name" -n "$namespace" --context mgmt \
@@ -345,12 +302,7 @@ run_main() {
     fi
 
     # --chain runs each listed playbook in turn after the first succeeds, mirroring
-    # --cluster/--dry-run to every one of them — a client-side loop, not the in-cluster
-    # CHAIN_NEXT_CRONJOB mechanism (see apps/automatron/entrypoint.sh) that the scheduled
-    # omni-sync CronJob uses; ad hoc runs never chain unless --chain says so. Each
-    # _run_*/exit 1 on failure, so the loop naturally stops at the first one that fails.
-    # This applies identically in local mode — same loop, same --chain, just against
-    # the one cloned checkout above instead of a Job per playbook.
+    # --cluster/--dry-run to all of them; each _run_*/exit 1 on failure stops the loop.
     local p
     for p in "$playbook" "${chain[@]}"; do
         if [[ "$mode" == "remote" ]]; then

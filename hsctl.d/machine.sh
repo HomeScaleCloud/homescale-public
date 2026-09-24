@@ -1,28 +1,17 @@
 #!/usr/bin/env bash
 # hsctl machine — take action directly against physical machines (IPMI/BMC/Talos)
 #
-# Unlike get.sh (read-only), these commands change real hardware state, so
-# progress/outcome is reported via the hsctl_log_* helpers in _lib.sh rather
-# than plain echo.
+# Unlike get.sh (read-only), progress/outcome here is reported via the hsctl_log_*
+# helpers in _lib.sh rather than plain echo. BMC creds come from Infisical at
+# /bmc/<machine-id> (see hsctl_bmc_creds in _lib.sh).
 #
-# BMC connection info is stored per-machine in Infisical at /bmc/<machine-id>
-# (keys: IP, VENDOR_USERNAME, VENDOR_PASSWORD) — see hsctl_bmc_creds in _lib.sh.
+# Power control goes through ipmitool, not Redfish: this fleet's Supermicro BMCs
+# gate Redfish behind a paid license, but IPMI-over-LAN works unlicensed with the
+# same creds. Graceful "power off" prefers talosctl instead (cordons/drains first);
+# --force hard-cuts power via IPMI like the other actions.
 #
-# Redfish was tried first, but this fleet's Supermicro BMCs gate every Redfish
-# endpoint behind a paid "SUM DCMS OOB" license, regardless of auth method.
-# IPMI-over-LAN works unlicensed with the same credentials, so power control
-# goes through ipmitool instead — except for a graceful "power off", which
-# prefers talosctl (cordons/drains before shutdown). --force skips talosctl
-# and hard-cuts power via IPMI instead, same as the other actions.
-#
-# ipmitool calls prefer RMCP+ (-I lanplus) but fall back to legacy IPMI 1.5
-# (-I lan) when the RMCP+ session can't be established, so these commands keep
-# working even when a BMC's RMCP+/RAKP stack is broken ("invalid role" / "Unable
-# to establish IPMI v2 / RMCP+ session"). On these X11SSH-F BMCs that break is a
-# corrupt cipher-suite privilege table that survives a cold reset and can't be
-# rewritten over IPMI — see the troubleshooting section in docs/operations/hsctl.md.
-# "bmcreset" cold-restarts the BMC (host power untouched); like every other action
-# here it rides the 1.5 fallback when lanplus is the thing that's down.
+# ipmitool calls prefer RMCP+ (-I lanplus), falling back to legacy IPMI 1.5 (-I lan)
+# when a BMC's RMCP+/RAKP stack is broken — see docs/operations/hsctl.md for details.
 
 machine_usage() {
     echo "Usage: hsctl machine <action> [args...]"
@@ -35,11 +24,8 @@ machine_usage() {
     exit 1
 }
 
-# Run an ipmitool command against a BMC, preferring RMCP+ (IPMI 2.0 / lanplus) but
-# falling back to legacy IPMI 1.5 (-I lan) if the lanplus session can't be
-# established (RAKP "invalid role" / "Unable to establish IPMI v2 / RMCP+
-# session") — on these Supermicro BMCs the RMCP+ path can break while the 1.5
-# session path keeps working. Prints ipmitool's output on stdout either way.
+# Run an ipmitool command, falling back from RMCP+ (lanplus) to legacy IPMI 1.5 (lan)
+# if the lanplus session can't be established. Prints ipmitool's output either way.
 # Usage: out=$(_machine_ipmi <bmc-ip> <user> <pass> <ipmitool args...>) || return 1
 _machine_ipmi() {
     local ip="$1" user="$2" pass="$3"; shift 3
@@ -73,10 +59,7 @@ _machine_ipmi_power() {
     fi
 }
 
-# Cold-restart a machine's BMC. The host's power state is unaffected — this only
-# reboots the management controller itself (~1-2 min to come back). The usual
-# reason to run this is a BMC whose RMCP+/lanplus stack has wedged, so
-# _machine_ipmi's IPMI 1.5 fallback is what carries the reset in practice.
+# Cold-restart a machine's BMC (host power unaffected, ~1-2 min to come back).
 # Usage: _machine_bmc_reset <machine-id> <bmc-ip> <user> <pass>
 _machine_bmc_reset() {
     local id="$1" ip="$2" user="$3" pass="$4"

@@ -96,8 +96,6 @@ resource "tailscale_acl" "this" {
     }
   })
 
-  # Without this, Create() 412s unless the tailnet's ACL has never been
-  # touched from Tailscale's own default -- Terraform is meant to fully own
-  # this ACL, so that protection doesn't apply to us.
+  # Without this, apply 412s once the ACL has been touched outside Terraform.
   overwrite_existing_content = true
 }

@@ -2,46 +2,31 @@
 # Render every app catalog and per-app chart the way ArgoCD would — once per
 # cluster in clusters/ — and schema-validate the output with kubeconform.
 #
-# Catches, before merge (instead of at ArgoCD sync time on main):
-#   - template errors in apps/templates/applications.yaml
-#   - malformed / mistyped inline helm.values in clusters/<cluster>/apps.yaml
-#   - template errors and wrong value paths in any per-app chart, with that
-#     cluster's real merged values
-#   - rendered manifests — ours and upstream subcharts' — that don't match their
-#     Kubernetes / CRD schema
-#
-# CRD coverage: kubeconform is given the Kubernetes schemas plus the
-# datreeio/CRDs-catalog, and -ignore-missing-schemas so an unknown CRD does not
-# fail the run outright. But a *skipped* resource whose kind is not in
-# NO_SCHEMA_OK is treated as a hard failure — that is how "we render a CR with
-# no schema anywhere" surfaces instead of passing silently. Add the kind to
-# NO_SCHEMA_OK (with a reason) or wire up a -schema-location for it.
+# CRD coverage: kubeconform gets the Kubernetes schemas plus the
+# datreeio/CRDs-catalog, with -ignore-missing-schemas. A *skipped* resource
+# whose kind isn't in NO_SCHEMA_OK is still a hard failure, so an unschematized
+# CR can't slip through silently — add it to NO_SCHEMA_OK or wire up a
+# -schema-location.
 #
 # Usage: .github/scripts/validate-manifests.sh
 # Env:   KUBERNETES_VERSION (default 1.34.0)
 #
-# Needs kubeconform 0.7.x — 0.8.0 regressed `-verbose -output json` (emits no
-# resources) and `-skip`. CI pins 0.7.0 in scan.yaml.
+# Needs kubeconform 0.7.x — 0.8.0 regressed `-verbose -output json` and `-skip`.
+# CI pins 0.7.0 in scan.yaml.
 
 set -euo pipefail
 
 KUBERNETES_VERSION="${KUBERNETES_VERSION:-1.34.0}"
 CRD_CATALOG='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
 
-# Kinds allowed to have no schema. kubeconform's schema store ships none for
-# CustomResourceDefinition, and the CRD objects themselves come from pinned
-# upstream charts that Helm has already rendered — validating their structure
-# adds nothing.
-#   Controller/NodeSet/RestApi/Accounting/LoginSet — slinky.slurm.net CRs from
-#   the slurm-operator chart (apps/slurm). Too new/niche to be in datreeio's
-#   CRDs-catalog; no public schema to validate against.
+# Kinds allowed to have no schema: CustomResourceDefinition (kubeconform ships
+# none), plus the slinky.slurm.net CRs from apps/slurm — too new/niche for
+# datreeio's CRDs-catalog.
 NO_SCHEMA_OK=(CustomResourceDefinition Controller NodeSet RestApi Accounting LoginSet)
 
-# Kinds whose catalog schema is known wrong for the chart version we pin, so a
-# validation failure is not actionable. Revisit whenever the chart is bumped.
-#   ImageUpdater — datreeio's imageupdater_v1alpha1 marks spec.namespace and
-#   manifestTargets.helm.name/tag required; argocd-image-updater 1.3.1's actual
-#   CRD requires none of them.
+# Kinds whose catalog schema is known wrong for the chart version we pin (revisit
+# on bump). ImageUpdater: datreeio's schema marks fields required that
+# argocd-image-updater 1.3.1's actual CRD doesn't.
 KNOWN_BAD_SCHEMA=(ImageUpdater)
 
 repo_root="$(git rev-parse --show-toplevel)"

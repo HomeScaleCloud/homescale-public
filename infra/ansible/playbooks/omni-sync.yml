@@ -1,21 +1,15 @@
 ---
-# Syncs every cluster template and machine class into Omni — the same work
-# .github/workflows/deploy.yaml's old `omni` job did directly with omnictl.
-# Idempotent reconciliation: always processes everything, no diff detection
-# (that's fine for both the 5-minute schedule and a PR dry-run check).
+# Syncs every cluster template and machine class into Omni. Idempotent:
+# always processes everything, no diff detection.
 - name: Sync Omni cluster templates and machine classes
   hosts: localhost
   gather_facts: false
   connection: local
 
   vars:
-    # Named distinctly from the `dry_run` extra var (-e dry_run=...) rather than
-    # reusing that name here — extra vars have higher precedence than anything a play's
-    # own `vars:` block computes, even a self-referencing one, so `dry_run: "{{ dry_run
-    # | default(false) | bool }}"` would silently keep the raw extra-var STRING
-    # ("false") instead of the cast bool below, and Jinja treats any non-empty string
-    # (including "false") as truthy — every non-dry-run invocation was actually adding
-    # --dry-run to every omnictl call, unconditionally, until this was caught.
+    # Named distinctly from the `dry_run` extra var: extra vars take precedence
+    # over vars, so reusing the name here would keep the raw string "false"
+    # (truthy in Jinja) instead of the cast bool.
     is_dry_run: "{{ dry_run | default(false) | bool }}"
     repo_root: "{{ playbook_dir }}/../../.."
     omni_endpoint: "{{ lookup('env', 'OMNI_ENDPOINT') | default('https://REDACTED', true) }}"
@@ -25,10 +19,9 @@
     OMNI_SERVICE_ACCOUNT_KEY: "{{ lookup('env', 'OMNI_SERVICE_ACCOUNT_KEY') }}"
 
   tasks:
-    # ansible.builtin.find's recurse has no depth limit (unlike the old bash
-    # `find clusters -mindepth 2 -maxdepth 2`), which would wrongly pick up any
-    # cluster.yaml nested deeper than clusters/<name>/ and derive the wrong cluster
-    # name from it — a plain find call reproduces the exact original depth bound.
+    # Shells out to find rather than ansible.builtin.find: that module's
+    # recurse has no depth limit and would pick up a cluster.yaml nested
+    # deeper than clusters/<name>/.
     - name: Discover cluster templates
       ansible.builtin.command:
         cmd: "find {{ repo_root }}/clusters -mindepth 2 -maxdepth 2 -name cluster.yaml"

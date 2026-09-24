@@ -1,6 +1,8 @@
 # hsctl
 
-`hsctl` is a small bash CLI for day-to-day operator tasks against the HomeScale fleet — listing clusters and machines, fetching kubeconfigs, browsing restic snapshots, power-cycling machines, jumping into ArgoCD, and managing Entra PIM assignments. Most commands talk to Omni and each cluster's API server over Tailscale, so they require an active Tailscale connection — the exception is `hsctl pim` and the `pim*` resources under `hsctl get`, which talk to Microsoft Graph/ARM directly and don't need Tailscale.
+`hsctl` is a small bash CLI for day-to-day operator tasks against the HomeScale fleet: listing clusters and machines, fetching kubeconfigs, browsing restic snapshots, power-cycling machines, jumping into ArgoCD, and managing Entra PIM assignments.
+
+Most commands talk to Omni and each cluster's API server over Tailscale, so they need an active Tailscale connection. The exception is `hsctl pim` and the `pim*` resources under `hsctl get`, which talk to Microsoft Graph/ARM directly and don't need Tailscale.
 
 Source: `hsctl` (entrypoint) and `hsctl.d/*.sh` (one file per top-level command) at the repo root.
 
@@ -25,18 +27,18 @@ Output format defaults to `table`; pass `-o yaml` or `-o json` for scripting.
 | Resource | Usage | Description |
 |----------|-------|-------------|
 | `clusters` | `hsctl get clusters` | List Kubernetes clusters reachable via Tailscale |
-| `kubeconfig` | `hsctl get kubeconfig <cluster> [--omni\|--break-glass]` | Write a kubeconfig context for `<cluster>`. Default: [direct to the real apiserver](../architecture/networking.md#direct-cluster-api-access) with OIDC login (`kubectl-oidc_login`, [krew](https://krew.sigs.k8s.io/) plugin, required; OIDC issuer/client ID fetched from Infisical at `/k8s/oidc`). `--omni` runs `omnictl kubeconfig --cluster <cluster>`. `--break-glass` runs `omnictl kubeconfig --break-glass --cluster <cluster>` to bypass Omni and access nodes directly |
+| `kubeconfig` | `hsctl get kubeconfig <cluster> [--omni\|--break-glass]` | Write a kubeconfig context for `<cluster>`. Default: [direct to the real apiserver](../architecture/networking.md#direct-cluster-api-access) via OIDC login (needs the `kubectl-oidc_login` [krew](https://krew.sigs.k8s.io/) plugin; issuer/client ID come from Infisical at `/k8s/oidc`). `--omni` runs `omnictl kubeconfig --cluster <cluster>`. `--break-glass` runs `omnictl kubeconfig --break-glass --cluster <cluster>` to bypass Omni and reach nodes directly |
 | `machines` | `hsctl get machines [--cluster <name>]` | List all Omni machines with power state, enriched with node name, cluster, and role for machines already assigned to a cluster. Filter to one cluster with `--cluster`/`-c` |
 | `machine` | `hsctl get machine <id\|node-name>` | Show details for a single machine, by Omni machine ID or Kubernetes node name |
 | `snapshot` | `hsctl get snapshot <app>` | List restic snapshots for an app's VolSync-backed PVC, with timestamps and IDs — see [Backups: restore procedure](../architecture/backups.md#restore-procedure) |
 | `pimrole` | `hsctl get pimrole` | List your eligible + active Entra directory role PIM assignments (Graph API) |
 | `pimgroup` | `hsctl get pimgroup` | List your eligible + active PIM-for-Groups assignments (Graph API) |
 | `pimazurerole` | `hsctl get pimazurerole --scope <arm-scope>` | List your eligible + active Azure resource RBAC PIM assignments (ARM API) |
-| `pimapproval` | `hsctl get pimapproval [role\|group\|azure] [--scope <arm-scope>]` | List pending PIM approval requests — both ones you can approve and your own, tagged `approver`/`requestor`, with the requester's display name and email (`role`/`group` only — Graph API). No type: `role` + `group` |
+| `pimapproval` | `hsctl get pimapproval [role\|group\|azure] [--scope <arm-scope>]` | List pending PIM approval requests: ones you can approve and your own, tagged `approver`/`requestor`, with the requester's display name and email (`role`/`group` only — Graph API). No type given: shows both `role` and `group` |
 
 ## `hsctl argocd`
 
-```
+```bash
 hsctl argocd login <cluster>   # argocd CLI login via SSO to that cluster's ArgoCD
 hsctl argocd open <cluster>    # open that cluster's ArgoCD UI in the browser
 ```
@@ -50,7 +52,9 @@ hsctl machine power on|off|reset [--force] <id|node-name> [<id|node-name>...]
 hsctl machine bmcreset <id|node-name>
 ```
 
-Takes action directly against a physical machine — unlike `hsctl get`, this changes real hardware state. Accepts an Omni machine ID or a Kubernetes node name (resolved the same way as `hsctl get machine`). `power` accepts multiple space-separated `<id|node-name>` targets and acts on each in turn, continuing past any single machine's failure (unresolved name, credential fetch, or ipmitool/talosctl error) and exiting non-zero if any of them failed.
+Takes action directly against a physical machine — unlike `hsctl get`, this changes real hardware state. Accepts an Omni machine ID or a Kubernetes node name (resolved the same way as `hsctl get machine`).
+
+`power` accepts multiple space-separated targets and acts on each in turn. It continues past a single machine's failure (unresolved name, credential fetch, or ipmitool/talosctl error) but exits non-zero if any target failed.
 
 | Action | Mechanism | Effect |
 |--------|-----------|--------|
@@ -60,11 +64,11 @@ Takes action directly against a physical machine — unlike `hsctl get`, this ch
 | `reset` | `ipmitool chassis power reset` | Warm reset (equivalent to the physical reset button) |
 | `bmcreset` | `ipmitool mc reset cold` | Cold-restart the BMC itself — **host power is left untouched**; the controller takes ~1–2 min to come back |
 
-`off` requires [`talosctl`](https://www.talos.dev/latest/introduction/getting-started/#talosctl) (`brew install talosctl`). If a graceful shutdown isn't possible or desired, pass `--force` to hard-cut power via IPMI instead — the previous behavior for `off`.
+`off` requires [`talosctl`](https://www.talos.dev/latest/introduction/getting-started/#talosctl) (`brew install talosctl`). If a graceful shutdown isn't possible or desired, pass `--force` to hard-cut power via IPMI instead.
 
-`on`, `reset`, `off --force` and `bmcreset` go over the BMC via IPMI (via [`ipmitool`](https://github.com/ipmitool/ipmitool), `brew install ipmitool`). Redfish was tried first, but this fleet's Supermicro BMCs gate every Redfish endpoint behind a paid `SUM DCMS OOB` license regardless of auth method — IPMI-over-LAN works unlicensed with the same credentials.
+`on`, `reset`, `off --force` and `bmcreset` go over the BMC via IPMI ([`ipmitool`](https://github.com/ipmitool/ipmitool), `brew install ipmitool`). IPMI is used instead of Redfish because this fleet's Supermicro BMCs gate every Redfish endpoint behind a paid `SUM DCMS OOB` license — IPMI-over-LAN works unlicensed with the same credentials.
 
-Each `ipmitool` call prefers RMCP+ (`-I lanplus`) but falls back to legacy IPMI 1.5 (`-I lan`) when the RMCP+ session can't be established, so `hsctl machine` keeps working even when a BMC's RMCP+ stack is broken. `bmcreset` itself is almost always carried by the 1.5 fallback, since the reason to run it is that `lanplus` is down.
+Each `ipmitool` call prefers RMCP+ (`-I lanplus`) but falls back to legacy IPMI 1.5 (`-I lan`) when the RMCP+ session can't be established, so `hsctl machine` keeps working even when a BMC's RMCP+ stack is broken. `bmcreset` itself is almost always carried by the 1.5 fallback, since the usual reason to run it is that `lanplus` is down.
 
 ### `Error in open session response message : invalid role`
 
@@ -88,7 +92,7 @@ ipmitool -I lan -H <bmc-ip> -U <user> -P <pass> lan print 1 | grep -A1 'Cipher S
 
 If one X11SSH-F BMC is in this state, check the others: `ipmitool -I lanplus -H <bmc> -U … -P … mc info` succeeding is the all-clear.
 
-BMC connection info (`IP`, `VENDOR_USERNAME`, `VENDOR_PASSWORD`) is fetched at runtime from Infisical at `/bmc/<machine-id>` — this path must be populated per-machine before an IPMI-backed `hsctl machine power` action will work for it. Progress and outcome are reported via timestamped `INFO`/`ACTION`/`OK`/`ERROR` log lines (`hsctl_log_*` in `_lib.sh`) — the logging convention every future hsctl command that *takes action* (rather than just displaying data) should use.
+BMC connection info (`IP`, `VENDOR_USERNAME`, `VENDOR_PASSWORD`) is fetched at runtime from Infisical at `/bmc/<machine-id>` — populate this path per-machine before an IPMI-backed `hsctl machine power` action will work for it. Progress and outcome are reported via timestamped `INFO`/`ACTION`/`OK`/`ERROR` log lines.
 
 ## `hsctl run`
 
@@ -96,22 +100,29 @@ BMC connection info (`IP`, `VENDOR_USERNAME`, `VENDOR_PASSWORD`) is fetched at r
 hsctl run <playbook> [--cluster <name>] [-e|--execution-mode local|remote] [--dry-run] [--chain <playbook>[,<playbook>...]]
 ```
 
-Runs an Ansible playbook from `infra/ansible/playbooks/` — the same ones [automatron](../architecture/overview.md#automatron--ansible-cluster-bootstrap--omni-sync) (the in-cluster runner on `mgmt`) runs on a schedule or ad hoc. `<playbook>` is always required — no "run everything" shortcut — and is any filename (without `.yml`) under that directory, with three built-in ones getting special handling — each has its own CronJob on automatron (`automatron-<playbook>`), so `-e remote` always has a `jobTemplate` to clone:
+Runs an Ansible playbook from `infra/ansible/playbooks/` — the same ones [automatron](../architecture/overview.md#automatron--ansible-cluster-bootstrap--omni-sync) (the in-cluster runner on `mgmt`) runs on a schedule or ad hoc. `<playbook>` is required (no "run everything" shortcut) and is any filename under that directory, minus `.yml`.
+
+Three playbooks get special handling and each has its own CronJob on automatron (`automatron-<playbook>`), so `-e remote` always has a `jobTemplate` to clone:
 
 | Playbook | Effect |
 |----------|--------|
-| `omni-sync` | Syncs every cluster template and machine class into Omni. Runs automatically every 15 minutes — the only one of the three with an active schedule, and on success chains a `bootstrap-cluster` run *only* when fired that way (see [Automatron](../architecture/overview.md#automatron--ansible-cluster-bootstrap--omni-sync)) — an ad hoc `hsctl run omni-sync` here does not, unless you pass `--chain` |
+| `omni-sync` | Syncs every cluster template and machine class into Omni. Runs automatically every 15 minutes — the only one of the three with an active schedule — and on success chains a `bootstrap-cluster` run, but only when fired that way (see [Automatron](../architecture/overview.md#automatron--ansible-cluster-bootstrap--omni-sync)). An ad hoc `hsctl run omni-sync` doesn't chain unless you pass `--chain` |
 | `bootstrap-cluster` | Bootstraps workload clusters — all of them, or one via `--cluster <name>` (its Omni cluster ID, e.g. `boa1-prod`); ignored for `bootstrap-mgmt`. Its CronJob is suspended — only ever runs via the scheduled chain, `--chain`, or ad hoc on its own |
 | `bootstrap-mgmt` | Bootstraps the mgmt-class cluster. Its CronJob is suspended too — ad hoc only, since mgmt changes rarely |
 | anything else | Runs `playbooks/<playbook>.yml` as-is; `--cluster` is passed through as `-e target=<name>` regardless of playbook. `-e remote` falls back to cloning `omni-sync`'s `jobTemplate` |
 
-`-e`/`--execution-mode` is `local` or `remote` — **default is `remote`**: creates a one-off Kubernetes `Job` on automatron (cloned from the matching `CronJob`'s template) in the `mgmt` cluster and immediately streams its logs. Requires a Tailscale-reachable `mgmt` apiserver (same as `hsctl switch`/`hsctl get kubeconfig`, though if a `mgmt` kubectl context already exists — e.g. CI pre-seeds one from `MGMT_KUBECONFIG` — it's reused as-is instead of triggering an interactive OIDC login) and `team-infra-plat`/`team-sec-plat` membership — no PIM needed. `local` clones `HomeScaleCloud/homescale@main` fresh into a temp directory via `gh repo clone` (requires `gh auth login`) and runs `ansible-playbook` against that checkout, cleaning it up afterward — never against whatever's checked out at `$HSCTL_REPO_ROOT` on the caller's machine, which could be a branch, stale, or have uncommitted changes. Still required for the very first mgmt bootstrap, before automatron exists to dispatch to, or for disaster recovery if automatron itself is down.
+`-e`/`--execution-mode` is `local` or `remote` (default `remote`):
 
-`--dry-run` is passed through as `-e dry_run=true`. Only `omni-sync` currently acts on it (adds `--dry-run` to its `omnictl` calls) — `deploy.yaml`'s PR-time Omni plan still does its own dry-run directly rather than going through this, since that check is read-only and diff-scoped.
+- **`remote`** creates a one-off Kubernetes `Job` on automatron (cloned from the matching `CronJob`'s template) in the `mgmt` cluster, and streams its logs immediately. Requires a Tailscale-reachable `mgmt` apiserver (same as `hsctl switch`/`hsctl get kubeconfig`) and `team-infra-plat`/`team-sec-plat` membership — no PIM needed. If a `mgmt` kubectl context already exists (e.g. CI pre-seeds one from `MGMT_KUBECONFIG`), it's reused as-is instead of triggering an interactive OIDC login.
+- **`local`** clones `HomeScaleCloud/homescale@main` fresh into a temp directory (`gh repo clone`, requires `gh auth login`) and runs `ansible-playbook` against that checkout, cleaning it up afterward — never against whatever's checked out locally, which could be a branch, stale, or have uncommitted changes. Still needed for the very first mgmt bootstrap, before automatron exists, or for disaster recovery if automatron itself is down.
 
-`--chain <playbook>[,<playbook>...]` (comma-separated, no spaces) runs each listed playbook in turn after `<playbook>` succeeds — `hsctl` itself loops through them one at a time (each gets its own `Job`/pod in `-e remote` mode, or runs sequentially against the same cloned checkout in `-e local` mode — the repo is cloned once per `hsctl run` invocation, not once per chained playbook), mirroring `--cluster` and `--dry-run` to every one, and stopping at the first that fails. This is separate from (and doesn't touch) the in-cluster chaining the scheduled `automatron-omni-sync` CronJob uses on its own — see `CHAIN_NEXT_CRONJOB` in `apps/automatron/entrypoint.sh`. `deploy.yaml`'s merge-to-`main` Sync step relies on this: it runs `hsctl run omni-sync -e remote --chain bootstrap-cluster` so a push to `main` still re-syncs Omni *and* re-bootstraps every cluster in one dispatch, without ad hoc runs auto-chaining by default.
+`--dry-run` is passed through as `-e dry_run=true`. Only `omni-sync` currently acts on it (adds `--dry-run` to its `omnictl` calls) — `deploy.yaml`'s PR-time Omni plan does its own dry-run directly instead, since that check is read-only and diff-scoped.
 
-Automatron authenticates to Infisical by reusing the k8s Infisical Operator's own identity (`INFISICAL_OPERATOR_CLIENT_ID`/`INFISICAL_OPERATOR_CLIENT_SECRET`, mounted into its pod) — a credential only its pod has, so a local run can't reproduce it. For `bootstrap-mgmt`/`bootstrap-cluster` specifically, local runs instead pre-fetch the same secrets via your existing `infisical login` CLI session (browser SSO, prompting a fresh login if the session's expired) and hand them to Ansible directly, bypassing that login task — this only changes *how* secrets are fetched locally, the automatron path in `bootstrap-mgmt.yml` and the `cluster-secrets` role is untouched. Any other playbook is run as-is with no such handling; one that needs Infisical locally has to grow its own `hsctl_local`-aware fallback the same way first (see the comment at the top of `hsctl.d/run.sh`).
+`--chain <playbook>[,<playbook>...]` (comma-separated, no spaces) runs each listed playbook in turn after `<playbook>` succeeds, mirroring `--cluster` and `--dry-run` to all of them, and stopping at the first failure. In `-e remote` mode each chained playbook gets its own `Job`/pod; in `-e local` mode they run sequentially against the same cloned checkout (cloned once per `hsctl run` invocation, not once per playbook).
+
+This is separate from the in-cluster chaining the scheduled `automatron-omni-sync` CronJob does on its own (see `CHAIN_NEXT_CRONJOB` in `apps/automatron/entrypoint.sh`) — ad hoc runs never auto-chain unless you pass `--chain`. `deploy.yaml`'s merge-to-`main` Sync step relies on this: it runs `hsctl run omni-sync -e remote --chain bootstrap-cluster` so a push to `main` re-syncs Omni *and* re-bootstraps every cluster in one dispatch.
+
+Automatron authenticates to Infisical by reusing the k8s Infisical Operator's own identity (`INFISICAL_OPERATOR_CLIENT_ID`/`INFISICAL_OPERATOR_CLIENT_SECRET`), a credential only its pod has. Local runs of `bootstrap-mgmt`/`bootstrap-cluster` can't reproduce that, so they pre-fetch the same secrets via your own `infisical login` CLI session (browser SSO) and hand them to Ansible directly. Any other playbook run locally gets no such handling — one that needs Infisical secrets has to add its own `hsctl_local`-aware fallback first (see `hsctl.d/run.sh`).
 
 ## `hsctl pim`
 
@@ -127,13 +138,21 @@ hsctl pim logout
 
 Self-service [Entra ID](../architecture/teams.md) PIM actions from the CLI — listing lives under `hsctl get pimrole|pimgroup|pimazurerole|pimapproval` (see above). `role`/`group` (also `roles`/`groups`) hit Graph; `azure` hits ARM and requires `--scope`.
 
-Bare `hsctl pim` opens an [fzf](https://github.com/junegunn/fzf)-based full-screen picker over your eligible/active/pending role+group items (arrow keys, enter to select, esc/ctrl-c to quit), with a follow-up menu per item: Activate/Deactivate for your own assignments, Cancel for a pending request you sent, Approve/Deny for one you're the approver on — azure isn't in the UI yet. Pending rows show the requester (name + email) and request ID, and are labeled `pending · sent by you` or `pending · needs your approval` so the two directions aren't confused.
+Bare `hsctl pim` opens an [fzf](https://github.com/junegunn/fzf)-based full-screen picker over your eligible/active/pending role+group items (arrow keys, enter to select, esc/ctrl-c to quit). Azure isn't in the UI yet.
 
-`activate role`/`activate group` print the resulting request ID, needed for `cancel`/`approve`. The ID `approve` takes is the same request ID (shown by `hsctl get pimapprovals -o json` or the TUI) — `hsctl pim approve` resolves the single pending approval step/stage against it automatically, no separate step ID needed. `approve role`/`approve group` hit Graph's `/beta` segment for this specifically (`roleAssignmentApprovals`/`assignmentApprovals` have no `/v1.0` equivalent); every other `role`/`group` PIM call in this repo uses `/v1.0`.
+Each item has a follow-up menu: Activate/Deactivate for your own assignments, Cancel for a pending request you sent, Approve/Deny for one you're the approver on. Pending rows show the requester's name, email, and request ID, labeled `pending · sent by you` or `pending · needs your approval`.
 
-Requires `az`, `jq`, `curl`, `openssl`, `python3`, `infisical` (`fzf` too for the UI; same requirements apply to the `pim*` resources under `hsctl get`). `azure` auths via `az login`; `role`/`group` sign in separately (browser flow, token in macOS Keychain) through a dedicated `hsctl` Entra app registration, since Azure CLI's own app can't get the Graph scopes PIM needs. The tenant ID is hardcoded in `hsctl.d/get.sh` (it's not a secret, but is scrubbed from the public mirror); the app's client ID (`CLIENT_ID` at `/hsctl`) is fetched from Infisical at runtime.
+`activate role`/`activate group` print the resulting request ID, needed for `cancel`/`approve`. `approve` takes that same request ID (also shown by `hsctl get pimapprovals -o json` or the TUI) and resolves the pending approval step automatically — no separate step ID needed.
 
-The `hsctl` app registration's delegated Graph permissions (all admin-consented) are `RoleManagement.ReadWrite.Directory`, `PrivilegedAccess.ReadWrite.AzureADGroup`, and `PrivilegedAccess.ReadWrite.AzureAD` — the last is only needed for `approve role`/`approve group`, since `roleAssignmentApprovals`/`assignmentApprovals` sit behind the older PIM permission family rather than the unified `RoleManagement`/`RoleAssignmentSchedule` one. This app registration isn't Terraform-managed; permissions are added by hand in the Entra portal. After adding a new scope, run `hsctl pim logout` to drop the cached token so the next sign-in re-requests the updated scope list.
+`approve role`/`approve group` hit Graph's `/beta` segment specifically, since `roleAssignmentApprovals`/`assignmentApprovals` have no `/v1.0` equivalent; every other `role`/`group` PIM call here uses `/v1.0`.
+
+Requires `az`, `jq`, `curl`, `openssl`, `python3`, `infisical`, and `fzf` for the UI (same requirements apply to the `pim*` resources under `hsctl get`). `azure` auths via `az login`. `role`/`group` sign in separately through a dedicated `hsctl` Entra app registration (browser flow, token cached in macOS Keychain), since Azure CLI's own app can't get the Graph scopes PIM needs.
+
+The tenant ID is hardcoded in `hsctl.d/get.sh` (not a secret, but scrubbed from the public mirror); the app's client ID (`CLIENT_ID` at `/hsctl`) is fetched from Infisical at runtime.
+
+The `hsctl` app registration's delegated Graph permissions (all admin-consented) are `RoleManagement.ReadWrite.Directory`, `PrivilegedAccess.ReadWrite.AzureADGroup`, and `PrivilegedAccess.ReadWrite.AzureAD`. The last is only needed for `approve role`/`approve group`, since approvals sit behind the older PIM permission family rather than the unified `RoleManagement` one.
+
+This app registration isn't Terraform-managed — permissions are added by hand in the Entra portal. After adding a new scope, run `hsctl pim logout` to drop the cached token so the next sign-in re-requests the updated scopes.
 
 ## `hsctl switch`
 

@@ -19,16 +19,10 @@ rules:
     resources:
       - podlogs
     verbs: ["get", "list", "watch"]
-  # Headlamp's built-in prometheus plugin proxies to Prometheus's HTTP API
-  # through the k8s API server rather than a direct network route, targeting
-  # apps/metrics' prometheus-proxy Service (not prometheus-operated, which is
-  # headless and never proxied by the platform, or
-  # metrics-kube-prometheus-st-prometheus, whose two named ports make an
-  # unqualified proxy request ambiguous). When manually configured with a
-  # "namespace/service:port" address, the plugin requests the k8s resource
-  # name as "prometheus-proxy:9090" (service+port together, not just the
-  # service name) -- RBAC resourceNames does exact string matches with no
-  # wildcards, so both forms need to be listed.
+  # Headlamp's prometheus plugin proxies through the k8s API server to
+  # apps/metrics' prometheus-proxy Service. Both resourceNames are needed:
+  # resourceNames has no wildcards, and the plugin requests
+  # "prometheus-proxy:9090" (service+port) when given a namespace/service:port address.
   - apiGroups: [""]
     resources:
       - services/proxy

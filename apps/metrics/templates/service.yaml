@@ -1,17 +1,10 @@
-# prometheus-operated (the operator's own headless Service) and
-# metrics-kube-prometheus-st-prometheus (multi-port: http-web + reloader-web)
-# both fail k8s's services/proxy subresource -- headless Services aren't
-# proxied by the platform at all, and unqualified proxy requests to a
-# multi-port Service can't be disambiguated (kubernetes/kubernetes#20070).
-# This gives Headlamp's prometheus plugin a single-port, non-headless
-# target that actually works.
+# Single-port, non-headless target for Headlamp's prometheus plugin:
+# prometheus-operated (headless) and the multi-port operator Service both
+# fail k8s's services/proxy subresource.
 #
-# The selector needs operator.prometheus.io/name pinned too: app.kubernetes.io/name:
-# prometheus alone also matches apps/metrics-aggr's separate "aggregator" Prometheus
-# StatefulSet in this same namespace, which would make this Service load-balance
-# across both instances nondeterministically (that one only scrapes what's
-# remote-written to it, no ServiceMonitor discovery of its own -- see its own
-# same-purpose disambiguation in apps/metrics-aggr/templates/service.yaml).
+# operator.prometheus.io/name is pinned because app.kubernetes.io/name: prometheus
+# alone also matches apps/metrics-aggr's separate Prometheus StatefulSet in
+# this namespace, which would load-balance across both nondeterministically.
 apiVersion: v1
 kind: Service
 metadata:

@@ -11,6 +11,10 @@ vulnerabilities:
     paths:
       - "usr/local/bin/tailscale"
     statement: "golang.org/x/image vp8l decoder DoS is unreachable — this image (apps/slurm/src/Dockerfile) only calls `tailscale whois`, never any image-decoding code path"
+  - id: GHSA-6v7p-g79w-8964
+    statement: "msgpack 1.1.2 here is pip's own vendored copy (pip/_vendor/msgpack), not an installed dependency — it ships inside pip 26.2.1 itself (apps/automatron/Dockerfile's python:3.14-slim base), which is already the latest pip release, so there's no newer pip to pick up a fixed vendored copy. No path to scope this to: Trivy detects it from pip's bundled SBOM, not a discrete dist-info entry"
+  - id: CVE-2025-47273
+    statement: "setuptools 70.3.0 here is pip's own vendored copy (pip/_vendor/pkg_resources), not an installed dependency — same as GHSA-6v7p-g79w-8964 above, it ships inside pip 26.2.1 itself (apps/automatron/Dockerfile's python:3.14-slim base), which is already the latest pip release"
 
 misconfigurations:
   - id: DS-0002

@@ -3,10 +3,8 @@ kind: ClusterRole
 metadata:
   name: vm-operator
 rules:
-  # Power lifecycle and live-migration actions, without create/delete or spec
-  # edit rights on the VirtualMachine/VMI objects themselves — those are left
-  # to GitOps. Same split as pod-operator's pod delete vs. workloads-admin's
-  # full pod CRUD.
+  # Power lifecycle and live-migration only — no create/delete/spec edits on
+  # the VirtualMachine/VMI objects themselves; those stay with GitOps.
   - apiGroups: ["subresources.kubevirt.io"]
     resources:
       - virtualmachines/start

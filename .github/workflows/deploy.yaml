@@ -218,9 +218,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # No --depth here: checkout already ran with fetch-depth: 0, so the
-            # repo is unshallow -- a shallow re-fetch of the base ref would
-            # sever the merge-base needed by the triple-dot diff below.
+            # No --depth: a shallow fetch would sever the merge-base the triple-dot diff below needs.
             git fetch --no-tags origin "${{ github.base_ref }}"
             range="origin/${{ github.base_ref }}...${{ github.sha }}"
             clusters=$(
@@ -363,13 +361,9 @@ jobs:
           done
           [ "$failed" = "false" ]
 
-      # From here on, the actual sync (state-changing, unlike the read-only Plan
-      # above) runs on automatron in mgmt rather than directly on this runner —
-      # dispatched the same way `hsctl run omni-sync -e remote --chain bootstrap-cluster`
-      # would be run by hand, so its logs stream straight into this job's log.
-      # --chain is required explicitly here: ad hoc omni-sync runs never auto-chain into
-      # bootstrap-cluster on their own (only the scheduled CronJob does) — this makes a
-      # push to main still re-sync Omni *and* re-bootstrap every cluster in one dispatch.
+      # From here on, the actual sync runs on automatron in mgmt rather than on
+      # this runner, dispatched as `hsctl run omni-sync -e remote --chain bootstrap-cluster`
+      # would be by hand, with its logs streamed into this job's log.
       - name: Import mgmt kubeconfig
         if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.ref == 'refs/heads/main'
         uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18

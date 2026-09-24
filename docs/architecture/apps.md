@@ -23,7 +23,7 @@ Apps with both a `Chart.yaml` and a `Dockerfile` under `apps/<name>/` are built 
 |-------|------|---------|-------------|
 | `defaultDeploy` | bool | `false` | Deploy to every cluster unless overridden |
 
-Deployment overrides — enabling/disabling on a specific cluster, or overriding any other field — are **not** set here. They live in [`clusters/<cluster>/apps.yaml`](../operations/deploying-an-app.md#deployment-overrides) instead, under an `apps:` map keyed by app directory name. The override object is merged directly onto the entire base `app.yaml`, so any top-level key (`values`, `syncWave`, `podSecurity`, `tailscale`, `exposePublic`, `ignoreDifferences`, ...) can be overridden per cluster, not just `deploy`/`values`:
+Deployment overrides — enabling/disabling on a specific cluster, or overriding any other field — aren't set here. They live in [`clusters/<cluster>/apps.yaml`](../operations/deploying-an-app.md#deployment-overrides) instead, under an `apps:` map keyed by app directory name. The override object merges directly onto the base `app.yaml`, so any top-level key (`values`, `syncWave`, `podSecurity`, `tailscale`, `exposePublic`, `ignoreDifferences`, ...) can be overridden per cluster, not just `deploy`/`values`:
 
 ```yaml
 # clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
@@ -99,13 +99,13 @@ syncPolicy:
 When set, the namespace gets `pod-security.kubernetes.io/enforce`, `/warn`, and `/audit` labels all set to the chosen level.
 
 !!! note "Namespace objects are auto-generated, one per distinct namespace"
-    The catalog chart creates a `Namespace` resource for every distinct `namespace` value across all `app.yaml` files (skipping the hardcoded system namespaces `argocd`, `kube-system`, `kube-public`, `kube-node-lease`, `default`). If multiple apps share a namespace, only the first one processed (by file glob order) contributes its `podSecurity` labels. Every generated `Namespace` carries a hardcoded `argocd.argoproj.io/sync-wave: "-35"` annotation regardless of the owning app's own `syncWave`, so the namespace exists before anything else in that namespace tries to sync.
+    The catalog chart creates a `Namespace` resource for every distinct `namespace` value across all `app.yaml` files (skipping the system namespaces `argocd`, `kube-system`, `kube-public`, `kube-node-lease`, `default`). If multiple apps share a namespace, only the first one processed (by file glob order) contributes its `podSecurity` labels. Every generated `Namespace` gets `argocd.argoproj.io/sync-wave: "-35"` regardless of the owning app's own `syncWave`, so it exists before anything else in it tries to sync.
 
 ---
 
 ### ArgoCD destination override
 
-By default, `destination.server` resolves to `https://kubernetes.default.svc` (the in-cluster API server) for every app, via the global default in `apps/values.yaml` — so in practice every Application deploys to the cluster running ArgoCD. `destination.name` (deploying by cluster name rather than server URL) is only used if `destination.server` is explicitly cleared; no app or cluster does this today. These fields are rarely needed.
+By default, `destination.server` resolves to `https://kubernetes.default.svc` (the in-cluster API server) for every app, via the global default in `apps/values.yaml` — so in practice every Application deploys to the cluster running ArgoCD. `destination.name` (deploying by cluster name instead of server URL) only takes effect if `destination.server` is explicitly cleared, which no app or cluster does today. Both fields are rarely needed.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -186,7 +186,7 @@ Requires a matching [`tailscale.policy`](#tailscale-access-policy-tailscale) rul
 ### Public exposure (`exposePublic:`)
 
 !!! warning "Mostly a Terraform input, not Helm config"
-    Terraform (`infra/terraform/modules/cloudflare/`) reads this block directly to create a Cloudflare tunnel ingress rule and a DNS record per entry — that's its real purpose. Never delete it thinking it's dead config. One caveat: the app catalog chart *does* read each entry's `fqdn` (only) to populate `.Values.homescale.exposePublicFqdns` — see [below](#using-cname-lists-in-your-chart-valueshomescale).
+    Terraform (`infra/terraform/modules/cloudflare/`) reads this block directly to create a Cloudflare tunnel ingress rule and a DNS record per entry. Never delete it thinking it's dead config. The one exception: the app catalog chart also reads each entry's `fqdn` to populate `.Values.homescale.exposePublicFqdns` — see [below](#using-cname-lists-in-your-chart-valueshomescale).
 
 Exposes one or more Kubernetes Services to the public internet via a Cloudflare Zero Trust Tunnel. See [External service exposure](networking.md#external-service-exposure) for how it works.
 
@@ -211,8 +211,8 @@ exposePublic:
 | `fqdn` | string | Public fully-qualified domain name. Must be globally unique across all apps. The apex zone must be a Cloudflare-managed zone |
 | `port` | int | Port on the Kubernetes Service that receives traffic |
 | `service` | string | Optional. Kubernetes Service name (`<service>.<namespace>.svc.cluster.local:<port>`) to route to. Defaults to `releaseName` (or the app directory name) |
-| `tls` | bool | Optional, defaults to `false`. Set `true` if the backend Service only accepts TLS (`http://` otherwise). cloudflared verifies the origin certificate against `fqdn` as the expected server name — the app's own `Certificate` must include `fqdn` in `dnsNames` (add `.Values.homescale.exposePublicFqdns` there, see [below](#using-cname-lists-in-your-chart-valueshomescale)) |
-| `cacheBypass` | bool | Optional, defaults to `false`. Set `true` to create a Cloudflare Cache Rule that bypasses the edge cache for every request to this hostname — use for live/dynamic apps (dashboards, APIs) where a stale cached response would be wrong, as opposed to static sites that benefit from CDN caching |
+| `tls` | bool | Optional, defaults to `false`. Set `true` if the backend Service only accepts TLS (`http://` otherwise). cloudflared verifies the origin cert against `fqdn`, so the app's own `Certificate` must include `fqdn` in `dnsNames` (add `.Values.homescale.exposePublicFqdns` there — see [below](#using-cname-lists-in-your-chart-valueshomescale)) |
+| `cacheBypass` | bool | Optional, defaults to `false`. Set `true` to bypass Cloudflare's edge cache for this hostname — for live/dynamic apps (dashboards, APIs) where a stale cached response would be wrong; leave `false` for static sites that benefit from CDN caching |
 | `access` | object | Optional. Gates this hostname behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) — omit entirely to leave it open to the internet. Any authenticated user is allowed through (no group/email restriction) once they pass one of the allowed identity providers |
 | `access.allowedIdps` | list of strings | Optional. Identity provider names (as configured in the Cloudflare Zero Trust dashboard) users may authenticate with. Omit to allow any IdP configured in the account (today: Entra ID only) |
 | `access.sessionDuration` | string | Optional. How long an Access session lasts before re-authentication, e.g. `24h`. Defaults to Cloudflare's own default |
@@ -221,7 +221,7 @@ exposePublic:
 
 ### Using exposePublic FQDNs in your chart (`.Values.homescale`)
 
-Unlike `tailscale:`, the flattened list of FQDNs from `exposePublic:` *is* forwarded into the chart as a regular Helm value — `apps/templates/applications.yaml` computes it from the app's own `app.yaml` (before any per-cluster override) and injects it for every app, so a chart can reference its own public hostnames without hardcoding them (e.g. as `Certificate` `dnsNames`):
+Unlike `tailscale:`, the flattened list of FQDNs from `exposePublic:` *is* forwarded into the chart as a regular Helm value. `apps/templates/applications.yaml` computes it from the app's own `app.yaml` (before any per-cluster override) and injects it for every app, so a chart can reference its own public hostnames without hardcoding them (e.g. as `Certificate` `dnsNames`):
 
 ```yaml
 .Values.homescale.exposePublicFqdns   # list of strings, from this app's exposePublic[].fqdn
@@ -237,17 +237,19 @@ dnsNames:
 {{- end }}
 ```
 
-Tailscale-side internal hostnames don't go through this mechanism — a Service's `external-dns.kubernetes.io/hostname` annotation (see [Exposing a Service on the tailnet](#exposing-a-service-on-the-tailnet)) is what actually publishes the DNS record, so a chart's `Certificate` `dnsNames` should list those hostnames directly rather than reading them from `.Values.homescale`. See `apps/omni/templates/certificate.yaml` for a real example, including keeping old hostnames around as a static fallback SAN when renaming.
+Tailscale-side internal hostnames don't go through this mechanism. A Service's `external-dns.kubernetes.io/hostname` annotation (see [Exposing a Service on the tailnet](#exposing-a-service-on-the-tailnet)) is what actually publishes the DNS record, so a chart's `Certificate` `dnsNames` should list those hostnames directly instead of reading them from `.Values.homescale`. See `apps/omni/templates/certificate.yaml` for a real example, including keeping an old hostname around as a static fallback SAN when renaming.
 
 ---
 
 ## Knative Serving apps
 
-`apps/knative` deploys [Knative Serving](https://knative.dev/docs/serving/) plus its [Kourier](https://github.com/knative-extensions/net-kourier) networking layer as a platform component, `defaultDeploy: false` and currently enabled on boa1-prod only. Kourier was picked over net-istio/net-contour because this repo runs neither Istio nor Contour — it's the only zero-new-dependency networking layer for Knative. The upstream `serving-crds.yaml`/`serving-core.yaml`/`kourier.yaml` releases have no official Helm chart, so they're vendored as raw manifests split one-resource-per-file under `templates/`, following the same pattern as `apps/multus` and `apps/kubevirt`. The vendored `kourier` Service is patched to `type: ClusterIP` (nothing needs to reach it from outside the cluster) and `config-network`'s `ingress-class` is set to Kourier.
+`apps/knative` deploys [Knative Serving](https://knative.dev/docs/serving/) plus its [Kourier](https://github.com/knative-extensions/net-kourier) networking layer as a platform component (`defaultDeploy: false`, currently enabled on boa1-prod only). Kourier was picked over net-istio/net-contour because this repo runs neither Istio nor Contour — it's the only zero-new-dependency networking layer for Knative.
+
+The upstream `serving-crds.yaml`/`serving-core.yaml`/`kourier.yaml` releases have no official Helm chart, so they're vendored as raw manifests split one-resource-per-file under `templates/` (same pattern as `apps/multus` and `apps/kubevirt`). The vendored `kourier` Service is patched to `type: ClusterIP` (nothing needs to reach it from outside the cluster), and `config-network`'s `ingress-class` is set to Kourier.
 
 An app that wants scale-to-zero autoscaling instead of a plain `Deployment`+`Service` can define a `serving.knative.dev/v1 Kind: Service` in `templates/service.yaml` instead — see `apps/maxmorris-io` and `apps/homepage` for real examples. Key points:
 
-- A Knative `Service` named `{{ .Release.Name }}` automatically creates a matching cluster-local `Service` object (same name/namespace, port 80) that always routes to the active revision — this is why `exposePublic`'s default `service: <releaseName>` target (see [above](#public-exposure-exposepublic)) keeps working unchanged when converting an app from `Deployment` to Knative.
+- A Knative `Service` named `{{ .Release.Name }}` automatically creates a matching cluster-local `Service` object (same name/namespace, port 80) that always routes to the active revision. That's why `exposePublic`'s default `service: <releaseName>` target (see [above](#public-exposure-exposepublic)) keeps working unchanged when converting an app from `Deployment` to Knative.
 - Autoscaling is controlled by annotations on `spec.template.metadata.annotations`, e.g.:
   ```yaml
   autoscaling.knative.dev/min-scale: "0"   # scale to zero when idle (adds cold-start latency)

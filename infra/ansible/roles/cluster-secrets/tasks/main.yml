@@ -1,11 +1,8 @@
 ---
-# Automatron (the in-cluster runner) authenticates by reusing the k8s Infisical
-# Operator's own identity (INFISICAL_OPERATOR_CLIENT_ID/SECRET, mounted as env
-# vars) rather than getting a dedicated identity of its own — Infisical machine
-# identities are billed per-identity. `hsctl run` (local) has no such credential
-# to present, so it pre-fetches the same secrets itself via the caller's
-# already-logged-in `infisical` CLI and passes them in as hsctl_local_secrets,
-# skipping these three tasks entirely.
+# Automatron reuses the k8s Infisical Operator's identity rather than a
+# dedicated one (machine identities are billed per-identity). `hsctl run`
+# (local) has no such credential, so it pre-fetches secrets itself and
+# passes them in as hsctl_local_secrets, skipping these tasks entirely.
 - name: Login to Infisical
   infisical.vault.login:
     url: "{{ infisical_url }}"

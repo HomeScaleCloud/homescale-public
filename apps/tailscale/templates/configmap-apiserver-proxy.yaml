@@ -22,9 +22,8 @@ data:
 
           proxy_ssl_trusted_certificate /ca/ca.crt;
           proxy_ssl_verify on;
-          # Vultr VKE's apiserver cert omits the standard
-          # kubernetes.default.svc.cluster.local SAN; kubernetes.default is
-          # the shortest name guaranteed present on any apiserver cert.
+          # Vultr VKE's apiserver cert omits the kubernetes.default.svc.cluster.local
+          # SAN; kubernetes.default is the shortest name guaranteed present.
           proxy_ssl_name kubernetes.default;
           proxy_ssl_server_name on;
 

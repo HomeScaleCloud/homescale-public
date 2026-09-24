@@ -5,11 +5,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   schedule: {{ .Values.automatron.schedule | quote }}
-  # Never auto-fires — omni-sync chains a Job cloned from this jobTemplate on every
-  # successful run (see CHAIN_NEXT_CRONJOB in _pod.tpl / entrypoint.sh), so clusters
-  # always exist in Omni before bootstrap-cluster runs against them. This CronJob
-  # object still exists (suspended, not deleted) purely so `hsctl run bootstrap-cluster
-  # -e remote` has a jobTemplate to clone for ad-hoc/manual runs.
+  # Never auto-fires — omni-sync chains a Job cloned from this jobTemplate instead.
+  # Kept suspended (not deleted) so `hsctl run bootstrap-cluster -e remote` has a
+  # jobTemplate to clone for ad-hoc runs.
   suspend: true
   concurrencyPolicy: Forbid
   jobTemplate:

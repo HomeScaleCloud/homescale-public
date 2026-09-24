@@ -1,18 +1,9 @@
 #!/usr/bin/env bash
-# Enforce the alert/runbook contract from CLAUDE.md:
-#
-#   Every PrometheusRule alert defined in this repo must have
-#     - a runbook_url annotation of the form
-#       https://REDACTED/runbooks/<slug>/
-#     - a docs/runbooks/<slug>.md page
-#     - a nav entry for that page in mkdocs.yml
-#   and every docs/runbooks/*.md page must belong to an alert and appear in
-#   the mkdocs.yml nav.
-#
-# Only alerts defined in this repo's own PrometheusRule templates are checked
-# (apps/*/templates/*.yaml containing `kind: PrometheusRule`) — not the
-# kube-prometheus-stack built-ins, which are annotated with dashboard_url in
-# apps/metrics/app.yaml instead.
+# Enforces the alert/runbook contract from CLAUDE.md: every PrometheusRule alert
+# in this repo needs a runbook_url annotation, a matching docs/runbooks/<slug>.md,
+# and an mkdocs.yml nav entry — and vice versa. Only checks this repo's own
+# PrometheusRule templates, not kube-prometheus-stack's built-ins (those use
+# dashboard_url instead, in apps/metrics/app.yaml).
 #
 # Usage: .github/scripts/check-runbooks.sh
 
@@ -43,9 +34,8 @@ fi
 
 while IFS= read -r f; do
     [[ -n "$f" ]] || continue
-    # Pair each `- alert: X` with the runbook_url in its block. These two line
-    # kinds are always plain (no Helm templating), even where descriptions
-    # aren't, so a raw scan is safe.
+    # Pair each `- alert: X` with the runbook_url in its block — both are always
+    # plain (no Helm templating), so a raw scan is safe.
     while IFS=$'\t' read -r alert url; do
         [[ -n "$alert" ]] || continue
         alert_count=$((alert_count + 1))

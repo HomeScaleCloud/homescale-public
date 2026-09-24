@@ -24,14 +24,10 @@ spec:
           manifestTargets:
             helm:
               tag: image.tag
-    # "slurm" is a multi-source Application (apps/slurm's local chart plus
-    # two extraSources pulling slurm-operator/slurm-operator-crds directly
-    # from Slinky's OCI registry) — the tag path below is scoped into the
-    # first source's own values tree (slurm.loginsets.login.login.image.tag
-    # in apps/slurm/app.yaml), since that's the only source we build an
-    # image for. Multi-source targeting isn't documented for the argocd
-    # write-back method; verify this actually lands on source[0] and not
-    # one of the extraSources after this first deploys.
+    # slurm is multi-source (local chart + two extraSources); the tag path is
+    # scoped to source[0]'s values tree since that's the only source we build
+    # an image for. Multi-source targeting isn't documented for argocd
+    # write-back — verify it lands on source[0] after this first deploys.
     - namePattern: slurm
       images:
         - alias: img
