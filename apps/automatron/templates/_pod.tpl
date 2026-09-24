@@ -6,16 +6,32 @@ CHAIN_NEXT_CRONJOB so this run triggers that CronJob's jobTemplate on success.
 */}}
 {{- define "automatron.podTemplate" -}}
 {{- $root := .root -}}
+{{- $omniApiSvc := lookup "v1" "Service" "omni" "api" -}}
+{{- $omniK8sSvc := lookup "v1" "Service" "omni" "k8s" -}}
 metadata:
   labels:
     app: automatron
 spec:
   serviceAccountName: automatron
   restartPolicy: Never
+  # Omni lives in this same cluster (mgmt) — its `api`/`k8s` Services (apps/omni/
+  # templates/service.yaml) already have ClusterIPs regardless of their Tailscale
+  # LoadBalancer status, so automatron reaches Omni entirely in-cluster rather than
+  # over Tailscale. These aliases keep the client-facing hostnames (and therefore
+  # TLS cert validation against the real REDACTED cert) unchanged —
+  # only where they resolve to changes.
+  # `lookup` only resolves against a live cluster (ArgoCD's actual sync) — offline
+  # rendering (helm template, validate-manifests.sh in CI) gets nothing back, so
+  # these fall back to a dummy IP there rather than failing to render at all.
+  hostAliases:
+    - ip: "{{ if $omniApiSvc }}{{ $omniApiSvc.spec.clusterIP }}{{ else }}0.0.0.0{{ end }}"
+      hostnames:
+        - REDACTED
+    - ip: "{{ if $omniK8sSvc }}{{ $omniK8sSvc.spec.clusterIP }}{{ else }}0.0.0.0{{ end }}"
+      hostnames:
+        - REDACTED
   volumes:
     - name: repo
-      emptyDir: {}
-    - name: tailscale-state
       emptyDir: {}
     - name: git-ssh-key
       secret:
@@ -78,49 +94,6 @@ spec:
         - name: git-ssh-key-fixed
           mountPath: /etc/git-secret
           readOnly: true
-    - name: tailscale
-      image: tailscale/tailscale:v1.102.2
-      restartPolicy: Always
-      env:
-        - name: TS_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: automatron-secrets # pragma: allowlist secret
-              key: TAILSCALE_CLIENT_ID
-        - name: TS_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: automatron-secrets # pragma: allowlist secret
-              key: TAILSCALE_CLIENT_SECRET
-        - name: TS_USERSPACE
-          value: "false"
-        - name: TS_KUBE_SECRET
-          value: ""
-        - name: TS_STATE_DIR
-          value: /var/lib/tailscale
-        - name: TS_HOSTNAME
-          value: "automatron-{{ $root.Values.cluster.name }}"
-        - name: TS_EXTRA_ARGS
-          value: "--advertise-tags=tag:k8s,tag:app-automatron"
-        - name: TS_ACCEPT_DNS
-          value: "false"
-        - name: TS_AUTH_ONCE
-          value: "true"
-        - name: TS_ENABLE_HEALTH_CHECK
-          value: "true"
-      startupProbe:
-        httpGet:
-          path: /healthz
-          port: 9002
-        periodSeconds: 3
-        failureThreshold: 40
-      securityContext:
-        capabilities:
-          add:
-            - NET_ADMIN
-      volumeMounts:
-        - name: tailscale-state
-          mountPath: /var/lib/tailscale
   containers:
     - name: automatron
       image: "{{ $root.Values.automatron.image.repository }}:{{ $root.Values.automatron.image.tag }}"

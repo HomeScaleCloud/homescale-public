@@ -180,9 +180,9 @@ Ansible cluster bootstrap (`bootstrap-mgmt.yml`/`bootstrap-cluster.yml`) no long
 - **`automatron-bootstrap-cluster`** — `suspend: true`. Only runs via that chain, or ad hoc — never on its own schedule.
 - **`automatron-bootstrap-mgmt`** — `suspend: true`, ad hoc only (mgmt itself changes rarely).
 
-Each run: a `git-clone` initContainer checks out `main`, a `tailscale` sidecar joins the mesh (`tag:app-automatron`) to reach Omni and workload-cluster apiservers, then the `automatron` container runs the playbook.
+Each run: a `git-key-prep` initContainer (root, to read the mounted deploy key) preps it for a non-root `git-clone` to check out `main`, then the `automatron` container (also non-root) runs the playbook. No Tailscale anywhere — Omni lives in the same `mgmt` cluster, so automatron reaches it entirely in-cluster via `hostAliases` pointing the usual `REDACTED` hostnames at Omni's real ClusterIPs.
 
-All of automatron's own credentials (Tailscale OAuth client, plus its Infisical login, git deploy key, and Omni access reused from existing identities rather than newly minted — see CLAUDE.md for the full breakdown) live under Infisical folder `/k8s/automatron`.
+All of automatron's own credentials (Infisical login, git deploy key, and Omni access, all reused from existing identities rather than newly minted — see CLAUDE.md for the full breakdown) live under Infisical folder `/k8s/automatron`.
 
 Ad hoc runs: `hsctl run <playbook> -e remote [--dry-run]` clones the relevant CronJob's `jobTemplate` into a one-off Job and streams its logs — see `hsctl run` in [Operations → hsctl](../operations/hsctl.md).
 

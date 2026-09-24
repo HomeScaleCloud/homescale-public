@@ -8,11 +8,3 @@ resource "tailscale_oauth_client" "k8s_operator" {
   # or not permitted".
   depends_on = [tailscale_acl.this]
 }
-
-resource "tailscale_oauth_client" "automatron" {
-  description = "Automatron"
-  scopes      = ["devices:core", "auth_keys", "services"]
-  tags        = ["tag:k8s"]
-
-  depends_on = [tailscale_acl.this]
-}

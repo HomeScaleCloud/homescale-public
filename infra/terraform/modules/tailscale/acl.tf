@@ -46,7 +46,7 @@ locals {
   }
 
   omni_k8s_grant = {
-    src = ["tag:app-automatron", "group:sg-k8s-admin@REDACTED"]
+    src = ["group:sg-k8s-admin@REDACTED"]
     dst = ["tag:omni-k8s"]
     ip  = ["tcp:443"]
   }
