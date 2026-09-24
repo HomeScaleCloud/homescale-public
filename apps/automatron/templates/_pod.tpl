@@ -6,32 +6,16 @@ CHAIN_NEXT_CRONJOB so this run triggers that CronJob's jobTemplate on success.
 */}}
 {{- define "automatron.podTemplate" -}}
 {{- $root := .root -}}
-{{- $omniApiSvc := lookup "v1" "Service" "omni" "api" -}}
-{{- $omniK8sSvc := lookup "v1" "Service" "omni" "k8s" -}}
 metadata:
   labels:
     app: automatron
 spec:
   serviceAccountName: automatron
   restartPolicy: Never
-  # Omni lives in this same cluster (mgmt) — its `api`/`k8s` Services (apps/omni/
-  # templates/service.yaml) already have ClusterIPs regardless of their Tailscale
-  # LoadBalancer status, so automatron reaches Omni entirely in-cluster rather than
-  # over Tailscale. These aliases keep the client-facing hostnames (and therefore
-  # TLS cert validation against the real REDACTED cert) unchanged —
-  # only where they resolve to changes.
-  # `lookup` only resolves against a live cluster (ArgoCD's actual sync) — offline
-  # rendering (helm template, validate-manifests.sh in CI) gets nothing back, so
-  # these fall back to a dummy IP there rather than failing to render at all.
-  hostAliases:
-    - ip: "{{ if $omniApiSvc }}{{ $omniApiSvc.spec.clusterIP }}{{ else }}0.0.0.0{{ end }}"
-      hostnames:
-        - REDACTED
-    - ip: "{{ if $omniK8sSvc }}{{ $omniK8sSvc.spec.clusterIP }}{{ else }}0.0.0.0{{ end }}"
-      hostnames:
-        - REDACTED
   volumes:
     - name: repo
+      emptyDir: {}
+    - name: hosts
       emptyDir: {}
     - name: git-ssh-key
       secret:
@@ -43,6 +27,32 @@ spec:
     - name: git-ssh-key-fixed
       emptyDir: {}
   initContainers:
+    # Omni lives in this same cluster (mgmt) — its `api`/`k8s` Services (apps/omni/
+    # templates/service.yaml) already have ClusterIPs regardless of their Tailscale
+    # LoadBalancer status, so automatron reaches Omni entirely in-cluster rather than
+    # over Tailscale, keeping the client-facing hostnames (and therefore TLS cert
+    # validation against the real REDACTED cert — a real Let's
+    # Encrypt cert, so it can't cover .svc.cluster.local names instead) unchanged —
+    # only where they resolve to changes. Helm's `lookup` (resolved at render time)
+    # isn't reliable here — ArgoCD's own renders have been observed returning empty
+    # for it — so this resolves the real ClusterIPs at pod start instead, via a
+    # scoped Role/RoleBinding (templates/rbac-omni.yaml) letting automatron's own
+    # ServiceAccount `get` just these two Services in the omni namespace, and writes
+    # a corrected /etc/hosts to a shared volume — the automatron container mounts it
+    # over its own (non-root, and /etc/hosts isn't group/other-writable, so it can't
+    # patch this itself).
+    - name: omni-hosts
+      image: "{{ $root.Values.automatron.image.repository }}:{{ $root.Values.automatron.image.tag }}"
+      command: ["sh", "-c"]
+      args:
+        - |
+          set -e
+          cp /etc/hosts /shared/hosts
+          echo "$(kubectl get svc api -n omni -o jsonpath='{.spec.clusterIP}') REDACTED" >> /shared/hosts
+          echo "$(kubectl get svc k8s -n omni -o jsonpath='{.spec.clusterIP}') REDACTED" >> /shared/hosts
+      volumeMounts:
+        - name: hosts
+          mountPath: /shared
     # Secret-mounted files are root-owned with mode 0600 (required — sshd's strict
     # key-perm check rejects any group/other bits), so git-sync's own non-root UID
     # can't read it directly. Separately, the key's stored value (an Infisical
@@ -121,4 +131,7 @@ spec:
         - name: repo
           mountPath: /repo
           readOnly: true
+        - name: hosts
+          mountPath: /etc/hosts
+          subPath: hosts
 {{- end -}}

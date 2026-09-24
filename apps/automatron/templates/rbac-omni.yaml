@@ -1,0 +1,27 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: automatron-read-services
+  namespace: omni
+rules:
+  - apiGroups: [""]
+    resources:
+      - services
+    resourceNames:
+      - api
+      - k8s
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: automatron-read-services
+  namespace: omni
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: automatron-read-services
+subjects:
+  - kind: ServiceAccount
+    name: automatron
+    namespace: {{ .Release.Namespace }}
