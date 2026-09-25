@@ -318,17 +318,29 @@ _hsctl_write_kubeconfig_direct() {
 
     _hsctl_resolve_oidc || exit 1
 
-    python3 - "$cluster" "$fqdn" "$kubeconfig" "$user" "$HSCTL_OIDC_ISSUER_URL" "$HSCTL_OIDC_CLIENT_ID" <<'PYEOF'
-import sys
-from pathlib import Path
-import yaml  # PyYAML — available via system python on macOS
+    mkdir -p "$(dirname "$kubeconfig")"
 
-cluster, fqdn, kubeconfig_path, user, issuer_url, client_id = sys.argv[1:7]
+    # Round-trips the existing kubeconfig through yq (already a hard dependency, used
+    # everywhere else in this file for YAML) so the upsert logic below only needs Python's
+    # stdlib json module — not PyYAML, which a bare `brew install python3` doesn't bundle
+    # ("available via system python on macOS" was never actually reliable; confirmed live,
+    # ModuleNotFoundError: No module named 'yaml' on a machine whose python3 never had it).
+    local existing_json_file
+    existing_json_file=$(mktemp)
+    if [[ -f "$kubeconfig" ]]; then
+        yq -p=yaml -o=json '.' "$kubeconfig" > "$existing_json_file"
+    else
+        echo '{}' > "$existing_json_file"
+    fi
+
+    python3 - "$cluster" "$fqdn" "$user" "$HSCTL_OIDC_ISSUER_URL" "$HSCTL_OIDC_CLIENT_ID" "$existing_json_file" <<'PYEOF' | yq -p=json -o=yaml '.' > "$kubeconfig"
+import json, sys
+from pathlib import Path
+
+cluster, fqdn, user, issuer_url, client_id, existing_json_file = sys.argv[1:7]
 
 server = f'https://{fqdn}'
-p = Path(kubeconfig_path)
-p.parent.mkdir(parents=True, exist_ok=True)
-cfg = yaml.safe_load(p.read_text()) if p.exists() else None
+cfg = json.loads(Path(existing_json_file).read_text()) or {}
 if not cfg:
     cfg = {'apiVersion': 'v1', 'kind': 'Config'}
 
@@ -363,9 +375,11 @@ upsert('users', user, {
 upsert('contexts', cluster, {'name': cluster, 'context': {'cluster': cluster, 'user': user, 'namespace': 'default'}})
 cfg['current-context'] = cluster
 
-p.write_text(yaml.dump(cfg, default_flow_style=False))
-print(f"Switched to cluster {cluster!r}")
+print(json.dumps(cfg))
 PYEOF
+
+    rm -f "$existing_json_file"
+    echo "Switched to cluster '$cluster'"
 }
 
 get_kubeconfig() {
@@ -413,13 +427,10 @@ _pim_require_deps() {
 _pim_resolve_ids() {
     [[ -n "${HSCTL_CLIENT_ID:-}" ]] && return 0
 
-    if ! HSCTL_CLIENT_ID=$(infisical secrets get CLIENT_ID --env=prod --path=/hsctl --plain --silent </dev/null 2>/dev/null); then
-        hsctl_infisical_login || { echo "hsctl: infisical login failed" >&2; exit 1; }
-        if ! HSCTL_CLIENT_ID=$(infisical secrets get CLIENT_ID --env=prod --path=/hsctl --plain --silent </dev/null 2>/dev/null); then
-            echo "hsctl: could not fetch CLIENT_ID from Infisical (/hsctl)" >&2
-            exit 1
-        fi
-    fi
+    HSCTL_CLIENT_ID=$(hsctl_infisical_call secrets get CLIENT_ID --silent --env=prod --path=/hsctl --plain) || {
+        echo "hsctl: could not fetch CLIENT_ID from Infisical (/hsctl)" >&2
+        exit 1
+    }
     [[ -z "$HSCTL_CLIENT_ID" ]] && { echo "hsctl: CLIENT_ID at /hsctl in Infisical is empty" >&2; exit 1; }
 
     export HSCTL_TENANT_ID HSCTL_CLIENT_ID

@@ -53,19 +53,50 @@ hsctl_infisical_login() {
     infisical login --silent --domain https://app.infisical.com
 }
 
+# Runs `infisical <args...>` (stdin closed, so a missing session/project fails fast instead
+# of blocking on an interactive prompt rendering over the stdout being captured here),
+# retrying once against whichever of `infisical init` (no project linked — nothing in this
+# repo creates a `.infisical.json`, so this is normal on a machine that's never linked one)
+# or `infisical login` (invalid/expired session) its own stderr says is actually needed.
+# Dispatches by matching the literal text infisical itself prints — "run infisical init"
+# only ever appears in the no-project-linked message — rather than assuming every failure is
+# a login problem: confirmed live, retrying via login alone can never fix a missing project
+# link, and used to loop uselessly through a full browser re-auth for it before giving the
+# same unhelpful error right back.
+# Usage: out=$(hsctl_infisical_call secrets get X --env=prod --path=/y --plain) || <caller's own error>
+hsctl_infisical_call() {
+    local out err
+    err=$(mktemp)
+    if out=$(infisical "$@" </dev/null 2>"$err"); then
+        rm -f "$err"
+        printf '%s' "$out"
+        return 0
+    fi
+    if grep -q "run infisical init" "$err"; then
+        rm -f "$err"
+        echo "hsctl: no Infisical project linked — starting 'infisical init' in \$HOME (select the HomeScale project)" >&2
+        # Always $HOME, not wherever the caller's cwd happens to be — infisical discovers
+        # .infisical.json by walking up from cwd on every call, so linking it here is what
+        # makes it found regardless of where hsctl gets run from next, not just this one
+        # invocation's own directory.
+        (cd "$HOME" && infisical init --silent --domain https://app.infisical.com) || return 1
+    else
+        rm -f "$err"
+        hsctl_infisical_login || return 1
+    fi
+    infisical "$@" </dev/null
+}
+
 # Resolve OIDC issuer/client ID from Infisical into HSCTL_OIDC_ISSUER_URL/HSCTL_OIDC_CLIENT_ID
 # (memoized — a no-op if both are already set). Shared by `hsctl get kubeconfig` (to build
 # the exec credential plugin config) and hsctl_oidc_username (to mint a token to decode).
 _hsctl_resolve_oidc() {
     [[ -n "${HSCTL_OIDC_ISSUER_URL:-}" && -n "${HSCTL_OIDC_CLIENT_ID:-}" ]] && return 0
     local secrets_json
-    if ! secrets_json=$(infisical export --silent --env=prod --path=/k8s/oidc --format=json </dev/null); then
-        hsctl_infisical_login || { hsctl_log_error "infisical login failed"; return 1; }
-        if ! secrets_json=$(infisical export --silent --env=prod --path=/k8s/oidc --format=json </dev/null); then
-            hsctl_log_error "could not fetch OIDC config from Infisical (/k8s/oidc)"
-            return 1
-        fi
-    fi
+    secrets_json=$(hsctl_infisical_call export --silent --env=prod --path=/k8s/oidc --format=json) || {
+        hsctl_log_error "could not fetch OIDC config from Infisical (/k8s/oidc)"
+        return 1
+    }
     HSCTL_OIDC_ISSUER_URL=$(yq e -p json '.[] | select(.key == "OIDC_ISSUER_URL") | .value' <<< "$secrets_json" 2>/dev/null) || true
     HSCTL_OIDC_CLIENT_ID=$(yq e -p json '.[] | select(.key == "OIDC_CLIENT_ID") | .value' <<< "$secrets_json" 2>/dev/null) || true
     if [[ -z "$HSCTL_OIDC_ISSUER_URL" || -z "$HSCTL_OIDC_CLIENT_ID" ]]; then
@@ -129,15 +160,10 @@ hsctl_oidc_username() {
 #        IFS=$'\t' read -r bmc_ip bmc_user bmc_pass <<< "$creds"
 hsctl_bmc_creds() {
     local id="$1" secrets_json
-    # stdin is /dev/null so a missing session fails fast instead of blocking on infisical's
-    # interactive login wizard (which would otherwise render over the stdout we're capturing).
-    if ! secrets_json=$(infisical export --silent --env=prod --path="/bmc/$id" --format=json </dev/null); then
-        hsctl_infisical_login || { hsctl_log_error "infisical login failed"; return 1; }
-        if ! secrets_json=$(infisical export --silent --env=prod --path="/bmc/$id" --format=json </dev/null); then
-            hsctl_log_error "failed to fetch BMC credentials for machine '$id' from Infisical (path /bmc/$id)"
-            return 1
-        fi
-    fi
+    secrets_json=$(hsctl_infisical_call export --silent --env=prod --path="/bmc/$id" --format=json) || {
+        hsctl_log_error "failed to fetch BMC credentials for machine '$id' from Infisical (path /bmc/$id)"
+        return 1
+    }
 
     # infisical export --format=json is an array of secret objects (.key/.value), not a flat map
     local ip user pass

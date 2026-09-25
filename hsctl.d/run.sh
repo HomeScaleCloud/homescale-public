@@ -92,17 +92,15 @@ run_usage() {
 }
 
 # Fetch a secrets folder from Infisical via the caller's already-authenticated CLI session,
-# retrying once through an interactive login if the session is invalid/expired.
+# retrying once (against infisical init or infisical login, whichever it actually needs —
+# see hsctl_infisical_call) if the first attempt fails.
 # Usage: _run_infisical_secrets <path>   -> flat JSON object {KEY: value, ...} on stdout
 _run_infisical_secrets() {
     local path="$1" raw
-    if ! raw=$(infisical export --silent --env=prod --path="$path" --format=json </dev/null); then
-        hsctl_infisical_login || { hsctl_log_error "infisical login failed"; return 1; }
-        if ! raw=$(infisical export --silent --env=prod --path="$path" --format=json </dev/null); then
-            hsctl_log_error "failed to fetch secrets from Infisical (path $path)"
-            return 1
-        fi
-    fi
+    raw=$(hsctl_infisical_call export --silent --env=prod --path="$path" --format=json) || {
+        hsctl_log_error "failed to fetch secrets from Infisical (path $path)"
+        return 1
+    }
     jq 'map({(.key): .value}) | add // {}' <<< "$raw"
 }
 
