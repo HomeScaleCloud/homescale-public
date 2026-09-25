@@ -4,16 +4,16 @@
 # which to run based on which one is non-empty (see apps/automatron/entrypoint.sh).
 #
 # When spec.schedule is set, kro creates a CronJob that runs it directly. When it's
-# omitted, this is a template-only instance — the only way to run it is via a JobRun
-# (see rgd-jobrun.yaml), either committed under infra/automatron/job-runs/, created ad
-# hoc by `hsctl run <name> -e remote`, or chained into (see spec.chain below).
+# omitted, this is a template-only instance — the only way to run it is via a JobRun (see
+# rgd-jobrun.yaml), either committed under infra/automatron/job-runs/ or created ad hoc
+# by `hsctl run <name> -e remote`. To run several JobTemplates in sequence, see
+# rgd-jobworkflow.yaml's JobWorkflow instead — that's the only place chaining lives.
 #
-# spec.chain is a comma-separated list of JobTemplate names to run, in order, after this
-# one succeeds — entrypoint.sh walks it one hop at a time by creating a JobRun for the
-# next name in the list (carrying the rest of the list as that JobRun's own spec.chain),
-# the same mechanism `hsctl run <name> --chain <name>[,<name>...] -e remote` uses for an
-# ad hoc chain. kro has no way to express "wait for a Job to finish, then create another
-# resource" across a variable-length list, so this part isn't kro-managed.
+# spec.defaultArgs is a free-form map of extra-vars/script arguments (e.g. {cluster:
+# boa1-prod}) — see rgd-jobrun.yaml for how a JobRun's own spec.args merges over this via
+# kro's map.merge() CEL function, and CLAUDE.md's Automatron section for the full
+# precedence rule (a JobWorkflow step's own args always win, else an ad hoc `hsctl run
+# --arg`/`--cluster` flag, else this default).
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
@@ -35,9 +35,6 @@ spec:
       - name: Schedule
         type: string
         jsonPath: .spec.schedule
-      - name: Chain
-        type: string
-        jsonPath: .spec.chain
       - name: CronJob
         type: string
         jsonPath: .status.cronJobName
@@ -49,8 +46,7 @@ spec:
       scriptPath: string | default=""
       scriptInterpreter: string | default="bash"
       schedule: string | default=""
-      defaultCluster: string | default=""
-      chain: string | default=""
+      defaultArgs: "map[string]string"
     status:
       cronJobName: '${cronJob.?metadata.name}'
   resources:
@@ -67,13 +63,20 @@ spec:
           schedule: '${schema.spec.schedule}'
           concurrencyPolicy: Forbid
           jobTemplate:
+            metadata:
+              labels:
+                app: automatron
+                REDACTED/template: '${schema.metadata.name}'
+                REDACTED/job-owner: schedule
             spec:
               backoffLimit: 0
+              ttlSecondsAfterFinished: {{ .Values.automatron.jobTtlSeconds }}
               template:
                 metadata:
                   labels:
                     app: automatron
                     REDACTED/template: '${schema.metadata.name}'
+                    REDACTED/job-owner: schedule
                 spec:
                   serviceAccountName: automatron
                   restartPolicy: Never
@@ -144,22 +147,12 @@ spec:
                           value: '${schema.spec.scriptPath}'
                         - name: SCRIPT_INTERPRETER
                           value: '${schema.spec.scriptInterpreter}'
-                        - name: CLUSTER
-                          value: '${schema.spec.defaultCluster}'
+                        - name: ARGS_JSON
+                          value: '${json.marshal(schema.spec.?defaultArgs.orValue({}))}'
                         - name: DRY_RUN
                           value: "false"
                         - name: REPO_DIR
                           value: /repo/current
-                        - name: CHAIN_JOBS
-                          value: '${schema.spec.chain}'
-                        # A scheduled JobTemplate's Job has no backing JobRun CR to read
-                        # its own name from, so it learns its own Job name (to use as the
-                        # chain's root identity) via the Job controller's own
-                        # auto-applied `job-name` pod label, through the downward API.
-                        - name: CHAIN_ROOT
-                          valueFrom:
-                            fieldRef:
-                              fieldPath: metadata.labels['job-name']
                       envFrom:
                         - secretRef:
                             name: automatron-secrets

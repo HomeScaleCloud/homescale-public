@@ -1,0 +1,13 @@
+# Daily housekeeping — JobRun/JobWorkflowRun CRs have no automatic expiry of their own
+# (unlike the Jobs they create, which use ttlSecondsAfterFinished), so this prunes ones
+# older than retentionDays.
+apiVersion: REDACTED/v1alpha1
+kind: JobTemplate
+metadata:
+  name: cleanup-old-runs
+spec:
+  scriptPath: infra/automatron/scripts/cleanup-old-runs.sh
+  scriptInterpreter: bash
+  schedule: "0 3 * * *"
+  defaultArgs:
+    retentionDays: "7"

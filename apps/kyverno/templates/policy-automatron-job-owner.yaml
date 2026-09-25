@@ -1,0 +1,26 @@
+apiVersion: policies.kyverno.io/v1beta1
+kind: ValidatingPolicy
+metadata:
+  name: require-automatron-job-owner-integrity
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["REDACTED"]
+        apiVersions: ["v1alpha1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["jobruns", "jobworkflowruns"]
+  validationActions: [Audit]
+  validations:
+    - expression: >-
+        has(object.spec.jobOwner) && object.spec.jobOwner != '' &&
+        has(object.metadata.labels) && 'REDACTED/job-owner' in object.metadata.labels &&
+        object.metadata.labels['REDACTED/job-owner'] == object.spec.jobOwner
+      message: "JobRun/JobWorkflowRun must set a non-empty spec.jobOwner matching the REDACTED/job-owner label exactly (see CLAUDE.md's Automatron section)."
+    - expression: >-
+        object.spec.jobOwner != 'schedule' ||
+        request.userInfo.username == 'system:serviceaccount:automatron:automatron'
+      message: "jobOwner: schedule is reserved for automatron's own kickoff container — hand-written and hsctl-created JobRuns/JobWorkflowRuns may not claim it."
+    - expression: >-
+        !request.userInfo.username.contains('@') ||
+        object.spec.jobOwner == request.userInfo.username.split('@')[0].lowerAscii()
+      message: "jobOwner must be your own OIDC identity (the local part of your @REDACTED email, lowercased) — you may not claim another user's identity, 'schedule', or 'github-actions'."

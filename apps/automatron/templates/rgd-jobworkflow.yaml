@@ -1,0 +1,120 @@
+# Defines the AutomatronJobWorkflow CRD (REDACTED/v1alpha1, kind
+# JobWorkflow): the committable *template* for an ordered sequence of JobTemplate steps
+# — like a JobTemplate, but stringing several together. Each step's own args always win;
+# an arg key it doesn't set falls through to whatever `hsctl run <workflow> --arg
+# key=value`/`--cluster` was invoked with (ad hoc runs only), and failing that to the
+# step's own JobTemplate's defaultArgs (see rgd-jobrun.yaml's map.merge() CEL — this
+# kickoff script only needs to resolve the first two tiers itself, leaving a key unset
+# otherwise).
+#
+# See rgd-jobworkflowrun.yaml for the object that tracks one execution of a JobWorkflow.
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: automatron-jobworkflow
+  namespace: {{ .Release.Namespace }}
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: JobWorkflow
+    group: REDACTED
+    scope: Cluster
+    types:
+      Step:
+        templateRef: string
+        args: "map[string]string"
+        dryRun: boolean | default=false
+    additionalPrinterColumns:
+      - name: Schedule
+        type: string
+        jsonPath: .spec.schedule
+      - name: Steps
+        type: integer
+        jsonPath: .status.stepCount
+      - name: CronJob
+        type: string
+        jsonPath: .status.cronJobName
+      - name: Age
+        type: date
+        jsonPath: .metadata.creationTimestamp
+    spec:
+      schedule: string | default=""
+      steps: "[]Step"
+    status:
+      cronJobName: '${cronJob.?metadata.name}'
+      stepCount: '${schema.spec.steps.size()}'
+      # Every JobWorkflowRun labeled as belonging to this workflow — a pointer index, not
+      # full detail (see JobWorkflowRun for per-run/per-step status). Ordering/limiting to
+      # "most recent N" is left to the reader, e.g.
+      # `kubectl get jobworkflowrun -l REDACTED/workflow=<name> --sort-by=.metadata.creationTimestamp`.
+      recentRunNames: '${runs.map(r, r.metadata.name)}'
+  resources:
+    - id: runs
+      externalRef:
+        apiVersion: REDACTED/v1alpha1
+        kind: JobWorkflowRun
+        metadata:
+          selector:
+            matchLabels:
+              REDACTED/workflow: '${schema.metadata.name}'
+    - id: cronJob
+      includeWhen:
+        - '${schema.spec.schedule != "" && schema.spec.steps.size() > 0}'
+      template:
+        apiVersion: batch/v1
+        kind: CronJob
+        metadata:
+          name: 'automatron-${schema.metadata.name}'
+          namespace: {{ .Release.Namespace }}
+        spec:
+          schedule: '${schema.spec.schedule}'
+          concurrencyPolicy: Forbid
+          jobTemplate:
+            metadata:
+              labels:
+                app: automatron
+                REDACTED/job-owner: schedule
+            spec:
+              backoffLimit: 0
+              ttlSecondsAfterFinished: {{ .Values.automatron.jobTtlSeconds }}
+              template:
+                metadata:
+                  labels:
+                    app: automatron
+                    REDACTED/job-owner: schedule
+                spec:
+                  serviceAccountName: automatron
+                  restartPolicy: Never
+                  containers:
+                    - name: kickoff
+                      image: "{{ .Values.automatron.image.repository }}:{{ .Values.automatron.image.tag }}"
+                      command: ["sh", "-c"]
+                      # Builds manifests with `jq -n` rather than heredocs — a heredoc's
+                      # closing delimiter must sit at column 0 (or be tab-indented with
+                      # <<-), which a shell script embedded in a YAML block scalar inside
+                      # a Helm template can't reliably guarantee. Also: no ${VAR}-braced
+                      # bash expansion anywhere in this script — kro's CEL substitution
+                      # scans the whole template text and misparses "${...}" as a CEL
+                      # expression regardless of what's actually inside it, wherever it
+                      # appears (confirmed live: "$WORKFLOW_NAME" broke exactly this way).
+                      # Bare $VAR is safe here since every use is immediately followed by
+                      # "-", which isn't a valid identifier character.
+                      args:
+                        - |
+                          set -e
+                          run_name="$WORKFLOW_NAME-run-$(date +%s)"
+                          steps=$(kubectl get jobworkflow "$WORKFLOW_NAME" -o json | jq -c '.spec.steps')
+                          echo "$steps" | jq --arg name "$run_name" --arg wf "$WORKFLOW_NAME" '
+                            {apiVersion: "REDACTED/v1alpha1", kind: "JobWorkflowRun",
+                             metadata: {name: $name, labels: {"REDACTED/workflow": $wf, "REDACTED/job-owner": "schedule"}},
+                             spec: {workflowRef: $wf, steps: ., jobOwner: "schedule"}}' | kubectl apply -f -
+                          step0=$(echo "$steps" | jq -c '.[0]')
+                          step0_template=$(echo "$step0" | jq -r '.templateRef')
+                          echo "$step0" | jq --arg name "$run_name-step0-$step0_template" --arg run "$run_name" '
+                            {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
+                             metadata: {name: $name, labels: {"REDACTED/workflow-run": $run, "REDACTED/job-owner": "schedule"}},
+                             spec: {templateRef: .templateRef, args: (.args // {}), dryRun: (.dryRun // false),
+                                    workflowRunRef: $run, stepIndex: 0, jobOwner: "schedule"}}' | kubectl apply -f -
+                      env:
+                        - name: WORKFLOW_NAME
+                          value: '${schema.metadata.name}'

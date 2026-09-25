@@ -1,11 +1,6 @@
-# Fires every 15 minutes, chaining into bootstrap-cluster on success — so clusters
-# always exist in Omni before bootstrap-cluster runs against them, without relying on
-# schedule offsets.
 apiVersion: REDACTED/v1alpha1
 kind: JobTemplate
 metadata:
   name: omni-sync
 spec:
   playbook: omni-sync
-  schedule: "*/15 * * * *"
-  chain: bootstrap-cluster

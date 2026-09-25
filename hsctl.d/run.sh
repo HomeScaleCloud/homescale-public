@@ -24,10 +24,16 @@ _run_cleanup() {
 trap _run_cleanup EXIT
 
 run_usage() {
-    echo "Usage: hsctl run <name> [--cluster <name>] [-e|--execution-mode local|remote] [--dry-run] [--chain <name>[,<name>...]]"
+    echo "Usage: hsctl run <name> [--cluster <name>] [--arg key=value]... [-e|--execution-mode local|remote] [--dry-run] [--chain <name>[,<name>...]]"
     echo ""
-    echo "In remote mode (default), <name> is the name of an AutomatronJobTemplate CR (see"
-    echo "infra/automatron/job-templates/ and CLAUDE.md's Automatron section)."
+    echo "In remote mode (default), <name> is the name of an AutomatronJobTemplate or"
+    echo "AutomatronJobWorkflow CR (see infra/automatron/job-templates/, infra/automatron/"
+    echo "job-workflows/, and CLAUDE.md's Automatron section) — hsctl checks JobTemplate first,"
+    echo "then JobWorkflow. Every Job/JobRun/JobWorkflowRun this creates is named with the JobTemplate"
+    echo "actually being executed (not just a step number), and labeled"
+    echo "REDACTED/job-owner with your identity: \$HSCTL_JOB_OWNER if set (CI sets"
+    echo "HSCTL_JOB_OWNER=github-actions), else your OIDC email's local part (e.g. 'max' for"
+    echo "max@REDACTED), else your local username; a scheduled run is labeled 'schedule'."
     echo ""
     echo "In local mode, <name> is any filename (without .yml) under infra/ansible/playbooks/, e.g.:"
     echo "  bootstrap-core      bootstrap the core cluster"
@@ -35,8 +41,17 @@ run_usage() {
     echo "  omni-sync           sync every cluster template + machine class into Omni"
     echo ""
     echo "Options:"
-    echo "  --cluster <name>            passed through as the run's cluster override; meaningful"
-    echo "                              for bootstrap-cluster (its Omni cluster ID, e.g. boa1-prod)"
+    echo "  --arg key=value             (repeatable, remote mode only) sets an arbitrary extra-var/"
+    echo "                              script argument, passed to the playbook or script wholesale"
+    echo "                              — nothing here is automatron-specific, any key the playbook"
+    echo "                              or script expects works. For a JobWorkflow (or an ad hoc"
+    echo "                              --chain), applies to every step that doesn't already set"
+    echo "                              that key itself — a step's own value (if the workflow"
+    echo "                              declares one) always wins; this flag always wins over the"
+    echo "                              step's JobTemplate's own defaultArgs."
+    echo "  --cluster <name>            sugar for --arg cluster=<name> — the one arg key common"
+    echo "                              enough to deserve its own flag; meaningful for"
+    echo "                              bootstrap-cluster (its Omni cluster ID, e.g. boa1-prod)"
     echo "  -e, --execution-mode <mode> 'local' or 'remote' (default: remote). remote creates a"
     echo "                              JobRun CR on automatron (in the core cluster) and streams"
     echo "                              the resulting Job's logs; requires a Tailscale-reachable"
@@ -44,16 +59,19 @@ run_usage() {
     echo "                              (no PIM needed). local clones main fresh (via gh) into a"
     echo "                              temp dir and runs ansible-playbook against that — still"
     echo "                              required for the very first core bootstrap, before"
-    echo "                              automatron exists to dispatch to."
-    echo "  --dry-run                   passed through as a dry-run override; only omni-sync acts"
-    echo "                              on it today (adds --dry-run to its omnictl calls)"
-    echo "  --chain <name>[,...]        after <name> succeeds, run each of these in turn"
-    echo "                              (comma-separated, no spaces), stopping at the first failure."
-    echo "                              In -e remote mode this is the same mechanism a scheduled"
-    echo "                              JobTemplate's own spec.chain uses (see entrypoint.sh) —"
-    echo "                              each hop gets its own JobRun/Job, and this command follows"
-    echo "                              each one's pod logs in turn as they're created. In -e local"
-    echo "                              mode they just run sequentially against the same checkout."
+    echo "                              automatron exists to dispatch to; only understands --cluster,"
+    echo "                              not --arg, since it doesn't go through automatron's CRDs."
+    echo "  --dry-run                   see --arg above for precedence; only omni-sync acts on this"
+    echo "                              today (adds --dry-run to its omnictl calls)"
+    echo "  --chain <name>[,...]        <name> must be a JobTemplate (not a JobWorkflow, which"
+    echo "                              already declares its own steps); builds an ad hoc,"
+    echo "                              uncommitted JobWorkflowRun out of <name> plus this list"
+    echo "                              (comma-separated, no spaces), applying --arg/--cluster/"
+    echo "                              --dry-run to every step. In -e remote mode this creates a"
+    echo "                              JobRun per step, one at a time (see entrypoint.sh), and this"
+    echo "                              command follows each one's pod logs in turn, stopping at the"
+    echo "                              first failure. In -e local mode they just run sequentially"
+    echo "                              against the same checkout, no JobWorkflowRun involved."
     exit 1
 }
 
@@ -230,34 +248,73 @@ _run_stream_job() {
     hsctl_log_success "job $job_name completed"
 }
 
-# _run_wait_for_chained_job <chain_root> <template> <namespace> — poll for the Job that
-# entrypoint.sh's chaining creates for <template> as part of the chain rooted at
-# <chain_root> (see rgd-jobrun.yaml's chain-root/template labels), printing its name on
-# stdout once found. Playbooks can take a while, so this waits up to ~2 minutes.
-_run_wait_for_chained_job() {
-    local chain_root="$1" template="$2" namespace="$3"
+# _run_wait_for_workflow_step <run_name> <step_index> — poll for the JobRun belonging to
+# JobWorkflowRun <run_name> at position <step_index> (see rgd-jobrun.yaml's workflow-run
+# label; rgd-jobworkflow.yaml's kickoff container creates step 0, entrypoint.sh creates
+# every step after that) to produce a Job, printing that Job's name on stdout once found.
+# Playbooks can take a while, so this waits up to ~2 minutes per step.
+_run_wait_for_workflow_step() {
+    local run_name="$1" step_index="$2"
     local attempt job_name=""
     for attempt in $(seq 1 60); do
-        job_name=$(kubectl get jobs -n "$namespace" --context core \
-            -l "REDACTED/chain-root=$chain_root,REDACTED/template=$template" \
-            -o jsonpath='{.items[0].metadata.name}' 2>/dev/null) || true
+        job_name=$(kubectl get jobrun --context core \
+            -l "REDACTED/workflow-run=$run_name" -o json 2>/dev/null | \
+            jq -r --argjson idx "$step_index" '.items[] | select(.spec.stepIndex == $idx) | .status.jobName // empty') || true
         [[ -n "$job_name" ]] && { echo "$job_name"; return 0; }
         sleep 2
     done
     return 1
 }
 
+# _run_resolve_workflow_steps <cli-args-json> <dry_run> <json-steps-array> — apply the
+# precedence rule (a step's own args always win, key by key; else the hsctl --arg/--cluster
+# CLI-supplied args, if this is an ad hoc run; else leave a key unset and let JobRun's own
+# CEL map.merge() fall back to the step's JobTemplate's defaultArgs) to every step,
+# printing the resolved JSON array on stdout. dryRun has no empty-ish sentinel to detect
+# "unset" the way an args key's absence does, so it's just OR'd — true from either side
+# wins, since nothing here ever needs to force a false over an explicit true from the
+# other side.
+_run_resolve_workflow_steps() {
+    local cli_args_json="$1" dry_run="$2" steps_json="$3"
+    echo "$steps_json" | jq --argjson cli "$cli_args_json" --argjson dryrun "$dry_run" '
+        map(. + {
+            args: ($cli + (.args // {})),
+            dryRun: ((.dryRun // false) or $dryrun)
+        })'
+}
+
+# _run_job_owner — identity to name/label ad hoc runs with: $HSCTL_JOB_OWNER if set
+# (deploy.yaml sets this to "github-actions" for CI-triggered runs), else the HomeScale OIDC
+# identity (hsctl_oidc_username, in _lib.sh — decodes the same kubelogin id_token the `core`
+# context's exec plugin already mints, reading issuer/client-id straight out of the local
+# kubeconfig, no Infisical involved). Deliberately has no whoami/local-username fallback —
+# local usernames routinely don't match the @REDACTED identity closely enough to trust
+# for an ownership/audit label, so a wrong-but-plausible-looking value is worse than a loud
+# failure here. Callers must ensure a `core` context already exists (see _run_remote) before
+# calling this. Sanitized for use in both a label value and a Job/CR name component (lowercase,
+# alphanumeric-and-hyphens only, no leading/trailing/repeated hyphens).
+_run_job_owner() {
+    local owner="${HSCTL_JOB_OWNER:-}"
+    [[ -z "$owner" ]] && owner=$(hsctl_oidc_username 2>/dev/null || true)
+    if [[ -z "$owner" ]]; then
+        hsctl_log_error "could not determine your identity for job-owner attribution (no \$HSCTL_JOB_OWNER, and OIDC lookup failed — is a 'core' kubectl context configured? try 'hsctl get kubeconfig core')"
+        exit 1
+    fi
+    echo "$owner" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9-' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//'
+}
+
 _run_remote() {
-    local name="$1" cluster="$2" dry_run="$3" chain_raw="$4"
+    local name="$1" cli_args_json="$2" dry_run="$3" chain_raw="$4"
     local namespace="automatron"
-    local run_name="automatron-adhoc-${name}-$(date +%s)"
 
     command -v kubectl &>/dev/null || { echo "hsctl run: kubectl is required" >&2; exit 1; }
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
 
     # A `core` context, if already present, is reused via explicit --context core below.
     # Otherwise, authenticate via OIDC (hsctl get kubeconfig), which switches
-    # current-context as a side effect — restore it immediately after.
+    # current-context as a side effect — restore it immediately after. Must happen before
+    # _run_job_owner: its OIDC lookup reads the issuer/client-id straight out of this context's
+    # exec config, so it needs to exist first.
     if ! kubectl config get-contexts -o name 2>/dev/null | grep -qx core; then
         local prev_ctx
         prev_ctx=$(kubectl config current-context 2>/dev/null || true)
@@ -268,65 +325,100 @@ _run_remote() {
         [[ -n "$prev_ctx" ]] && kubectl config use-context "$prev_ctx" >/dev/null 2>&1
     fi
 
-    # JobTemplate/JobRun are cluster-scoped (single automatron install per cluster, no
+    local job_owner
+    job_owner=$(_run_job_owner)
+
+    # Every automatron CRD is cluster-scoped (single automatron install per cluster, no
     # per-namespace isolation needed), so these `kubectl get`/`create` calls take no `-n`
     # — only the native Job/Pod calls in _run_stream_job do.
-    kubectl get jobtemplate "$name" --context core &>/dev/null || {
-        hsctl_log_error "no such JobTemplate: $name (check: kubectl get jobtemplate --context core)"
-        exit 1
-    }
-
-    hsctl_log_action "creating JobRun $run_name (template=$name${cluster:+, cluster=$cluster}${dry_run:+, dry_run=$dry_run}${chain_raw:+, chain=$chain_raw}) on automatron"
-    jq -n --arg name "$run_name" --arg template "$name" --arg cluster "$cluster" \
-        --argjson dryrun "$dry_run" --arg chain "$chain_raw" '
-      {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
-       metadata: {name: $name},
-       spec: {templateRef: $template, cluster: $cluster, dryRun: $dryrun, chain: $chain}}' \
-        | kubectl create --context core -f -
-
-    hsctl_log_info "waiting for Automatron to materialize the Job..."
-    local attempt job_name=""
-    for attempt in $(seq 1 30); do
-        job_name=$(kubectl get jobrun "$run_name" --context core \
-            -o jsonpath='{.status.jobName}' 2>/dev/null) || true
-        [[ -n "$job_name" ]] && break
-        sleep 2
-    done
-
-    if [[ -z "$job_name" ]]; then
-        hsctl_log_error "JobRun $run_name never produced a Job — check: kubectl describe jobrun $run_name --context core"
+    local resolved_steps="" workflow_ref=""
+    if kubectl get jobtemplate "$name" --context core &>/dev/null; then
+        if [[ -n "$chain_raw" ]]; then
+            resolved_steps=$(jq -n --arg first "$name" --arg rest "$chain_raw" '
+                [$first] + ($rest | split(","))
+                | map({templateRef: ., args: {}, dryRun: false})')
+            resolved_steps=$(_run_resolve_workflow_steps "$cli_args_json" "$dry_run" "$resolved_steps")
+        fi
+    elif kubectl get jobworkflow "$name" --context core &>/dev/null; then
+        [[ -n "$chain_raw" ]] && { hsctl_log_error "--chain isn't meaningful for a JobWorkflow — $name already declares its own steps"; exit 1; }
+        workflow_ref="$name"
+        local declared_steps
+        declared_steps=$(kubectl get jobworkflow "$name" --context core -o json | jq -c '.spec.steps')
+        [[ "$declared_steps" == "[]" || -z "$declared_steps" ]] && { hsctl_log_error "workflow $name has no steps"; exit 1; }
+        resolved_steps=$(_run_resolve_workflow_steps "$cli_args_json" "$dry_run" "$declared_steps")
+    else
+        hsctl_log_error "no such JobTemplate or JobWorkflow: $name (check: kubectl get jobtemplate,jobworkflow --context core)"
         exit 1
     fi
 
-    _run_stream_job "$job_name" "$namespace" || exit 1
+    if [[ -z "$resolved_steps" ]]; then
+        # Plain single-template run — no chain, no workflow.
+        local run_name="automatron-adhoc-${job_owner}-${name}-$(date +%s)"
+        hsctl_log_action "creating JobRun $run_name (template=$name, args=$cli_args_json${dry_run:+, dry_run=$dry_run}) on automatron"
+        jq -n --arg name "$run_name" --arg template "$name" --argjson args "$cli_args_json" --argjson dryrun "$dry_run" --arg owner "$job_owner" '
+          {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
+           metadata: {name: $name, labels: {"REDACTED/job-owner": $owner}},
+           spec: {templateRef: $template, args: $args, dryRun: $dryrun, jobOwner: $owner}}' \
+            | kubectl create --context core -f -
 
-    # --chain: entrypoint.sh's own chaining creates the next hop's JobRun one at a time
-    # (same mechanism a scheduled JobTemplate's spec.chain uses) — this run's own JobRun
-    # name is the chain root (rgd-jobrun.yaml defaults spec.chainRoot to it when unset),
-    # so follow along and stream each subsequent hop's logs too as they appear.
-    if [[ -n "$chain_raw" ]]; then
-        local chain_templates=() next_template
-        local IFS=','
-        read -r -a chain_templates <<< "$chain_raw"
-        unset IFS
-        for next_template in "${chain_templates[@]}"; do
-            hsctl_log_info "waiting for chained JobRun (template=$next_template)..."
-            job_name=$(_run_wait_for_chained_job "$run_name" "$next_template" "$namespace") || {
-                hsctl_log_error "no Job appeared for chained template $next_template (chain root: $run_name) — check: kubectl get jobs -l REDACTED/chain-root=$run_name --context core"
-                exit 1
-            }
-            _run_stream_job "$job_name" "$namespace" || exit 1
+        hsctl_log_info "waiting for Automatron to materialize the Job..."
+        local attempt job_name=""
+        for attempt in $(seq 1 30); do
+            job_name=$(kubectl get jobrun "$run_name" --context core \
+                -o jsonpath='{.status.jobName}' 2>/dev/null) || true
+            [[ -n "$job_name" ]] && break
+            sleep 2
         done
+        if [[ -z "$job_name" ]]; then
+            hsctl_log_error "JobRun $run_name never produced a Job — check: kubectl describe jobrun $run_name --context core"
+            exit 1
+        fi
+        _run_stream_job "$job_name" "$namespace" || exit 1
+        return
     fi
+
+    # Multi-step: create a JobWorkflowRun with the fully-resolved step list, plus step 0's
+    # JobRun — entrypoint.sh creates every step after that on success (see CLAUDE.md) —
+    # then follow along, streaming each step's pod logs in turn as they're created.
+    local total_steps run_name
+    total_steps=$(echo "$resolved_steps" | jq length)
+    run_name="automatron-adhoc-${job_owner}-${name}-$(date +%s)"
+
+    hsctl_log_action "creating JobWorkflowRun $run_name (${workflow_ref:+workflow=$workflow_ref, }$total_steps steps) on automatron"
+    jq -n --arg name "$run_name" --arg wf "$workflow_ref" --argjson steps "$resolved_steps" --arg owner "$job_owner" '
+      {apiVersion: "REDACTED/v1alpha1", kind: "JobWorkflowRun",
+       metadata: {name: $name, labels: {"REDACTED/workflow": $wf, "REDACTED/job-owner": $owner}},
+       spec: {workflowRef: $wf, steps: $steps, jobOwner: $owner}}' | kubectl create --context core -f -
+
+    local step0_template
+    step0_template=$(echo "$resolved_steps" | jq -r '.[0].templateRef')
+    echo "$resolved_steps" | jq -c '.[0]' | jq --arg name "$run_name-step0-$step0_template" --arg run "$run_name" --arg owner "$job_owner" '
+      {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
+       metadata: {name: $name, labels: {"REDACTED/workflow-run": $run, "REDACTED/job-owner": $owner}},
+       spec: {templateRef: .templateRef, args: (.args // {}), dryRun: (.dryRun // false),
+              workflowRunRef: $run, stepIndex: 0, jobOwner: $owner}}' | kubectl create --context core -f -
+
+    local i job_name
+    for i in $(seq 0 $((total_steps - 1))); do
+        hsctl_log_info "waiting for workflow run $run_name step $i..."
+        job_name=$(_run_wait_for_workflow_step "$run_name" "$i") || {
+            hsctl_log_error "no Job appeared for workflow run $run_name step $i — check: kubectl get jobworkflowrun $run_name --context core -o yaml"
+            exit 1
+        }
+        _run_stream_job "$job_name" "$namespace" || exit 1
+    done
 }
 
 run_main() {
     local playbook="" cluster="" mode="remote" dry_run="false" playbook_set=false
-    local chain_raw=""
+    local chain_raw="" arg_kvs=()
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --cluster) cluster="${2:-}"; [[ -z "$cluster" ]] && run_usage; shift 2 ;;
+            --arg)
+                [[ -z "${2:-}" || "${2:-}" != *=* ]] && run_usage
+                arg_kvs+=("$2"); shift 2 ;;
             -e|--execution-mode)
                 mode="${2:-}"
                 [[ "$mode" != "local" && "$mode" != "remote" ]] && run_usage
@@ -352,7 +444,15 @@ run_main() {
     fi
 
     if [[ "$mode" == "remote" ]]; then
-        _run_remote "$playbook" "$cluster" "$dry_run" "$chain_raw"
+        command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
+        local cli_args_json="{}"
+        if [[ ${#arg_kvs[@]} -gt 0 ]]; then
+            cli_args_json=$(jq -n --args '
+                $ARGS.positional | map(split("=") | {(.[0]): (.[1:] | join("="))}) | add // {}' \
+                -- "${arg_kvs[@]}")
+        fi
+        [[ -n "$cluster" ]] && cli_args_json=$(jq --arg v "$cluster" '. + {cluster: $v}' <<<"$cli_args_json")
+        _run_remote "$playbook" "$cli_args_json" "$dry_run" "$chain_raw"
     else
         local chain_templates=() p
         if [[ -n "$chain_raw" ]]; then

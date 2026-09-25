@@ -224,24 +224,6 @@ else:
 PYEOF
 }
 
-_hsctl_resolve_oidc() {
-    [[ -n "${HSCTL_OIDC_ISSUER_URL:-}" && -n "${HSCTL_OIDC_CLIENT_ID:-}" ]] && return 0
-    local secrets_json
-    if ! secrets_json=$(infisical export --silent --env=prod --path=/k8s/oidc --format=json </dev/null); then
-        hsctl_infisical_login || { echo "hsctl get kubeconfig: infisical login failed" >&2; return 1; }
-        if ! secrets_json=$(infisical export --silent --env=prod --path=/k8s/oidc --format=json </dev/null); then
-            echo "hsctl get kubeconfig: could not fetch OIDC config from Infisical (/k8s/oidc)" >&2
-            return 1
-        fi
-    fi
-    HSCTL_OIDC_ISSUER_URL=$(yq e -p json '.[] | select(.key == "OIDC_ISSUER_URL") | .value' <<< "$secrets_json" 2>/dev/null) || true
-    HSCTL_OIDC_CLIENT_ID=$(yq e -p json '.[] | select(.key == "OIDC_CLIENT_ID") | .value' <<< "$secrets_json" 2>/dev/null) || true
-    if [[ -z "$HSCTL_OIDC_ISSUER_URL" || -z "$HSCTL_OIDC_CLIENT_ID" ]]; then
-        echo "hsctl get kubeconfig: OIDC config at /k8s/oidc is missing OIDC_ISSUER_URL or OIDC_CLIENT_ID" >&2
-        return 1
-    fi
-}
-
 _hsctl_write_kubeconfig_direct() {
     local cluster="$1" kubeconfig="$2"
     local fqdn="k8s.api.${cluster}REDACTED"

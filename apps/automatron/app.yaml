@@ -11,3 +11,4 @@ values:
     image:
       repository: ghcr.io/homescalecloud/automatron
       tag: latest
+    jobTtlSeconds: 86400

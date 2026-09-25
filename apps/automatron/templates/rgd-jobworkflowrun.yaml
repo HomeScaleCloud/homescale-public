@@ -1,0 +1,74 @@
+# Defines the AutomatronJobWorkflowRun CRD (REDACTED/v1alpha1, kind
+# JobWorkflowRun): one execution of a JobWorkflow, tracking its steps' progress in a
+# central place (rather than making callers hunt down scattered JobRun/Job objects by
+# label). spec.steps is always the fully *resolved* step list for this run (concrete
+# templateRef/args/dryRun per step — precedence between a JobWorkflow step's own args, an
+# `hsctl run --arg key=value`/`--cluster ...` CLI flag, and the step's JobTemplate's own
+# defaultArgs is resolved once, by whoever creates this object, not re-resolved here —
+# see rgd-jobrun.yaml for the final defaultArgs merge, done there via kro's map.merge());
+# spec.workflowRef
+# is purely informational (which JobWorkflow, if any, this run came from — empty for an
+# ad hoc/inline `hsctl run <template> --chain ...` run with no committed JobWorkflow).
+#
+# Purely a status-aggregation view otherwise — it has no `resources` of its own to
+# manage; kro's job here is only to define the CRD and project child JobRuns' status into
+# it via a label-selector externalRef collection (aggregating over JobRun rather than the
+# underlying Job directly, since every step — including step 0, even for a scheduled
+# workflow — always goes through a JobRun now, giving richer status for free: templateRef,
+# stepIndex, phase). The JobWorkflowRun object itself, and the JobRun for each step, are
+# created by the JobWorkflow RGD's kickoff container (scheduled runs), by `hsctl run
+# <workflow-or-template> [--chain ...] -e remote` (ad hoc runs), or by
+# apps/automatron/entrypoint.sh (every step after the first) — see rgd-jobworkflow.yaml
+# and rgd-jobrun.yaml.
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: automatron-jobworkflowrun
+  namespace: {{ .Release.Namespace }}
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: JobWorkflowRun
+    group: REDACTED
+    scope: Cluster
+    types:
+      Step:
+        templateRef: string
+        args: "map[string]string"
+        dryRun: boolean | default=false
+    additionalPrinterColumns:
+      - name: Workflow
+        type: string
+        jsonPath: .spec.workflowRef
+      - name: Owner
+        type: string
+        jsonPath: .spec.jobOwner
+      - name: Progress
+        type: string
+        jsonPath: .status.progress
+      - name: Phase
+        type: string
+        jsonPath: .status.phase
+      - name: Age
+        type: date
+        jsonPath: .metadata.creationTimestamp
+    spec:
+      workflowRef: string | default=""
+      jobOwner: string | default=""
+      steps: "[]Step"
+    status:
+      # One entry per step's JobRun labeled with this run's name — JobRun names embed the
+      # step index (<run>-step<N>), so a reader can sort/order by name; not attempted
+      # here in CEL (no reliable sort-by-field available) to keep this projection simple.
+      steps: '${jobRuns.map(r, {"jobRunName": r.metadata.name, "templateRef": r.spec.templateRef, "stepIndex": r.spec.stepIndex, "jobName": r.status.?jobName.orValue(""), "phase": r.status.?phase.orValue("Pending")})}'
+      progress: '${string(jobRuns.size()) + "/" + string(schema.spec.steps.size())}'
+      phase: '${jobRuns.exists(r, r.status.?phase.orValue("") == "Failed") ? "Failed" : (jobRuns.size() > 0 && jobRuns.size() == schema.spec.steps.size() && jobRuns.all(r, r.status.?phase.orValue("") == "Succeeded") ? "Succeeded" : "Running")}'
+  resources:
+    - id: jobRuns
+      externalRef:
+        apiVersion: REDACTED/v1alpha1
+        kind: JobRun
+        metadata:
+          selector:
+            matchLabels:
+              REDACTED/workflow-run: '${schema.metadata.name}'

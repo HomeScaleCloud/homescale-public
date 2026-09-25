@@ -1,14 +1,23 @@
 # Defines the AutomatronJobRun CRD (REDACTED/v1alpha1, kind JobRun):
 # a one-off instance of a JobTemplate. This is the *only* place a one-off Job gets
 # created from a JobTemplate — a human commits one under infra/automatron/job-runs/,
-# `hsctl run <template> [--chain ...] -e remote` creates one ad hoc, and chaining
-# (see apps/automatron/entrypoint.sh) creates one for each subsequent hop.
+# `hsctl run <template> -e remote` creates one ad hoc, or it's one step of a
+# JobWorkflowRun (see rgd-jobworkflowrun.yaml/rgd-jobworkflow.yaml).
 #
-# chain/chainRoot are mostly not user-facing (chain is, for a hand-committed "run this,
-# then that" JobRun; chainRoot isn't) — see rgd-jobtemplate.yaml's spec.chain comment for
-# the full mechanism. chainRoot defaults to this JobRun's own name when unset, so the
-# first hop of a chain doesn't need to set it explicitly; entrypoint.sh threads the
-# actual root name through CHAIN_ROOT for every hop after that.
+# workflowRunRef/stepIndex/jobOwner are not user-facing — set only by whatever creates
+# this JobRun as part of a workflow run (JobWorkflow's kickoff container for step 0 of a
+# scheduled run, hsctl for step 0 of an ad hoc run, or entrypoint.sh for every step after
+# the first), so this JobRun's Job carries enough context to continue the chain on
+# success, is found by its JobWorkflowRun's status aggregation via the workflow-run
+# label, and keeps a consistent owner across every hop of one chain. jobOwner is either
+# the identity hsctl ran as (sanitized for use in a name/label — see hsctl.d/run.sh),
+# "schedule" for a cron-triggered run, or "github-actions" for deploy.yaml's CI-triggered
+# sync — never re-derived once a chain has started, just threaded through.
+#
+# spec.args is a free-form map of extra-vars/script arguments — merged over the
+# referenced JobTemplate's own spec.defaultArgs via kro's map.merge() CEL function (this
+# JobRun's own keys win on overlap), so a hand-committed JobRun only needs to set the
+# args it actually wants to override.
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
@@ -24,12 +33,12 @@ spec:
       - name: Template
         type: string
         jsonPath: .spec.templateRef
-      - name: Cluster
+      - name: WorkflowRun
         type: string
-        jsonPath: .spec.cluster
-      - name: Chain
+        jsonPath: .spec.workflowRunRef
+      - name: Owner
         type: string
-        jsonPath: .spec.chain
+        jsonPath: .spec.jobOwner
       - name: Job
         type: string
         jsonPath: .status.jobName
@@ -41,10 +50,11 @@ spec:
         jsonPath: .metadata.creationTimestamp
     spec:
       templateRef: string
-      cluster: string | default=""
+      args: "map[string]string"
       dryRun: boolean | default=false
-      chain: string | default=""
-      chainRoot: string | default=""
+      workflowRunRef: string | default=""
+      stepIndex: integer | default=-1
+      jobOwner: string | default=""
     status:
       jobName: '${job.?metadata.name}'
       phase: '${job.?status.succeeded.orValue(0) == 1 ? "Succeeded" : (job.?status.failed.orValue(0) > 0 ? "Failed" : (job.?status.active.orValue(0) > 0 ? "Running" : "Pending"))}'
@@ -68,13 +78,18 @@ spec:
           labels:
             app: automatron
             REDACTED/template: '${schema.spec.templateRef}'
-            REDACTED/chain-root: '${schema.spec.chainRoot != "" ? schema.spec.chainRoot : schema.metadata.name}'
+            REDACTED/workflow-run: '${schema.spec.workflowRunRef}'
+            REDACTED/job-owner: '${schema.spec.jobOwner}'
         spec:
           backoffLimit: 0
+          ttlSecondsAfterFinished: {{ .Values.automatron.jobTtlSeconds }}
           template:
             metadata:
               labels:
                 app: automatron
+                REDACTED/template: '${schema.spec.templateRef}'
+                REDACTED/workflow-run: '${schema.spec.workflowRunRef}'
+                REDACTED/job-owner: '${schema.spec.jobOwner}'
             spec:
               serviceAccountName: automatron
               restartPolicy: Never
@@ -145,16 +160,18 @@ spec:
                       value: '${template.spec.scriptPath}'
                     - name: SCRIPT_INTERPRETER
                       value: '${template.spec.scriptInterpreter}'
-                    - name: CLUSTER
-                      value: '${schema.spec.cluster != "" ? schema.spec.cluster : template.spec.defaultCluster}'
+                    - name: ARGS_JSON
+                      value: '${json.marshal(template.spec.?defaultArgs.orValue({}).merge(schema.spec.?args.orValue({})))}'
                     - name: DRY_RUN
                       value: '${string(schema.spec.dryRun)}'
                     - name: REPO_DIR
                       value: /repo/current
-                    - name: CHAIN_JOBS
-                      value: '${schema.spec.chain}'
-                    - name: CHAIN_ROOT
-                      value: '${schema.spec.chainRoot != "" ? schema.spec.chainRoot : schema.metadata.name}'
+                    - name: WORKFLOW_RUN_NAME
+                      value: '${schema.spec.workflowRunRef}'
+                    - name: STEP_INDEX
+                      value: '${string(schema.spec.stepIndex)}'
+                    - name: JOB_OWNER
+                      value: '${schema.spec.jobOwner}'
                   envFrom:
                     - secretRef:
                         name: automatron-secrets

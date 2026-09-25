@@ -97,28 +97,34 @@ BMC connection info (`IP`, `VENDOR_USERNAME`, `VENDOR_PASSWORD`) is fetched at r
 ## `hsctl run`
 
 ```
-hsctl run <name> [--cluster <name>] [-e|--execution-mode local|remote] [--dry-run] [--chain <name>[,<name>...]]
+hsctl run <name> [--cluster <name>] [--arg key=value]... [-e|--execution-mode local|remote] [--dry-run] [--chain <name>[,<name>...]]
 ```
 
 Runs a playbook or script via [automatron](../architecture/overview.md#automatron--kro-backed-job-runner) (the in-cluster runner on `core`), or locally. `<name>` is required (no "run everything" shortcut).
 
-In `-e remote` mode (the default), `<name>` is the name of an `AutomatronJobTemplate` custom resource — one of the CRDs [kro](https://kro.run) generates from the `ResourceGraphDefinition`s shipped in `apps/automatron/templates/`; the actual instances live under `infra/automatron/job-templates/`. Running it applies one `JobRun` CR, waits for kro to materialize the underlying `Job`, and streams its logs. `--cluster`/`--dry-run` override the template's own `spec.defaultCluster`/nothing (templates don't have a stored dry-run default).
+In `-e remote` mode (the default), `<name>` is the name of an `AutomatronJobTemplate` or `AutomatronJobWorkflow` custom resource — CRDs [kro](https://kro.run) generates from the `ResourceGraphDefinition`s shipped in `apps/automatron/templates/`; the actual instances live under `infra/automatron/job-templates/` and `infra/automatron/job-workflows/`. `hsctl` checks for a matching `JobTemplate` first, then a `JobWorkflow`:
 
-Three `JobTemplate`s ship pre-migrated from the old Ansible-only setup (`infra/automatron/job-templates/{omni-sync,bootstrap-cluster,bootstrap-core}.yaml`) — `bootstrap-cluster` takes `--cluster <name>` (its Omni cluster ID, e.g. `boa1-prod`); `bootstrap-core` ignores it. `omni-sync` is the only one scheduled on its own (`spec.schedule: "*/15 * * * *"`) and chains into `bootstrap-cluster` on success (`spec.chain: bootstrap-cluster` — see `--chain` below), so clusters always exist in Omni before bootstrap-cluster runs against them.
+| Kind | Effect |
+|------|--------|
+| `JobTemplate` | Runs it directly — one `JobRun` CR, one `Job`. `--arg`/`--cluster`/`--dry-run` override the template's own `spec.defaultArgs`/nothing (templates don't have a stored dry-run default) |
+| `JobWorkflow` | Resolves every step's `args`/`dryRun` (a step's own entry for a given key always wins; `--arg`/`--cluster`/`--dry-run` apply to any step that doesn't already set that key; a key set by neither falls through to its own `JobTemplate`'s `defaultArgs`), creates a `JobWorkflowRun` with the resolved steps plus a `JobRun` for step 0, then streams every subsequent step's logs in turn as `entrypoint.sh` creates them |
+
+Three `JobTemplate`s ship pre-migrated from the old Ansible-only setup (`infra/automatron/job-templates/{omni-sync,bootstrap-cluster,bootstrap-core}.yaml`), none scheduled on their own — `bootstrap-cluster` takes `--cluster <name>` (its Omni cluster ID, e.g. `boa1-prod`); `bootstrap-core` ignores it. The `omni-sync-and-bootstrap` `JobWorkflow` (`infra/automatron/job-workflows/`) runs both every 15 minutes and is also the target for an ad hoc "sync and bootstrap everything" run.
 
 `-e`/`--execution-mode` is `local` or `remote` (default `remote`):
 
-- **`remote`** applies a `JobRun` CR on automatron in the `core` cluster, waits for kro to materialize the underlying `Job`, and streams its logs immediately. Requires a Tailscale-reachable `core` apiserver (same as `hsctl switch`/`hsctl get kubeconfig`) and `team-infra-plat`/`team-sec-plat` membership — no PIM needed. If a `core` kubectl context already exists (e.g. CI pre-seeds one from `CORE_KUBECONFIG`), it's reused as-is instead of triggering an interactive OIDC login.
-- **`local`** treats `<name>` as an Ansible playbook filename (minus `.yml`) under `infra/ansible/playbooks/` — no `JobTemplate` lookup, since kro/automatron aren't involved. Clones `HomeScaleCloud/homescale@main` fresh into a temp directory (`gh repo clone`, requires `gh auth login`) and runs `ansible-playbook` against that checkout, cleaning it up afterward — never against whatever's checked out locally, which could be a branch, stale, or have uncommitted changes. Still needed for the very first core bootstrap, before automatron exists, or for disaster recovery if automatron itself is down.
+- **`remote`** applies a `JobRun`/`JobWorkflowRun` CR on automatron in the `core` cluster, waits for kro to materialize the underlying `Job`(s), and streams logs immediately. Requires a Tailscale-reachable `core` apiserver (same as `hsctl switch`/`hsctl get kubeconfig`) and `team-infra-plat`/`team-sec-plat` membership — no PIM needed. If a `core` kubectl context already exists (e.g. CI pre-seeds one from `CORE_KUBECONFIG`), it's reused as-is instead of triggering an interactive OIDC login.
+- **`local`** treats `<name>` as an Ansible playbook filename (minus `.yml`) under `infra/ansible/playbooks/` — no `JobTemplate`/`JobWorkflow` lookup, since kro/automatron aren't involved. Only understands `--cluster`, not `--arg` (there's no CRD/args-map machinery to resolve locally). Clones `HomeScaleCloud/homescale@main` fresh into a temp directory (`gh repo clone`, requires `gh auth login`) and runs `ansible-playbook` against that checkout, cleaning it up afterward — never against whatever's checked out locally, which could be a branch, stale, or have uncommitted changes. Still needed for the very first core bootstrap, before automatron exists, or for disaster recovery if automatron itself is down.
+
+`--arg key=value` (repeatable) sets an arbitrary extra-var/script argument — nothing automatron-specific, any key the playbook or script itself expects works; `entrypoint.sh` passes the whole resolved set to Ansible as extra-vars wholesale, and exports it as `ARGS_JSON` for scripts to parse themselves. `--cluster <name>` is sugar for `--arg cluster=<name>` — the one arg key common enough to deserve its own flag.
 
 `--dry-run` is only meaningful for playbooks that act on it — currently just `omni-sync` (adds `--dry-run` to its `omnictl` calls). `deploy.yaml`'s PR-time Omni plan does its own dry-run directly instead, since that check is read-only and diff-scoped.
 
-`--chain <name>[,<name>...]` (comma-separated, no spaces) runs each listed `JobTemplate` in turn after `<name>` succeeds, stopping at the first failure:
+`--chain <name>[,<name>...]` (comma-separated, no spaces; `<name>` must itself be a `JobTemplate`, not a `JobWorkflow` — a workflow already declares its own steps) builds an ad hoc, uncommitted workflow out of `<name>` plus the listed templates, applying `--arg`/`--cluster`/`--dry-run` to every step (there's no per-step override source without a committed `JobWorkflow`). In `-e remote` mode this goes through the exact same `JobWorkflowRun` machinery as running a named `JobWorkflow` — same log-following, same stop-at-first-failure. In `-e local` mode the listed playbooks just run sequentially against the same cloned checkout (cloned once per `hsctl run` invocation, not once per playbook) — no CRD/kro involved.
 
-- In `-e remote` mode, this sets the initial `JobRun`'s `spec.chain` — `entrypoint.sh` itself creates each subsequent hop's `JobRun` on success (same mechanism a scheduled `JobTemplate`'s own `spec.chain` uses), and `hsctl` follows along, streaming each hop's pod logs in turn as they're created (not just the first one).
-- In `-e local` mode, each listed playbook just runs sequentially against the same cloned checkout (cloned once per `hsctl run` invocation, not once per playbook) — no `JobRun`/kro involved.
+`deploy.yaml`'s merge-to-`main` Sync step relies on this: it runs `hsctl run omni-sync-and-bootstrap -e remote` (the committed workflow) so a push to `main` re-syncs Omni *and* re-bootstraps every cluster in one dispatch, with both steps' logs streamed into the same CI job.
 
-`deploy.yaml`'s merge-to-`main` Sync step relies on this: it runs `hsctl run omni-sync --chain bootstrap-cluster -e remote` so a push to `main` re-syncs Omni *and* re-bootstraps every cluster in one dispatch, with both steps' logs streamed into the same CI job.
+Every `JobRun`/`JobWorkflowRun`/`Job` this creates is named after the `JobTemplate` actually being executed, not a bare step number (a chained hop is `<run>-step<N>-<templateRef>`) — so `kubectl get jobs`/pod names always tell you what's really running. Each is also labeled `REDACTED/job-owner`: the identity `hsctl` ran as, or `schedule` for a cron-triggered run — set once at the start of a chain and carried through every subsequent step. Ad hoc run names embed it too: `automatron-adhoc-<owner>-<name>-<timestamp>`. Your own identity resolves as, in order: `$HSCTL_JOB_OWNER` if set (`deploy.yaml` sets `HSCTL_JOB_OWNER=github-actions`); else the local-part of your OIDC `email` claim (e.g. `max` for `max@REDACTED`), read from the exec config already sitting in your local `core` kubectl context (no Infisical call — only a few people have Infisical access, but `-e remote` already requires a working `core` context, and the issuer URL/client ID aren't secret) and decoded from kubelogin's own cached token. There is **no local-username fallback**: if neither of those resolves (no `$HSCTL_JOB_OWNER` and no working `core` context yet), `hsctl run -e remote` fails outright with an error telling you to run `hsctl get kubeconfig core` first, rather than mislabeling the job with a `whoami` that likely doesn't match your `@REDACTED` identity. A Kyverno `ValidatingPolicy` (`require-automatron-job-owner-integrity`, `apps/kyverno`) checks this at admission time too — `jobOwner` must match your own authenticated identity (or the `job-owner` label), so it can't be spoofed by setting `$HSCTL_JOB_OWNER` yourself or hand-writing a CR; currently in `Audit` mode (logs violations, doesn't block) pending a check against real `@REDACTED` addresses.
 
 Automatron authenticates to Infisical by reusing the k8s Infisical Operator's own identity (`INFISICAL_OPERATOR_CLIENT_ID`/`INFISICAL_OPERATOR_CLIENT_SECRET`), a credential only its pod has. Local runs of `bootstrap-core`/`bootstrap-cluster` can't reproduce that, so they pre-fetch the same secrets via your own `infisical login` CLI session (browser SSO) and hand them to Ansible directly. Any other playbook run locally gets no such handling — one that needs Infisical secrets has to add its own `hsctl_local`-aware fallback first (see `hsctl.d/run.sh`).
 
@@ -128,11 +134,12 @@ Adding a new recurring or on-demand automatron job is a matter of committing a C
 
 | Directory | Kind | Purpose |
 |-----------|------|---------|
-| `infra/automatron/job-templates/` | `JobTemplate` | A playbook or script, optionally scheduled and/or chained |
+| `infra/automatron/job-templates/` | `JobTemplate` | A playbook or script, optionally scheduled — includes the built-in `cleanup-old-runs` template (below) |
+| `infra/automatron/job-workflows/` | `JobWorkflow` | An ordered list of `JobTemplate` steps, optionally scheduled |
 | `infra/automatron/job-runs/` | `JobRun` | A one-off instance of a `JobTemplate` (rare to commit — most runs are ad hoc via `hsctl run` instead) |
 | `infra/automatron/scripts/` | — | Bash/Python scripts referenced by `script`-runner `JobTemplate`s |
 
-**Example — a scheduled, chained playbook:**
+**Example — a scheduled playbook:**
 ```yaml
 apiVersion: REDACTED/v1alpha1
 kind: JobTemplate
@@ -140,8 +147,7 @@ metadata:
   name: my-playbook
 spec:
   playbook: my-playbook    # infra/ansible/playbooks/my-playbook.yml
-  schedule: "0 */2 * * *"  # omit entirely for an ad hoc/chained-only template
-  chain: my-other-playbook # comma-separated JobTemplate names; omit for no auto-chain
+  schedule: "0 */2 * * *"  # omit entirely for an ad hoc/workflow-only template
 ```
 
 **Example — a script-based template:**
@@ -161,12 +167,44 @@ spec:
 | `scriptPath` | string | `""` | Repo path to an executable script, e.g. under `infra/automatron/scripts/` |
 | `scriptInterpreter` | string | `bash` | `bash` or `python` |
 | `schedule` | string | `""` | Cron schedule; omit for a template-only instance (never auto-fires, run via `JobRun`/`hsctl run` only) |
-| `defaultCluster` | string | `""` | Default `--cluster`-equivalent target, used when a `JobRun` doesn't override it |
-| `chain` | string | `""` | Comma-separated `JobTemplate` names to run, in order, after this one succeeds (see `hsctl run`'s `--chain` above) |
+| `defaultArgs` | `map[string]string` | `{}` | Default extra-vars/script arguments, used for any key a `JobRun` doesn't override — e.g. `{cluster: boa1-prod}` |
 
-`kubectl get jobtemplate`/`kubectl get jobrun` show the fields above plus (for `JobRun`) `.status.phase` (`Pending`/`Running`/`Succeeded`/`Failed`, projected from the underlying `Job`) — no need to drop to `-o yaml` for a quick status check.
+**Example — an ordered workflow, one step with its own override:**
+```yaml
+apiVersion: REDACTED/v1alpha1
+kind: JobWorkflow
+metadata:
+  name: my-workflow
+spec:
+  schedule: "*/15 * * * *"   # omit for ad hoc only, via `hsctl run`
+  steps:
+    - templateRef: my-playbook
+    - templateRef: my-other-playbook
+      args:
+        cluster: boa1-prod   # always wins, even over `hsctl run --cluster ...`/`--arg cluster=...`
+```
+
+| `JobWorkflow` field | Type | Default | Description |
+|----------------------|------|---------|-------------|
+| `schedule` | string | `""` | Cron schedule; omit for an ad-hoc-only workflow |
+| `steps` | `[]{templateRef, args, dryRun}` | — | Ordered list; `args`/`dryRun` are optional per-step overrides — see the precedence rule under `hsctl run`'s `--arg`/`--chain` above |
+
+A workflow's steps run one after another — step 1 only starts once step 0's `Job` actually completes, chained by `apps/automatron/entrypoint.sh` (kro's own dependency graph can't express "wait for a Job to finish" across a variable-length list, so this part isn't kro-managed).
+
+Every run of a `JobWorkflow` (scheduled or ad hoc) creates a `JobWorkflowRun` — the object to check for progress, rather than hunting down each step's `JobRun`/`Job` by label:
+
+```
+kubectl get jobworkflowrun --sort-by=.metadata.creationTimestamp
+kubectl get jobworkflowrun my-workflow-run-1234567890 -o yaml   # .status.phase, .status.progress, .status.steps
+```
+
+`status.steps`/`status.phase`/`status.progress` (e.g. `"2/3"`) are projected by kro from the `JobRun`s labeled with that run's name — nothing to commit for this one, it's created automatically alongside step 0's `JobRun`. `JobWorkflow.status.recentRunNames` lists every run's name (unsorted — use `--sort-by` above for actual recency).
+
+`kubectl get jobtemplate`/`jobrun`/`jobworkflow`/`jobworkflowrun` all show the fields above (plus, for `JobRun`/`JobWorkflowRun`, `.status.phase`/`Owner`, and for `JobWorkflow`, `.status.stepCount`/`.status.cronJobName`) directly in the printer columns — no need to drop to `-o yaml` for a quick status check.
 
 Most one-off runs go through `hsctl run <name> -e remote` rather than a committed `JobRun` — see [`hsctl run`](#hsctl-run) above.
+
+**Cleanup.** `Job`s (from both `JobTemplate` and `JobRun`) self-delete `automatron.jobTtlSeconds` after finishing (default 86400, in `apps/automatron/app.yaml`'s values) — standard Kubernetes `ttlSecondsAfterFinished`. `JobRun`/`JobWorkflowRun` CRs have no such native TTL, so the built-in `cleanup-old-runs` `JobTemplate` (`schedule: "0 3 * * *"`, `scripts/cleanup-old-runs.sh`) deletes ones older than `retentionDays` (default 7, `defaultArgs`) daily.
 
 ## `hsctl pim`
 

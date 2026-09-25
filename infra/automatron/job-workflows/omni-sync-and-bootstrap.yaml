@@ -1,0 +1,13 @@
+# Every 15 minutes: sync every cluster template + machine class into Omni, then
+# bootstrap any workload cluster Omni-sync just created/changed — so clusters always
+# exist in Omni before bootstrap-cluster runs against them, without relying on
+# schedule offsets.
+apiVersion: REDACTED/v1alpha1
+kind: JobWorkflow
+metadata:
+  name: omni-sync-and-bootstrap
+spec:
+  schedule: "*/15 * * * *"
+  steps:
+    - templateRef: omni-sync
+    - templateRef: bootstrap-cluster
