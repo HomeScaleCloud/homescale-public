@@ -58,7 +58,7 @@ _machine_table_rows() {
 # different concept and not what a bare-metal/BMC playbook would connect to).
 _get_machines_ansible() {
     local ms_json
-    ms_json=$(omnictl get machinestatus -o yaml 2>/dev/null | yq e -o=json '.' - 2>/dev/null | jq -s -c '.')
+    ms_json=$(omnictl get machinestatus -o yaml | yq e -o=json '.' - | jq -s -c '.')
     python3 - "${ms_json:-[]}" <<'PYEOF'
 import json, re, sys
 
@@ -127,7 +127,7 @@ get_machines() {
           .metadata.id,
           (.spec.connected // false),
           (.spec.network.addresses // [] | map(select(test("^[0-9]"))) | map(sub("/[0-9]+$"; "")) | join(","))
-        ] | @tsv' 2>/dev/null || true)
+        ] | @tsv')
     # identity_tsv: id, nodename, cluster, role — assigned machines only
     identity_tsv=$(omnictl get clustermachineidentity -o yaml | \
         yq e '[
@@ -135,7 +135,7 @@ get_machines() {
           (.spec.nodename // "-"),
           (.metadata.labels["omni.sidero.dev/cluster"] // "-"),
           (.metadata.labels | to_entries | map(select(.key | test("omni.sidero.dev/role-"))) | .[0].key | sub("omni.sidero.dev/role-"; "") // "-")
-        ] | @tsv' 2>/dev/null || true)
+        ] | @tsv')
 
     case "$HSCTL_OUTPUT" in
         table)
@@ -261,7 +261,7 @@ _get_clusters_ansible() {
     # [.metadata.id] | @tsv, not a bare .metadata.id — yq's per-document scalar output
     # leaks a stray `---` doc separator between entries otherwise (confirmed live); every
     # other multi-doc extraction in this file already wraps in @tsv for the same reason.
-    names_json=$(omnictl get clusters -o yaml 2>/dev/null | yq e '[.metadata.id] | @tsv' - 2>/dev/null | \
+    names_json=$(omnictl get clusters -o yaml | yq e '[.metadata.id] | @tsv' - | \
         jq -R -s -c 'split("\n") | map(select(length > 0))')
     jq -n --argjson hosts "${names_json:-[]}" '{clusters: {hosts: $hosts}, _meta: {hostvars: {}}}'
 }

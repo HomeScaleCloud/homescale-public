@@ -50,12 +50,6 @@
       no_log: true
       when: hsctl_local | default(false)
 
-    - name: Skip if kubeconfig not yet available
-      when: >
-        _core_kubeconfig_secrets.secrets[kubeconfig_secret_key] is not defined
-        or not _core_kubeconfig_secrets.secrets[kubeconfig_secret_key]
-      ansible.builtin.meta: end_play
-
     - name: Write kubeconfig
       ansible.builtin.copy:
         content: "{{ _core_kubeconfig_secrets.secrets[kubeconfig_secret_key] }}"

@@ -20,6 +20,13 @@ _run_cleanup() {
     for p in "${_run_cleanup_paths[@]:-}"; do
         [[ -n "$p" ]] && rm -rf "$p"
     done
+    # An EXIT trap's own final exit status silently overwrites the script's real one — with
+    # an empty _run_cleanup_paths (always true in remote mode), the loop's last evaluated
+    # command is `[[ -n "" ]]` (false), so without this, every single successful -e remote
+    # run exited 1 regardless — confirmed live, this is what made deploy.yaml's "Plan via
+    # automatron" step (set -euo pipefail | tee ...) report failure on a genuinely clean
+    # terraform plan with zero errors.
+    return 0
 }
 trap _run_cleanup EXIT
 
