@@ -19,7 +19,6 @@ log() { printf '%s [%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "${*:2}" >&2
 repo_root="${REPO_DIR:-.}"
 dry_run="${DRY_RUN:-false}"
 [[ -z "${ARGS_JSON:-}" ]] && ARGS_JSON="{}"
-namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
 cluster=$(jq -r '.cluster // ""' <<<"$ARGS_JSON")
 
 # Universal auth as the "ci" identity (same one CI's OIDC path uses, now also carrying a
@@ -48,49 +47,11 @@ repo_root="$work_root"
 
 cd "$repo_root/infra/terraform"
 
-# --- Queue: only one terraform run at a time, scheduled or ad hoc ---
-# A Lease is a real atomic mutex: kubectl create either succeeds or fails with a 409, no
-# check-then-act race window the way polling for "any other active Job" would have. TFC's
-# own state lock is a backstop that would otherwise hard-fail a concurrent run outright;
-# this makes concurrent invocations queue instead.
-lock_name="automatron-terraform-lock"
-job_name="${JOB_NAME:-$(hostname)}"
-max_wait=1800
-waited=0
-while true; do
-    if kubectl create -f - <<EOF 2>/dev/null
-apiVersion: coordination.k8s.io/v1
-kind: Lease
-metadata:
-  name: $lock_name
-  namespace: $namespace
-spec:
-  holderIdentity: "$job_name"
-  acquireTime: "$(date -u +%Y-%m-%dT%H:%M:%S.000000Z)"
-EOF
-    then
-        # job_name (from JOB_NAME, see rgd-jobrun.yaml/rgd-jobtemplate.yaml) is this run's
-        # own JobRun/Job name — rgd-jobrun.yaml names the Job identically to its JobRun, so
-        # this is both at once.
-        log INFO "acquired lock for JobTemplate terraform as $job_name"
-        break
-    fi
-    holder=$(kubectl get lease "$lock_name" -n "$namespace" -o jsonpath='{.spec.holderIdentity}' 2>/dev/null) || true
-    if [[ -n "$holder" ]] && ! kubectl get job "$holder" -n "$namespace" &>/dev/null; then
-        log INFO "stale lock held by missing job $holder — reclaiming"
-        kubectl delete lease "$lock_name" -n "$namespace" --ignore-not-found
-        continue
-    fi
-    if (( waited >= max_wait )); then
-        log ERROR "timed out after ${max_wait}s waiting for terraform lock (held by ${holder:-unknown})"
-        exit 1
-    fi
-    log INFO "terraform lock held by ${holder:-unknown} — waiting..."
-    sleep 15
-    waited=$((waited + 15))
-done
-release_lock() { kubectl delete lease "$lock_name" -n "$namespace" --ignore-not-found; }
-trap release_lock EXIT
+# Locking (only one terraform run at a time, scheduled or ad hoc) is handled generically by
+# entrypoint.sh before this script ever runs — see its own comment, and this JobTemplate's
+# `locking: true` (infra/automatron/job-templates/terraform.yaml). Not redundant with
+# Terraform Cloud's own state lock — TFC's only hard-fails a concurrent run outright, this
+# makes scheduled and ad hoc runs queue instead.
 
 # --- Plan (always full/untargeted first) ---
 terraform init -input=false

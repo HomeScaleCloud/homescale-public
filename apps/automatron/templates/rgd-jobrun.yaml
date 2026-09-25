@@ -190,7 +190,7 @@ spec:
                     - name: PLAYBOOK
                       value: '${template.spec.playbook}'
                     - name: SCRIPT_PATH
-                      value: '${template.spec.scriptPath}'
+                      value: '${template.spec.script}'
                     - name: SCRIPT_INTERPRETER
                       value: '${template.spec.scriptInterpreter}'
                     - name: ARGS_JSON
@@ -207,11 +207,15 @@ spec:
                       value: '${schema.spec.jobOwner}'
                     - name: GIT_REF
                       value: '${schema.spec.gitRef}'
+                    - name: LOCKING
+                      value: '${string(template.spec.locking)}'
+                    - name: TEMPLATE_NAME
+                      value: '${schema.spec.templateRef}'
                     # This Job's own real name (not schema.metadata.name run through kro's
                     # templating — the Downward API, reading the label the Job controller
                     # sets on every Pod it creates) — generically useful for anything that
                     # needs to identify "which Job is this" at runtime, e.g. a Lease-based
-                    # lock's holderIdentity (see infra/automatron/scripts/terraform.sh).
+                    # lock's holderIdentity (see apps/automatron/entrypoint.sh).
                     - name: JOB_NAME
                       valueFrom:
                         fieldRef:

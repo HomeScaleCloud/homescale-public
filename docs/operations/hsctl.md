@@ -161,16 +161,17 @@ kind: JobTemplate
 metadata:
   name: my-script
 spec:
-  scriptPath: my-script.sh
+  script: my-script.sh
   scriptInterpreter: bash   # or python
 ```
 
 | `JobTemplate` field | Type | Default | Description |
 |----------------------|------|---------|-------------|
-| `playbook` | string | `""` | Name under `infra/ansible/playbooks/`, minus `.yml`. Mutually exclusive with `scriptPath` — exactly one must be set |
-| `scriptPath` | string | `""` | Bare filename under `infra/automatron/scripts/` (same convention as `playbook`) |
+| `playbook` | string | `""` | Name under `infra/ansible/playbooks/`, minus `.yml`. Mutually exclusive with `script` — exactly one must be set |
+| `script` | string | `""` | Bare filename under `infra/automatron/scripts/` (same convention as `playbook`) |
 | `scriptInterpreter` | string | `bash` | `bash` or `python` |
 | `schedule` | string | `""` | Cron schedule; omit for a template-only instance (never auto-fires, run via `JobRun`/`hsctl run` only) |
+| `locking` | boolean | `false` | Serialize scheduled and ad hoc runs of this template via a Lease-based mutex — see CLAUDE.md's Automatron section |
 | `defaultArgs` | `map[string]string` | `{}` | Default extra-vars/script arguments, used for any key a `JobRun` doesn't override — e.g. `{cluster: boa1-prod}` |
 
 **Example — an ordered workflow, one step with its own override:**

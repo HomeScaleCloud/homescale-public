@@ -1,11 +1,11 @@
 # Defines the AutomatronJobTemplate CRD (REDACTED/v1alpha1, kind
 # JobTemplate): a playbook or script Automatron can run, optionally on a schedule.
-# Exactly one of spec.playbook / spec.scriptPath should be set — entrypoint.sh decides
+# Exactly one of spec.playbook / spec.script should be set — entrypoint.sh decides
 # which to run based on which one is non-empty (see apps/automatron/entrypoint.sh).
-# scriptPath is a bare filename under infra/automatron/scripts/, same convention as
-# playbook being a bare name under infra/ansible/playbooks/ — entrypoint.sh joins it back
-# onto that directory before executing, so the JobTemplate/JobRun printer columns show
-# just the filename instead of the full repo path.
+# script is a bare filename under infra/automatron/scripts/, same convention as playbook
+# being a bare name under infra/ansible/playbooks/ — entrypoint.sh joins it back onto that
+# directory before executing, so the JobTemplate/JobRun printer columns show just the
+# filename instead of the full repo path.
 #
 # When spec.schedule is set, kro creates a CronJob that runs it directly. When it's
 # omitted, this is a template-only instance — the only way to run it is via a JobRun (see
@@ -18,6 +18,13 @@
 # kro's map.merge() CEL function, and CLAUDE.md's Automatron section for the full
 # precedence rule (a JobWorkflow step's own args always win, else an ad hoc `hsctl run
 # --arg`/`--cluster` flag, else this default).
+#
+# spec.locking gates a generic Lease-based mutex entrypoint.sh acquires before running
+# this template's playbook/script and releases on exit — see entrypoint.sh and CLAUDE.md's
+# Automatron section for why (TFC/etc.'s own state locks only hard-fail a concurrent run;
+# this makes scheduled and ad hoc runs of the same JobTemplate queue instead). Off by
+# default since most templates (e.g. bootstrap-cluster, scoped to one cluster at a time)
+# have no cross-run race to guard against.
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
@@ -35,18 +42,22 @@ spec:
         jsonPath: .spec.playbook
       - name: Script
         type: string
-        jsonPath: .spec.scriptPath
+        jsonPath: .spec.script
       - name: Schedule
         type: string
         jsonPath: .spec.schedule
+      - name: Locking
+        type: boolean
+        jsonPath: .spec.locking
       - name: Age
         type: date
         jsonPath: .metadata.creationTimestamp
     spec:
       playbook: string | default=""
-      scriptPath: string | default=""
+      script: string | default=""
       scriptInterpreter: string | default="bash"
       schedule: string | default=""
+      locking: boolean | default=false
       defaultArgs: "map[string]string"
   resources:
     - id: cronJob
@@ -146,7 +157,7 @@ spec:
                         - name: PLAYBOOK
                           value: '${schema.spec.playbook}'
                         - name: SCRIPT_PATH
-                          value: '${schema.spec.scriptPath}'
+                          value: '${schema.spec.script}'
                         - name: SCRIPT_INTERPRETER
                           value: '${schema.spec.scriptInterpreter}'
                         - name: ARGS_JSON
@@ -155,6 +166,10 @@ spec:
                           value: "false"
                         - name: REPO_DIR
                           value: /repo/current
+                        - name: LOCKING
+                          value: '${string(schema.spec.locking)}'
+                        - name: TEMPLATE_NAME
+                          value: '${schema.metadata.name}'
                         # See rgd-jobrun.yaml's own JOB_NAME for why this is a Downward API
                         # lookup rather than kro templating.
                         - name: JOB_NAME

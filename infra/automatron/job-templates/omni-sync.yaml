@@ -3,5 +3,6 @@ kind: JobTemplate
 metadata:
   name: omni-sync
 spec:
-  scriptPath: omni-sync.sh
+  script: omni-sync.sh
   scriptInterpreter: bash
+  locking: true

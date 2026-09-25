@@ -37,7 +37,55 @@ WORKFLOW_RUN_NAME="${WORKFLOW_RUN_NAME:-}"
 STEP_INDEX="${STEP_INDEX:--1}"
 JOB_OWNER="${JOB_OWNER:-}"
 GIT_REF="${GIT_REF:-main}"
+LOCKING="${LOCKING:-false}"
+TEMPLATE_NAME="${TEMPLATE_NAME:-}"
 CLUSTER=$(jq -r '.cluster // ""' <<<"$ARGS_JSON")
+
+# Generic Lease-based mutex, gated by the JobTemplate's own spec.locking (rgd-jobtemplate.
+# yaml/rgd-jobrun.yaml) rather than living in individual scripts — so a scheduled and an ad
+# hoc run of the *same* JobTemplate queue instead of racing, without every script that wants
+# this needing to reimplement it. Not redundant with a target system's own locking (e.g.
+# Terraform Cloud's state lock): that only hard-fails a concurrent run outright, this makes
+# it queue. `kubectl create` on a Lease is an atomic acquire (fails with a real error if it
+# already exists, no check-then-act race window); reclaims a stale lock if the Job holding
+# it no longer exists.
+if [[ "$LOCKING" == "true" ]]; then
+    namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+    lock_name="automatron-${TEMPLATE_NAME}-lock"
+    job_name="${JOB_NAME:-$(hostname)}"
+    max_wait=1800
+    waited=0
+    while true; do
+        if kubectl create -f - <<EOF 2>/dev/null
+apiVersion: coordination.k8s.io/v1
+kind: Lease
+metadata:
+  name: $lock_name
+  namespace: $namespace
+spec:
+  holderIdentity: "$job_name"
+  acquireTime: "$(date -u +%Y-%m-%dT%H:%M:%S.000000Z)"
+EOF
+        then
+            echo "acquired lock for JobTemplate $TEMPLATE_NAME as $job_name"
+            break
+        fi
+        holder=$(kubectl get lease "$lock_name" -n "$namespace" -o jsonpath='{.spec.holderIdentity}' 2>/dev/null) || true
+        if [[ -n "$holder" ]] && ! kubectl get job "$holder" -n "$namespace" &>/dev/null; then
+            echo "stale lock held by missing job $holder — reclaiming"
+            kubectl delete lease "$lock_name" -n "$namespace" --ignore-not-found
+            continue
+        fi
+        if (( waited >= max_wait )); then
+            echo "timed out after ${max_wait}s waiting for $TEMPLATE_NAME lock (held by ${holder:-unknown})" >&2
+            exit 1
+        fi
+        echo "$TEMPLATE_NAME lock held by ${holder:-unknown} — waiting..."
+        sleep 15
+        waited=$((waited + 15))
+    done
+    trap 'kubectl delete lease "$lock_name" -n "$namespace" --ignore-not-found' EXIT
+fi
 
 if [[ -n "$PLAYBOOK" && -n "$SCRIPT_PATH" ]]; then
     echo "entrypoint: exactly one of PLAYBOOK / SCRIPT_PATH must be set, got both" >&2

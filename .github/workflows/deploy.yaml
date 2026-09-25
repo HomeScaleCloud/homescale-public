@@ -16,9 +16,6 @@ on:
         required: true
   workflow_dispatch: {}
 
-concurrency:
-  group: deploy
-
 jobs:
   terraform:
     name: "Terraform"

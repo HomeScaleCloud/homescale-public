@@ -13,11 +13,10 @@ rules:
     verbs: ["get"]
 ---
 # Grants automatron's own ServiceAccount the ability to hold a Lease-based lock — atomic
-# `kubectl create` acquire, `kubectl delete` release (see
-# infra/automatron/scripts/terraform.sh for the current user: serializing scheduled and ad
-# hoc terraform runs so they queue instead of racing). Generic (any lease name in this
-# namespace), not tied to terraform specifically, since other jobs may need the same
-# locking mechanism later.
+# `kubectl create` acquire, `kubectl delete` release (see apps/automatron/entrypoint.sh,
+# gated per-JobTemplate by spec.locking: serializing scheduled and ad hoc runs of the same
+# template so they queue instead of racing). Generic (any lease name in this namespace),
+# not tied to any one JobTemplate.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
