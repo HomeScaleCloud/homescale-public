@@ -8,3 +8,8 @@ talosctl
 kubectl
 siderolabs/tap/omnictl
 infisical
+curl
+openssl
+python3
+ansible
+argocd

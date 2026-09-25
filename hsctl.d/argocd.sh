@@ -14,6 +14,8 @@ argocd_login() {
     local cluster="${1:-}"
     [[ -z "$cluster" ]] && { echo "Usage: hsctl argocd login <cluster>"; exit 1; }
 
+    command -v argocd &>/dev/null || { echo "hsctl argocd: the argocd CLI is required (brew install argocd)" >&2; exit 1; }
+
     argocd login "argocd.${cluster}REDACTED" --sso
 }
 

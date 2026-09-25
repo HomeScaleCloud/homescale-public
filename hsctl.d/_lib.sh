@@ -50,7 +50,7 @@ hsctl_resolve_machine_id() {
 # Usage: hsctl_infisical_login || return 1
 hsctl_infisical_login() {
     echo "hsctl: no valid Infisical session — starting 'infisical login'" >&2
-    infisical login --domain https://app.infisical.com
+    infisical login --silent --domain https://app.infisical.com
 }
 
 # Resolve OIDC issuer/client ID from Infisical into HSCTL_OIDC_ISSUER_URL/HSCTL_OIDC_CLIENT_ID

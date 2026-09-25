@@ -193,7 +193,7 @@ _run_local_clone_repo() {
 _run_local() {
     local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4"
 
-    command -v ansible-playbook &>/dev/null || { echo "hsctl run: ansible-playbook is required (pip install ansible)" >&2; exit 1; }
+    command -v ansible-playbook &>/dev/null || { echo "hsctl run: ansible-playbook is required (brew install ansible)" >&2; exit 1; }
 
     if [[ " ${_run_bootstrap_playbooks[*]} " == *" $playbook "* ]]; then
         _run_bootstrap_local "$playbook" "$cluster" "$dry_run" "$repo_root"
