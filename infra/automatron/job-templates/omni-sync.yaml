@@ -3,4 +3,5 @@ kind: JobTemplate
 metadata:
   name: omni-sync
 spec:
-  playbook: omni-sync
+  scriptPath: infra/automatron/scripts/omni-sync.sh
+  scriptInterpreter: bash

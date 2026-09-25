@@ -152,7 +152,7 @@ Runs on every PR and push:
 
 ### `deploy` — infrastructure and cluster sync
 
-Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has two sequential jobs — `terraform` → `omni`. The `omni` job joins the tailnet via `tailscale/github-action` (ephemeral node, tagged `tag:github-actions`, auto-removed when the job ends) to reach Omni's internal API. `terraform` doesn't need to join the mesh at all — it only talks to public APIs (Cloudflare, Vultr, Infisical, Tailscale).
+Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has two sequential jobs — `terraform` → `omni`. Neither joins the tailnet — `terraform` only talks to public APIs (Cloudflare, Vultr, Infisical, Tailscale), and `omni` reaches Omni entirely through automatron (a `core` kubectl context via `CORE_KUBECONFIG`), not directly.
 
 #### 1. `terraform`
 
@@ -161,10 +161,10 @@ Runs on every PR and push to `main` (after `scan` and `build` pass), serialized 
 
 #### 2. `omni` (after terraform)
 
-Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files. First checks that Omni is reachable (`REDACTED/healthz`) — if it isn't, the plan/sync steps are skipped entirely rather than failing.
+Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files. Both the PR-time plan and the merge-time sync dispatch to automatron in `core` rather than running `omnictl` on the runner directly — this job only ever needs a `core` kubectl context (`CORE_KUBECONFIG`), never Omni network access itself, and no longer joins Tailscale for anything.
 
-- **On PR**: dry-runs each changed cluster template and machine class with `omnictl ... --dry-run` directly on the runner, posts results as PR comments — unchanged, read-only and diff-scoped, so it isn't worth routing through automatron
-- **On merge to `main`**: builds a `core` kubectl context from `CORE_KUBECONFIG` and runs `./hsctl run omni-sync-and-bootstrap -e remote` — the actual sync and bootstrap now happen on automatron (see below), with both steps' logs streamed into this job's log in turn instead of running `omnictl`/Ansible on the runner directly
+- **On PR**: runs `./hsctl run omni-sync --dry-run -e remote --git-ref <this-PR's-branch> --arg clusters=<changed> --arg machineclasses=<changed>` and posts the result as PR comments, split back into today's per-cluster/per-machineclass comments by parsing markers the script prints around each item's output. `--git-ref` is what makes this correct — without it, a dispatched run would clone and plan against `main`'s current content, not the PR's actual changes.
+- **On merge to `main`**: builds a `core` kubectl context from `CORE_KUBECONFIG` and runs `./hsctl run omni-sync-and-bootstrap -e remote` — the actual sync and bootstrap happen on automatron (see below), with both steps' logs streamed into this job's log in turn
 
 Shared Talos patches from `infra/omni/patches/` are applied alongside each cluster template.
 
@@ -191,7 +191,7 @@ All of automatron's own credentials (Infisical login, git deploy key, and Omni a
 
 Ad hoc runs: `hsctl run <name> [--chain <name>[,...]] -e remote [--dry-run] [--arg key=value]... [--cluster <name>]` applies a `JobRun` (for a `JobTemplate`) or a `JobWorkflowRun` (for a `JobWorkflow`, or an ad hoc `--chain`) and streams every step's logs in turn — see `hsctl run` and "Automatron job CRDs" in [Operations → hsctl](../operations/hsctl.md).
 
-Every `Job`/`JobRun`/`JobWorkflowRun` is named after the `JobTemplate` it's actually running and labeled `REDACTED/job-owner` (the triggering identity, `github-actions`, or `schedule`); finished `Job`s self-delete after a TTL, and `JobRun`/`JobWorkflowRun` CRs (run history), plus any ad hoc `JobWorkflow` from `--chain`, are pruned after 14 days by a built-in `CronJob` — a committed `JobWorkflow` is untouched. Your own identity is your OIDC email's local part (read from the `core` kubectl context already on disk, no Infisical needed), never your local username — there's no `whoami` fallback, `hsctl run` fails outright if it can't determine who you are. A Kyverno `ValidatingPolicy` (`apps/kyverno`) checks `jobOwner` at admission time so it can't be spoofed — see CLAUDE.md.
+Every `Job`/`JobRun`/`JobWorkflowRun` is named after the `JobTemplate` it's actually running and labeled `REDACTED/job-owner` (the triggering identity, `ci`, or `schedule`); finished `Job`s self-delete after a TTL, and `JobRun`/`JobWorkflowRun` CRs (run history), plus any ad hoc `JobWorkflow` from `--chain`, are pruned after 14 days by a built-in `CronJob` — a committed `JobWorkflow` is untouched. Your own identity is your OIDC email's local part (read from the `core` kubectl context already on disk, no Infisical needed), never your local username — there's no `whoami` fallback, `hsctl run` fails outright if it can't determine who you are. A Kyverno `ValidatingPolicy` (`apps/kyverno`) checks `jobOwner` at admission time so it can't be spoofed — see CLAUDE.md.
 
 ---
 

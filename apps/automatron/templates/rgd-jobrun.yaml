@@ -11,8 +11,14 @@
 # success, is found by its JobWorkflowRun's status aggregation via the workflow-run
 # label, and keeps a consistent owner across every hop of one chain. jobOwner is either
 # the identity hsctl ran as (sanitized for use in a name/label — see hsctl.d/run.sh),
-# "schedule" for a cron-triggered run, or "github-actions" for deploy.yaml's CI-triggered
+# "schedule" for a cron-triggered run, or "ci" for deploy.yaml's CI-triggered
 # sync — never re-derived once a chain has started, just threaded through.
+#
+# gitRef (default "main") overrides the git-clone initContainer's checked-out ref — the
+# one legitimate reason to ever set it is deploy.yaml's PR-time plan, which needs to see
+# the PR's own branch content, not main's; every other caller (hsctl, the JobWorkflow
+# kickoff container, entrypoint.sh's chain continuation) leaves it at the default so
+# scheduled/production runs always reflect what's actually merged.
 #
 # spec.args is a free-form map of extra-vars/script arguments — merged over the
 # referenced JobTemplate's own spec.defaultArgs via kro's map.merge() CEL function (this
@@ -55,6 +61,7 @@ spec:
       workflowRunRef: string | default=""
       stepIndex: integer | default=-1
       jobOwner: string | default=""
+      gitRef: string | default="main"
     status:
       # jobName is internal (hsctl polls the native Job for succeeded/failed counts, which
       # only exist at Job level, not Pod level) — deliberately not a printer column. podName
@@ -152,7 +159,7 @@ spec:
                   image: registry.k8s.io/git-sync/git-sync:v4.7.1
                   args:
                     - --repo=git@github.com:HomeScaleCloud/homescale.git
-                    - --ref=main
+                    - '--ref=${schema.spec.gitRef}'
                     - --root=/repo
                     - --link=current
                     - --one-time
@@ -189,6 +196,8 @@ spec:
                       value: '${string(schema.spec.stepIndex)}'
                     - name: JOB_OWNER
                       value: '${schema.spec.jobOwner}'
+                    - name: GIT_REF
+                      value: '${schema.spec.gitRef}'
                   envFrom:
                     - secretRef:
                         name: automatron-secrets

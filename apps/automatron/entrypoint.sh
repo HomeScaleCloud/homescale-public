@@ -16,9 +16,10 @@
 # JobTemplate it's actually running, not just a step number. Same mechanism the
 # JobWorkflow RGD's kickoff container uses for step 0 of a scheduled run, and
 # `hsctl run <workflow-or-template> [--chain ...] -e remote` uses for step 0 of an ad
-# hoc run. JOB_OWNER (set once, at the start of a chain — see hsctl.d/run.sh and
-# rgd-jobworkflow.yaml's kickoff container) is threaded through unchanged to every
-# subsequent step, so the whole chain keeps one consistent owner.
+# hoc run. JOB_OWNER and GIT_REF (both set once, at the start of a chain — see
+# hsctl.d/run.sh and rgd-jobworkflow.yaml's kickoff container) are threaded through
+# unchanged to every subsequent step, so the whole chain keeps one consistent owner and
+# every step checks out the same ref (see rgd-jobrun.yaml's spec.gitRef).
 set -euo pipefail
 
 REPO_DIR="${REPO_DIR:-/repo/current}"
@@ -35,6 +36,7 @@ DRY_RUN="${DRY_RUN:-false}"
 WORKFLOW_RUN_NAME="${WORKFLOW_RUN_NAME:-}"
 STEP_INDEX="${STEP_INDEX:--1}"
 JOB_OWNER="${JOB_OWNER:-}"
+GIT_REF="${GIT_REF:-main}"
 CLUSTER=$(jq -r '.cluster // ""' <<<"$ARGS_JSON")
 
 if [[ -n "$PLAYBOOK" && -n "$SCRIPT_PATH" ]]; then
@@ -105,11 +107,11 @@ if [[ -n "$WORKFLOW_RUN_NAME" && "$DRY_RUN" != "true" ]]; then
             echo "Job $run_name already exists and is active — skipping"
         else
             echo "continuing workflow run $WORKFLOW_RUN_NAME: step $next_index ($next_template) as JobRun $run_name"
-            echo "$next_step" | jq --arg name "$run_name" --arg run "$WORKFLOW_RUN_NAME" --arg idx "$next_index" --arg owner "$JOB_OWNER" '
+            echo "$next_step" | jq --arg name "$run_name" --arg run "$WORKFLOW_RUN_NAME" --arg idx "$next_index" --arg owner "$JOB_OWNER" --arg ref "$GIT_REF" '
                 {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
                  metadata: {name: $name, labels: {"REDACTED/workflow-run": $run, "REDACTED/job-owner": $owner}},
                  spec: {templateRef: .templateRef, args: (.args // {}), dryRun: (.dryRun // false),
-                        workflowRunRef: $run, stepIndex: ($idx | tonumber), jobOwner: $owner}}' \
+                        workflowRunRef: $run, stepIndex: ($idx | tonumber), jobOwner: $owner, gitRef: $ref}}' \
                 | kubectl apply -f -
         fi
     fi

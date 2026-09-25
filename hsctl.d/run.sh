@@ -24,7 +24,7 @@ _run_cleanup() {
 trap _run_cleanup EXIT
 
 run_usage() {
-    echo "Usage: hsctl run <name> [--cluster <name>] [--arg key=value]... [-e|--execution-mode local|remote] [--dry-run] [--chain <name>[,<name>...]]"
+    echo "Usage: hsctl run <name> [--cluster <name>] [--arg key=value]... [-e|--execution-mode local|remote] [--dry-run] [--chain <name>[,<name>...]] [--git-ref <ref>]"
     echo ""
     echo "In remote mode (default), <name> is the name of an AutomatronJobTemplate or"
     echo "AutomatronJobWorkflow CR (see infra/automatron/job-templates/, infra/automatron/"
@@ -32,7 +32,7 @@ run_usage() {
     echo "then JobWorkflow. Every Job/JobRun/JobWorkflowRun this creates is named with the JobTemplate"
     echo "actually being executed (not just a step number), and labeled"
     echo "REDACTED/job-owner with your identity: \$HSCTL_JOB_OWNER if set (CI sets"
-    echo "HSCTL_JOB_OWNER=github-actions), else your OIDC email's local part (e.g. 'max' for"
+    echo "HSCTL_JOB_OWNER=ci), else your OIDC email's local part (e.g. 'max' for"
     echo "max@REDACTED), else your local username; a scheduled run is labeled 'schedule'."
     echo ""
     echo "In local mode, <name> is any filename (without .yml) under infra/ansible/playbooks/, e.g.:"
@@ -74,6 +74,13 @@ run_usage() {
     echo "                              one's pod logs in turn, stopping at the first failure. In"
     echo "                              -e local mode they just run sequentially against the same"
     echo "                              checkout, no JobWorkflow/JobWorkflowRun involved."
+    echo "  --git-ref <ref>              (remote mode only, default: main) branch/tag/SHA for the"
+    echo "                              JobRun's own git-clone initContainer to check out instead of"
+    echo "                              main — the one real use is planning a PR's own uncommitted"
+    echo "                              changes (deploy.yaml's PR-time Omni plan uses this); every"
+    echo "                              other caller leaves it at main so scheduled/production runs"
+    echo "                              always reflect what's actually merged. For a chain/workflow,"
+    echo "                              applies to every step (propagated by entrypoint.sh)."
     exit 1
 }
 
@@ -286,7 +293,7 @@ _run_resolve_workflow_steps() {
 }
 
 # _run_job_owner — identity to name/label ad hoc runs with: $HSCTL_JOB_OWNER if set
-# (deploy.yaml sets this to "github-actions" for CI-triggered runs), else the HomeScale OIDC
+# (deploy.yaml sets this to "ci" for CI-triggered runs), else the HomeScale OIDC
 # identity (hsctl_oidc_username, in _lib.sh — decodes the same kubelogin id_token the `core`
 # context's exec plugin already mints, reading issuer/client-id straight out of the local
 # kubeconfig, no Infisical involved). Deliberately has no whoami/local-username fallback —
@@ -314,7 +321,7 @@ _run_truncate() {
 }
 
 _run_remote() {
-    local name="$1" cli_args_json="$2" dry_run="$3" chain_raw="$4"
+    local name="$1" cli_args_json="$2" dry_run="$3" chain_raw="$4" git_ref="${5:-main}"
     local namespace="automatron"
 
     command -v kubectl &>/dev/null || { echo "hsctl run: kubectl is required" >&2; exit 1; }
@@ -345,7 +352,7 @@ _run_remote() {
     # sharing one name between them isn't a collision). Both components are truncated: this
     # name gets reused as a label VALUE (REDACTED/workflow[-run]), not
     # just an object name, and Kubernetes caps label values at 63 bytes — confirmed live,
-    # an untruncated name (job_owner=github-actions + a longer template/workflow name)
+    # an untruncated name (job_owner=ci + a longer template/workflow name)
     # broke both kro's own label-selector reconciliation and hsctl's own kubectl creates.
     local run_name="automatron-$(_run_truncate "$job_owner")-$(_run_truncate "$name")-$(date +%s)"
 
@@ -384,11 +391,11 @@ _run_remote() {
 
     if [[ -z "$resolved_steps" ]]; then
         # Plain single-template run — no chain, no workflow.
-        hsctl_log_action "creating JobRun $run_name (template=$name, args=$cli_args_json${dry_run:+, dry_run=$dry_run}) on automatron"
-        jq -n --arg name "$run_name" --arg template "$name" --argjson args "$cli_args_json" --argjson dryrun "$dry_run" --arg owner "$job_owner" '
+        hsctl_log_action "creating JobRun $run_name (template=$name, args=$cli_args_json${dry_run:+, dry_run=$dry_run}${git_ref:+, git_ref=$git_ref}) on automatron"
+        jq -n --arg name "$run_name" --arg template "$name" --argjson args "$cli_args_json" --argjson dryrun "$dry_run" --arg owner "$job_owner" --arg ref "$git_ref" '
           {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
            metadata: {name: $name, labels: {"REDACTED/job-owner": $owner}},
-           spec: {templateRef: $template, args: $args, dryRun: $dryrun, jobOwner: $owner}}' \
+           spec: {templateRef: $template, args: $args, dryRun: $dryrun, jobOwner: $owner, gitRef: $ref}}' \
             | kubectl create --context core -f -
 
         hsctl_log_info "waiting for Automatron to materialize the Job..."
@@ -421,11 +428,11 @@ _run_remote() {
 
     local step0_template
     step0_template=$(echo "$resolved_steps" | jq -r '.[0].templateRef')
-    echo "$resolved_steps" | jq -c '.[0]' | jq --arg name "$run_name-step0-$step0_template" --arg run "$run_name" --arg owner "$job_owner" '
+    echo "$resolved_steps" | jq -c '.[0]' | jq --arg name "$run_name-step0-$step0_template" --arg run "$run_name" --arg owner "$job_owner" --arg ref "$git_ref" '
       {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
        metadata: {name: $name, labels: {"REDACTED/workflow-run": $run, "REDACTED/job-owner": $owner}},
        spec: {templateRef: .templateRef, args: (.args // {}), dryRun: (.dryRun // false),
-              workflowRunRef: $run, stepIndex: 0, jobOwner: $owner}}' | kubectl create --context core -f -
+              workflowRunRef: $run, stepIndex: 0, jobOwner: $owner, gitRef: $ref}}' | kubectl create --context core -f -
 
     local i job_name
     for i in $(seq 0 $((total_steps - 1))); do
@@ -440,7 +447,7 @@ _run_remote() {
 
 run_main() {
     local playbook="" cluster="" mode="remote" dry_run="false" playbook_set=false
-    local chain_raw="" arg_kvs=()
+    local chain_raw="" arg_kvs=() git_ref="main"
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -455,6 +462,9 @@ run_main() {
             --dry-run) dry_run="true"; shift ;;
             --chain)
                 chain_raw="${2:-}"; [[ -z "$chain_raw" ]] && run_usage
+                shift 2 ;;
+            --git-ref)
+                git_ref="${2:-}"; [[ -z "$git_ref" ]] && run_usage
                 shift 2 ;;
             -h|--help) run_usage ;;
             --*) echo "hsctl run: unknown flag '$1'" >&2; run_usage ;;
@@ -481,7 +491,7 @@ run_main() {
                 -- "${arg_kvs[@]}")
         fi
         [[ -n "$cluster" ]] && cli_args_json=$(jq --arg v "$cluster" '. + {cluster: $v}' <<<"$cli_args_json")
-        _run_remote "$playbook" "$cli_args_json" "$dry_run" "$chain_raw"
+        _run_remote "$playbook" "$cli_args_json" "$dry_run" "$chain_raw" "$git_ref"
     else
         local chain_templates=() p
         if [[ -n "$chain_raw" ]]; then
