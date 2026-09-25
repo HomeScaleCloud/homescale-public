@@ -19,10 +19,10 @@ Also installs any missing dependencies listed in `hsctl.d/requirements.txt` (one
 ## `hsctl get`
 
 ```
-hsctl get <resource> [-o table|yaml|json] [flags...]
+hsctl get <resource> [-o table|yaml|json|ansible] [flags...]
 ```
 
-Output format defaults to `table`; pass `-o yaml` or `-o json` for scripting.
+Output format defaults to `table`; pass `-o yaml` or `-o json` for scripting. `-o ansible` is only meaningful for `clusters`/`machines` — it's what `infra/automatron/ansible/inventory/clusters`/`machines` (Ansible dynamic inventory scripts) call under the hood, so ansible-playbook always sees the same live Omni state `hsctl get` itself would show.
 
 | Resource | Usage | Description |
 |----------|-------|-------------|

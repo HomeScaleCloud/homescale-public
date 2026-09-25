@@ -11,8 +11,8 @@
 # Validate -o output format; writes error and returns 1 on failure
 hsctl_validate_output() {
     case "$1" in
-        table|yaml|json) return 0 ;;
-        *) echo "hsctl: unknown output format '$1' (valid: table, yaml, json)" >&2; return 1 ;;
+        table|yaml|json|ansible) return 0 ;;
+        *) echo "hsctl: unknown output format '$1' (valid: table, yaml, json, ansible)" >&2; return 1 ;;
     esac
 }
 

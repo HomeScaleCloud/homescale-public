@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Ansible dynamic inventory — thin wrapper around `hsctl get machines -o ansible` (see
+# hsctl.d/get.sh). Ansible's script inventory plugin calls this with --list for the full
+# dump, or --host <name> for one host's vars; hsctl's own output already carries
+# _meta.hostvars for every host, which is supposed to make Ansible never call --host, but
+# every field is handled here anyway rather than relying on that alone.
+set -euo pipefail
+
+[[ "${1:-}" == "--host" ]] && { echo '{}'; exit 0; }
+
+exec hsctl get machines -o ansible

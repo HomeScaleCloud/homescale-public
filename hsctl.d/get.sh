@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # hsctl get — query Omni/cluster resources
 #
-# Output format: controlled by -o flag (table, yaml, json); default is table
+# Output format: controlled by -o flag (table, yaml, json, ansible); default is table.
+# `ansible` is only meaningful for `clusters`/`machines` — see infra/automatron/ansible/
+# inventory/'s clusters/machines wrapper scripts, which call `hsctl get <resource> -o
+# ansible` as Ansible dynamic inventory sources (replaced a standalone omni.py that
+# duplicated this same Omni-querying logic).
 # HSCTL_OUTPUT is set by get_main and read by all subcommand handlers
 
 get_usage() {
-    echo "Usage: hsctl get <resource> [-o table|yaml|json] [flags...]"
+    echo "Usage: hsctl get <resource> [-o table|yaml|json|ansible] [flags...]"
     echo ""
     echo "Resources:"
     echo "  clusters                      List Kubernetes clusters reachable via Tailscale"
@@ -45,6 +49,66 @@ _machine_table_rows() {
     done
 }
 
+# Ansible dynamic-inventory JSON for the `machines` group, sub-grouped by cluster
+# (cluster_<sanitized-name>) — reserved for future firmware/BMC management playbooks (see
+# inventory/group_vars/machines.yml); no current playbook targets this group. Deliberately
+# reads straight off MachineStatus's own metadata.labels/spec.network (the machine's actual
+# reported hostname/addresses — what SSHing into the physical box needs), not the
+# ClusterMachineIdentity join the table view above uses (the k8s *node* name, which is a
+# different concept and not what a bare-metal/BMC playbook would connect to).
+_get_machines_ansible() {
+    local ms_json
+    ms_json=$(omnictl get machinestatus -o yaml 2>/dev/null | yq e -o=json '.' - 2>/dev/null | jq -s -c '.')
+    python3 - "${ms_json:-[]}" <<'PYEOF'
+import json, re, sys
+
+machines = json.loads(sys.argv[1])
+
+
+def group_key(cluster_name):
+    return "cluster_" + re.sub(r"[^a-zA-Z0-9_]", "_", cluster_name)
+
+
+hosts = []
+hostvars = {}
+cluster_groups = {}
+
+for res in machines:
+    meta = res.get("metadata", {})
+    spec = res.get("spec", {})
+    labels = meta.get("labels", {})
+
+    machine_id = meta.get("id")
+    hostname = spec.get("network", {}).get("hostname") or machine_id
+    if not hostname:
+        continue
+
+    addresses = spec.get("network", {}).get("addresses", [])
+    primary_ip = addresses[0].split("/")[0] if addresses else None
+
+    cluster = labels.get("omni.sidero.dev/cluster")
+    role = "controlplane" if "omni.sidero.dev/role-controlplane" in labels else "worker"
+
+    hosts.append(hostname)
+    hostvars[hostname] = {
+        "machine_id": machine_id,
+        "omni_cluster": cluster,
+        "machine_role": role,
+        "machine_platform": labels.get("omni.sidero.dev/platform"),
+        **({"ansible_host": primary_ip} if primary_ip else {}),
+    }
+    if cluster:
+        cluster_groups.setdefault(group_key(cluster), []).append(hostname)
+
+inventory = {
+    "machines": {"hosts": hosts, "children": list(cluster_groups.keys())},
+    **{key: {"hosts": h} for key, h in cluster_groups.items()},
+    "_meta": {"hostvars": hostvars},
+}
+print(json.dumps(inventory, indent=2))
+PYEOF
+}
+
 get_machines() {
     local cluster_filter=""
     while [[ $# -gt 0 ]]; do
@@ -53,6 +117,8 @@ get_machines() {
             *) echo "hsctl get machines: unknown flag '$1'" >&2; get_usage ;;
         esac
     done
+
+    [[ "$HSCTL_OUTPUT" == "ansible" ]] && { _get_machines_ansible; return; }
 
     # status_tsv: id, connected, IPv4 addresses — from MachineStatus, for all connected machines
     local status_tsv identity_tsv
@@ -181,7 +247,28 @@ spec:
     kubectl -n "$namespace" delete pod "$pod_name" --ignore-not-found=true >/dev/null 2>&1
 }
 
+# Ansible dynamic-inventory JSON for the `clusters` group — bootstrap-cluster.yml's own
+# `hosts: "{{ target | default('clusters') }}"` loops over this, with
+# ansible_connection: local and omni_cluster_name: "{{ inventory_hostname }}"
+# (inventory/group_vars/clusters.yml) doing the rest per "host". Deliberately its own early
+# return, not a branch of the table/yaml/json case below: that path's per-cluster
+# `k8s.api.<cluster>REDACTED/version` probe needs Tailscale, which automatron
+# (the only real caller of this mode) doesn't have — see CLAUDE.md's Automatron section —
+# and inventory names alone don't need that data anyway. `_meta.hostvars` is present (even
+# empty) so Ansible's script inventory plugin doesn't fall back to a --host call per host.
+_get_clusters_ansible() {
+    local names_json
+    # [.metadata.id] | @tsv, not a bare .metadata.id — yq's per-document scalar output
+    # leaks a stray `---` doc separator between entries otherwise (confirmed live); every
+    # other multi-doc extraction in this file already wraps in @tsv for the same reason.
+    names_json=$(omnictl get clusters -o yaml 2>/dev/null | yq e '[.metadata.id] | @tsv' - 2>/dev/null | \
+        jq -R -s -c 'split("\n") | map(select(length > 0))')
+    jq -n --argjson hosts "${names_json:-[]}" '{clusters: {hosts: $hosts}, _meta: {hostvars: {}}}'
+}
+
 get_clusters() {
+    [[ "$HSCTL_OUTPUT" == "ansible" ]] && { _get_clusters_ansible; return; }
+
     local talos_tsv cluster_names
     talos_tsv=$(omnictl get clusters -o yaml 2>/dev/null | \
         yq e '[.metadata.id, (.spec.talosversion // "?")] | @tsv' - 2>/dev/null || true)

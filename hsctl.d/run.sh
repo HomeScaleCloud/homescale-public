@@ -128,7 +128,7 @@ _run_bootstrap_local() {
         > "$extra_vars_file"
 
     (
-        export HSCTL_REPO_ROOT="$repo_root" # so a nested `hsctl get machines` (via omni.py) resolves against the same fresh checkout
+        export HSCTL_REPO_ROOT="$repo_root" # so a nested `hsctl get machines` (via the inventory/machines dynamic inventory script) resolves against the same fresh checkout
         cd "$repo_root/infra/automatron/ansible" || exit 1
 
         case "$playbook" in
@@ -156,7 +156,7 @@ _run_generic_local() {
     [[ -f "$playbook_file" ]] || { hsctl_log_error "no such playbook: infra/automatron/ansible/playbooks/$playbook.yml"; exit 1; }
 
     (
-        export HSCTL_REPO_ROOT="$repo_root" # so a nested `hsctl get machines` (via omni.py) resolves against the same fresh checkout
+        export HSCTL_REPO_ROOT="$repo_root" # so a nested `hsctl get machines` (via the inventory/machines dynamic inventory script) resolves against the same fresh checkout
         cd "$repo_root/infra/automatron/ansible" || exit 1
         hsctl_log_action "running $playbook.yml${cluster:+ (target: $cluster)}"
         if [[ -n "$cluster" ]]; then

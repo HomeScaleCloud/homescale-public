@@ -95,8 +95,9 @@ elif [[ -z "$PLAYBOOK" && -z "$SCRIPT_PATH" ]]; then
     exit 1
 fi
 
-# infra/automatron/ansible/inventory/omni.py shells out to `hsctl get machines`, resolved
-# from the git-cloned repo rather than baked into the image.
+# infra/automatron/ansible/inventory/clusters and .../machines (dynamic inventory scripts)
+# shell out to `hsctl get clusters|machines -o ansible`, resolved from the git-cloned repo
+# rather than baked into the image.
 export HSCTL_REPO_ROOT="$REPO_DIR"
 export PATH="$REPO_DIR:$PATH"
 
