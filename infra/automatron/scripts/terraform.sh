@@ -22,11 +22,15 @@ dry_run="${DRY_RUN:-false}"
 namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
 cluster=$(jq -r '.cluster // ""' <<<"$ARGS_JSON")
 
-# Universal auth (this identity's own client ID/secret, already in the pod env via
-# automatron-infisical-operator-creds) instead of CI's GitHub-OIDC — see providers.tf.
+# Universal auth as the "ci" identity (same one CI's OIDC path uses, now also carrying a
+# universal auth method — see providers.tf) rather than the k8s Infisical Operator's own
+# identity: the operator identity is deliberately low-privileged (project member, plus a
+# narrow org identity-reader role) for its actual job of syncing secrets, and using it for
+# terraform's own admin-level operations (managing identities/org roles) hit a bootstrap
+# chicken-and-egg it can never grant itself. Creds symlinked from /ci into /k8s/automatron.
 export TF_VAR_infisical_auth_method="universal"
-export TF_VAR_infisical_universal_auth_client_id="${INFISICAL_OPERATOR_CLIENT_ID:-}"
-export TF_VAR_infisical_universal_auth_client_secret="${INFISICAL_OPERATOR_CLIENT_SECRET:-}"
+export TF_VAR_infisical_universal_auth_client_id="${INFISICAL_CI_CLIENT_ID:-}"
+export TF_VAR_infisical_universal_auth_client_secret="${INFISICAL_CI_CLIENT_SECRET:-}"
 export TF_VAR_infisical_org_id="${INFISICAL_ORG_ID:-}"
 export TF_VAR_infisical_github_actions=""
 

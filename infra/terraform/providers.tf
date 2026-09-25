@@ -35,11 +35,18 @@ terraform {
   }
 }
 
-// "oidc" (default) is CI's GitHub-OIDC-federated identity (var.infisical_github_actions,
-// full project-admin, provisioned outside Terraform — see variables.tf). "universal" is
-// automatron's terraform dispatch, reusing the k8s Infisical Operator's own identity
-// (module.infisical's k8s_operator, "member" role) via its existing client ID/secret —
-// there's no GitHub OIDC token available inside a Kubernetes Job for it to present.
+// Both methods authenticate as the same "ci" identity (var.infisical_github_actions,
+// full project-admin, provisioned outside Terraform — see variables.tf; it predates and
+// keeps its original GitHub-OIDC auth alongside a universal auth method added for the
+// below), just via a different credential: "oidc" (default) is CI's GitHub-OIDC token.
+// "universal" is automatron's terraform dispatch — no GitHub OIDC token is available
+// inside a Kubernetes Job for it to present, so it uses that same identity's universal
+// auth client ID/secret instead (symlinked from Infisical's /ci into /k8s/automatron;
+// see terraform.sh). Deliberately not the k8s Infisical Operator's own identity — that
+// one stays low-privileged (project member, narrow org identity-reader role) for its
+// actual job of syncing secrets, since terraform's own admin-level operations (managing
+// identities/org roles) can't be bootstrapped by an identity trying to grant itself
+// permission to do so.
 provider "infisical" {
   auth = var.infisical_auth_method == "universal" ? {
     universal = {

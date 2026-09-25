@@ -4,7 +4,7 @@ variable "infisical_org_id" {
 }
 
 variable "infisical_github_actions" {
-  description = "Infisical machine identity ID for the GitHub Actions OIDC identity"
+  description = "Infisical machine identity ID for the \"ci\" identity (GitHub Actions OIDC + automatron's universal auth)"
   type        = string
 }
 
