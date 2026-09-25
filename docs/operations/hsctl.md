@@ -134,7 +134,7 @@ Adding a new recurring or on-demand automatron job is a matter of committing a C
 
 | Directory | Kind | Purpose |
 |-----------|------|---------|
-| `infra/automatron/job-templates/` | `JobTemplate` | A playbook or script, optionally scheduled — includes the built-in `cleanup-old-runs` template (below) |
+| `infra/automatron/job-templates/` | `JobTemplate` | A playbook or script, optionally scheduled |
 | `infra/automatron/job-workflows/` | `JobWorkflow` | An ordered list of `JobTemplate` steps, optionally scheduled |
 | `infra/automatron/job-runs/` | `JobRun` | A one-off instance of a `JobTemplate` (rare to commit — most runs are ad hoc via `hsctl run` instead) |
 | `infra/automatron/scripts/` | — | Bash/Python scripts referenced by `script`-runner `JobTemplate`s |
@@ -204,7 +204,7 @@ kubectl get jobworkflowrun my-workflow-run-1234567890 -o yaml   # .status.phase,
 
 Most one-off runs go through `hsctl run <name> -e remote` rather than a committed `JobRun` — see [`hsctl run`](#hsctl-run) above.
 
-**Cleanup.** `Job`s (from `JobTemplate`, `JobRun`, and `JobWorkflow`'s kickoff) self-delete, along with their `Pod`s, `automatron.jobTtlSeconds` after finishing (default 1800 — 30 minutes, in `apps/automatron/app.yaml`'s values) — standard Kubernetes `ttlSecondsAfterFinished`, no separate cleanup job needed for native resources. `JobRun`/`JobWorkflowRun` CRs have no such native TTL, so the built-in `cleanup-old-runs` `JobTemplate` (`schedule: "0 3 * * *"`, `scripts/cleanup-old-runs.sh`) deletes ones older than `retentionDays` (default 7, `defaultArgs`) daily.
+**Cleanup.** `Job`s (from `JobTemplate`, `JobRun`, and `JobWorkflow`'s kickoff) self-delete, along with their `Pod`s, `automatron.jobTtlSeconds` after finishing (default 1800 — 30 minutes, in `apps/automatron/app.yaml`'s values) — standard Kubernetes `ttlSecondsAfterFinished`, no separate cleanup job needed for native resources. `JobRun`/`JobWorkflowRun` CRs (run history) are kept forever — deliberately nothing prunes those.
 
 ## `hsctl pim`
 
