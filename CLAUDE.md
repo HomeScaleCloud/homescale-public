@@ -114,7 +114,7 @@ A machine must be registered with Omni before it can be added to a `cluster.yaml
 
 1. Log in to Omni (`https://REDACTED`), click **Download Installation Media**, and build a schematic (arch, system extensions matching the target cluster's `systemExtensions`, Secure Boot on/off).
 2. Write the downloaded ISO to a USB drive (`dd if=<iso> of=/dev/<device> conv=fdatasync`) or mount it as virtual media via the server's BMC (iDRAC/iLO/IPMI).
-3. Boot the machine from it — Talos boots into maintenance mode and needs outbound access to Omni's WireGuard port (or TCP 443 for HTTP/2 tunneling).
+3. Boot the machine from it — Talos boots into maintenance mode and needs outbound access to Omni (REDACTED:443).
 4. It appears in Omni's **Machines** list shortly after boot, identified by its Talos/SMBIOS UUID, in an unallocated state.
 5. Add that UUID to the relevant `machines:` list in `clusters/<cluster>/cluster.yaml` and merge — CI's Omni template sync claims the machine and installs the cluster onto it.
 
