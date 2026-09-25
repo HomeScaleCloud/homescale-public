@@ -25,7 +25,12 @@ REPO_DIR="${REPO_DIR:-/repo/current}"
 PLAYBOOK="${PLAYBOOK:-}"
 SCRIPT_PATH="${SCRIPT_PATH:-}"
 SCRIPT_INTERPRETER="${SCRIPT_INTERPRETER:-bash}"
-ARGS_JSON="${ARGS_JSON:-{}}"
+# NOT `ARGS_JSON="${ARGS_JSON:-{}}"` — bash's scanner for a ${VAR:-word} default
+# misjudges where the substitution ends when word contains a literal `{}`, so it silently
+# appends a stray trailing `}` even when ARGS_JSON is already set to a real value (e.g.
+# `{"cluster":"x"}` becomes `{"cluster":"x"}}`), breaking every jq call downstream —
+# confirmed live, this broke every run.
+[[ -z "${ARGS_JSON:-}" ]] && ARGS_JSON="{}"
 DRY_RUN="${DRY_RUN:-false}"
 WORKFLOW_RUN_NAME="${WORKFLOW_RUN_NAME:-}"
 STEP_INDEX="${STEP_INDEX:--1}"
