@@ -65,13 +65,15 @@ run_usage() {
     echo "                              today (adds --dry-run to its omnictl calls)"
     echo "  --chain <name>[,...]        <name> must be a JobTemplate (not a JobWorkflow, which"
     echo "                              already declares its own steps); builds an ad hoc,"
-    echo "                              uncommitted JobWorkflowRun out of <name> plus this list"
+    echo "                              uncommitted JobWorkflow out of <name> plus this list"
     echo "                              (comma-separated, no spaces), applying --arg/--cluster/"
-    echo "                              --dry-run to every step. In -e remote mode this creates a"
-    echo "                              JobRun per step, one at a time (see entrypoint.sh), and this"
-    echo "                              command follows each one's pod logs in turn, stopping at the"
-    echo "                              first failure. In -e local mode they just run sequentially"
-    echo "                              against the same checkout, no JobWorkflowRun involved."
+    echo "                              --dry-run to every step, then runs it like any other"
+    echo "                              JobWorkflow (creating a JobWorkflowRun that references it)."
+    echo "                              In -e remote mode this creates a JobRun per step, one at a"
+    echo "                              time (see entrypoint.sh), and this command follows each"
+    echo "                              one's pod logs in turn, stopping at the first failure. In"
+    echo "                              -e local mode they just run sequentially against the same"
+    echo "                              checkout, no JobWorkflow/JobWorkflowRun involved."
     exit 1
 }
 
@@ -328,6 +330,13 @@ _run_remote() {
     local job_owner
     job_owner=$(_run_job_owner)
 
+    # One name for this whole invocation, reused as-is for whichever object ends up being
+    # the "root" of it (the JobRun, for a plain single-template run; the JobWorkflowRun,
+    # for a workflow or chain) — and, for an ad hoc --chain, also for the throwaway
+    # JobWorkflow created below (a JobWorkflow and a JobWorkflowRun are different kinds, so
+    # sharing one name between them isn't a collision).
+    local run_name="automatron-adhoc-${job_owner}-${name}-$(date +%s)"
+
     # Every automatron CRD is cluster-scoped (single automatron install per cluster, no
     # per-namespace isolation needed), so these `kubectl get`/`create` calls take no `-n`
     # — only the native Job/Pod calls in _run_stream_job do.
@@ -338,6 +347,16 @@ _run_remote() {
                 [$first] + ($rest | split(","))
                 | map({templateRef: ., args: {}, dryRun: false})')
             resolved_steps=$(_run_resolve_workflow_steps "$cli_args_json" "$dry_run" "$resolved_steps")
+
+            # Standardize on JobWorkflowRun always being an instance of a real JobWorkflow
+            # (never an empty workflowRef) — an ad hoc --chain creates a throwaway one, with
+            # the already-fully-resolved step list baked in, same as any committed one.
+            hsctl_log_action "creating ad hoc JobWorkflow $run_name ($(echo "$resolved_steps" | jq 'length') steps) on automatron"
+            jq -n --arg name "$run_name" --argjson steps "$resolved_steps" --arg owner "$job_owner" '
+              {apiVersion: "REDACTED/v1alpha1", kind: "JobWorkflow",
+               metadata: {name: $name, labels: {"REDACTED/job-owner": $owner, "REDACTED/adhoc": "true"}},
+               spec: {steps: $steps}}' | kubectl create --context core -f -
+            workflow_ref="$run_name"
         fi
     elif kubectl get jobworkflow "$name" --context core &>/dev/null; then
         [[ -n "$chain_raw" ]] && { hsctl_log_error "--chain isn't meaningful for a JobWorkflow — $name already declares its own steps"; exit 1; }
@@ -353,7 +372,6 @@ _run_remote() {
 
     if [[ -z "$resolved_steps" ]]; then
         # Plain single-template run — no chain, no workflow.
-        local run_name="automatron-adhoc-${job_owner}-${name}-$(date +%s)"
         hsctl_log_action "creating JobRun $run_name (template=$name, args=$cli_args_json${dry_run:+, dry_run=$dry_run}) on automatron"
         jq -n --arg name "$run_name" --arg template "$name" --argjson args "$cli_args_json" --argjson dryrun "$dry_run" --arg owner "$job_owner" '
           {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
@@ -380,9 +398,8 @@ _run_remote() {
     # Multi-step: create a JobWorkflowRun with the fully-resolved step list, plus step 0's
     # JobRun — entrypoint.sh creates every step after that on success (see CLAUDE.md) —
     # then follow along, streaming each step's pod logs in turn as they're created.
-    local total_steps run_name
-    total_steps=$(echo "$resolved_steps" | jq length)
-    run_name="automatron-adhoc-${job_owner}-${name}-$(date +%s)"
+    local total_steps
+    total_steps=$(echo "$resolved_steps" | jq 'length')
 
     hsctl_log_action "creating JobWorkflowRun $run_name (${workflow_ref:+workflow=$workflow_ref, }$total_steps steps) on automatron"
     jq -n --arg name "$run_name" --arg wf "$workflow_ref" --argjson steps "$resolved_steps" --arg owner "$job_owner" '

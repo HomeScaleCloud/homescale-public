@@ -19,5 +19,10 @@ rules:
   - apiGroups: ["REDACTED"]
     resources:
       - jobtemplates
-      - jobworkflows
     verbs: ["get", "list"]
+  - apiGroups: ["REDACTED"]
+    resources:
+      - jobworkflows
+    # create is for `hsctl run --chain`'s ad hoc JobWorkflow — jobtemplates stays git-only
+    # (get/list), since there's no ad hoc equivalent for those.
+    verbs: ["create", "get", "list"]

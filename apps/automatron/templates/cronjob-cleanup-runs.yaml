@@ -1,0 +1,52 @@
+# Prunes run history older than 14 days: JobRun/JobWorkflowRun (unconditionally), plus
+# JobWorkflow CRs carrying REDACTED/adhoc: "true" — the throwaway ones
+# `hsctl run --chain` creates (see hsctl.d/run.sh), which exist purely to back one ad hoc
+# run and are never meant to be permanent. A committed JobWorkflow has no such label and so
+# never matches the selector below — this is what keeps git/ArgoCD-managed ones untouched.
+#
+# Deliberately a plain native CronJob, not an automatron JobTemplate CR — this is a built-in
+# operational task, not something users commit/run themselves, and it would be circular for
+# the thing that prunes run history to itself need a JobRun wrapper.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: automatron-cleanup-runs
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      ttlSecondsAfterFinished: {{ .Values.automatron.jobTtlSeconds }}
+      template:
+        spec:
+          serviceAccountName: automatron
+          restartPolicy: Never
+          containers:
+            - name: cleanup
+              image: "{{ .Values.automatron.image.repository }}:{{ .Values.automatron.image.tag }}"
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -e
+                  cutoff_epoch=$(date -u -d "-14 days" +%s)
+                  prune() {
+                      kind="$1"
+                      selector="${2:-}"
+                      if [ -n "$selector" ]; then
+                          list_args="-l $selector"
+                      else
+                          list_args=""
+                      fi
+                      kubectl get "$kind" $list_args -o json | jq -r --argjson cutoff "$cutoff_epoch" '
+                          .items[] | select((.metadata.creationTimestamp | fromdateiso8601) < $cutoff) | .metadata.name' \
+                      | while read -r name; do
+                          [ -z "$name" ] && continue
+                          echo "deleting $kind/$name (older than 14 days)"
+                          kubectl delete "$kind" "$name"
+                      done
+                  }
+                  prune jobrun
+                  prune jobworkflowrun
+                  prune jobworkflow REDACTED/adhoc=true
