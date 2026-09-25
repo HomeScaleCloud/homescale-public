@@ -23,4 +23,4 @@ spec:
     - expression: >-
         !request.userInfo.username.contains('@') ||
         object.spec.jobOwner == request.userInfo.username.split('@')[0].lowerAscii()
-      message: "jobOwner must be your own OIDC identity (the local part of your @REDACTED email, lowercased) — you may not claim another user's identity, 'schedule', or 'github-actions'."
+      message: "jobOwner must be your own OIDC identity — you may not claim another user's identity."

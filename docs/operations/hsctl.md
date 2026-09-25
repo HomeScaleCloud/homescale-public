@@ -200,11 +200,11 @@ kubectl get jobworkflowrun my-workflow-run-1234567890 -o yaml   # .status.phase,
 
 `status.steps`/`status.phase`/`status.progress` (e.g. `"2/3"`) are projected by kro from the `JobRun`s labeled with that run's name — nothing to commit for this one, it's created automatically alongside step 0's `JobRun`. `JobWorkflow.status.recentRunNames` lists every run's name (unsorted — use `--sort-by` above for actual recency).
 
-`kubectl get jobtemplate`/`jobrun`/`jobworkflow`/`jobworkflowrun` all show the fields above (plus, for `JobRun`/`JobWorkflowRun`, `.status.phase`/`Owner`, and for `JobWorkflow`, `.status.stepCount`/`.status.cronJobName`) directly in the printer columns — no need to drop to `-o yaml` for a quick status check.
+`kubectl get jobtemplate`/`jobrun`/`jobworkflow`/`jobworkflowrun` all show the fields above (plus, for `JobRun`, `Pod`/`Phase`, and for `JobWorkflowRun`, `Progress`/`Phase`) directly in the printer columns — no need to drop to `-o yaml` for a quick status check. These deliberately don't surface the native `Job`/`CronJob` objects kro creates underneath — the thing you actually want when checking on a run is the `Pod` (`kubectl logs <pod>`), not an intermediate object's name, so that's what's shown instead.
 
 Most one-off runs go through `hsctl run <name> -e remote` rather than a committed `JobRun` — see [`hsctl run`](#hsctl-run) above.
 
-**Cleanup.** `Job`s (from both `JobTemplate` and `JobRun`) self-delete `automatron.jobTtlSeconds` after finishing (default 86400, in `apps/automatron/app.yaml`'s values) — standard Kubernetes `ttlSecondsAfterFinished`. `JobRun`/`JobWorkflowRun` CRs have no such native TTL, so the built-in `cleanup-old-runs` `JobTemplate` (`schedule: "0 3 * * *"`, `scripts/cleanup-old-runs.sh`) deletes ones older than `retentionDays` (default 7, `defaultArgs`) daily.
+**Cleanup.** `Job`s (from `JobTemplate`, `JobRun`, and `JobWorkflow`'s kickoff) self-delete, along with their `Pod`s, `automatron.jobTtlSeconds` after finishing (default 1800 — 30 minutes, in `apps/automatron/app.yaml`'s values) — standard Kubernetes `ttlSecondsAfterFinished`, no separate cleanup job needed for native resources. `JobRun`/`JobWorkflowRun` CRs have no such native TTL, so the built-in `cleanup-old-runs` `JobTemplate` (`schedule: "0 3 * * *"`, `scripts/cleanup-old-runs.sh`) deletes ones older than `retentionDays` (default 7, `defaultArgs`) daily.
 
 ## `hsctl pim`
 

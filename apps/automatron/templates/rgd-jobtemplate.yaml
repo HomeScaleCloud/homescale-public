@@ -35,9 +35,6 @@ spec:
       - name: Schedule
         type: string
         jsonPath: .spec.schedule
-      - name: CronJob
-        type: string
-        jsonPath: .status.cronJobName
       - name: Age
         type: date
         jsonPath: .metadata.creationTimestamp
@@ -47,8 +44,6 @@ spec:
       scriptInterpreter: string | default="bash"
       schedule: string | default=""
       defaultArgs: "map[string]string"
-    status:
-      cronJobName: '${cronJob.?metadata.name}'
   resources:
     - id: cronJob
       includeWhen:

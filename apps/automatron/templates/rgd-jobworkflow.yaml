@@ -31,9 +31,6 @@ spec:
       - name: Steps
         type: integer
         jsonPath: .status.stepCount
-      - name: CronJob
-        type: string
-        jsonPath: .status.cronJobName
       - name: Age
         type: date
         jsonPath: .metadata.creationTimestamp
@@ -41,7 +38,6 @@ spec:
       schedule: string | default=""
       steps: "[]Step"
     status:
-      cronJobName: '${cronJob.?metadata.name}'
       stepCount: '${schema.spec.steps.size()}'
       # Every JobWorkflowRun labeled as belonging to this workflow — a pointer index, not
       # full detail (see JobWorkflowRun for per-run/per-step status). Ordering/limiting to

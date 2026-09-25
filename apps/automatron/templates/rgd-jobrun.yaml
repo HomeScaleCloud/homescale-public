@@ -39,9 +39,9 @@ spec:
       - name: Owner
         type: string
         jsonPath: .spec.jobOwner
-      - name: Job
+      - name: Pod
         type: string
-        jsonPath: .status.jobName
+        jsonPath: .status.podName
       - name: Phase
         type: string
         jsonPath: .status.phase
@@ -56,7 +56,11 @@ spec:
       stepIndex: integer | default=-1
       jobOwner: string | default=""
     status:
-      jobName: '${job.?metadata.name}'
+      # jobName is internal (hsctl polls the native Job for succeeded/failed counts, which
+      # only exist at Job level, not Pod level) — deliberately not a printer column. podName
+      # is what a human actually wants (`kubectl logs <pod>`), so that's what's shown instead.
+      jobName: '${job.?metadata.name.orValue("")}'
+      podName: '${pods.size() > 0 ? pods[0].metadata.name : ""}'
       phase: '${job.?status.succeeded.orValue(0) == 1 ? "Succeeded" : (job.?status.failed.orValue(0) > 0 ? "Failed" : (job.?status.active.orValue(0) > 0 ? "Running" : "Pending"))}'
   resources:
     # Dynamic name lookup (CEL over schema.spec) — see CLAUDE.md's Automatron section
@@ -68,6 +72,19 @@ spec:
         kind: JobTemplate
         metadata:
           name: '${schema.spec.templateRef}'
+    # Selector-based externalRef collection onto this Job's own Pod (backoffLimit: 0 means
+    # there's ever at most one) — batch.kubernetes.io/job-name is set automatically by the
+    # Job controller, not one of our own labels. Resolves to an empty list before the Job
+    # controller creates the Pod, hence the size() check in status.podName above.
+    - id: pods
+      externalRef:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          namespace: {{ .Release.Namespace }}
+          selector:
+            matchLabels:
+              batch.kubernetes.io/job-name: '${schema.metadata.name}'
     - id: job
       template:
         apiVersion: batch/v1

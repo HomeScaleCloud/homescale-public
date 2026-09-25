@@ -60,7 +60,7 @@ spec:
       # One entry per step's JobRun labeled with this run's name — JobRun names embed the
       # step index (<run>-step<N>), so a reader can sort/order by name; not attempted
       # here in CEL (no reliable sort-by-field available) to keep this projection simple.
-      steps: '${jobRuns.map(r, {"jobRunName": r.metadata.name, "templateRef": r.spec.templateRef, "stepIndex": r.spec.stepIndex, "jobName": r.status.?jobName.orValue(""), "phase": r.status.?phase.orValue("Pending")})}'
+      steps: '${jobRuns.map(r, {"jobRunName": r.metadata.name, "templateRef": r.spec.templateRef, "stepIndex": r.spec.stepIndex, "podName": r.status.?podName.orValue(""), "phase": r.status.?phase.orValue("Pending")})}'
       progress: '${string(jobRuns.size()) + "/" + string(schema.spec.steps.size())}'
       phase: '${jobRuns.exists(r, r.status.?phase.orValue("") == "Failed") ? "Failed" : (jobRuns.size() > 0 && jobRuns.size() == schema.spec.steps.size() && jobRuns.all(r, r.status.?phase.orValue("") == "Succeeded") ? "Succeeded" : "Running")}'
   resources:
