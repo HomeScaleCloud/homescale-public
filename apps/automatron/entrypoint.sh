@@ -54,9 +54,14 @@ export PATH="$REPO_DIR:$PATH"
 
 if [[ -n "$SCRIPT_PATH" ]]; then
     cd "$REPO_DIR"
-    echo "running $SCRIPT_PATH (interpreter: $SCRIPT_INTERPRETER, args: $ARGS_JSON)"
+    # SCRIPT_PATH is a bare filename under infra/automatron/scripts/ (same convention as
+    # PLAYBOOK being a bare name under infra/ansible/playbooks/ below), joined back onto
+    # that directory here rather than carrying the full repo path in the CR — keeps the
+    # JobTemplate/JobRun printer columns readable.
+    script_file="infra/automatron/scripts/$SCRIPT_PATH"
+    echo "running $script_file (interpreter: $SCRIPT_INTERPRETER, args: $ARGS_JSON)"
     export ARGS_JSON
-    "$SCRIPT_INTERPRETER" "$SCRIPT_PATH"
+    "$SCRIPT_INTERPRETER" "$script_file"
 else
     cd "$REPO_DIR/infra/ansible"
 

@@ -2,6 +2,10 @@
 # JobTemplate): a playbook or script Automatron can run, optionally on a schedule.
 # Exactly one of spec.playbook / spec.scriptPath should be set — entrypoint.sh decides
 # which to run based on which one is non-empty (see apps/automatron/entrypoint.sh).
+# scriptPath is a bare filename under infra/automatron/scripts/, same convention as
+# playbook being a bare name under infra/ansible/playbooks/ — entrypoint.sh joins it back
+# onto that directory before executing, so the JobTemplate/JobRun printer columns show
+# just the filename instead of the full repo path.
 #
 # When spec.schedule is set, kro creates a CronJob that runs it directly. When it's
 # omitted, this is a template-only instance — the only way to run it is via a JobRun (see
