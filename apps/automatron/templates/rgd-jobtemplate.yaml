@@ -1,11 +1,13 @@
 # Defines the AutomatronJobTemplate CRD (REDACTED/v1alpha1, kind
 # JobTemplate): a playbook or script Automatron can run, optionally on a schedule.
-# Exactly one of spec.playbook / spec.script should be set — entrypoint.sh decides
+# Exactly one of spec.playbook / spec.scriptPath should be set — entrypoint.sh decides
 # which to run based on which one is non-empty (see apps/automatron/entrypoint.sh).
-# script is a bare filename under infra/automatron/scripts/, same convention as playbook
-# being a bare name under infra/ansible/playbooks/ — entrypoint.sh joins it back onto that
-# directory before executing, so the JobTemplate/JobRun printer columns show just the
-# filename instead of the full repo path.
+# scriptPath is a bare filename under infra/automatron/scripts/ (kept as "scriptPath", not
+# "script" — kro refuses to reconcile a CRD field rename in place as a breaking change, see
+# CLAUDE.md's Automatron section), same convention as playbook being a bare name under
+# infra/automatron/ansible/playbooks/ — entrypoint.sh joins it back onto that directory
+# before executing, so the JobTemplate/JobRun printer columns show just the filename
+# instead of the full repo path.
 #
 # When spec.schedule is set, kro creates a CronJob that runs it directly. When it's
 # omitted, this is a template-only instance — the only way to run it is via a JobRun (see
@@ -42,7 +44,7 @@ spec:
         jsonPath: .spec.playbook
       - name: Script
         type: string
-        jsonPath: .spec.script
+        jsonPath: .spec.scriptPath
       - name: Schedule
         type: string
         jsonPath: .spec.schedule
@@ -54,7 +56,7 @@ spec:
         jsonPath: .metadata.creationTimestamp
     spec:
       playbook: string | default=""
-      script: string | default=""
+      scriptPath: string | default=""
       scriptInterpreter: string | default="bash"
       schedule: string | default=""
       locking: boolean | default=false
@@ -157,7 +159,7 @@ spec:
                         - name: PLAYBOOK
                           value: '${schema.spec.playbook}'
                         - name: SCRIPT_PATH
-                          value: '${schema.spec.script}'
+                          value: '${schema.spec.scriptPath}'
                         - name: SCRIPT_INTERPRETER
                           value: '${schema.spec.scriptInterpreter}'
                         - name: ARGS_JSON

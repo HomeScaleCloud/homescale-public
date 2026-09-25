@@ -15,7 +15,7 @@ apps/templates/                                 @HomeScaleCloud/team-infra-plat
 clusters/                                       @HomeScaleCloud/team-infra-plat
 apps/omni/                                      @HomeScaleCloud/team-infra-plat
 infra/omni/                                     @HomeScaleCloud/team-infra-plat
-infra/ansible/                                  @HomeScaleCloud/team-infra-plat
+infra/automatron/ansible/                       @HomeScaleCloud/team-infra-plat
 
 # Kubernetes platform
 apps/cilium/                                    @HomeScaleCloud/team-infra-plat

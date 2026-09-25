@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# hsctl run — run an Ansible playbook from infra/ansible/playbooks/, either locally or
+# hsctl run — run an Ansible playbook from infra/automatron/ansible/playbooks/, either locally or
 # remotely as a one-off Kubernetes Job on automatron (apps/automatron).
 #
 # bootstrap-core/bootstrap-cluster get special local-secrets handling (see
@@ -35,7 +35,7 @@ run_usage() {
     echo "HSCTL_JOB_OWNER=ci), else your OIDC email's local part (e.g. 'max' for"
     echo "max@REDACTED), else your local username; a scheduled run is labeled 'schedule'."
     echo ""
-    echo "In local mode, <name> is any filename (without .yml) under infra/ansible/playbooks/, e.g.:"
+    echo "In local mode, <name> is any filename (without .yml) under infra/automatron/ansible/playbooks/, e.g.:"
     echo "  bootstrap-core      bootstrap the core cluster"
     echo "  bootstrap-cluster   bootstrap workload clusters (all, or one via --cluster)"
     echo "  omni-sync           sync every cluster template + machine class into Omni"
@@ -129,7 +129,7 @@ _run_bootstrap_local() {
 
     (
         export HSCTL_REPO_ROOT="$repo_root" # so a nested `hsctl get machines` (via omni.py) resolves against the same fresh checkout
-        cd "$repo_root/infra/ansible" || exit 1
+        cd "$repo_root/infra/automatron/ansible" || exit 1
 
         case "$playbook" in
             bootstrap-core)
@@ -151,13 +151,13 @@ _run_bootstrap_local() {
 # Run any other playbook locally, as-is — no local secrets handling (see module comment).
 _run_generic_local() {
     local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4"
-    local playbook_file="$repo_root/infra/ansible/playbooks/$playbook.yml"
+    local playbook_file="$repo_root/infra/automatron/ansible/playbooks/$playbook.yml"
 
-    [[ -f "$playbook_file" ]] || { hsctl_log_error "no such playbook: infra/ansible/playbooks/$playbook.yml"; exit 1; }
+    [[ -f "$playbook_file" ]] || { hsctl_log_error "no such playbook: infra/automatron/ansible/playbooks/$playbook.yml"; exit 1; }
 
     (
         export HSCTL_REPO_ROOT="$repo_root" # so a nested `hsctl get machines` (via omni.py) resolves against the same fresh checkout
-        cd "$repo_root/infra/ansible" || exit 1
+        cd "$repo_root/infra/automatron/ansible" || exit 1
         hsctl_log_action "running $playbook.yml${cluster:+ (target: $cluster)}"
         if [[ -n "$cluster" ]]; then
             ansible-playbook "playbooks/$playbook.yml" -e target="$cluster" -e "dry_run=$dry_run"
@@ -218,16 +218,39 @@ _run_stream_job() {
 
     # `kubectl logs -f` errors immediately if called before the container has started
     # (it sits behind the git-key-prep/git-clone initContainers), so poll until it has.
+    # Checking `.started == true` alone isn't enough: a container that fails within its
+    # first second or so (e.g. a bad JobTemplate producing neither PLAYBOOK nor SCRIPT_PATH)
+    # can go straight from not-yet-started to `state.terminated` without the kubelet ever
+    # reporting `started: true` in between — confirmed live, .started stayed false on a pod
+    # whose automatron container had already terminated with a real exitCode/reason. Treat
+    # `state.terminated` being set as equally sufficient to proceed (kubectl logs on an
+    # already-terminated container just dumps what it wrote and returns, no -f hang), and
+    # fail fast on a `state.waiting` reason that will never resolve on its own instead of
+    # waiting out the full timeout for something already showing why it's stuck.
     hsctl_log_info "waiting for the automatron container to start..."
-    local started=""
+    local started="false" terminated="false" waiting_reason=""
     for attempt in $(seq 1 60); do
-        started=$(kubectl get pod "$pod" -n "$namespace" --context core \
-            -o jsonpath='{.status.containerStatuses[?(@.name=="automatron")].started}' 2>/dev/null) || true
-        [[ "$started" == "true" ]] && break
+        local cs
+        cs=$(kubectl get pod "$pod" -n "$namespace" --context core -o json 2>/dev/null | \
+            jq -c '.status.containerStatuses[]? | select(.name=="automatron")') || true
+        # NOT `${cs:-{}}` — bash's scanner for a ${VAR:-word} default misjudges where the
+        # substitution ends when word contains a literal {}, corrupting the value even when
+        # $cs is already set to real content (see entrypoint.sh's own ARGS_JSON for the same
+        # gotcha) — confirmed live here too, jq errored on the resulting garbage.
+        [[ -z "$cs" ]] && cs='{}'
+        started=$(jq -r '.started // false' <<<"$cs" 2>/dev/null) || started="false"
+        terminated=$(jq -r 'has("state") and (.state | has("terminated"))' <<<"$cs" 2>/dev/null) || terminated="false"
+        waiting_reason=$(jq -r '.state.waiting.reason // empty' <<<"$cs" 2>/dev/null) || waiting_reason=""
+        [[ "$started" == "true" || "$terminated" == "true" ]] && break
+        case "$waiting_reason" in
+            ImagePullBackOff|ErrImagePull|InvalidImageName|CreateContainerConfigError|CreateContainerError)
+                hsctl_log_error "automatron container stuck ($waiting_reason) — check: kubectl describe pod $pod -n $namespace --context core"
+                return 1 ;;
+        esac
         sleep 3
     done
 
-    if [[ "$started" != "true" ]]; then
+    if [[ "$started" != "true" && "$terminated" != "true" ]]; then
         hsctl_log_error "automatron container never started — check: kubectl describe pod $pod -n $namespace --context core"
         return 1
     fi

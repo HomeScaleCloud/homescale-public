@@ -3,7 +3,7 @@ kind: JobTemplate
 metadata:
   name: terraform
 spec:
-  script: terraform.sh
+  scriptPath: terraform.sh
   scriptInterpreter: bash
   schedule: "*/15 * * * *"
   locking: true

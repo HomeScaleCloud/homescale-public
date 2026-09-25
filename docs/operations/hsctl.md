@@ -116,7 +116,7 @@ A fourth, `terraform` (`infra/automatron/job-templates/terraform.yaml`), *is* sc
 `-e`/`--execution-mode` is `local` or `remote` (default `remote`):
 
 - **`remote`** applies a `JobRun`/`JobWorkflowRun` CR on automatron in the `core` cluster, waits for kro to materialize the underlying `Job`(s), and streams logs immediately. Requires a Tailscale-reachable `core` apiserver (same as `hsctl switch`/`hsctl get kubeconfig`) and `team-infra-plat`/`team-sec-plat` membership — no PIM needed. If a `core` kubectl context already exists (e.g. CI pre-seeds one from `CORE_KUBECONFIG`), it's reused as-is instead of triggering an interactive OIDC login.
-- **`local`** treats `<name>` as an Ansible playbook filename (minus `.yml`) under `infra/ansible/playbooks/` — no `JobTemplate`/`JobWorkflow` lookup, since kro/automatron aren't involved. Only understands `--cluster`, not `--arg` (there's no CRD/args-map machinery to resolve locally). Clones `HomeScaleCloud/homescale@main` fresh into a temp directory (`gh repo clone`, requires `gh auth login`) and runs `ansible-playbook` against that checkout, cleaning it up afterward — never against whatever's checked out locally, which could be a branch, stale, or have uncommitted changes. Still needed for the very first core bootstrap, before automatron exists, or for disaster recovery if automatron itself is down.
+- **`local`** treats `<name>` as an Ansible playbook filename (minus `.yml`) under `infra/automatron/ansible/playbooks/` — no `JobTemplate`/`JobWorkflow` lookup, since kro/automatron aren't involved. Only understands `--cluster`, not `--arg` (there's no CRD/args-map machinery to resolve locally). Clones `HomeScaleCloud/homescale@main` fresh into a temp directory (`gh repo clone`, requires `gh auth login`) and runs `ansible-playbook` against that checkout, cleaning it up afterward — never against whatever's checked out locally, which could be a branch, stale, or have uncommitted changes. Still needed for the very first core bootstrap, before automatron exists, or for disaster recovery if automatron itself is down.
 
 `--arg key=value` (repeatable) sets an arbitrary extra-var/script argument — nothing automatron-specific, any key the playbook or script itself expects works; `entrypoint.sh` passes the whole resolved set to Ansible as extra-vars wholesale, and exports it as `ARGS_JSON` for scripts to parse themselves. `--cluster <name>` is sugar for `--arg cluster=<name>` — the one arg key common enough to deserve its own flag.
 
@@ -150,7 +150,7 @@ kind: JobTemplate
 metadata:
   name: my-playbook
 spec:
-  playbook: my-playbook    # infra/ansible/playbooks/my-playbook.yml
+  playbook: my-playbook    # infra/automatron/ansible/playbooks/my-playbook.yml
   schedule: "0 */2 * * *"  # omit entirely for an ad hoc/workflow-only template
 ```
 
@@ -161,14 +161,14 @@ kind: JobTemplate
 metadata:
   name: my-script
 spec:
-  script: my-script.sh
+  scriptPath: my-script.sh
   scriptInterpreter: bash   # or python
 ```
 
 | `JobTemplate` field | Type | Default | Description |
 |----------------------|------|---------|-------------|
-| `playbook` | string | `""` | Name under `infra/ansible/playbooks/`, minus `.yml`. Mutually exclusive with `script` — exactly one must be set |
-| `script` | string | `""` | Bare filename under `infra/automatron/scripts/` (same convention as `playbook`) |
+| `playbook` | string | `""` | Name under `infra/automatron/ansible/playbooks/`, minus `.yml`. Mutually exclusive with `scriptPath` — exactly one must be set |
+| `scriptPath` | string | `""` | Bare filename under `infra/automatron/scripts/` (same convention as `playbook`) |
 | `scriptInterpreter` | string | `bash` | `bash` or `python` |
 | `schedule` | string | `""` | Cron schedule; omit for a template-only instance (never auto-fires, run via `JobRun`/`hsctl run` only) |
 | `locking` | boolean | `false` | Serialize scheduled and ad hoc runs of this template via a Lease-based mutex — see CLAUDE.md's Automatron section |

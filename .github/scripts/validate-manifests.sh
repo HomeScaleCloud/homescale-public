@@ -131,7 +131,11 @@ for cluster_dir in clusters/*/; do
     # Raw `directory` sources (clusters/<cluster>/ itself, and anything else synced
     # straight from git with no Helm rendering, e.g. infra/automatron/'s job/workflow
     # CRs) aren't covered by the catalog/per-app render below, so conform them directly —
-    # every *.yaml/*.yml under the source path, minus its own `directory.exclude` file.
+    # every *.yaml/*.yml under the source path, minus anything matching its own
+    # `directory.exclude` glob (matched against the path relative to the source dir, same
+    # as ArgoCD's own directory.exclude — e.g. `ansible/**` skips a whole subtree, not just
+    # one filename; infra/automatron/ansible/ is git-cloned at runtime by automatron's own
+    # pods, not a set of Kubernetes manifests, and would otherwise fail kubeconform outright).
     # Scans every Application-kind manifest directly under clusters/<cluster>/, not just
     # apps.yaml — a directory-synced CR tree may deliberately live in its own independently
     # -synced Application instead of as another source on apps.yaml's (e.g. so a CRD-not-
@@ -144,7 +148,9 @@ for cluster_dir in clusters/*/; do
             raw="$tmp/$cluster-$(echo "$dir_path" | tr '/' '-').yaml"
             : > "$raw"
             while IFS= read -r -d '' f; do
-                [[ -n "$exclude" && "$(basename "$f")" == "$exclude" ]] && continue
+                rel="${f#"$dir_path"/}"
+                # shellcheck disable=SC2053 # deliberately unquoted: $exclude is a glob, not a literal
+                [[ -n "$exclude" && "$rel" == $exclude ]] && continue
                 cat "$f" >> "$raw"
                 echo -e "\n---" >> "$raw"
             done < <(find "$dir_path" -type f \( -name '*.yaml' -o -name '*.yml' \) -print0 | sort -z)

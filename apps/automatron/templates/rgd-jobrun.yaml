@@ -190,7 +190,7 @@ spec:
                     - name: PLAYBOOK
                       value: '${template.spec.playbook}'
                     - name: SCRIPT_PATH
-                      value: '${template.spec.script}'
+                      value: '${template.spec.scriptPath}'
                     - name: SCRIPT_INTERPRETER
                       value: '${template.spec.scriptInterpreter}'
                     - name: ARGS_JSON

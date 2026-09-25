@@ -11,6 +11,11 @@ spec:
     path: infra/automatron
     directory:
       recurse: true
+      # ansible/ is git-cloned at runtime by automatron's own pods (see
+      # apps/automatron/entrypoint.sh), not applied as Kubernetes manifests — but its
+      # playbooks/roles are still plain .yml files, which ArgoCD's directory source would
+      # otherwise glob and try to parse as K8s objects, breaking this Application's sync.
+      exclude: 'ansible/**'
   destination:
     server: https://kubernetes.default.svc
     namespace: automatron

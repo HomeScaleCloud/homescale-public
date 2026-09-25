@@ -178,7 +178,7 @@ Ansible cluster bootstrap (`bootstrap-core.yml`/`bootstrap-cluster.yml`) no long
 
 ## Automatron — kro-backed job runner
 
-`apps/automatron` is a Kubernetes-native runner deployed to `core` that replaced the old GitHub Actions `ansible` job and the state-changing half of the `omni` job. What it runs — a playbook from `infra/ansible/playbooks/`, or an arbitrary script — is defined by four CRDs rather than hand-written CronJobs, backed by [kro](https://kro.run) (`apps/kro`):
+`apps/automatron` is a Kubernetes-native runner deployed to `core` that replaced the old GitHub Actions `ansible` job and the state-changing half of the `omni` job. What it runs — a playbook from `infra/automatron/ansible/playbooks/`, or an arbitrary script — is defined by four CRDs rather than hand-written CronJobs, backed by [kro](https://kro.run) (`apps/kro`):
 
 - **`JobTemplate`** — one playbook or script, optionally scheduled (kro creates a `CronJob` when it is).
 - **`JobRun`** — a one-off instance of a `JobTemplate`; the only path a one-off `Job` is ever created through, whether committed, triggered ad hoc via `hsctl`, or created as one step of a workflow run.

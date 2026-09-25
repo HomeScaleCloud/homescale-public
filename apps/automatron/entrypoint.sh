@@ -95,7 +95,7 @@ elif [[ -z "$PLAYBOOK" && -z "$SCRIPT_PATH" ]]; then
     exit 1
 fi
 
-# infra/ansible/inventory/omni.py shells out to `hsctl get machines`, resolved
+# infra/automatron/ansible/inventory/omni.py shells out to `hsctl get machines`, resolved
 # from the git-cloned repo rather than baked into the image.
 export HSCTL_REPO_ROOT="$REPO_DIR"
 export PATH="$REPO_DIR:$PATH"
@@ -103,7 +103,7 @@ export PATH="$REPO_DIR:$PATH"
 if [[ -n "$SCRIPT_PATH" ]]; then
     cd "$REPO_DIR"
     # SCRIPT_PATH is a bare filename under infra/automatron/scripts/ (same convention as
-    # PLAYBOOK being a bare name under infra/ansible/playbooks/ below), joined back onto
+    # PLAYBOOK being a bare name under infra/automatron/ansible/playbooks/ below), joined back onto
     # that directory here rather than carrying the full repo path in the CR — keeps the
     # JobTemplate/JobRun printer columns readable.
     script_file="infra/automatron/scripts/$SCRIPT_PATH"
@@ -111,7 +111,7 @@ if [[ -n "$SCRIPT_PATH" ]]; then
     export ARGS_JSON
     "$SCRIPT_INTERPRETER" "$script_file"
 else
-    cd "$REPO_DIR/infra/ansible"
+    cd "$REPO_DIR/infra/automatron/ansible"
 
     ansible-galaxy collection install -r requirements.yml
 

@@ -74,7 +74,7 @@
   },
   "ansible-galaxy": {
     "managerFilePatterns": [
-      "/infra/ansible/requirements\\.yml$/"
+      "/infra/automatron/ansible/requirements\\.yml$/"
     ]
   },
   "customManagers": [
