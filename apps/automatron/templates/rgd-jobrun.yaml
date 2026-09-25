@@ -82,7 +82,8 @@ spec:
     # Selector-based externalRef collection onto this Job's own Pod (backoffLimit: 0 means
     # there's ever at most one) — batch.kubernetes.io/job-name is set automatically by the
     # Job controller, not one of our own labels. Resolves to an empty list before the Job
-    # controller creates the Pod, hence the size() check in status.podName above.
+    # controller creates the Pod, hence the size() check in status.podName above. Must match
+    # the Job's own name below, "atm-" prefix and all.
     - id: pods
       externalRef:
         apiVersion: v1
@@ -91,13 +92,21 @@ spec:
           namespace: {{ .Release.Namespace }}
           selector:
             matchLabels:
-              batch.kubernetes.io/job-name: '${schema.metadata.name}'
+              batch.kubernetes.io/job-name: 'atm-${schema.metadata.name}'
     - id: job
       template:
         apiVersion: batch/v1
         kind: Job
         metadata:
-          name: '${schema.metadata.name}'
+          # This JobRun CR's own name is deliberately left unprefixed (`kubectl get jobrun`
+          # already makes it obvious what it is); the Job/Pod it creates gets "atm-"
+          # prepended here instead, same reasoning as rgd-jobtemplate.yaml's scheduled
+          # CronJob — a native Job/Pod sits in a flat namespace among unrelated objects, so
+          # it's the one that needs the at-a-glance marker. Callers that compose a JobRun
+          # name themselves (hsctl.d/run.sh, entrypoint.sh's chain continuation,
+          # rgd-jobworkflow.yaml's kickoff container) budget for this extra 4 bytes so the
+          # resulting Job name still fits Kubernetes' 63-byte label-value cap.
+          name: 'atm-${schema.metadata.name}'
           namespace: {{ .Release.Namespace }}
           labels:
             app: automatron

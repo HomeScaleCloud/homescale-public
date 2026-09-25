@@ -354,10 +354,13 @@ _run_remote() {
     # just an object name, and Kubernetes caps label values at 63 bytes — confirmed live,
     # an untruncated name (job_owner=ci + a longer template/workflow name)
     # broke both kro's own label-selector reconciliation and hsctl's own kubectl creates.
-    # "atm-" (not "automatron-") specifically so every automatron pod name is identifiable
-    # at a glance while leaving as much of that 63-byte budget as possible for the parts
-    # that actually vary.
-    local run_name="atm-$(_run_truncate "$job_owner")-$(_run_truncate "$name")-$(date +%s)"
+    # No "atm-"/"automatron-" prefix here — these are CR names (JobRun/JobWorkflowRun/
+    # JobWorkflow), and `kubectl get jobrun`/etc. already makes plain what kind of object
+    # you're looking at. rgd-jobrun.yaml prepends "atm-" itself, only on the native Job/Pod
+    # it creates from this JobRun (a Job/Pod sits in a flat namespace among unrelated
+    # objects, so *that's* what needs the at-a-glance marker) — leave headroom for those 4
+    # bytes in any budget computed from this name (see step0_name below).
+    local run_name="$(_run_truncate "$job_owner")-$(_run_truncate "$name")-$(date +%s)"
 
     # Every automatron CRD is cluster-scoped (single automatron install per cluster, no
     # per-namespace isolation needed), so these `kubectl get`/`create` calls take no `-n`
@@ -434,9 +437,11 @@ _run_remote() {
     # Same 63-byte hazard $run_name itself is guarded against above (see its own comment) —
     # appending -step0-<templateRef> isn't bounded by that truncation, so truncate the whole
     # composed name here too (entrypoint.sh/rgd-jobworkflow.yaml do the same for every other
-    # step of a chain).
+    # step of a chain). Capped at 59, not 63: this is a JobRun CR name, and rgd-jobrun.yaml
+    # prepends its own 4-byte "atm-" on top for the Job/Pod it creates, which also has to
+    # fit in 63.
     step0_name="${run_name}-step0-${step0_template}"
-    step0_name="${step0_name:0:63}"
+    step0_name="${step0_name:0:59}"
     step0_name="${step0_name%-}"
     echo "$resolved_steps" | jq -c '.[0]' | jq --arg name "$step0_name" --arg run "$run_name" --arg owner "$job_owner" --arg ref "$git_ref" '
       {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",

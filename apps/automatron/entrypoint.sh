@@ -107,9 +107,12 @@ if [[ -n "$WORKFLOW_RUN_NAME" && "$DRY_RUN" != "true" ]]; then
         # as this JobRun's workflow-run label value) exceeds 63 bytes, requeuing forever with
         # no way to recover short of deleting the object, since names are immutable. Truncate
         # the whole composed name, not just its parts, so this holds regardless of which
-        # component ends up long.
+        # component ends up long. Capped at 59, not 63: run_name is this JobRun CR's own
+        # name (deliberately unprefixed — see hsctl.d/run.sh), and rgd-jobrun.yaml prepends
+        # its own 4-byte "atm-" on top for the Job/Pod it creates, which also has to fit
+        # in 63.
         run_name="${WORKFLOW_RUN_NAME}-step${next_index}-${next_template}"
-        run_name="${run_name:0:63}"
+        run_name="${run_name:0:59}"
         run_name="${run_name%-}"
 
         # concurrencyPolicy: Forbid doesn't cover Jobs created this way, so guard against
@@ -117,9 +120,11 @@ if [[ -n "$WORKFLOW_RUN_NAME" && "$DRY_RUN" != "true" ]]; then
         # checking for a Job with its exact, deterministic name — NOT "any Job in this run
         # is active", which always matches the current step's own still-running Job (this
         # script executes inside it, before it's exited) and would skip every single time.
-        active=$(kubectl get job "$run_name" -n "$namespace" -o jsonpath='{.status.active}' 2>/dev/null) || true
+        # The Job itself is named "atm-$run_name", not "$run_name" (see rgd-jobrun.yaml).
+        job_name="atm-${run_name}"
+        active=$(kubectl get job "$job_name" -n "$namespace" -o jsonpath='{.status.active}' 2>/dev/null) || true
         if [[ "$active" == "1" ]]; then
-            echo "Job $run_name already exists and is active — skipping"
+            echo "Job $job_name already exists and is active — skipping"
         else
             echo "continuing workflow run $WORKFLOW_RUN_NAME: step $next_index ($next_template) as JobRun $run_name"
             echo "$next_step" | jq --arg name "$run_name" --arg run "$WORKFLOW_RUN_NAME" --arg idx "$next_index" --arg owner "$JOB_OWNER" --arg ref "$GIT_REF" '

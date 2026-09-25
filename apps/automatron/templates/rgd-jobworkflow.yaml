@@ -106,11 +106,14 @@ spec:
                           # dollar-brace hazard as noted above applies down here too) —
                           # run_name gets reused as a label VALUE
                           # (REDACTED/workflow[-run]), not just an object
-                          # name, and Kubernetes caps label values at 63 bytes.
+                          # name, and Kubernetes caps label values at 63 bytes. run_name is
+                          # also this JobWorkflowRun CR's own name, deliberately left
+                          # unprefixed (unlike this CronJob/kickoff Pod above, a CR's kind
+                          # already says what it is) — no "atm-" here.
                           truncate16() {
                             printf %s "$1" | cut -c1-16 | sed 's/-$//'
                           }
-                          run_name="atm-schedule-$(truncate16 "$WORKFLOW_NAME")-$(date +%s)"
+                          run_name="schedule-$(truncate16 "$WORKFLOW_NAME")-$(date +%s)"
                           steps=$(kubectl get jobworkflow "$WORKFLOW_NAME" -o json | jq -c '.spec.steps')
                           echo "$steps" | jq --arg name "$run_name" --arg wf "$WORKFLOW_NAME" '
                             {apiVersion: "REDACTED/v1alpha1", kind: "JobWorkflowRun",
@@ -122,8 +125,11 @@ spec:
                           # step name (run_name-step0-<templateRef>) — the templateRef
                           # portion is unbounded, so truncate the whole thing rather than
                           # just run_name's own components (entrypoint.sh does the same for
-                          # every step after this one).
-                          step0_name=$(printf %s "$run_name-step0-$step0_template" | cut -c1-63 | sed 's/-$//')
+                          # every step after this one). Capped at 59, not 63: this becomes a
+                          # JobRun CR name, and rgd-jobrun.yaml prepends its own 4-byte
+                          # "atm-" on top for the Job/Pod it creates, which also has to fit
+                          # in 63.
+                          step0_name=$(printf %s "$run_name-step0-$step0_template" | cut -c1-59 | sed 's/-$//')
                           echo "$step0" | jq --arg name "$step0_name" --arg run "$run_name" '
                             {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
                              metadata: {name: $name, labels: {"REDACTED/workflow-run": $run, "REDACTED/job-owner": "schedule"}},

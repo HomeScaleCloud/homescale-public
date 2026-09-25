@@ -1,7 +1,23 @@
+// Automatron's terraform dispatch authenticates as this identity via universal auth
+// (see providers.tf), so every plan/apply it runs refreshes this resource's own state —
+// GetIdentity is an org-scoped permission, not covered by the project-level "member" role
+// below. Plain "no-access" 403s reading itself; a narrow custom role (read-only on the
+// "identity" subject) fixes that without pulling in the built-in "member" org role's
+// unrelated org-wide permissions, which this identity has no reason to hold.
+resource "infisical_org_role" "identity_reader" {
+  name        = "Identity Reader"
+  slug        = "identity-reader"
+  description = "Read-only access to organization identities"
+  permissions = [{
+    subject = "identity"
+    action  = ["read"]
+  }]
+}
+
 resource "infisical_identity" "k8s_operator" {
   name   = "k8s-operator"
   org_id = var.org_id
-  role   = "no-access"
+  role   = infisical_org_role.identity_reader.slug
 }
 
 resource "infisical_identity_universal_auth" "k8s_operator" {
