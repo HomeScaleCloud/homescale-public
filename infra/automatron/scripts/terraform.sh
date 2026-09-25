@@ -11,6 +11,11 @@
 # matching what the old direct-on-runner Plan step used to produce.
 set -euo pipefail
 
+# Matches hsctl_log's own format (hsctl.d/_lib.sh) so a human streaming this via
+# `hsctl run terraform` sees one consistent style end to end, not a mix of timestamped
+# client-side lines and bare echo from inside the pod.
+log() { printf '%s [%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "${*:2}" >&2; }
+
 repo_root="${REPO_DIR:-.}"
 dry_run="${DRY_RUN:-false}"
 [[ -z "${ARGS_JSON:-}" ]] && ARGS_JSON="{}"
@@ -24,6 +29,18 @@ export TF_VAR_infisical_universal_auth_client_id="${INFISICAL_OPERATOR_CLIENT_ID
 export TF_VAR_infisical_universal_auth_client_secret="${INFISICAL_OPERATOR_CLIENT_SECRET:-}"
 export TF_VAR_infisical_org_id="${INFISICAL_ORG_ID:-}"
 export TF_VAR_infisical_github_actions=""
+
+# REPO_DIR is mounted read-only (deliberate — every other JobTemplate here is a read-only
+# ansible/script checkout), but terraform needs to write its own .terraform/ dir, provider
+# cache, and possibly .terraform.lock.hcl — confirmed live, `terraform init` fails outright
+# with "mkdir .terraform: read-only file system" otherwise. Copy the whole checkout into a
+# writable scratch dir rather than just infra/terraform on its own: the .tf files' own
+# relative paths (../../clusters, ../../../../apps — see modules/tailscale/tags.tf and
+# friends) need the same directory structure around them to still resolve correctly. The
+# tracked checkout is a few MB, so this is cheap.
+work_root=$(mktemp -d)
+cp -r "$repo_root/." "$work_root/"
+repo_root="$work_root"
 
 cd "$repo_root/infra/terraform"
 
@@ -48,20 +65,23 @@ spec:
   acquireTime: "$(date -u +%Y-%m-%dT%H:%M:%S.000000Z)"
 EOF
     then
-        echo "acquired terraform lock as $job_name"
+        # job_name (from JOB_NAME, see rgd-jobrun.yaml/rgd-jobtemplate.yaml) is this run's
+        # own JobRun/Job name — rgd-jobrun.yaml names the Job identically to its JobRun, so
+        # this is both at once.
+        log INFO "acquired lock for JobTemplate terraform as $job_name"
         break
     fi
     holder=$(kubectl get lease "$lock_name" -n "$namespace" -o jsonpath='{.spec.holderIdentity}' 2>/dev/null) || true
     if [[ -n "$holder" ]] && ! kubectl get job "$holder" -n "$namespace" &>/dev/null; then
-        echo "stale lock held by missing job $holder — reclaiming"
+        log INFO "stale lock held by missing job $holder — reclaiming"
         kubectl delete lease "$lock_name" -n "$namespace" --ignore-not-found
         continue
     fi
     if (( waited >= max_wait )); then
-        echo "timed out after ${max_wait}s waiting for terraform lock (held by ${holder:-unknown})" >&2
+        log ERROR "timed out after ${max_wait}s waiting for terraform lock (held by ${holder:-unknown})"
         exit 1
     fi
-    echo "terraform lock held by ${holder:-unknown} — waiting..."
+    log INFO "terraform lock held by ${holder:-unknown} — waiting..."
     sleep 15
     waited=$((waited + 15))
 done
@@ -101,10 +121,10 @@ if [[ -n "$cluster" ]]; then
     ' /tmp/tfplan-full.json)
 
     if [[ ${#target_args[@]} -eq 0 ]]; then
-        echo "no resources for cluster '$cluster' in the plan — nothing to do"
+        log INFO "no resources for cluster '$cluster' in the plan — nothing to do"
         exit 0
     fi
-    echo "scoping to ${#target_args[@]} resource(s) for cluster '$cluster'"
+    log INFO "scoping to ${#target_args[@]} resource(s) for cluster '$cluster'"
     terraform plan -input=false "${target_args[@]}" -out=/tmp/tfplan
 else
     cp /tmp/tfplan-full /tmp/tfplan
