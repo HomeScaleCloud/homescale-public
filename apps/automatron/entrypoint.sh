@@ -92,17 +92,18 @@ if [[ -n "$WORKFLOW_RUN_NAME" && "$DRY_RUN" != "true" ]]; then
     if [[ -z "$next_step" ]]; then
         echo "workflow run $WORKFLOW_RUN_NAME: no step $next_index — done"
     else
+        next_template=$(jq -r '.templateRef' <<<"$next_step")
+        run_name="${WORKFLOW_RUN_NAME}-step${next_index}-${next_template}"
+
         # concurrencyPolicy: Forbid doesn't cover Jobs created this way, so guard against
-        # a slow prior step of *this run* still being active — only one step of a given
-        # workflow run should ever be active at once.
-        run_label="REDACTED/workflow-run=$WORKFLOW_RUN_NAME"
-        active=$(kubectl get jobs -n "$namespace" -l "$run_label" \
-            -o jsonpath='{range .items[?(@.status.active>0)]}{.metadata.name}{"\n"}{end}')
-        if [[ -n "$active" ]]; then
-            echo "a Job for workflow run $WORKFLOW_RUN_NAME is already running ($active) — skipping"
+        # double-creating this exact next step (e.g. this script somehow running twice) by
+        # checking for a Job with its exact, deterministic name — NOT "any Job in this run
+        # is active", which always matches the current step's own still-running Job (this
+        # script executes inside it, before it's exited) and would skip every single time.
+        active=$(kubectl get job "$run_name" -n "$namespace" -o jsonpath='{.status.active}' 2>/dev/null) || true
+        if [[ "$active" == "1" ]]; then
+            echo "Job $run_name already exists and is active — skipping"
         else
-            next_template=$(jq -r '.templateRef' <<<"$next_step")
-            run_name="${WORKFLOW_RUN_NAME}-step${next_index}-${next_template}"
             echo "continuing workflow run $WORKFLOW_RUN_NAME: step $next_index ($next_template) as JobRun $run_name"
             echo "$next_step" | jq --arg name "$run_name" --arg run "$WORKFLOW_RUN_NAME" --arg idx "$next_index" --arg owner "$JOB_OWNER" '
                 {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
