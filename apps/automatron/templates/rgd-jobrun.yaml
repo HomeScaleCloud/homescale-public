@@ -198,6 +198,15 @@ spec:
                       value: '${schema.spec.jobOwner}'
                     - name: GIT_REF
                       value: '${schema.spec.gitRef}'
+                    # This Job's own real name (not schema.metadata.name run through kro's
+                    # templating — the Downward API, reading the label the Job controller
+                    # sets on every Pod it creates) — generically useful for anything that
+                    # needs to identify "which Job is this" at runtime, e.g. a Lease-based
+                    # lock's holderIdentity (see infra/automatron/scripts/terraform.sh).
+                    - name: JOB_NAME
+                      valueFrom:
+                        fieldRef:
+                          fieldPath: metadata.labels['batch.kubernetes.io/job-name']
                   envFrom:
                     - secretRef:
                         name: automatron-secrets

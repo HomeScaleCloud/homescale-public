@@ -60,7 +60,8 @@ spec:
         apiVersion: batch/v1
         kind: CronJob
         metadata:
-          name: 'automatron-${schema.metadata.name}'
+          # "atm-" not "automatron-" — see rgd-jobtemplate.yaml's own CronJob for why.
+          name: 'atm-${schema.metadata.name}'
           namespace: {{ .Release.Namespace }}
         spec:
           schedule: '${schema.spec.schedule}'
@@ -109,7 +110,7 @@ spec:
                           truncate16() {
                             printf %s "$1" | cut -c1-16 | sed 's/-$//'
                           }
-                          run_name="automatron-schedule-$(truncate16 "$WORKFLOW_NAME")-$(date +%s)"
+                          run_name="atm-schedule-$(truncate16 "$WORKFLOW_NAME")-$(date +%s)"
                           steps=$(kubectl get jobworkflow "$WORKFLOW_NAME" -o json | jq -c '.spec.steps')
                           echo "$steps" | jq --arg name "$run_name" --arg wf "$WORKFLOW_NAME" '
                             {apiVersion: "REDACTED/v1alpha1", kind: "JobWorkflowRun",
@@ -117,7 +118,13 @@ spec:
                              spec: {workflowRef: $wf, steps: ., jobOwner: "schedule"}}' | kubectl apply -f -
                           step0=$(echo "$steps" | jq -c '.[0]')
                           step0_template=$(echo "$step0" | jq -r '.templateRef')
-                          echo "$step0" | jq --arg name "$run_name-step0-$step0_template" --arg run "$run_name" '
+                          # Same 63-byte hazard as run_name above, but for the composed
+                          # step name (run_name-step0-<templateRef>) — the templateRef
+                          # portion is unbounded, so truncate the whole thing rather than
+                          # just run_name's own components (entrypoint.sh does the same for
+                          # every step after this one).
+                          step0_name=$(printf %s "$run_name-step0-$step0_template" | cut -c1-63 | sed 's/-$//')
+                          echo "$step0" | jq --arg name "$step0_name" --arg run "$run_name" '
                             {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
                              metadata: {name: $name, labels: {"REDACTED/workflow-run": $run, "REDACTED/job-owner": "schedule"}},
                              spec: {templateRef: .templateRef, args: (.args // {}), dryRun: (.dryRun // false),

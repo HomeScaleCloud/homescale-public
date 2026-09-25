@@ -1,7 +1,7 @@
 FROM python:3.14-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl ca-certificates jq openssh-client gettext-base \
+        curl ca-certificates jq openssh-client gettext-base unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # kubectl
@@ -21,6 +21,15 @@ RUN curl -fsSL -o /usr/local/bin/omnictl \
 RUN curl -fsSL -o /usr/local/bin/yq \
         "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64" \
     && chmod +x /usr/local/bin/yq
+
+# terraform (unpinned — matches deploy.yaml's own hashicorp/setup-terraform, which also
+# has no terraform_version pinned and so always resolves to latest)
+RUN tf_version="$(curl -fsSL https://api.releases.hashicorp.com/v1/releases/terraform/latest | jq -r '.version')" \
+    && curl -fsSL -o /tmp/terraform.zip \
+        "https://releases.hashicorp.com/terraform/${tf_version}/terraform_${tf_version}_linux_amd64.zip" \
+    && unzip -q /tmp/terraform.zip -d /usr/local/bin \
+    && rm /tmp/terraform.zip \
+    && chmod +x /usr/local/bin/terraform
 
 RUN pip install --no-cache-dir ansible-core kubernetes infisicalsdk==1.0.17
 

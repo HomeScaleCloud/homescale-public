@@ -1,6 +1,6 @@
-data "infisical_secrets" "github_actions" {
+data "infisical_secrets" "ci" {
   env_slug     = "prod"
-  folder_path  = "/github-actions"
+  folder_path  = "/ci"
   workspace_id = module.infisical.project_id
 }
 

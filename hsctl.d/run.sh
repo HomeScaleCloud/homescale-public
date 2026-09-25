@@ -354,7 +354,10 @@ _run_remote() {
     # just an object name, and Kubernetes caps label values at 63 bytes — confirmed live,
     # an untruncated name (job_owner=ci + a longer template/workflow name)
     # broke both kro's own label-selector reconciliation and hsctl's own kubectl creates.
-    local run_name="automatron-$(_run_truncate "$job_owner")-$(_run_truncate "$name")-$(date +%s)"
+    # "atm-" (not "automatron-") specifically so every automatron pod name is identifiable
+    # at a glance while leaving as much of that 63-byte budget as possible for the parts
+    # that actually vary.
+    local run_name="atm-$(_run_truncate "$job_owner")-$(_run_truncate "$name")-$(date +%s)"
 
     # Every automatron CRD is cluster-scoped (single automatron install per cluster, no
     # per-namespace isolation needed), so these `kubectl get`/`create` calls take no `-n`
@@ -426,9 +429,16 @@ _run_remote() {
        metadata: {name: $name, labels: {"REDACTED/workflow": $wf, "REDACTED/job-owner": $owner}},
        spec: {workflowRef: $wf, steps: $steps, jobOwner: $owner}}' | kubectl create --context core -f -
 
-    local step0_template
+    local step0_template step0_name
     step0_template=$(echo "$resolved_steps" | jq -r '.[0].templateRef')
-    echo "$resolved_steps" | jq -c '.[0]' | jq --arg name "$run_name-step0-$step0_template" --arg run "$run_name" --arg owner "$job_owner" --arg ref "$git_ref" '
+    # Same 63-byte hazard $run_name itself is guarded against above (see its own comment) —
+    # appending -step0-<templateRef> isn't bounded by that truncation, so truncate the whole
+    # composed name here too (entrypoint.sh/rgd-jobworkflow.yaml do the same for every other
+    # step of a chain).
+    step0_name="${run_name}-step0-${step0_template}"
+    step0_name="${step0_name:0:63}"
+    step0_name="${step0_name%-}"
+    echo "$resolved_steps" | jq -c '.[0]' | jq --arg name "$step0_name" --arg run "$run_name" --arg owner "$job_owner" --arg ref "$git_ref" '
       {apiVersion: "REDACTED/v1alpha1", kind: "JobRun",
        metadata: {name: $name, labels: {"REDACTED/workflow-run": $run, "REDACTED/job-owner": $owner}},
        spec: {templateRef: .templateRef, args: (.args // {}), dryRun: (.dryRun // false),

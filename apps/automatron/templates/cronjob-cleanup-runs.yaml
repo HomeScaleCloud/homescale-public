@@ -10,7 +10,10 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: automatron-cleanup-runs
+  # "atm-" not "automatron-" — every automatron pod name should be identifiable at a glance
+  # while leaving as much of Kubernetes' 63-byte label-value budget as possible for parts
+  # that actually vary (see hsctl.d/run.sh's run_name / rgd-jobtemplate.yaml's CronJob).
+  name: atm-cleanup-runs
   namespace: {{ .Release.Namespace }}
 spec:
   schedule: "0 3 * * *"

@@ -52,7 +52,10 @@ spec:
         apiVersion: batch/v1
         kind: CronJob
         metadata:
-          name: 'automatron-${schema.metadata.name}'
+          # "atm-" not "automatron-" — every automatron pod name should be identifiable at a
+          # glance while leaving as much of Kubernetes' 63-byte label-value budget as
+          # possible for the parts that actually vary (see hsctl.d/run.sh's run_name).
+          name: 'atm-${schema.metadata.name}'
           namespace: {{ .Release.Namespace }}
         spec:
           schedule: '${schema.spec.schedule}'
@@ -148,6 +151,12 @@ spec:
                           value: "false"
                         - name: REPO_DIR
                           value: /repo/current
+                        # See rgd-jobrun.yaml's own JOB_NAME for why this is a Downward API
+                        # lookup rather than kro templating.
+                        - name: JOB_NAME
+                          valueFrom:
+                            fieldRef:
+                              fieldPath: metadata.labels['batch.kubernetes.io/job-name']
                       envFrom:
                         - secretRef:
                             name: automatron-secrets

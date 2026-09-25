@@ -1,5 +1,5 @@
 resource "cloudflare_dns_record" "github_verify" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   comment = "Domain ownership verification for GitHub"
   content = "064743fb98" #pragma: allowlist secret
@@ -8,7 +8,7 @@ resource "cloudflare_dns_record" "github_verify" {
 }
 
 resource "cloudflare_dns_record" "github_ent_verify" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   comment = "Domain ownership verification for GitHub Enterprise"
   content = "0b5219f3e7" #pragma: allowlist secret
@@ -17,7 +17,7 @@ resource "cloudflare_dns_record" "github_ent_verify" {
 }
 
 resource "cloudflare_dns_record" "azure_verify" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   comment = "Domain ownership verification for Azure"
   content = "MS=ms57084443" #pragma: allowlist secret
@@ -26,7 +26,7 @@ resource "cloudflare_dns_record" "azure_verify" {
 }
 
 resource "cloudflare_dns_record" "google_verify" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   comment = "Domain ownership verification for Google"
   content = "google-site-verification=u5Dge7wb90l5g-f6d09B6_8oPM2di4qmri5ZurpcXjY" #pragma: allowlist secret
@@ -35,7 +35,7 @@ resource "cloudflare_dns_record" "google_verify" {
 }
 
 resource "cloudflare_dns_record" "openai_verify" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   comment = "Domain ownership verification for OpenAI"
   content = "openai-domain-verification=dv-QS7LzcNzQoWJE8kjIrtIP9q6" #pragma: allowlist secret
@@ -44,7 +44,7 @@ resource "cloudflare_dns_record" "openai_verify" {
 }
 
 resource "cloudflare_dns_record" "exchange_autodiscover" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   content = "autodiscover.outlook.com"
   ttl     = 1
@@ -52,7 +52,7 @@ resource "cloudflare_dns_record" "exchange_autodiscover" {
 }
 
 resource "cloudflare_dns_record" "exchange_mx" {
-  zone_id  = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id  = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name     = "REDACTED"
   content  = "homescale-cloud.mail.protection.outlook.com"
   priority = 1
@@ -61,7 +61,7 @@ resource "cloudflare_dns_record" "exchange_mx" {
 }
 
 resource "cloudflare_dns_record" "exchange_spf" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   content = "v=spf1 include:spf.protection.outlook.com -all"
   ttl     = 1
@@ -69,7 +69,7 @@ resource "cloudflare_dns_record" "exchange_spf" {
 }
 
 resource "cloudflare_dns_record" "exchange_dkim_1" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   content = "selector1-homescale-cloud._domainkey.nanni237gmail.onmicrosoft.com"
   ttl     = 1
@@ -77,7 +77,7 @@ resource "cloudflare_dns_record" "exchange_dkim_1" {
 }
 
 resource "cloudflare_dns_record" "exchange_dkim_2" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   content = "selector2-homescale-cloud._domainkey.nanni237gmail.onmicrosoft.com"
   ttl     = 1
@@ -85,7 +85,7 @@ resource "cloudflare_dns_record" "exchange_dkim_2" {
 }
 
 resource "cloudflare_dns_record" "intune_registration" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   content = "enterpriseregistration.windows.net"
   ttl     = 1
@@ -93,7 +93,7 @@ resource "cloudflare_dns_record" "intune_registration" {
 }
 
 resource "cloudflare_dns_record" "intune_enrollment" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   content = "enterpriseenrollment-s.manage.microsoft.com"
   ttl     = 1
@@ -101,7 +101,7 @@ resource "cloudflare_dns_record" "intune_enrollment" {
 }
 
 resource "cloudflare_dns_record" "cloudflare_sso_verify" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   comment = "Domain ownership verification for Cloudflare (SSO)"
   content = "cloudflare_dashboard_sso=1db9ce4dca346667d0b86d63403d14bf" #pragma: allowlist secret
@@ -110,7 +110,7 @@ resource "cloudflare_dns_record" "cloudflare_sso_verify" {
 }
 
 resource "cloudflare_dns_record" "infisical_verify" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   comment = "Domain ownership verification for Infisical"
   content = "infisical-domain-verification=8a80b98c25b921c4f9a0e0f2ffaec4948574984d05aa4756dd43909b8f1ddbbe" #pragma: allowlist secret
@@ -119,7 +119,7 @@ resource "cloudflare_dns_record" "infisical_verify" {
 }
 
 resource "cloudflare_dns_record" "docs" {
-  zone_id = data.infisical_secrets.github_actions.secrets["CLOUDFLARE_ZONE_ID"].value
+  zone_id = data.infisical_secrets.ci.secrets["CLOUDFLARE_ZONE_ID"].value
   name    = "REDACTED"
   content = "homescalecloud.github.io" #pragma: allowlist secret
   ttl     = 1

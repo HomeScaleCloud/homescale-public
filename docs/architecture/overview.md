@@ -152,12 +152,16 @@ Runs on every PR and push:
 
 ### `deploy` — infrastructure and cluster sync
 
-Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has two sequential jobs — `terraform` → `omni`. Neither joins the tailnet — `terraform` only talks to public APIs (Cloudflare, Vultr, Infisical, Tailscale), and `omni` reaches Omni entirely through automatron (a `core` kubectl context via `CORE_KUBECONFIG`), not directly.
+Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has two sequential jobs — `terraform` → `omni`. Neither joins the tailnet, and neither runs its own tool (`terraform`/`omnictl`) directly on the runner anymore — both dispatch to automatron in `core` (a `core` kubectl context via `CORE_KUBECONFIG` is all either job needs), which already has Cloudflare/Vultr/Infisical/Omni access sorted.
 
 #### 1. `terraform`
 
-- **On PR**: runs `terraform plan` and posts the plan diff as a PR comment
-- **On merge to `main`**: runs `terraform apply` (gated by a GitHub Environment) — manages Cloudflare DNS, Vultr, Infisical project structure, Tailscale ACL and tags, VolSync secret paths, etc
+Manages Cloudflare DNS, Vultr, Infisical project structure, Tailscale ACL and tags, VolSync secret paths, etc — the single shared `infra/terraform` workspace (state in Terraform Cloud), unconditionally, no changed-file detection (unlike `omni` below, almost any change could be terraform-relevant).
+
+- **On PR**: runs `./hsctl run terraform --dry-run -e remote --git-ref <this-PR's-branch>` and posts the plan as a PR comment; the rendered Tailnet ACL (if changed) is still extracted and uploaded as an artifact + topology map, now parsed from a marker block in the streamed output rather than a file `terraform show -json` wrote locally
+- **On merge to `main`**: runs `./hsctl run terraform -e remote` (gated by a GitHub Environment) — a real `terraform apply`, executed on automatron
+
+`hsctl run terraform --cluster <name>` scopes a run to just that cluster's own resources (Cloudflare tunnel, DNS records, VolSync secrets, etc) — computed from an untargeted plan's own JSON output so it still catches not-yet-created resources, not from `terraform state list`. Automatron also runs `terraform` on its own schedule (every 15 minutes) for continuous reconciliation without relying on a CI push; a Lease-based lock (see CLAUDE.md's Automatron section) makes scheduled and ad hoc runs queue instead of racing on the shared state.
 
 #### 2. `omni` (after terraform)
 

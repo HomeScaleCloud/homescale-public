@@ -1,0 +1,8 @@
+apiVersion: REDACTED/v1alpha1
+kind: JobTemplate
+metadata:
+  name: terraform
+spec:
+  scriptPath: infra/automatron/scripts/terraform.sh
+  scriptInterpreter: bash
+  schedule: "*/15 * * * *"

@@ -95,7 +95,17 @@ if [[ -n "$WORKFLOW_RUN_NAME" && "$DRY_RUN" != "true" ]]; then
         echo "workflow run $WORKFLOW_RUN_NAME: no step $next_index — done"
     else
         next_template=$(jq -r '.templateRef' <<<"$next_step")
+        # WORKFLOW_RUN_NAME is already bounded to stay well under 63 bytes on its own (see
+        # hsctl.d/run.sh's _run_truncate / rgd-jobworkflow.yaml's truncate16), but appending
+        # -step<N>-<templateRef> on top of that isn't — confirmed live: kro's dynamic
+        # controller permanently fails to reconcile a JobWorkflowRun whose own name (reused
+        # as this JobRun's workflow-run label value) exceeds 63 bytes, requeuing forever with
+        # no way to recover short of deleting the object, since names are immutable. Truncate
+        # the whole composed name, not just its parts, so this holds regardless of which
+        # component ends up long.
         run_name="${WORKFLOW_RUN_NAME}-step${next_index}-${next_template}"
+        run_name="${run_name:0:63}"
+        run_name="${run_name%-}"
 
         # concurrencyPolicy: Forbid doesn't cover Jobs created this way, so guard against
         # double-creating this exact next step (e.g. this script somehow running twice) by

@@ -35,8 +35,18 @@ terraform {
   }
 }
 
+// "oidc" (default) is CI's GitHub-OIDC-federated identity (var.infisical_github_actions,
+// full project-admin, provisioned outside Terraform — see variables.tf). "universal" is
+// automatron's terraform dispatch, reusing the k8s Infisical Operator's own identity
+// (module.infisical's k8s_operator, "member" role) via its existing client ID/secret —
+// there's no GitHub OIDC token available inside a Kubernetes Job for it to present.
 provider "infisical" {
-  auth = {
+  auth = var.infisical_auth_method == "universal" ? {
+    universal = {
+      client_id     = var.infisical_universal_auth_client_id
+      client_secret = var.infisical_universal_auth_client_secret
+    }
+    } : {
     oidc = {
       identity_id = var.infisical_github_actions
     }
@@ -46,7 +56,7 @@ provider "infisical" {
 provider "cloudflare" {}
 
 provider "tailscale" {
-  oauth_client_id     = data.infisical_secrets.github_actions.secrets["TAILSCALE_OAUTH_CLIENT_ID"].value
-  oauth_client_secret = data.infisical_secrets.github_actions.secrets["TAILSCALE_OAUTH_CLIENT_SECRET"].value
-  tailnet             = data.infisical_secrets.github_actions.secrets["TAILSCALE_TAILNET"].value
+  oauth_client_id     = data.infisical_secrets.ci.secrets["TAILSCALE_OAUTH_CLIENT_ID"].value
+  oauth_client_secret = data.infisical_secrets.ci.secrets["TAILSCALE_OAUTH_CLIENT_SECRET"].value
+  tailnet             = data.infisical_secrets.ci.secrets["TAILSCALE_TAILNET"].value
 }

@@ -38,7 +38,7 @@ jobs:
           identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
           env-slug: "prod"
           project-slug: "homescale"
-          secret-path: "/github-actions"
+          secret-path: "/ci"
           export-type: env
 
       - name: Run Claude Code
