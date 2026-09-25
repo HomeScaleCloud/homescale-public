@@ -305,6 +305,14 @@ _run_job_owner() {
     echo "$owner" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9-' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//'
 }
 
+# _run_truncate — caps a run_name component at 16 chars (stripping any trailing hyphen the
+# cut leaves dangling, since a Kubernetes name/label value can't end in one). See run_name's
+# own comment in _run_remote for why this matters.
+_run_truncate() {
+    local s="${1:0:16}"
+    echo "${s%-}"
+}
+
 _run_remote() {
     local name="$1" cli_args_json="$2" dry_run="$3" chain_raw="$4"
     local namespace="automatron"
@@ -334,8 +342,12 @@ _run_remote() {
     # the "root" of it (the JobRun, for a plain single-template run; the JobWorkflowRun,
     # for a workflow or chain) — and, for an ad hoc --chain, also for the throwaway
     # JobWorkflow created below (a JobWorkflow and a JobWorkflowRun are different kinds, so
-    # sharing one name between them isn't a collision).
-    local run_name="automatron-adhoc-${job_owner}-${name}-$(date +%s)"
+    # sharing one name between them isn't a collision). Both components are truncated: this
+    # name gets reused as a label VALUE (REDACTED/workflow[-run]), not
+    # just an object name, and Kubernetes caps label values at 63 bytes — confirmed live,
+    # an untruncated name (job_owner=github-actions + a longer template/workflow name)
+    # broke both kro's own label-selector reconciliation and hsctl's own kubectl creates.
+    local run_name="automatron-$(_run_truncate "$job_owner")-$(_run_truncate "$name")-$(date +%s)"
 
     # Every automatron CRD is cluster-scoped (single automatron install per cluster, no
     # per-namespace isolation needed), so these `kubectl get`/`create` calls take no `-n`

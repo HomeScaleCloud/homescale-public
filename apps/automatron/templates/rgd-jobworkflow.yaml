@@ -98,7 +98,18 @@ spec:
                       args:
                         - |
                           set -e
-                          run_name="$WORKFLOW_NAME-run-$(date +%s)"
+                          # Caps WORKFLOW_NAME at 16 chars via cut/sed (not bash's usual
+                          # brace-based truncation/trim syntax, since this comment and the
+                          # code below it are literal string content once YAML-parsed, not
+                          # stripped like a plain top-of-file YAML comment would be — same
+                          # dollar-brace hazard as noted above applies down here too) —
+                          # run_name gets reused as a label VALUE
+                          # (REDACTED/workflow[-run]), not just an object
+                          # name, and Kubernetes caps label values at 63 bytes.
+                          truncate16() {
+                            printf %s "$1" | cut -c1-16 | sed 's/-$//'
+                          }
+                          run_name="automatron-schedule-$(truncate16 "$WORKFLOW_NAME")-$(date +%s)"
                           steps=$(kubectl get jobworkflow "$WORKFLOW_NAME" -o json | jq -c '.spec.steps')
                           echo "$steps" | jq --arg name "$run_name" --arg wf "$WORKFLOW_NAME" '
                             {apiVersion: "REDACTED/v1alpha1", kind: "JobWorkflowRun",
