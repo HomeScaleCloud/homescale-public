@@ -120,24 +120,54 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: zigbee
+  name: mosquitto
 spec:
-  replicas: {{ .Values.zigbee2mqtt.replicaCount }}
+  replicas: {{ .Values.mqtt.replicaCount }}
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: zigbee
+      app: mosquitto
   template:
     metadata:
       labels:
-        app: zigbee
+        app: mosquitto
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[{"name":"vlan-wlan","namespace":"kube-system","ips":[{{ .Values.mqtt.network.ip | quote }}]}]'
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       initContainers:
-        - name: mqtt
+        - name: mosquitto-passwd
           image: "{{ .Values.mqtt.image.repository }}:{{ .Values.mqtt.image.tag }}"
           imagePullPolicy: IfNotPresent
-          restartPolicy: Always
+          command:
+            - sh
+            - -c
+            - mosquitto_passwd -b -c /mosquitto/config/passwd "$MQTT_USERNAME" "$MQTT_PASSWORD"
+          env:
+            - name: MQTT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mqtt-credentials # pragma: allowlist secret
+                  key: username
+            - name: MQTT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mqtt-credentials # pragma: allowlist secret
+                  key: password
+          volumeMounts:
+            - name: mqtt-config
+              mountPath: /mosquitto/config
+          securityContext:
+            runAsUser: 100
+            runAsGroup: 101
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      containers:
+        - name: mosquitto
+          image: "{{ .Values.mqtt.image.repository }}:{{ .Values.mqtt.image.tag }}"
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 1883
             - containerPort: 1884
@@ -145,6 +175,9 @@ spec:
           volumeMounts:
             - name: mqtt-config
               mountPath: /mosquitto/config
+            - name: mosquitto-conf
+              mountPath: /mosquitto/config/mosquitto.conf
+              subPath: mosquitto.conf
             - name: mqtt-data
               mountPath: /mosquitto/data
             - name: mqtt-logs
@@ -160,6 +193,35 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
+      volumes:
+        - name: mqtt-config
+          persistentVolumeClaim:
+            claimName: mqtt-config
+        - name: mosquitto-conf
+          configMap:
+            name: mosquitto-conf
+        - name: mqtt-data
+          persistentVolumeClaim:
+            claimName: mqtt-data
+        - name: mqtt-logs
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zigbee
+spec:
+  replicas: {{ .Values.zigbee2mqtt.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: zigbee
+  template:
+    metadata:
+      labels:
+        app: zigbee
+    spec:
       containers:
         - name: zigbee2mqtt
           image: "{{ .Values.zigbee2mqtt.image.repository }}:{{ .Values.zigbee2mqtt.image.tag }}"
@@ -171,6 +233,16 @@ spec:
               value: {{ .Values.zigbee2mqtt.config.mqttServer | quote }}
             - name: ZIGBEE2MQTT_CONFIG_MQTT_BASE_TOPIC
               value: {{ .Values.zigbee2mqtt.config.mqttBaseTopic | quote }}
+            - name: ZIGBEE2MQTT_CONFIG_MQTT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mqtt-credentials # pragma: allowlist secret
+                  key: username
+            - name: ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mqtt-credentials # pragma: allowlist secret
+                  key: password
             - name: ZIGBEE2MQTT_CONFIG_SERIAL_PORT
               value: {{ .Values.zigbee2mqtt.config.serialPort | quote }}
             - name: ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER
@@ -215,14 +287,6 @@ spec:
             capabilities:
               drop: ["ALL"]
       volumes:
-        - name: mqtt-config
-          persistentVolumeClaim:
-            claimName: mqtt-config
-        - name: mqtt-data
-          persistentVolumeClaim:
-            claimName: mqtt-data
-        - name: mqtt-logs
-          emptyDir: {}
         - name: zigbee2mqtt
           persistentVolumeClaim:
             claimName: zigbee2mqtt

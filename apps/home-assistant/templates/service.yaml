@@ -61,7 +61,7 @@ metadata:
   name: mqtt
 spec:
   selector:
-    app: zigbee
+    app: mosquitto
   ports:
     - name: mqtt
       port: 1883
