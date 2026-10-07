@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-# hsctl run — run an Ansible playbook from infra/automatron/ansible/playbooks/, either locally or
-# remotely as a one-off Kubernetes Job on automatron (apps/automatron).
+# hsctl run — run an AutomatronJobTemplate's playbook or script, either locally or
+# remotely as a one-off Kubernetes Job on automatron (apps/automatron). In both modes
+# <name> is the JobTemplate name (infra/automatron/job-templates/<name>.yaml); local mode
+# reads that committed definition directly (no cluster access involved) to decide which
+# engine/file it actually runs.
 #
-# bootstrap-core/bootstrap-cluster get special local-secrets handling (see
-# _run_bootstrap_local); any other playbook runs as-is with no Infisical fallback of its
-# own, so a new one needing local secrets must add hsctl_local-aware handling itself.
+# bootstrap-core/bootstrap-cluster get special local-secrets handling for their playbook
+# (see _run_bootstrap_local); terraform gets the same treatment for its script (see
+# _run_script_local_secrets) — needed to bootstrap core itself, before automatron exists
+# to dispatch to. Any other template runs as-is with no Infisical fallback of its own, so a
+# new one needing local secrets must add hsctl_local-aware handling itself.
 #
 # Local mode never runs against $HSCTL_REPO_ROOT — it clones HomeScaleCloud/homescale@main
 # fresh into a temp dir instead (_run_local_clone_repo), so it always matches main.
@@ -42,10 +47,14 @@ run_usage() {
     echo "HSCTL_JOB_OWNER=ci), else your OIDC email's local part (e.g. 'max' for"
     echo "max@REDACTED), else your local username; a scheduled run is labeled 'schedule'."
     echo ""
-    echo "In local mode, <name> is any filename (without .yml) under infra/automatron/ansible/playbooks/, e.g.:"
-    echo "  bootstrap-core      bootstrap the core cluster"
-    echo "  bootstrap-cluster   bootstrap workload clusters (all, or one via --cluster)"
-    echo "  omni-sync           sync every cluster template + machine class into Omni"
+    echo "In local mode, <name> is the same AutomatronJobTemplate name as in remote mode"
+    echo "(infra/automatron/job-templates/<name>.yaml) — hsctl reads that committed definition"
+    echo "to run whichever it declares, playbook or script, e.g.:"
+    echo "  bootstrap-core      bootstrap the core cluster (playbook)"
+    echo "  bootstrap-cluster   bootstrap workload clusters (all, or one via --cluster) (playbook)"
+    echo "  omni-sync           sync every cluster template + machine class into Omni (script)"
+    echo "  terraform           plan/apply infra/terraform (script) — the only way to bootstrap"
+    echo "                      core itself, before automatron exists to dispatch to"
     echo ""
     echo "Options:"
     echo "  --arg key=value             (repeatable, remote mode only) sets an arbitrary extra-var/"
@@ -64,10 +73,11 @@ run_usage() {
     echo "                              the resulting Job's logs; requires a Tailscale-reachable"
     echo "                              core apiserver and team-infra-plat/team-sec-plat membership"
     echo "                              (no PIM needed). local clones main fresh (via gh) into a"
-    echo "                              temp dir and runs ansible-playbook against that — still"
-    echo "                              required for the very first core bootstrap, before"
-    echo "                              automatron exists to dispatch to; only understands --cluster,"
-    echo "                              not --arg, since it doesn't go through automatron's CRDs."
+    echo "                              temp dir and runs that JobTemplate's playbook or script"
+    echo "                              against it — still required for the very first core"
+    echo "                              bootstrap, before automatron exists to dispatch to; only"
+    echo "                              understands --cluster, not --arg, since it doesn't go"
+    echo "                              through automatron's CRDs."
     echo "  --dry-run                   see --arg above for precedence; only omni-sync acts on this"
     echo "                              today (adds --dry-run to its omnictl calls)"
     echo "  --chain <name>[,...]        <name> must be a JobTemplate (not a JobWorkflow, which"
@@ -172,6 +182,53 @@ _run_generic_local() {
     )
 }
 
+# Local secrets handling for script-based templates that need creds automatron's own pod
+# env normally supplies — add a case here the same way _run_bootstrap_local handles
+# bootstrap-core/bootstrap-cluster for playbooks (see module header comment). Exports
+# straight into the caller's environment (a subshell, in practice — see _run_local_script)
+# rather than returning a file, since a script reads these as plain env vars, not extra-vars.
+_run_script_local_secrets() {
+    local name="$1"
+    case "$name" in
+        terraform)
+            command -v infisical &>/dev/null || { echo "hsctl run: the infisical CLI is required (brew install infisical)" >&2; exit 1; }
+            hsctl_log_info "fetching terraform's Infisical universal-auth credentials via local CLI session"
+            local secrets
+            secrets=$(_run_infisical_secrets /k8s/automatron) || exit 1
+            export INFISICAL_CI_CLIENT_ID INFISICAL_CI_CLIENT_SECRET INFISICAL_ORG_ID CLOUDFLARE_API_TOKEN TF_TOKEN_app_terraform_io
+            INFISICAL_CI_CLIENT_ID=$(jq -r '.INFISICAL_CI_CLIENT_ID // ""' <<<"$secrets")
+            INFISICAL_CI_CLIENT_SECRET=$(jq -r '.INFISICAL_CI_CLIENT_SECRET // ""' <<<"$secrets")
+            INFISICAL_ORG_ID=$(jq -r '.INFISICAL_ORG_ID // ""' <<<"$secrets")
+            CLOUDFLARE_API_TOKEN=$(jq -r '.CLOUDFLARE_API_TOKEN // ""' <<<"$secrets")
+            TF_TOKEN_app_terraform_io=$(jq -r '.TF_TOKEN_app_terraform_io // ""' <<<"$secrets")
+            ;;
+    esac
+}
+
+# Run a script-based JobTemplate locally, mirroring entrypoint.sh's SCRIPT_PATH branch
+# (apps/automatron/entrypoint.sh): same REPO_DIR/ARGS_JSON/DRY_RUN env vars, same bare-
+# filename-under-infra/automatron/scripts/ convention. No Lease-based locking here (see
+# entrypoint.sh's LOCKING handling) — nothing to coordinate against when running standalone
+# outside the cluster.
+_run_local_script() {
+    local name="$1" script_path="$2" interpreter="$3" cluster="$4" dry_run="$5" repo_root="$6"
+    local script_file="$repo_root/infra/automatron/scripts/$script_path"
+
+    [[ -f "$script_file" ]] || { hsctl_log_error "no such script: infra/automatron/scripts/$script_path"; exit 1; }
+    command -v "$interpreter" &>/dev/null || { echo "hsctl run: $interpreter is required" >&2; exit 1; }
+
+    local args_json="{}"
+    [[ -n "$cluster" ]] && args_json=$(jq -n --arg c "$cluster" '{cluster: $c}')
+
+    (
+        export HSCTL_REPO_ROOT="$repo_root" REPO_DIR="$repo_root" ARGS_JSON="$args_json" DRY_RUN="$dry_run"
+        _run_script_local_secrets "$name"
+        cd "$repo_root" || exit 1
+        hsctl_log_action "running infra/automatron/scripts/$script_path (interpreter: $interpreter${cluster:+, cluster: $cluster})"
+        "$interpreter" "$script_file"
+    )
+}
+
 # Clones `main` fresh into a temp dir, once per `hsctl run` invocation (not per chained
 # playbook). Doesn't call _run_register_cleanup itself — this runs in a $(...) subshell,
 # so the caller registers the returned path in its own, non-subshell scope instead.
@@ -189,14 +246,32 @@ _run_local_clone_repo() {
 }
 
 _run_local() {
-    local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4"
+    local name="$1" cluster="$2" dry_run="$3" repo_root="$4"
 
-    command -v ansible-playbook &>/dev/null || { echo "hsctl run: ansible-playbook is required (brew install ansible)" >&2; exit 1; }
+    command -v yq &>/dev/null || { echo "hsctl run: yq is required (brew install yq)" >&2; exit 1; }
+    command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
 
-    if [[ " ${_run_bootstrap_playbooks[*]} " == *" $playbook "* ]]; then
-        _run_bootstrap_local "$playbook" "$cluster" "$dry_run" "$repo_root"
+    local tmpl_file="$repo_root/infra/automatron/job-templates/$name.yaml"
+    [[ -f "$tmpl_file" ]] || { hsctl_log_error "no such JobTemplate: infra/automatron/job-templates/$name.yaml"; exit 1; }
+
+    local tmpl_json script_path interpreter playbook
+    tmpl_json=$(yq -o=json '.' "$tmpl_file")
+    script_path=$(jq -r '.spec.scriptPath // ""' <<<"$tmpl_json")
+    interpreter=$(jq -r '.spec.scriptInterpreter // "bash"' <<<"$tmpl_json")
+    playbook=$(jq -r '.spec.playbook // ""' <<<"$tmpl_json")
+
+    if [[ -n "$script_path" ]]; then
+        _run_local_script "$name" "$script_path" "$interpreter" "$cluster" "$dry_run" "$repo_root"
+    elif [[ -n "$playbook" ]]; then
+        command -v ansible-playbook &>/dev/null || { echo "hsctl run: ansible-playbook is required (brew install ansible)" >&2; exit 1; }
+        if [[ " ${_run_bootstrap_playbooks[*]} " == *" $playbook "* ]]; then
+            _run_bootstrap_local "$playbook" "$cluster" "$dry_run" "$repo_root"
+        else
+            _run_generic_local "$playbook" "$cluster" "$dry_run" "$repo_root"
+        fi
     else
-        _run_generic_local "$playbook" "$cluster" "$dry_run" "$repo_root"
+        hsctl_log_error "JobTemplate $name sets neither playbook nor scriptPath"
+        exit 1
     fi
 }
 
