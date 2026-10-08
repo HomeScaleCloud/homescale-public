@@ -26,7 +26,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: init
-          image: docker.io/alpine/k8s:1.37.0
+          image: docker.io/alpine/k8s:1.37.1
           # Root (not the usual nonroot default) — apk add needs to write /lib/apk/db
           # to install ssh-keygen for the shared login->compute SSH keypair below.
           securityContext:
