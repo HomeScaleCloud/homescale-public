@@ -21,7 +21,6 @@
     wait_timeout: "300s"
 
 - name: Deploy apps
-  when: _argocd_server.resources | length == 0
   kubernetes.core.k8s:
     state: present
     src: "{{ playbook_dir | dirname | dirname | dirname | dirname }}/clusters/{{ omni_cluster_name }}/apps.yaml"
