@@ -35,7 +35,7 @@ spec:
         runAsNonRoot: true
       containers:
       - name: activator
-        image: gcr.io/knative-releases/knative.dev/serving/cmd/activator@sha256:e5ab46f3b73fa2e3898fe47f6a3a0c2bd765596f4fb36ceb4c28c35d0a74b2e5
+        image: gcr.io/knative-releases/knative.dev/serving/cmd/activator@sha256:986b7623548a759d9736e59512f1fceee7beb3cd5c39093b95d17d77f818308a
         resources:
           requests:
             cpu: 300m
