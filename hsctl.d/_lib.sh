@@ -88,8 +88,8 @@ hsctl_infisical_call() {
 }
 
 # Resolve OIDC issuer/client ID from Infisical into HSCTL_OIDC_ISSUER_URL/HSCTL_OIDC_CLIENT_ID
-# (memoized — a no-op if both are already set). Shared by `hsctl get kubeconfig` (to build
-# the exec credential plugin config) and hsctl_oidc_username (to mint a token to decode).
+# (memoized — a no-op if both are already set). Used by `hsctl get kubeconfig` to build
+# the exec credential plugin config.
 _hsctl_resolve_oidc() {
     [[ -n "${HSCTL_OIDC_ISSUER_URL:-}" && -n "${HSCTL_OIDC_CLIENT_ID:-}" ]] && return 0
     local secrets_json
@@ -103,56 +103,6 @@ _hsctl_resolve_oidc() {
         hsctl_log_error "OIDC config at /k8s/oidc is missing OIDC_ISSUER_URL or OIDC_CLIENT_ID"
         return 1
     fi
-}
-
-# HomeScale identity (the local-part of the Entra ID `email` claim, e.g. "max" for
-# max@REDACTED) via the same kubelogin plugin `hsctl get kubeconfig core` already wires
-# up as the `core` context's k8s exec credential. Deliberately reads the issuer URL/client ID
-# straight out of the *local kubeconfig file* (`kubectl config view`, no Infisical/network
-# call) rather than re-fetching them from Infisical: only a handful of people have Infisical
-# access at all, but ~everyone running `hsctl run` already has a working `core` context (it's
-# required for -e remote to work in the first place), and those two values aren't secret —
-# they're plain OIDC discovery/client identifiers, already sitting in kubectl's own config
-# once `core` has been set up once. Then calls kubelogin with those exact same args, which
-# reuses its on-disk token cache (~/.kube/cache/oidc-login) — silent/non-interactive as long
-# as a still-valid or refreshable token is already cached, which it will be immediately after
-# _run_remote's own `kubectl ... --context core` calls warm it.
-#
-# Fails closed (silently, no Infisical login prompt, no browser flow of its own) if no `core`
-# context/exec config is present locally yet — callers have no whoami-style fallback for this;
-# see run.sh's _run_job_owner. Echoes nothing and returns 1 on any failure.
-hsctl_oidc_username() {
-    command -v kubectl &>/dev/null || return 1
-    command -v jq &>/dev/null || return 1
-
-    local exec_json issuer client_id scopes
-    exec_json=$(kubectl config view -o json 2>/dev/null | jq -c '.users[] | select(.name == "core") | .user.exec // empty') || return 1
-    [[ -z "$exec_json" ]] && return 1
-    issuer=$(jq -r '.args[] | select(startswith("--oidc-issuer-url=")) | ltrimstr("--oidc-issuer-url=")' <<< "$exec_json" 2>/dev/null)
-    client_id=$(jq -r '.args[] | select(startswith("--oidc-client-id=")) | ltrimstr("--oidc-client-id=")' <<< "$exec_json" 2>/dev/null)
-    scopes=$(jq -r '.args[] | select(startswith("--oidc-extra-scope=")) | ltrimstr("--oidc-extra-scope=")' <<< "$exec_json" 2>/dev/null)
-    [[ -z "$issuer" || -z "$client_id" ]] && return 1
-
-    # Reuses the exact same args (including scopes) as the core context's own exec config so
-    # this hits kubelogin's already-warm cache entry instead of a distinct one.
-    local cred token payload pad email
-    cred=$(kubectl oidc-login get-token \
-        --oidc-issuer-url="$issuer" \
-        --oidc-client-id="$client_id" \
-        ${scopes:+--oidc-extra-scope="$scopes"} \
-        2>/dev/null) || return 1
-    token=$(jq -r '.status.token // empty' <<< "$cred" 2>/dev/null)
-    [[ -z "$token" ]] && return 1
-
-    # id_token is a JWT: header.payload.signature, base64url — decode the payload only.
-    payload="${token#*.}"; payload="${payload%.*}"
-    payload=$(tr '_-' '/+' <<< "$payload")
-    pad=$(( (4 - ${#payload} % 4) % 4 ))
-    for ((_i = 0; _i < pad; _i++)); do payload+="="; done
-
-    email=$(base64 -d <<< "$payload" 2>/dev/null | jq -r '.email // .preferred_username // empty' 2>/dev/null)
-    [[ -z "$email" ]] && return 1
-    echo "${email%%@*}"
 }
 
 # Fetch a machine's BMC (Redfish) connection info from Infisical, at /bmc/<machine-id>.

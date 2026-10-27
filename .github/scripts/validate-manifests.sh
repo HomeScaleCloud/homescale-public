@@ -20,17 +20,14 @@ KUBERNETES_VERSION="${KUBERNETES_VERSION:-1.34.0}"
 CRD_CATALOG='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
 
 # Kinds allowed to have no schema: CustomResourceDefinition (kubeconform ships
-# none), the slinky.slurm.net CRs from apps/slurm — too new/niche for
-# datreeio's CRDs-catalog — and REDACTED's kro-generated CRDs
-# (repo-local, will never appear in a public catalog).
-NO_SCHEMA_OK=(CustomResourceDefinition Controller NodeSet RestApi Accounting LoginSet JobTemplate JobRun JobWorkflow JobWorkflowRun)
+# none), and the slinky.slurm.net CRs from apps/slurm — too new/niche for
+# datreeio's CRDs-catalog.
+NO_SCHEMA_OK=(CustomResourceDefinition Controller NodeSet RestApi Accounting LoginSet)
 
 # Kinds whose catalog schema is known wrong for the chart version we pin (revisit
 # on bump). ImageUpdater: datreeio's schema marks fields required that
-# argocd-image-updater 1.3.1's actual CRD doesn't. ResourceGraphDefinition:
-# datreeio's schema is stale for kro 0.9.4 — missing spec.schema.scope (and
-# shortNames/categories), and sets additionalProperties: false so it hard-rejects them.
-KNOWN_BAD_SCHEMA=(ImageUpdater ResourceGraphDefinition)
+# argocd-image-updater 1.3.1's actual CRD doesn't.
+KNOWN_BAD_SCHEMA=(ImageUpdater)
 
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
@@ -129,13 +126,13 @@ for cluster_dir in clusters/*/; do
     bootstrap_name="$(yq e '.metadata.name' "$apps_yaml")"
 
     # Raw `directory` sources (clusters/<cluster>/ itself, and anything else synced
-    # straight from git with no Helm rendering, e.g. infra/automatron/'s job/workflow
-    # CRs) aren't covered by the catalog/per-app render below, so conform them directly —
-    # every *.yaml/*.yml under the source path, minus anything matching its own
-    # `directory.exclude` glob (matched against the path relative to the source dir, same
-    # as ArgoCD's own directory.exclude — e.g. `ansible/**` skips a whole subtree, not just
-    # one filename; infra/automatron/ansible/ is git-cloned at runtime by automatron's own
-    # pods, not a set of Kubernetes manifests, and would otherwise fail kubeconform outright).
+    # straight from git with no Helm rendering) aren't covered by the catalog/per-app
+    # render below, so conform them directly — every *.yaml/*.yml under the source path,
+    # minus anything matching its own `directory.exclude` glob (matched against the path
+    # relative to the source dir, same as ArgoCD's own directory.exclude — e.g.
+    # clusters/<cluster>/apps.yaml excludes its own cluster.yaml, which is an Omni template,
+    # not a Kubernetes manifest, and would otherwise fail kubeconform outright; a pattern
+    # like `ansible/**` would skip a whole subtree the same way, not just one filename).
     # Scans every Application-kind manifest directly under clusters/<cluster>/, not just
     # apps.yaml — a directory-synced CR tree may deliberately live in its own independently
     # -synced Application instead of as another source on apps.yaml's (e.g. so a CRD-not-

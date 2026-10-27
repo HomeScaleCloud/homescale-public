@@ -4,12 +4,12 @@ variable "infisical_org_id" {
 }
 
 variable "infisical_github_actions" {
-  description = "Infisical machine identity ID for the \"ci\" identity (GitHub Actions OIDC + automatron's universal auth)"
+  description = "Infisical machine identity ID for the \"ci\" identity (GitHub Actions OIDC + local-bootstrap universal auth)"
   type        = string
 }
 
 variable "infisical_auth_method" {
-  description = "Which Infisical provider auth method this run uses — \"oidc\" (CI, default) or \"universal\" (automatron)"
+  description = "Which Infisical provider auth method this run uses — \"oidc\" (CI, default) or \"universal\" (hsctl run terraform -e local)"
   type        = string
   default     = "oidc"
   validation {

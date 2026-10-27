@@ -1,9 +1,0 @@
-apiVersion: v2
-name: kro
-description: Helm chart for kro (Kube Resource Orchestrator)
-type: application
-version: 0.1.0
-dependencies:
-  - name: kro
-    version: 0.9.4
-    repository: oci://registry.k8s.io/kro/charts

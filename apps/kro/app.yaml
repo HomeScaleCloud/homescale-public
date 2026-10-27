@@ -1,5 +1,0 @@
-path: apps/kro
-namespace: kro
-releaseName: kro
-syncWave: -25
-defaultDeploy: false

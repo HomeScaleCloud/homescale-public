@@ -1,9 +1,0 @@
-apiVersion: REDACTED/v1alpha1
-kind: JobTemplate
-metadata:
-  name: terraform
-spec:
-  scriptPath: terraform.sh
-  scriptInterpreter: bash
-  schedule: "*/15 * * * *"
-  locking: true

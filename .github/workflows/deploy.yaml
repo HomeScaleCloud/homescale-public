@@ -14,71 +14,92 @@ on:
         required: true
       INFISICAL_PROJECT_ID:
         required: true
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "'terraform', 'omni-sync', 'bootstrap-core', 'bootstrap-cluster', or any other ansible playbook filename under infra/ansible/playbooks/ (without .yml)"
+        type: string
+        required: true
+      cluster:
+        description: "Cluster to target — bootstrap-cluster's -e target=<cluster>, or a single cluster to sync for omni-sync (leave empty for all clusters)"
+        type: string
+        required: false
+      machineclasses:
+        description: "Comma-separated machine class names to sync (omni-sync only; leave empty for all)"
+        type: string
+        required: false
+      dry_run:
+        description: "Plan/--dry-run only — terraform and omni-sync only, ignored by ansible playbooks"
+        type: boolean
+        required: false
+        default: false
+      extra_args:
+        description: "Extra ansible -e key=value pairs, space-separated (any ansible playbook other than bootstrap-core/bootstrap-cluster)"
+        type: string
+        required: false
+
+concurrency:
+  group: deploy
 
 jobs:
   terraform:
     name: "Terraform"
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'terraform' || null }}
+    if: github.event_name != 'workflow_dispatch' || inputs.job == 'terraform'
+    environment: ${{ (github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch') && 'terraform' || null }}
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_VAR_infisical_github_actions: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+      TF_VAR_infisical_org_id: ${{ secrets.INFISICAL_ORG_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-
-      # Both the PR-time plan and the merge-time apply dispatch to automatron in core
-      # rather than running terraform directly on this runner — this job only ever needs a
-      # core kubectl context (CORE_KUBECONFIG), not Omni/Cloudflare/Infisical network
-      # access itself (automatron already has that sorted).
-      - name: Import core kubeconfig
+      - name: Import Secrets
         uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
         with:
           method: "oidc"
           identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
           env-slug: "prod"
           project-slug: "homescale"
-          secret-path: "/k8s/automatron"
+          secret-path: "/ci"
           export-type: env
-
-      - name: Install kubectl
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4
+      - name: Install yq
+        env:
+          YQ_VERSION: "4.47.1"
         run: |
-          curl -fsSL -o /usr/local/bin/kubectl \
-            "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          sudo chmod +x /usr/local/bin/kubectl
+          sudo curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64"
+          sudo chmod +x /usr/local/bin/yq
+      - name: Request OIDC Token
+        run: |
+          TOKEN=$(curl -s \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL" \
+            | jq -r '.value')
+          echo "::add-mask::$TOKEN"
+          echo "INFISICAL_AUTH_JWT=$TOKEN" >> "$GITHUB_ENV"
 
-      - name: Build core kubeconfig context
-        run: | # pragma: allowlist secret
-          set -euo pipefail
-          echo "$CORE_KUBECONFIG" > /tmp/core-kubeconfig
-          export KUBECONFIG=/tmp/core-kubeconfig
-          kubectl config rename-context "$(kubectl config current-context)" core
-          echo "KUBECONFIG=/tmp/core-kubeconfig" >> "$GITHUB_ENV"
-
-      # --git-ref is what makes this a correct plan of *this PR's* changes rather than
-      # main's current content — automatron's git-clone otherwise always checks out main.
-      - name: Plan via automatron
-        if: github.event_name == 'pull_request'
+      - name: Plan
         id: plan
         continue-on-error: true
         env:
-          HSCTL_JOB_OWNER: ci
+          DRY_RUN: "true"
+          CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
         run: |
-          set -euo pipefail
-          chmod +x hsctl
-          ./hsctl run terraform --dry-run -e remote --git-ref "${{ github.head_ref }}" \
-              | tee /tmp/tf-plan-output.txt
-
-      # infra/automatron/scripts/terraform.sh prints the rendered Tailnet ACL between
-      # "=== BEGIN/END ACL_JSON ===" markers (only reachable in dry-run mode) - split that
-      # back out and strip it from the plan text shown in the PR comment/job summary,
-      # since it's redundant there once uploaded as its own artifact below.
+          if ./infra/terraform/plan-apply.sh > /tmp/tf-plan.txt 2>&1; then
+            echo "PLAN_STATUS=success" >> "$GITHUB_ENV"
+          else
+            echo "PLAN_STATUS=failed" >> "$GITHUB_ENV"
+            exit 1
+          fi
       - name: Extract rendered Tailnet ACL
         id: tailnet_acl
         if: steps.plan.outcome == 'success'
         run: |
-          set -euo pipefail
-          RAW=$(sed -n '/=== BEGIN ACL_JSON ===/,/=== END ACL_JSON ===/p' /tmp/tf-plan-output.txt \
-              | sed '1d;$d')
-          sed -i '/=== BEGIN ACL_JSON ===/,/=== END ACL_JSON ===/d' /tmp/tf-plan-output.txt
+          terraform -chdir=infra/terraform show -json /tmp/tfplan > /tmp/tfplan.json
+          RAW=$(jq -r '.resource_changes[]? | select(.address == "module.tailscale.tailscale_acl.this") | .change.after.acl // empty' /tmp/tfplan.json)
           if [ -n "$RAW" ]; then
             echo "$RAW" | jq '.' > /tmp/tailnet-acl.json
             echo "ACL_RENDERED=true" >> "$GITHUB_ENV"
@@ -117,12 +138,12 @@ jobs:
       - name: Write plan to job summary
         if: always() && steps.plan.outcome != 'skipped'
         run: |
-          icon=$([[ "${{ steps.plan.outcome }}" == "success" ]] && echo "✅" || echo "❌")
+          icon=$([[ "${PLAN_STATUS:-}" == "success" ]] && echo "✅" || echo "❌")
           {
             echo "## ${icon} Terraform Plan"
             echo ""
             echo '```'
-            cat /tmp/tf-plan-output.txt 2>/dev/null || echo "(no output)"
+            cat /tmp/tf-plan.txt 2>/dev/null || echo "(no output)"
             echo '```'
             echo ""
             echo "> commit \`${{ github.sha }}\`"
@@ -158,9 +179,9 @@ jobs:
               }
             }
 
-            const ok = '${{ steps.plan.outcome }}' === 'success';
-            const output = fs.existsSync('/tmp/tf-plan-output.txt')
-              ? fs.readFileSync('/tmp/tf-plan-output.txt', 'utf8').trim()
+            const ok = process.env.PLAN_STATUS === 'success';
+            const output = fs.existsSync('/tmp/tf-plan.txt')
+              ? fs.readFileSync('/tmp/tf-plan.txt', 'utf8').trim()
               : '(no output)';
             const icon = ok ? '✅' : '❌';
             const marker = '<!-- terraform-plan -->';
@@ -197,19 +218,17 @@ jobs:
         run: |
           echo "Terraform plan failed. See job summary for details."
           exit 1
-
-      - name: Sync via automatron
-        if: github.ref == 'refs/heads/main'
+      - name: Apply
+        if: (github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch') || (github.event_name == 'workflow_dispatch' && inputs.job == 'terraform' && inputs.dry_run != true)
         env:
-          HSCTL_JOB_OWNER: ci
-        run: |
-          chmod +x hsctl
-          ./hsctl run terraform -e remote
+          CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
+        run: ./infra/terraform/plan-apply.sh
 
   omni:
     name: "Omni"
     runs-on: ubuntu-latest
     needs: [terraform]
+    if: always() && (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') && (github.event_name != 'workflow_dispatch' || inputs.job == 'omni-sync')
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -219,9 +238,37 @@ jobs:
       - name: Detect changed clusters
         id: detect
         shell: bash
+        env:
+          INPUT_CLUSTER: ${{ inputs.cluster }}
+          INPUT_MACHINECLASSES: ${{ inputs.machineclasses }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Empty input means "all" here (per the job input's own description) — same
+            # full-discovery fallback the plain-push branch below uses, not "none".
+            if [ -n "$INPUT_CLUSTER" ]; then
+              clusters=$(jq -nc --arg c "$INPUT_CLUSTER" '[$c]')
+            else
+              clusters=$(
+                find clusters -mindepth 2 -maxdepth 2 -name 'cluster.yaml' \
+                  | cut -d/ -f2 \
+                  | sort -u \
+                  | jq -Rsc 'split("\n") | map(select(length > 0))'
+              )
+            fi
+            if [ -n "$INPUT_MACHINECLASSES" ]; then
+              machineclasses=$(jq -nc --arg m "$INPUT_MACHINECLASSES" '$m | split(",")')
+            else
+              machineclasses=$(
+                { if [ -d infra/omni/machineclasses ]; then find infra/omni/machineclasses -maxdepth 1 -name '*.yaml'; fi; } \
+                  | sed 's|.*/||; s|\.yaml$||' \
+                  | sort -u \
+                  | jq -Rsc 'split("\n") | map(select(length > 0))'
+              )
+            fi
+            deleted_clusters='[]'
+            deleted_machineclasses='[]'
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
             # No --depth: a shallow fetch would sever the merge-base the triple-dot diff below needs.
             git fetch --no-tags origin "${{ github.base_ref }}"
             range="origin/${{ github.base_ref }}...${{ github.sha }}"
@@ -280,11 +327,7 @@ jobs:
           echo "deleted_machineclasses=${deleted_machineclasses}" >> "$GITHUB_OUTPUT"
           echo "Deleted machine classes detected: ${deleted_machineclasses}"
 
-      # Both the PR-time plan and the merge-time sync dispatch to automatron in core rather
-      # than running omnictl directly on this runner — automatron already has Omni
-      # reachability sorted (in-cluster hostAliases, Infisical-backed service account key),
-      # so this job only ever needs core cluster access, never Omni network access itself.
-      - name: Import core kubeconfig
+      - name: Import Secrets
         if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
         uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
         with:
@@ -292,51 +335,57 @@ jobs:
           identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
           env-slug: "prod"
           project-slug: "homescale"
-          secret-path: "/k8s/automatron"
+          secret-path: "/ci"
           export-type: env
 
-      - name: Install kubectl
+      - name: Connect to Tailscale
+        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
+        uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd  # v4.2.0
+        with:
+          oauth-client-id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ env.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tags: tag:github-actions
+
+      - name: Check Omni reachability
+        id: omni_check
         if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
         run: |
-          curl -fsSL -o /usr/local/bin/kubectl \
-            "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          sudo chmod +x /usr/local/bin/kubectl
+          if curl -sf --max-time 10 https://REDACTED/healthz > /dev/null 2>&1; then
+            echo "reachable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Omni unreachable — skipping sync"
+            echo "reachable=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Build core kubeconfig context
-        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
-        run: | # pragma: allowlist secret
-          set -euo pipefail
-          echo "$CORE_KUBECONFIG" > /tmp/core-kubeconfig
-          export KUBECONFIG=/tmp/core-kubeconfig
-          kubectl config rename-context "$(kubectl config current-context)" core
-          echo "KUBECONFIG=/tmp/core-kubeconfig" >> "$GITHUB_ENV"
+      - name: Install omnictl
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
+        run: |
+          sudo curl -fsSL -o /usr/local/bin/omnictl \
+            https://REDACTED/api/omnictl/omnictl-linux-amd64
+          sudo chmod +x /usr/local/bin/omnictl
 
-      # A key present-but-empty in --arg (e.g. --arg clusters=) means "none of this kind" to
-      # omni-sync.sh, distinct from the key being absent entirely ("everything" — what the
-      # merge-time Sync step below wants). github.head_ref is the PR's own branch, so the
-      # plan reflects this PR's actual changes, not main's current content.
-      - name: Plan via automatron
-        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && github.event_name == 'pull_request'
+      - name: Plan
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.event_name == 'pull_request'
         id: plan
         continue-on-error: true
         env:
-          HSCTL_JOB_OWNER: ci
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
+          DRY_RUN: "true"
         run: |
-          set -euo pipefail
-          chmod +x hsctl
-          clusters_csv=$(echo "$CLUSTERS" | jq -r 'join(",")')
-          machineclasses_csv=$(echo "$MACHINECLASSES" | jq -r 'join(",")')
-          ./hsctl run omni-sync --dry-run -e remote --git-ref "${{ github.head_ref }}" \
-              --arg "clusters=$clusters_csv" --arg "machineclasses=$machineclasses_csv" \
-              | tee /tmp/omni-plan-output.txt
+          set -o pipefail
+          CLUSTERS="$(echo "$CLUSTERS" | jq -r 'join(",")')" \
+          MACHINECLASSES="$(echo "$MACHINECLASSES" | jq -r 'join(",")')" \
+            ./infra/omni/sync.sh | tee /tmp/omni-plan-output.txt
 
-      - name: Sync via automatron
-        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && github.ref == 'refs/heads/main'
+      - name: Sync
+        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && ((github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.job == 'omni-sync'))
         env:
-          HSCTL_JOB_OWNER: ci
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
+          DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) || false }}
         run: |
-          chmod +x hsctl
-          ./hsctl run omni-sync-and-bootstrap -e remote
+          CLUSTERS="$(echo "$CLUSTERS" | jq -r 'join(",")')" \
+          MACHINECLASSES="$(echo "$MACHINECLASSES" | jq -r 'join(",")')" \
+            ./infra/omni/sync.sh
 
       - name: Post plan results as PR comments
         if: always() && github.event_name == 'pull_request' && steps.detect.outcome == 'success' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]' || steps.detect.outputs.deleted_clusters != '[]' || steps.detect.outputs.deleted_machineclasses != '[]')
@@ -350,8 +399,8 @@ jobs:
           script: |
             const fs = require('fs');
 
-            // omni-sync.sh prints "=== BEGIN/END <KIND> <name> ===" around each item's own
-            // output in the one combined pod log hsctl streamed — split that back into
+            // sync.sh prints "=== BEGIN/END <KIND> <name> ===" around each item's own
+            // output in the one combined log this job captured — split that back into
             // per-item results here rather than reading a separate file per item.
             const fullOutput = fs.existsSync('/tmp/omni-plan-output.txt')
               ? fs.readFileSync('/tmp/omni-plan-output.txt', 'utf8')
@@ -468,3 +517,109 @@ jobs:
         run: |
           echo "One or more cluster template plans failed. See PR comments for details."
           exit 1
+
+  ansible:
+    name: "Ansible"
+    runs-on: ubuntu-latest
+    needs: [omni]
+    if: always() && (needs.omni.result == 'success' || needs.omni.result == 'skipped') && github.event_name == 'workflow_dispatch' && inputs.job != 'terraform' && inputs.job != 'omni-sync'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Import Secrets
+        uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
+        with:
+          method: "oidc"
+          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          env-slug: "prod"
+          project-slug: "homescale"
+          secret-path: "/ci"
+          export-type: env
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd  # v4.2.0
+        with:
+          oauth-client-id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ env.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tags: tag:github-actions
+
+      - name: Request OIDC Token
+        run: |
+          TOKEN=$(curl -s \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL" \
+            | jq -r '.value')
+          echo "::add-mask::$TOKEN"
+          echo "INFISICAL_AUTH_JWT=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Install hsctl
+        run: |
+          chmod +x hsctl
+          echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
+
+      - name: Install Helm
+        run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Install Ansible
+        run: pip install ansible kubernetes infisicalsdk==1.0.17
+
+      - name: Install Ansible collections
+        working-directory: infra/ansible
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Run core cluster bootstrap playbook
+        if: inputs.job == 'bootstrap-core'
+        working-directory: infra/ansible
+        env:
+          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+        run: ansible-playbook playbooks/bootstrap-core.yml -e cluster_name=core
+
+      - name: Install omnictl
+        if: inputs.job == 'bootstrap-cluster'
+        run: |
+          sudo curl -fsSL -o /usr/local/bin/omnictl \
+            https://REDACTED/api/omnictl/omnictl-linux-amd64
+          sudo chmod +x /usr/local/bin/omnictl
+
+      - name: Run cluster bootstrap playbook
+        if: inputs.job == 'bootstrap-cluster'
+        working-directory: infra/ansible
+        env:
+          OMNI_ENDPOINT: https://REDACTED
+          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
+          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+          CLUSTER: ${{ inputs.cluster }}
+        run: |
+          if [ -n "$CLUSTER" ]; then
+            ansible-playbook playbooks/bootstrap-cluster.yml -e target="$CLUSTER"
+          else
+            ansible-playbook playbooks/bootstrap-cluster.yml
+          fi
+
+      # Fallback for any playbook under infra/ansible/playbooks/ other than the two above —
+      # e.g. one-off or future playbooks run via `hsctl run <name> -e remote`.
+      - name: Run playbook
+        if: inputs.job != 'bootstrap-core' && inputs.job != 'bootstrap-cluster'
+        working-directory: infra/ansible
+        env:
+          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+          PLAYBOOK: ${{ inputs.job }}
+          CLUSTER: ${{ inputs.cluster }}
+          EXTRA_ARGS: ${{ inputs.extra_args }}
+        run: |
+          extra_e_args=()
+          if [ -n "$EXTRA_ARGS" ]; then
+            read -r -a _kvs <<< "$EXTRA_ARGS"
+            for kv in "${_kvs[@]}"; do
+              extra_e_args+=(-e "$kv")
+            done
+          fi
+          if [ -n "$CLUSTER" ]; then
+            ansible-playbook "playbooks/$PLAYBOOK.yml" -e target="$CLUSTER" "${extra_e_args[@]}"
+          else
+            ansible-playbook "playbooks/$PLAYBOOK.yml" "${extra_e_args[@]}"
+          fi

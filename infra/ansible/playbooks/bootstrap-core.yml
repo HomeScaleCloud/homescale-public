@@ -18,16 +18,16 @@
       kubeconfig: "{{ kubeconfig_path }}"
 
   pre_tasks:
-    # Automatron reuses the k8s Infisical Operator's identity rather than a
-    # dedicated one (machine identities are billed per-identity). `hsctl run`
-    # (local) has no such credential, so it pre-fetches secrets itself and
-    # passes them in as hsctl_local_secrets, skipping these tasks entirely.
+    # CI authenticates via GitHub Actions OIDC (INFISICAL_IDENTITY_ID/INFISICAL_AUTH_JWT).
+    # `hsctl run` (local) has no such JWT to present, so it pre-fetches the same secrets
+    # itself via the already-logged-in `infisical` CLI and passes them in as
+    # hsctl_local_secrets, skipping these two tasks entirely.
     - name: Login to Infisical
       infisical.vault.login:
         url: "{{ infisical_url }}"
-        auth_method: universal_auth
-        universal_auth_client_id: "{{ lookup('env', 'INFISICAL_OPERATOR_CLIENT_ID') }}"
-        universal_auth_client_secret: "{{ lookup('env', 'INFISICAL_OPERATOR_CLIENT_SECRET') }}"
+        auth_method: oidc_auth
+        identity_id: "{{ lookup('env', 'INFISICAL_IDENTITY_ID') }}"
+        jwt: "{{ lookup('env', 'INFISICAL_AUTH_JWT') }}"
       register: _infisical
       no_log: true
       when: not (hsctl_local | default(false))
@@ -37,22 +37,28 @@
         login_data: "{{ _infisical.login_data }}"
         project_id: "{{ infisical_project_id }}"
         env_slug: "{{ infisical_env_slug }}"
-        path: /k8s/automatron
+        path: /ci
         as_dict: true
-      register: _core_kubeconfig_secrets
+      register: _ci_secrets
       no_log: true
       when: not (hsctl_local | default(false))
 
     - name: Use cluster kubeconfig fetched locally via the infisical CLI
       ansible.builtin.set_fact:
-        _core_kubeconfig_secrets:
-          secrets: "{{ hsctl_local_secrets.core_kubeconfig }}"
+        _ci_secrets:
+          secrets: "{{ hsctl_local_secrets.ci }}"
       no_log: true
       when: hsctl_local | default(false)
 
+    - name: Skip if kubeconfig not yet available
+      when: >
+        _ci_secrets.secrets[kubeconfig_secret_key] is not defined
+        or not _ci_secrets.secrets[kubeconfig_secret_key]
+      ansible.builtin.meta: end_play
+
     - name: Write kubeconfig
       ansible.builtin.copy:
-        content: "{{ _core_kubeconfig_secrets.secrets[kubeconfig_secret_key] }}"
+        content: "{{ _ci_secrets.secrets[kubeconfig_secret_key] }}"
         dest: "{{ kubeconfig_path }}"
         mode: "0600"
       no_log: true

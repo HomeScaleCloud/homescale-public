@@ -74,7 +74,7 @@ Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS conf
 |------|-------------|
 | `clusters/` | Cluster definitions and bootstrap app-of-apps |
 | `infra/omni/` | Talos machine config patches |
-| `infra/automatron/ansible/` | Bootstrap playbooks |
+| `infra/ansible/` | Bootstrap playbooks |
 | `apps/omni/` | Omni control plane |
 
 ### Infrastructure (Terraform)

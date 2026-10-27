@@ -122,7 +122,7 @@ Talos clusters have their node config, k8s version, and machine assignments mana
 | -40 | `cilium` | CNI must be ready before any other pod can schedule |
 | -35 | `infisical`, `multus` | Secrets operator must be ready so other apps can pull secrets; Multus for multi-homed pods |
 | -30 | `cert-manager`, `argocd`, `rbac` | TLS, GitOps and access control |
-| -25 | `generic-device-plugin-tun`, `node-inotify-limits`, `kro` | Node resource registration and sysctl tuning before consumers; kro's CRDs must exist before automatron's JobTemplate/JobRun/JobWorkflow/JobWorkflowRun instances |
+| -25 | `generic-device-plugin-tun`, `node-inotify-limits` | Node resource registration and sysctl tuning before consumers |
 | -20 | `tailscale`, `spegel` | Mesh access and network routing before services need them |
 | -10 | `external-dns`, `kubelet-serving-cert-approver` | DNS registration before apps |
 | -5 | `volsync` | Backup operator ready before app PVCs need it |
@@ -152,51 +152,30 @@ Runs on every PR and push:
 
 ### `deploy` — infrastructure and cluster sync
 
-Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. It has two sequential jobs — `terraform` → `omni`. Neither joins the tailnet, and neither runs its own tool (`terraform`/`omnictl`) directly on the runner anymore — both dispatch to automatron in `core` (a `core` kubectl context via `CORE_KUBECONFIG` is all either job needs), which already has Cloudflare/Vultr/Infisical/Omni access sorted.
+Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. Three jobs — `terraform` → `omni` → `ansible` — run their own tool (`terraform`/`omnictl`/`ansible-playbook`) directly on the runner.
 
 #### 1. `terraform`
 
-Manages Cloudflare DNS, Vultr, Infisical project structure, Tailscale ACL and tags, VolSync secret paths, etc — the single shared `infra/terraform` workspace (state in Terraform Cloud), unconditionally, no changed-file detection (unlike `omni` below, almost any change could be terraform-relevant).
+Manages Cloudflare DNS, Vultr, Infisical project structure, Tailscale ACL and tags, VolSync secret paths, etc — the single shared `infra/terraform` workspace (state in Terraform Cloud), unconditionally, no changed-file detection (unlike `omni` below, almost any change could be terraform-relevant). Authenticates to Infisical via GitHub OIDC — no Tailscale needed, everything it talks to (Cloudflare, Terraform Cloud, Infisical, Vultr) is a public API.
 
-- **On PR**: runs `./hsctl run terraform --dry-run -e remote --git-ref <this-PR's-branch>` and posts the plan as a PR comment; the rendered Tailnet ACL (if changed) is still extracted and uploaded as an artifact + topology map, now parsed from a marker block in the streamed output rather than a file `terraform show -json` wrote locally
-- **On merge to `main`**: runs `./hsctl run terraform -e remote` (gated by a GitHub Environment) — a real `terraform apply`, executed on automatron
+- **On PR**: plans (`infra/terraform/plan-apply.sh`, `DRY_RUN=true`) and posts the plan as a PR comment; the rendered Tailnet ACL (if changed) is extracted from the plan's JSON and uploaded as an artifact + topology map.
+- **On merge to `main`**: applies (gated by a GitHub Environment).
 
-`hsctl run terraform --cluster <name>` scopes a run to just that cluster's own resources (Cloudflare tunnel, DNS records, VolSync secrets, etc) — computed from an untargeted plan's own JSON output so it still catches not-yet-created resources, not from `terraform state list`. Automatron also runs `terraform` on its own schedule (every 15 minutes) for continuous reconciliation without relying on a CI push; a Lease-based lock (see CLAUDE.md's Automatron section) makes scheduled and ad hoc runs queue instead of racing on the shared state.
+`infra/terraform/plan-apply.sh` optionally takes a `CLUSTER` env var to scope the plan/apply to just that cluster's own resources (Cloudflare tunnel, DNS records, VolSync secrets, etc) — computed from an untargeted plan's own JSON output so it still catches not-yet-created resources, not from `terraform state list`. `hsctl run terraform --cluster <name>` (either execution mode) uses this.
 
 #### 2. `omni` (after terraform)
 
-Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files. Both the PR-time plan and the merge-time sync dispatch to automatron in `core` rather than running `omnictl` on the runner directly — this job only ever needs a `core` kubectl context (`CORE_KUBECONFIG`), never Omni network access itself, and no longer joins Tailscale for anything.
+Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files, via `infra/omni/sync.sh`. Joins the tailnet as an ephemeral `tailscale/github-action` node (`tag:github-actions`) to reach Omni directly.
 
-- **On PR**: runs `./hsctl run omni-sync --dry-run -e remote --git-ref <this-PR's-branch> --arg clusters=<changed> --arg machineclasses=<changed>` and posts the result as PR comments, split back into today's per-cluster/per-machineclass comments by parsing markers the script prints around each item's output. `--git-ref` is what makes this correct — without it, a dispatched run would clone and plan against `main`'s current content, not the PR's actual changes.
-- **On merge to `main`**: builds a `core` kubectl context from `CORE_KUBECONFIG` and runs `./hsctl run omni-sync-and-bootstrap -e remote` — the actual sync and bootstrap happen on automatron (see below), with both steps' logs streamed into this job's log in turn
+- **On PR**: plans (`DRY_RUN=true`) and posts the result as PR comments, split into per-cluster/per-machineclass comments by parsing `=== BEGIN/END <KIND> <name> ===` markers `sync.sh` prints around each item's output.
+- **On merge to `main`**: syncs every detected cluster/machine class.
 
 Shared Talos patches from `infra/omni/patches/` are applied alongside each cluster template.
 
-Ansible cluster bootstrap (`bootstrap-core.yml`/`bootstrap-cluster.yml`) no longer runs here at all — see [Automatron](#automatron--kro-backed-job-runner) below.
+#### 3. `ansible` (after omni)
 
----
+Only runs on `workflow_dispatch` (manual trigger, or the default dispatch path for `hsctl run <name> -e remote` — see [Operations → hsctl](../operations/hsctl.md)). Also joins the tailnet (`bootstrap-cluster` fetches its target cluster's kubeconfig from Omni). Runs whichever of `bootstrap-core`, `bootstrap-cluster`, or any other `infra/ansible/playbooks/*.yml` the dispatch requested.
 
-## Automatron — kro-backed job runner
-
-`apps/automatron` is a Kubernetes-native runner deployed to `core` that replaced the old GitHub Actions `ansible` job and the state-changing half of the `omni` job. What it runs — a playbook from `infra/automatron/ansible/playbooks/`, or an arbitrary script — is defined by four CRDs rather than hand-written CronJobs, backed by [kro](https://kro.run) (`apps/kro`):
-
-- **`JobTemplate`** — one playbook or script, optionally scheduled (kro creates a `CronJob` when it is).
-- **`JobRun`** — a one-off instance of a `JobTemplate`; the only path a one-off `Job` is ever created through, whether committed, triggered ad hoc via `hsctl`, or created as one step of a workflow run.
-- **`JobWorkflow`** — the committable template for an ordered list of `JobTemplate` steps (each with optional per-step `args`/`dryRun` overrides — `args` is a free-form key-value map, not just a cluster target), optionally scheduled.
-- **`JobWorkflowRun`** — one execution of a workflow, tracking every step's progress (status, which `Job`, current phase) in a single object instead of scattered `JobRun`s.
-
-A workflow walks one step at a time — automatron creates each next `JobRun` itself on success — rather than kro managing the whole sequence up front (kro's dependency graph can't express "wait for a Job to finish, then create another resource" across a variable-length list).
-
-Instances live under `infra/automatron/` (`job-templates/`, `job-workflows/`, `job-runs/`, `scripts/`), synced by their own standalone ArgoCD Application (independent of the rest of `core`'s bootstrap, so a not-yet-registered CRD can't block anything else's sync) — no Helm chart to edit to add a new job. The default set migrated from the old setup: `omni-sync`, `bootstrap-cluster`, `bootstrap-core` templates (none scheduled on their own), plus an `omni-sync-and-bootstrap` workflow (runs the first two, every 15 minutes).
-
-Each run: a `git-key-prep` initContainer (root, to read the mounted deploy key) preps it for a non-root `git-clone` to check out `main`, then the `automatron` container (also non-root) runs the playbook or script. No Tailscale anywhere — Omni lives in the same `core` cluster, so automatron reaches it entirely in-cluster via `hostAliases` pointing the usual `REDACTED` hostnames at Omni's real ClusterIPs.
-
-All of automatron's own credentials (Infisical login, git deploy key, and Omni access, all reused from existing identities rather than newly minted — see CLAUDE.md for the full breakdown) live under Infisical folder `/k8s/automatron`.
-
-Ad hoc runs: `hsctl run <name> [--chain <name>[,...]] -e remote [--dry-run] [--arg key=value]... [--cluster <name>]` applies a `JobRun` (for a `JobTemplate`) or a `JobWorkflowRun` (for a `JobWorkflow`, or an ad hoc `--chain`) and streams every step's logs in turn — see `hsctl run` and "Automatron job CRDs" in [Operations → hsctl](../operations/hsctl.md).
-
-Every `Job`/`JobRun`/`JobWorkflowRun` is named after the `JobTemplate` it's actually running and labeled `REDACTED/job-owner` (the triggering identity, `ci`, or `schedule`); finished `Job`s self-delete after a TTL, and `JobRun`/`JobWorkflowRun` CRs (run history), plus any ad hoc `JobWorkflow` from `--chain`, are pruned after 14 days by a built-in `CronJob` — a committed `JobWorkflow` is untouched. Your own identity is your OIDC email's local part (read from the `core` kubectl context already on disk, no Infisical needed), never your local username — there's no `whoami` fallback, `hsctl run` fails outright if it can't determine who you are. A Kyverno `ValidatingPolicy` (`apps/kyverno`) checks `jobOwner` at admission time so it can't be spoofed — see CLAUDE.md.
-
----
+`workflow_dispatch` can also force an on-demand `terraform`/`omni-sync` run outside the normal push/PR trigger (`inputs.job == 'terraform'`/`'omni-sync'`) — this is what `hsctl run terraform|omni-sync -e remote` dispatches to.
 
 ArgoCD picks up any Git changes and reconciles cluster state automatically — no deploy step is needed for app-only changes.

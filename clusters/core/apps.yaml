@@ -21,8 +21,6 @@ spec:
           cluster:
             name: core
           apps:
-            automatron:
-              deploy: true
             cilium:
               deploy: false
             cloudflared:
@@ -31,8 +29,6 @@ spec:
                 cluster:
                   name: core
             headlamp:
-              deploy: true
-            kro:
               deploy: true
             multus:
               deploy: false

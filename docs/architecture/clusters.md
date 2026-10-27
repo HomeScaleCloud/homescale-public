@@ -96,7 +96,7 @@ Machines must be registered with Omni before they can be claimed here — see [R
        values:
          someKey: clusterSpecificValue
    ```
-4. **Merge to `main`** — CI runs the Omni template sync. Within 15 minutes, automatron's `bootstrap-cluster.yml` CronJob run picks up the new cluster automatically (or run it immediately with `hsctl run bootstrap-cluster --cluster <name> -e remote`). The bootstrap playbook applies `apps.yaml` to the new cluster and seeds critical credentials (Infisical machine identities, kubeconfig, etc.) that apps depend on at startup.
+4. **Merge to `main`** — CI runs the Omni template sync. Then run the cluster bootstrap playbook — `hsctl run bootstrap-cluster --cluster <name> -e remote` (dispatches `deploy.yaml`'s `ansible` job) — which applies `apps.yaml` to the new cluster and seeds critical credentials (Infisical machine identities, kubeconfig, etc.) that apps depend on at startup.
 
 5. **ArgoCD takes over** — it syncs the app catalog and deploys all enabled apps in sync-wave order
 
@@ -110,7 +110,7 @@ Omni handles the upgrade sequence — control plane nodes first, then workers �
 
 Cloud resources (Cloudflare DNS, Vultr, Infisical project setup, Tailscale configuration, core cluster provisioning) live in `infra/terraform/`. State is in [Terraform Cloud](https://developer.hashicorp.com/terraform/cloud-docs) (`homescale` org, `homescale` workspace).
 
-Terraform runs only in CI — it uses GitHub OIDC for Infisical auth and cannot be run locally. On merge to `main`, CI runs `terraform apply` automatically (after `scan` and `build` pass). On PRs, CI runs `terraform plan` and posts the plan as a PR comment.
+CI authenticates to Infisical via GitHub OIDC. On merge to `main`, CI runs `terraform apply` automatically (after `scan` and `build` pass). On PRs, CI runs `terraform plan` and posts the plan as a PR comment. A human can also run Terraform directly via `hsctl run terraform -e local` (Infisical universal auth instead of GitHub OIDC) — the only way to bootstrap infra, including the `core` cluster itself, before CI/Tailscale can reach anything.
 
 To format Terraform files locally:
 

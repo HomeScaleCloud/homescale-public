@@ -2,8 +2,8 @@
 # hsctl get — query Omni/cluster resources
 #
 # Output format: controlled by -o flag (table, yaml, json, ansible); default is table.
-# `ansible` is only meaningful for `clusters`/`machines` — see infra/automatron/ansible/
-# inventory/'s clusters/machines wrapper scripts, which call `hsctl get <resource> -o
+# `ansible` is only meaningful for `clusters`/`machines` — see infra/ansible/inventory/'s
+# clusters/machines wrapper scripts, which call `hsctl get <resource> -o
 # ansible` as Ansible dynamic inventory sources (replaced a standalone omni.py that
 # duplicated this same Omni-querying logic).
 # HSCTL_OUTPUT is set by get_main and read by all subcommand handlers
@@ -251,11 +251,12 @@ spec:
 # `hosts: "{{ target | default('clusters') }}"` loops over this, with
 # ansible_connection: local and omni_cluster_name: "{{ inventory_hostname }}"
 # (inventory/group_vars/clusters.yml) doing the rest per "host". Deliberately its own early
-# return, not a branch of the table/yaml/json case below: that path's per-cluster
-# `k8s.api.<cluster>REDACTED/version` probe needs Tailscale, which automatron
-# (the only real caller of this mode) doesn't have — see CLAUDE.md's Automatron section —
-# and inventory names alone don't need that data anyway. `_meta.hostvars` is present (even
-# empty) so Ansible's script inventory plugin doesn't fall back to a --host call per host.
+# return, not a branch of the table/yaml/json case below: inventory names alone don't need
+# that path's per-cluster `k8s.api.<cluster>REDACTED/version` probe, so skip it
+# regardless of whether the caller (CI's `ansible` job, or a human running `hsctl run
+# bootstrap-cluster -e local`) currently has Tailscale reachability. `_meta.hostvars` is
+# present (even empty) so Ansible's script inventory plugin doesn't fall back to a --host
+# call per host.
 _get_clusters_ansible() {
     local names_json
     # [.metadata.id] | @tsv, not a bare .metadata.id — yq's per-document scalar output

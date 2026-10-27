@@ -1,33 +1,37 @@
 #!/usr/bin/env bash
-# Syncs cluster templates and machine classes into Omni via omnictl.
+# Syncs cluster templates and machine classes into Omni via omnictl. Used directly by CI
+# (.github/workflows/deploy.yaml's omni job) and by `hsctl run omni-sync -e local`.
 #
-# args (ARGS_JSON): clusters/machineclasses, each a comma-separated list of names. Key
-# absent means "everything" (the default/merge-time behavior); key present but empty means
-# "none" — deploy.yaml's PR-time plan step needs that distinction (e.g. only a machineclass
-# changed, zero clusters to plan).
+# Env vars:
+#   CLUSTERS        - comma-separated cluster names to sync. Unset means "everything";
+#                      set-but-empty means "none of these" — CI's PR-time plan needs that
+#                      distinction (e.g. only a machine class changed, zero clusters to plan).
+#   MACHINECLASSES   - same convention, for infra/omni/machineclasses/*.yaml
+#   DRY_RUN          - "true" adds --dry-run to every omnictl call (default: "false")
+#   REPO_DIR         - repo root (default: ".")
+#   OMNI_ENDPOINT    - default: https://REDACTED
 #
-# Prints "=== BEGIN/END <KIND> <name> ===" around each item's output so a caller reading
-# the combined pod log can split it back into per-item results (see deploy.yaml).
+# Prints "=== BEGIN/END <KIND> <name> ===" around each item's output so a caller (CI's
+# PR-comment step) can split the combined log back into per-item results.
 set -euo pipefail
 
 export OMNI_ENDPOINT="${OMNI_ENDPOINT:-https://REDACTED}"
 repo_root="${REPO_DIR:-.}"
-[[ -z "${ARGS_JSON:-}" ]] && ARGS_JSON="{}"
 
 dry_run_flag=""
 [[ "${DRY_RUN:-false}" == "true" ]] && dry_run_flag="--dry-run"
 
 clusters=()
-if jq -e 'has("clusters")' <<<"$ARGS_JSON" >/dev/null; then
-    IFS=',' read -r -a clusters <<< "$(jq -r '.clusters' <<<"$ARGS_JSON")"
+if [[ "${CLUSTERS+set}" == "set" ]]; then
+    IFS=',' read -r -a clusters <<< "$CLUSTERS"
 else
     while read -r d; do clusters+=("$(basename "$d")"); done \
         < <(find "$repo_root/clusters" -mindepth 2 -maxdepth 2 -name cluster.yaml | xargs -n1 dirname | sort -u)
 fi
 
 machineclasses=()
-if jq -e 'has("machineclasses")' <<<"$ARGS_JSON" >/dev/null; then
-    IFS=',' read -r -a machineclasses <<< "$(jq -r '.machineclasses' <<<"$ARGS_JSON")"
+if [[ "${MACHINECLASSES+set}" == "set" ]]; then
+    IFS=',' read -r -a machineclasses <<< "$MACHINECLASSES"
 else
     while read -r f; do machineclasses+=("$(basename "$f" .yaml)"); done \
         < <(find "$repo_root/infra/omni/machineclasses" -maxdepth 1 -name '*.yaml' 2>/dev/null | sort -u)
