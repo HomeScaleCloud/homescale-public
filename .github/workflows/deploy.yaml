@@ -89,7 +89,7 @@ jobs:
       - name: Upload rendered Tailnet ACL artifact
         id: upload_acl
         if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: tailnet-acl
           path: /tmp/tailnet-acl.json
@@ -109,7 +109,7 @@ jobs:
       - name: Upload Tailnet ACL map artifact
         id: upload_acl_map
         if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true' && steps.tailnet_acl_map.outcome == 'success'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: tailnet-acl-map
           path: /tmp/tailnet-acl-map.html
