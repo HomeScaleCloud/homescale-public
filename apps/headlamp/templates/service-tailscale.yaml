@@ -7,7 +7,12 @@ metadata:
     tailscale.com/tags: "tag:k8s,tag:app-headlamp,tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}"
     tailscale.com/hostname: "headlamp-{{ required "cluster.name is required" .Values.cluster.name }}"
     tailscale.com/proxy-group: ingress
-    external-dns.kubernetes.io/hostname: "headlamp.{{ required "cluster.name is required" .Values.cluster.name }}REDACTED"
+    # A friendly short name (console.<prod|dev>, not headlamp.<cluster>) within
+    # the standard <name>.<cluster-or-shortname>REDACTED pattern
+    # every other Tailscale-exposed Service in this repo uses — tailnet-only
+    # (no Cloudflare Tunnel/public exposure), no admission-policy exception
+    # needed since it still ends in REDACTED.
+    external-dns.kubernetes.io/hostname: "console.{{ required "cluster.shortName is required" .Values.cluster.shortName }}REDACTED"
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale

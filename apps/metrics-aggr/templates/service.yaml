@@ -4,8 +4,8 @@ metadata:
   name: prometheus
   namespace: metrics
   annotations:
-    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-boa1-prod"
-    tailscale.com/hostname: "prometheus-metrics-boa1-prod-aggr"
+    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-production"
+    tailscale.com/hostname: "prometheus-metrics-production-aggr"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "REDACTED"
 spec:
@@ -26,8 +26,8 @@ metadata:
   name: loki
   namespace: metrics
   annotations:
-    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-boa1-prod"
-    tailscale.com/hostname: "loki-metrics-boa1-prod"
+    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-production"
+    tailscale.com/hostname: "loki-metrics-production"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "REDACTED"
 spec:

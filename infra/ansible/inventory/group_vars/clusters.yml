@@ -1,5 +1,8 @@
 ---
 ansible_connection: local
-omni_cluster_name: "{{ inventory_hostname }}"
-omni_endpoint: https://REDACTED
-omni_service_account_key: "{{ lookup('env', 'OMNI_SERVICE_ACCOUNT_KEY') }}"
+talos_cluster_name: "{{ inventory_hostname }}"
+# Terraform's talos module writes each cluster's break-glass admin kubeconfig to this
+# Infisical path (see infra/terraform/modules/talos/kubeconfig.tf) — the only two clusters
+# that will ever exist, so a small inline map beats inventing a shortName lookup mechanism
+# ansible has no other reason to need.
+talos_shortname: "{{ {'production': 'prod', 'development': 'dev'}[inventory_hostname] }}"

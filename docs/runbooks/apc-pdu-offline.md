@@ -6,7 +6,7 @@
 
 ## What this means
 
-SNMP scrapes for a PDU have been failing for 3 minutes. The SNMP exporter on the `boa1-prod` cluster cannot reach the PDU's management interface. The PDU itself may be operational (powering equipment), but its management plane is unreachable — power state, load, and voltage can no longer be monitored or controlled remotely.
+SNMP scrapes for a PDU have been failing for 3 minutes. The SNMP exporter on the `production` cluster cannot reach the PDU's management interface. The PDU itself may be operational (powering equipment), but its management plane is unreachable — power state, load, and voltage can no longer be monitored or controlled remotely.
 
 The alert fires per PDU (`$labels.job` / `$labels.instance`). Currently monitored PDUs:
 

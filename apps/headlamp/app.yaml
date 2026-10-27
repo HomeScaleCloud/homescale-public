@@ -4,64 +4,20 @@ releaseName: headlamp
 syncWave: 0
 defaultDeploy: false
 podSecurity: privileged
-exposePublic:
-  - cluster: core
-    fqdn: REDACTED
-    port: 443
-    tls: true
-    cacheBypass: true
-    access: {}
+tailscale:
+  policy:
+    rules:
+      - sources: ["group:team-infra-plat@REDACTED", "group:team-sec-plat@REDACTED"]
+        protocol: tcp
+        ports: ["443"]
 values:
   cluster:
     name: "{{ .Values.cluster.name }}"
+    shortName: "{{ .Values.cluster.shortName }}"
   headlamp:
     replicaCount: 1
     deploymentAnnotations:
       secrets.infisical.com/auto-reload: "true"
-    initContainers:
-      - name: tailscale
-        image: tailscale/tailscale:v1.102.2
-        restartPolicy: Always
-        env:
-          - name: TS_CLIENT_ID
-            valueFrom:
-              secretKeyRef:
-                name: headlamp-tailscale-oauth  # pragma: allowlist secret
-                key: client_id
-          - name: TS_CLIENT_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: headlamp-tailscale-oauth  # pragma: allowlist secret
-                key: client_secret
-          - name: TS_USERSPACE
-            value: "false"
-          - name: TS_KUBE_SECRET
-            value: ""
-          - name: TS_STATE_DIR
-            value: /var/lib/tailscale
-          - name: TS_HOSTNAME
-            value: "headlamp-{{ .Values.cluster.name }}-apiserver-egress"
-          - name: TS_EXTRA_ARGS
-            value: "--advertise-tags=tag:k8s,tag:app-headlamp,tag:cluster-{{ .Values.cluster.name }}"
-          - name: TS_ACCEPT_DNS
-            value: "false"
-          - name: TS_AUTH_ONCE
-            value: "true"
-          - name: TS_ENABLE_HEALTH_CHECK
-            value: "true"
-        startupProbe:
-          httpGet:
-            path: /healthz
-            port: 9002
-          periodSeconds: 3
-          failureThreshold: 40
-        securityContext:
-          capabilities:
-            add:
-              - NET_ADMIN
-        volumeMounts:
-          - name: tailscale-state
-            mountPath: /var/lib/tailscale
     service:
       port: 443
     config:
@@ -106,11 +62,6 @@ values:
       - name: homescale-favicon
         configMap:
           name: headlamp-favicon
-      - name: headlamp-multicluster
-        secret:
-          secretName: headlamp-multicluster-kubeconfig # pragma: allowlist secret
-      - name: tailscale-state
-        emptyDir: {}
     volumeMounts:
       - name: headlamp-tls
         mountPath: /headlamp-tls
@@ -138,9 +89,6 @@ values:
       - name: homescale-favicon
         mountPath: /headlamp/frontend/favicon-32x32.png
         subPath: favicon-32x32.png
-        readOnly: true
-      - name: headlamp-multicluster
-        mountPath: /home/headlamp/.config/Headlamp/kubeconfigs
         readOnly: true
 ignoreDifferences:
   - group: ""

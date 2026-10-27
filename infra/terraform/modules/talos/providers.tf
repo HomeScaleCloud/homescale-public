@@ -1,14 +1,11 @@
 terraform {
   required_providers {
-    vultr = {
-      source = "vultr/vultr"
+    talos = {
+      source  = "siderolabs/talos"
+      version = "0.12.0"
     }
     infisical = {
       source = "infisical/infisical"
     }
   }
-}
-
-provider "vultr" {
-  api_key = var.vultr_api_key
 }

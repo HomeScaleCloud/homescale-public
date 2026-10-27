@@ -7,7 +7,7 @@ metadata:
   name: metrics-{{ $cluster }}-egress
   namespace: metrics
   annotations:
-    tailscale.com/tailnet-fqdn: "prometheus-metrics-boa1-prod-aggr.{{ $tailnet }}"
+    tailscale.com/tailnet-fqdn: "prometheus-metrics-production-aggr.{{ $tailnet }}"
     tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-{{ $cluster }}"
     tailscale.com/hostname: "metrics-{{ $cluster }}-egress"
 spec:
@@ -22,7 +22,7 @@ metadata:
   name: metrics-{{ $cluster }}-egress-loki
   namespace: metrics
   annotations:
-    tailscale.com/tailnet-fqdn: "loki-metrics-boa1-prod.{{ $tailnet }}"
+    tailscale.com/tailnet-fqdn: "loki-metrics-production.{{ $tailnet }}"
     tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-{{ $cluster }}"
     tailscale.com/hostname: "metrics-{{ $cluster }}-egress-loki"
 spec:
@@ -37,7 +37,7 @@ metadata:
   name: metrics-{{ $cluster }}-egress-alertmanager
   namespace: metrics
   annotations:
-    tailscale.com/tailnet-fqdn: "alertmanager-metrics-boa1-prod.{{ $tailnet }}"
+    tailscale.com/tailnet-fqdn: "alertmanager-metrics-production.{{ $tailnet }}"
     tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-{{ $cluster }}"
     tailscale.com/hostname: "metrics-{{ $cluster }}-egress-alertmanager"
 spec:

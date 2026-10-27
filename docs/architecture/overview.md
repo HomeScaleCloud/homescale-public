@@ -18,12 +18,11 @@ PR merged to main
        │
        └─► deploy
               │
-              ├─► terraform apply ── Cloudflare DNS, Tailscale ACL/tags,
-              │                      Infisical project structure, VolSync secret paths,
-              │                      Vultr (core cluster)
-              │
-              └─► omni sync ──────── cluster.yaml → Omni (Talos node config,
-                                     k8s version, machine assignments)
+              └─► terraform apply ── Cloudflare DNS, Tailscale ACL/tags,
+                              Infisical project structure, VolSync secret paths,
+                              Talos machine config generation/apply/bootstrap
+                              (infra/terraform/modules/talos/, one module
+                              instance per cluster — see talos-*.tf)
 ```
 
 ### Path 2 — ArgoCD (pull-based, continuous)
@@ -42,7 +41,7 @@ ArgoCD (on each cluster)
                                                 └─► syncs apps/<name>/ charts to cluster
 ```
 
-These two paths are independent. CI handles infrastructure and Talos cluster config; ArgoCD handles every Kubernetes workload. App-only changes (editing `app.yaml`, chart templates, values) are picked up by ArgoCD once merged into the `main` branch without any CI deploy step.
+These two paths are independent. CI handles infrastructure and Talos cluster/machine config (all of it now Terraform-managed — see [Clusters](clusters.md)); ArgoCD handles every Kubernetes workload. App-only changes (editing `app.yaml`, chart templates, values) are picked up by ArgoCD once merged into the `main` branch without any CI deploy step.
 
 ## Secrets
 
@@ -66,7 +65,7 @@ Every cluster
     │
     │  remote-write (via Tailscale)
     ▼
-Prometheus Aggregator  ──  boa1-prod (metrics namespace)
+Prometheus Aggregator  ──  production (metrics namespace)
     │
     ├──► Grafana        dashboards at REDACTED
     ├──► Alertmanager   fires to #alerts-infra-plat Slack channel
@@ -90,7 +89,7 @@ defaultDeploy: false        # don't deploy everywhere by default
 ```
 
 ```yaml
-# clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
+# clusters/production/apps.yaml, spec.sources[1].helm.values
 apps:
   my-app:
     deploy: true            # enable only on this cluster
@@ -106,12 +105,12 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 
 ## Cluster topology
 
-| Type | Kind | Role |
-|------|------|------|
-| `core` | Vultr Kubernetes Engine (VKE) | Single management cluster. Hosts Omni, ArgoCD, Infisical operator, and shared infrastructure. Provisioned by Vultr via Terraform. |
-| `<region>-*` | Talos (Omni-managed) | General compute clusters for production workloads. |
+| Cluster | Kind | Role |
+|---------|------|------|
+| `production` | Talos (Terraform-managed) | Primary cluster — general compute, production workloads. |
+| `development` | Talos (Terraform-managed) | Lab/development cluster. |
 
-Talos clusters have their node config, k8s version, and machine assignments managed entirely by Omni, which runs on the `core` cluster. The CI deploy workflow syncs `clusters/<name>/cluster.yaml` to Omni on every merge to `main`.
+There is no separate management cluster — each cluster self-hosts its own ArgoCD and is fully self-sufficient; no third-party-cloud-hosted central cluster is required. Talos node config, Kubernetes version, machine identity, and bootstrap are all managed directly by Terraform's `siderolabs/talos` provider (one `module "talos_<cluster>"` instance per cluster in `infra/terraform/talos-production.tf`/`talos-development.tf`, backed by `infra/terraform/modules/talos/`) — see [Clusters](clusters.md) for the full flow.
 
 ## Sync wave order
 
@@ -152,30 +151,30 @@ Runs on every PR and push:
 
 ### `deploy` — infrastructure and cluster sync
 
-Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. Three jobs — `terraform` → `omni` → `ansible` — run their own tool (`terraform`/`omnictl`/`ansible-playbook`) directly on the runner.
+Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. Three jobs — `terraform` → `talos` → `ansible` — run their own tool (`terraform`/`ansible-playbook`) directly on the runner (no in-cluster dispatch of any kind — there is no management cluster to dispatch to).
 
 #### 1. `terraform`
 
-Manages Cloudflare DNS, Vultr, Infisical project structure, Tailscale ACL and tags, VolSync secret paths, etc — the single shared `infra/terraform` workspace (state in Terraform Cloud), unconditionally, no changed-file detection (unlike `omni` below, almost any change could be terraform-relevant). Authenticates to Infisical via GitHub OIDC — no Tailscale needed, everything it talks to (Cloudflare, Terraform Cloud, Infisical, Vultr) is a public API.
+Manages Cloudflare DNS, Infisical project structure, Tailscale ACL and tags, VolSync secret paths, etc — the single shared `infra/terraform` workspace (state in Terraform Cloud), unconditionally, no changed-file detection (unlike `talos` below, almost any change could be terraform-relevant). Authenticates to Infisical via GitHub OIDC — no Tailscale needed, everything it talks to (Cloudflare, Terraform Cloud, Infisical) is a public API.
 
 - **On PR**: plans (`infra/terraform/plan-apply.sh`, `DRY_RUN=true`) and posts the plan as a PR comment; the rendered Tailnet ACL (if changed) is extracted from the plan's JSON and uploaded as an artifact + topology map.
 - **On merge to `main`**: applies (gated by a GitHub Environment).
 
 `infra/terraform/plan-apply.sh` optionally takes a `CLUSTER` env var to scope the plan/apply to just that cluster's own resources (Cloudflare tunnel, DNS records, VolSync secrets, etc) — computed from an untargeted plan's own JSON output so it still catches not-yet-created resources, not from `terraform state list`. `hsctl run terraform --cluster <name>` (either execution mode) uses this.
 
-#### 2. `omni` (after terraform)
+#### 2. `talos` (after terraform)
 
-Detects changed `clusters/<name>/cluster.yaml` and `infra/omni/machineclasses/*.yaml` files, via `infra/omni/sync.sh`. Joins the tailnet as an ephemeral `tailscale/github-action` node (`tag:github-actions`) to reach Omni directly.
+Replaces the old `omni` job — there's no management cluster to dispatch anything to any more. Detects changes under `infra/terraform/talos-*.tf` and `infra/talos/patches/*.yaml`, and runs a `terraform plan`/`apply` targeted at just the affected cluster's `module.talos_<cluster>` (mirrors the old job's per-cluster plan/apply + PR-comment shape, just against the `talos` Terraform module instead of `omnictl`). **Joins the tailnet** as an ephemeral node (`tailscale/github-action`, tagged `tag:github-actions`, removed when the job finishes) — it needs to reach the Talos nodes' own IPs directly, over the subnet router advertising their LAN.
 
-- **On PR**: plans (`DRY_RUN=true`) and posts the result as PR comments, split into per-cluster/per-machineclass comments by parsing `=== BEGIN/END <KIND> <name> ===` markers `sync.sh` prints around each item's output.
-- **On merge to `main`**: syncs every detected cluster/machine class.
+- **On PR**: `terraform plan -target=module.talos_<cluster>` for each changed cluster, posted as a PR comment per cluster (same marker-based pattern the old `omni` job used).
+- **On merge to `main`**: `terraform apply -target=module.talos_<cluster>` for each changed cluster — generates/applies machine config, bootstraps new clusters, re-applies config drift on existing ones.
 
-Shared Talos patches from `infra/omni/patches/` are applied alongside each cluster template.
+Onboarding a brand-new machine (building its Image Factory schematic/ISO, booting it into Talos maintenance mode) is still a manual step — see [Clusters: registering new machines](clusters.md#registering-new-machines) — before its IP can be added to `talos-<cluster>.tf` and picked up here.
 
-#### 3. `ansible` (after omni)
+#### 3. `ansible` (after talos)
 
-Only runs on `workflow_dispatch` (manual trigger, or the default dispatch path for `hsctl run <name> -e remote` — see [Operations → hsctl](../operations/hsctl.md)). Also joins the tailnet (`bootstrap-cluster` fetches its target cluster's kubeconfig from Omni). Runs whichever of `bootstrap-core`, `bootstrap-cluster`, or any other `infra/ansible/playbooks/*.yml` the dispatch requested.
+Only runs on `workflow_dispatch` (manual trigger, or the default dispatch path for `hsctl run <name> -e remote` — see [Operations → hsctl](../operations/hsctl.md)). Also joins the tailnet — `bootstrap-cluster` fetches its target cluster's kubeconfig from Infisical (`/k8s/talos/<prod|dev>/KUBECONFIG`, written by the `talos` Terraform module), then reaches that cluster's apiserver directly over the subnet-routed LAN. Runs whichever of `bootstrap-core`, `bootstrap-cluster`, or any other `infra/ansible/playbooks/*.yml` the dispatch requested.
 
-`workflow_dispatch` can also force an on-demand `terraform`/`omni-sync` run outside the normal push/PR trigger (`inputs.job == 'terraform'`/`'omni-sync'`) — this is what `hsctl run terraform|omni-sync -e remote` dispatches to.
+`workflow_dispatch` can also force an on-demand `terraform`/`talos` run outside the normal push/PR trigger (`inputs.job == 'terraform'`/`'talos'`) — this is what `hsctl run terraform|talos -e remote` dispatches to.
 
 ArgoCD picks up any Git changes and reconciles cluster state automatically — no deploy step is needed for app-only changes.

@@ -4,7 +4,7 @@
 # locally (clones main fresh and runs it directly against that checkout).
 #
 # <name> is one of a small set of known jobs — bootstrap-core, bootstrap-cluster,
-# omni-sync, terraform — or, in local mode only, the bare filename (without .yml) of any
+# talos, terraform — or, in local mode only, the bare filename (without .yml) of any
 # other playbook under infra/ansible/playbooks/.
 #
 # bootstrap-core/bootstrap-cluster get special local-secrets handling for their playbook
@@ -35,30 +35,31 @@ run_usage() {
     echo "<name> is one of:"
     echo "  bootstrap-core      bootstrap the core cluster (playbook)"
     echo "  bootstrap-cluster   bootstrap workload clusters (all, or one via --cluster) (playbook)"
-    echo "  omni-sync           sync every cluster template + machine class into Omni (script)"
+    echo "  talos               plan/apply infra/terraform's Talos cluster modules, scoped to"
+    echo "                      changed clusters (all, or one via --cluster) (CI job, no local"
+    echo "                      equivalent — use 'terraform' locally instead)"
     echo "  terraform           plan/apply infra/terraform (script) — the only way to bootstrap"
-    echo "                      core itself, before CI can reach it over Tailscale"
+    echo "                      a cluster for the first time, before CI can reach it over Tailscale"
     echo "  <anything else>     (local mode only) any other playbook under"
     echo "                      infra/ansible/playbooks/<name>.yml"
     echo ""
     echo "Options:"
-    echo "  --arg key=value             (repeatable, remote mode only) 'clusters'/'machineclasses'"
-    echo "                              (omni-sync) fold into that workflow_dispatch input;"
-    echo "                              anything else is passed as an extra ansible -e key=value"
-    echo "                              to the generic-playbook fallback job only"
+    echo "  --arg key=value             (repeatable, remote mode only) anything other than"
+    echo "                              'cluster' is passed as an extra ansible -e key=value to"
+    echo "                              the generic-playbook fallback job only"
     echo "  --cluster <name>            sugar for --arg cluster=<name> — meaningful for"
     echo "                              bootstrap-cluster (-e target=<name>), terraform"
     echo "                              (scopes the plan/apply to that cluster's own resources),"
-    echo "                              and omni-sync (syncs just that one cluster)"
+    echo "                              and talos (plans/applies just that one cluster)"
     echo "  -e, --execution-mode <mode> 'local' or 'remote' (default: remote). remote dispatches"
     echo "                              .github/workflows/deploy.yaml via 'gh workflow run' and"
     echo "                              follows the triggered run (requires 'gh auth login' and"
     echo "                              write access to HomeScaleCloud/homescale). local clones"
     echo "                              main fresh (via gh) and runs <name> directly against it —"
-    echo "                              still required for the very first core bootstrap, or any"
-    echo "                              time CI/Tailscale can't reach what you're changing yet."
-    echo "  --dry-run                   terraform: plan only, no apply. omni-sync: adds --dry-run"
-    echo "                              to its omnictl calls. Ignored by ansible playbooks."
+    echo "                              still required for the very first cluster bootstrap, or"
+    echo "                              any time CI/Tailscale can't reach what you're changing yet."
+    echo "  --dry-run                   terraform: plan only, no apply. Ignored by ansible playbooks"
+    echo "                              and by talos (remote-only, always plans on PR / applies on main)."
     echo "  --chain <name>[,...]        (local mode only) run <name> plus this list"
     echo "                              (comma-separated, no spaces) in sequence against the same"
     echo "                              checkout. Not supported in -e remote mode — GitHub Actions'"
@@ -95,10 +96,20 @@ _run_bootstrap_local() {
     [[ -n "$cluster" && "$playbook" == "bootstrap-core" ]] && hsctl_log_info "--cluster is ignored for bootstrap-core"
 
     hsctl_log_info "fetching secrets from Infisical via local CLI session"
-    local argocd_secrets infisical_op_secrets ci_secrets='{}'
+    local argocd_secrets infisical_op_secrets ci_secrets='{}' talos_kubeconfigs='{}'
     argocd_secrets=$(_run_infisical_secrets /k8s/argocd/deploy-key) || exit 1
     infisical_op_secrets=$(_run_infisical_secrets /k8s/infisical) || exit 1
     [[ "$playbook" == "bootstrap-core" ]] && { ci_secrets=$(_run_infisical_secrets /ci) || exit 1; }
+    if [[ "$playbook" == "bootstrap-cluster" ]]; then
+        # Only the two clusters that will ever exist — see infra/ansible/inventory/group_vars/clusters.yml
+        # for the same inline name->shortname mapping, kept here since this runs before any
+        # inventory is loaded. Fetched for both regardless of --cluster, since a target-less
+        # run loops over every "clusters" host and each needs its own kubeconfig.
+        local prod_kc dev_kc
+        prod_kc=$(_run_infisical_secrets /k8s/talos/prod) || exit 1
+        dev_kc=$(_run_infisical_secrets /k8s/talos/dev) || exit 1
+        talos_kubeconfigs=$(jq -n --argjson prod "$prod_kc" --argjson dev "$dev_kc" '{production: $prod, development: $dev}')
+    fi
 
     local extra_vars_file
     extra_vars_file=$(mktemp)
@@ -109,7 +120,8 @@ _run_bootstrap_local() {
         --argjson argocd "$argocd_secrets" \
         --argjson infisical_op "$infisical_op_secrets" \
         --argjson ci "$ci_secrets" \
-        '{hsctl_local: true, hsctl_local_secrets: {argocd_deploy_key: $argocd, infisical_operator: $infisical_op, ci: $ci}}' \
+        --argjson talos_kubeconfig "$talos_kubeconfigs" \
+        '{hsctl_local: true, hsctl_local_secrets: {argocd_deploy_key: $argocd, infisical_operator: $infisical_op, ci: $ci, talos_kubeconfig: $talos_kubeconfig}}' \
         > "$extra_vars_file"
 
     (
@@ -183,21 +195,6 @@ _run_terraform_local() {
     )
 }
 
-# Run infra/omni/sync.sh locally — no special secrets handling, OMNI_SERVICE_ACCOUNT_KEY
-# is picked up the same way `hsctl get`/`hsctl machine` already resolve Omni access
-# (local omniconfig or the env var, if already set).
-_run_omni_sync_local() {
-    local cluster="$1" dry_run="$2" repo_root="$3"
-
-    (
-        export REPO_DIR="$repo_root" DRY_RUN="$dry_run"
-        [[ -n "$cluster" ]] && export CLUSTERS="$cluster"
-        cd "$repo_root" || exit 1
-        hsctl_log_action "running infra/omni/sync.sh${cluster:+ (cluster: $cluster)}${dry_run:+, dry_run=$dry_run}"
-        bash infra/omni/sync.sh
-    )
-}
-
 # Clones `main` fresh into a temp dir, once per `hsctl run` invocation (not per chained
 # playbook). Doesn't call _run_register_cleanup itself — this runs in a $(...) subshell,
 # so the caller registers the returned path in its own, non-subshell scope instead.
@@ -227,9 +224,9 @@ _run_local() {
         terraform)
             _run_terraform_local "$cluster" "$dry_run" "$repo_root"
             ;;
-        omni-sync)
-            command -v omnictl &>/dev/null || { echo "hsctl run: omnictl is required" >&2; exit 1; }
-            _run_omni_sync_local "$cluster" "$dry_run" "$repo_root"
+        talos)
+            hsctl_log_error "'talos' has no local equivalent — it's a CI-only job that scopes infra/terraform's own plan/apply to changed clusters. Run 'hsctl run terraform -e local' instead; it covers the same Talos module resources, just untargeted."
+            exit 1
             ;;
         *)
             command -v ansible-playbook &>/dev/null || { echo "hsctl run: ansible-playbook is required (brew install ansible)" >&2; exit 1; }
@@ -241,9 +238,8 @@ _run_local() {
 # _run_remote <name> <cli-args-json> <dry_run> <chain_raw> <git_ref> — dispatches
 # .github/workflows/deploy.yaml via `gh workflow run` and follows the triggered run.
 # cli_args_json's "cluster" key becomes the 'cluster' workflow_dispatch input (bootstrap-
-# cluster's target, terraform's scoping, or omni-sync's single-cluster filter);
-# "machineclasses" becomes the 'machineclasses' input (omni-sync only); any other key is
-# folded into a space-separated "key=value ..." string for the 'extra_args' input, which
+# cluster's target, terraform's scoping, or talos's single-cluster filter); any other key
+# is folded into a space-separated "key=value ..." string for the 'extra_args' input, which
 # only the generic-ansible-playbook fallback job consumes.
 _run_remote() {
     local name="$1" cli_args_json="$2" dry_run="$3" chain_raw="$4" git_ref="${5:-main}"
@@ -254,16 +250,15 @@ _run_remote() {
     command -v gh &>/dev/null || { echo "hsctl run: gh is required (brew install gh)" >&2; exit 1; }
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
 
-    local cluster machineclasses extra_args
+    local cluster extra_args
     cluster=$(jq -r '.cluster // ""' <<<"$cli_args_json")
-    machineclasses=$(jq -r '.machineclasses // ""' <<<"$cli_args_json")
-    extra_args=$(jq -r 'with_entries(select(.key != "cluster" and .key != "machineclasses")) | to_entries | map("\(.key)=\(.value)") | join(" ")' <<<"$cli_args_json")
+    extra_args=$(jq -r 'with_entries(select(.key != "cluster")) | to_entries | map("\(.key)=\(.value)") | join(" ")' <<<"$cli_args_json")
 
-    hsctl_log_action "dispatching deploy.yaml (job=$name${cluster:+, cluster=$cluster}${machineclasses:+, machineclasses=$machineclasses}${dry_run:+, dry_run=$dry_run}, ref=$git_ref) on $repo"
+    hsctl_log_action "dispatching deploy.yaml (job=$name${cluster:+, cluster=$cluster}${dry_run:+, dry_run=$dry_run}, ref=$git_ref) on $repo"
     local before_ts
     before_ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     gh workflow run deploy.yaml -R "$repo" --ref "$git_ref" \
-        -f "job=$name" -f "cluster=$cluster" -f "machineclasses=$machineclasses" \
+        -f "job=$name" -f "cluster=$cluster" \
         -f "dry_run=$dry_run" -f "extra_args=$extra_args" \
         || { hsctl_log_error "failed to dispatch deploy.yaml — check: gh auth status"; exit 1; }
 

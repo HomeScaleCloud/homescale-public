@@ -1,4 +1,4 @@
-{{- if eq .Values.cluster.name "boa1-prod" }}
+{{- if eq .Values.cluster.name "production" }}
 {{- range $folder := list "views" "system" "storage" "networking" "platform" "environment" }}
 ---
 apiVersion: v1

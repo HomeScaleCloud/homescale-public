@@ -26,13 +26,13 @@ Apps with both a `Chart.yaml` and a `Dockerfile` under `apps/<name>/` are built 
 Deployment overrides — enabling/disabling on a specific cluster, or overriding any other field — aren't set here. They live in [`clusters/<cluster>/apps.yaml`](../operations/deploying-an-app.md#deployment-overrides) instead, under an `apps:` map keyed by app directory name. The override object merges directly onto the base `app.yaml`, so any top-level key (`values`, `syncWave`, `podSecurity`, `tailscale`, `exposePublic`, `ignoreDifferences`, ...) can be overridden per cluster, not just `deploy`/`values`:
 
 ```yaml
-# clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
+# clusters/production/apps.yaml, spec.sources[1].helm.values
 apps:
   my-app:
-    deploy: true            # overrides this app's defaultDeploy, for boa1-prod only
-    syncWave: 5              # any other top-level app.yaml field also merges, for boa1-prod only
+    deploy: true            # overrides this app's defaultDeploy, for production only
+    syncWave: 5              # any other top-level app.yaml field also merges, for production only
     values:
-      someKey: clusterSpecificValue   # deep-merged over the base app.yaml, for boa1-prod only
+      someKey: clusterSpecificValue   # deep-merged over the base app.yaml, for production only
 ```
 
 The merge is a deep merge on maps, but **lists are replaced wholesale, not concatenated** — overriding `values.someList: [z]` replaces a base `[a, b]` entirely rather than appending to it. This matters for list-valued fields like `ignoreDifferences` or `tailscale.policy.rules`.
@@ -192,7 +192,7 @@ Exposes one or more Kubernetes Services to the public internet via a Cloudflare 
 
 ```yaml
 exposePublic:
-  - cluster: boa1-prod   # which cluster's Cloudflare tunnel to route through
+  - cluster: production  # which cluster's Cloudflare tunnel to route through
     fqdn: myapp.io        # public hostname (must be in a Cloudflare zone in the HomeScale account)
     port: 80              # backend service port
     service: myapp        # optional, defaults to releaseName (falls back to app dir name)
@@ -237,13 +237,13 @@ dnsNames:
 {{- end }}
 ```
 
-Tailscale-side internal hostnames don't go through this mechanism. A Service's `external-dns.kubernetes.io/hostname` annotation (see [Exposing a Service on the tailnet](#exposing-a-service-on-the-tailnet)) is what actually publishes the DNS record, so a chart's `Certificate` `dnsNames` should list those hostnames directly instead of reading them from `.Values.homescale`. See `apps/omni/templates/certificate.yaml` for a real example, including keeping an old hostname around as a static fallback SAN when renaming.
+Tailscale-side internal hostnames don't go through this mechanism. A Service's `external-dns.kubernetes.io/hostname` annotation (see [Exposing a Service on the tailnet](#exposing-a-service-on-the-tailnet)) is what actually publishes the DNS record, so a chart's `Certificate` `dnsNames` should list those hostnames directly instead of reading them from `.Values.homescale`. See `apps/headlamp/templates/certificate.yaml` for a real example of the base `dnsNames` pattern.
 
 ---
 
 ## Knative Serving apps
 
-`apps/knative` deploys [Knative Serving](https://knative.dev/docs/serving/) plus its [Kourier](https://github.com/knative-extensions/net-kourier) networking layer as a platform component (`defaultDeploy: false`, currently enabled on boa1-prod only). Kourier was picked over net-istio/net-contour because this repo runs neither Istio nor Contour — it's the only zero-new-dependency networking layer for Knative.
+`apps/knative` deploys [Knative Serving](https://knative.dev/docs/serving/) plus its [Kourier](https://github.com/knative-extensions/net-kourier) networking layer as a platform component (`defaultDeploy: false`, currently enabled on production only). Kourier was picked over net-istio/net-contour because this repo runs neither Istio nor Contour — it's the only zero-new-dependency networking layer for Knative.
 
 The upstream `serving-crds.yaml`/`serving-core.yaml`/`kourier.yaml` releases have no official Helm chart, so they're vendored as raw manifests split one-resource-per-file under `templates/` (same pattern as `apps/multus` and `apps/kubevirt`). The vendored `kourier` Service is patched to `type: ClusterIP` (nothing needs to reach it from outside the cluster), and `config-network`'s `ingress-class` is set to Kourier.
 
@@ -294,7 +294,7 @@ tailscale:
         ports: ["443"]
 
 exposePublic:
-  - cluster: boa1-prod
+  - cluster: production
     fqdn: myapp.example.com
     port: 80
 
@@ -316,5 +316,5 @@ Deployment overrides for `my-app` go in `clusters/<cluster>/apps.yaml` instead �
 helm template <app-name> apps/<app-name>/
 
 # Render the full app catalog for a cluster
-helm template apps -f apps/values.yaml --set cluster.name=core
+helm template apps -f apps/values.yaml --set cluster.name=production
 ```

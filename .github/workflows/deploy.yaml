@@ -17,19 +17,15 @@ on:
   workflow_dispatch:
     inputs:
       job:
-        description: "'terraform', 'omni-sync', 'bootstrap-core', 'bootstrap-cluster', or any other ansible playbook filename under infra/ansible/playbooks/ (without .yml)"
+        description: "'terraform', 'talos', 'bootstrap-core', 'bootstrap-cluster', or any other ansible playbook filename under infra/ansible/playbooks/ (without .yml)"
         type: string
         required: true
       cluster:
-        description: "Cluster to target — bootstrap-cluster's -e target=<cluster>, or a single cluster to sync for omni-sync (leave empty for all clusters)"
-        type: string
-        required: false
-      machineclasses:
-        description: "Comma-separated machine class names to sync (omni-sync only; leave empty for all)"
+        description: "Cluster to target — bootstrap-cluster's -e target=<cluster>, terraform's own scoping, or a single cluster to plan/apply for talos (leave empty for all clusters)"
         type: string
         required: false
       dry_run:
-        description: "Plan/--dry-run only — terraform and omni-sync only, ignored by ansible playbooks"
+        description: "Plan/--dry-run only — terraform and talos only, ignored by ansible playbooks"
         type: boolean
         required: false
         default: false
@@ -224,111 +220,104 @@ jobs:
           CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
         run: ./infra/terraform/plan-apply.sh
 
-  omni:
-    name: "Omni"
+  # Replaces the old "omni" job. Talos cluster provisioning is now just more of the
+  # same `infra/terraform` workspace the `terraform` job above already plans/applies in
+  # full every run — this job's only reason to exist separately is to give each
+  # cluster's own Talos plan/apply its own PR comment (mirroring the old per-cluster
+  # Omni plan comments) and, more importantly, to be the one job that joins the tailnet
+  # (the `terraform` job above deliberately doesn't — nothing else it manages needs
+  # node-level network reachability). It re-runs `terraform plan`/`apply`, scoped with
+  # `-target` to just the changed clusters' own `module.talos_<cluster>`, against the
+  # same state the `terraform` job already touched — redundant in the sense that the
+  # general apply above would eventually reconcile these resources too, but doing it
+  # here, targeted, is what makes the Tailscale join conditional on an actual Talos
+  # change rather than every single deploy.
+  talos:
+    name: "Talos"
     runs-on: ubuntu-latest
     needs: [terraform]
-    if: always() && (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') && (github.event_name != 'workflow_dispatch' || inputs.job == 'omni-sync')
+    if: always() && (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') && (github.event_name != 'workflow_dispatch' || inputs.job == 'talos')
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./infra/terraform
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_VAR_infisical_github_actions: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+      TF_VAR_infisical_org_id: ${{ secrets.INFISICAL_ORG_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
 
+      # Every cluster is re-applied on merge to main (matches the old omni job's own
+      # behavior), but a PR's plan only covers clusters actually affected by that PR —
+      # either its own talos-<cluster>.tf changed, or a shared patch file did (which
+      # affects every cluster that references it, so treated as "all clusters changed").
+      # workflow_dispatch's own `cluster` input (empty = all) scopes a manual run the same
+      # way it already does for the terraform job above.
       - name: Detect changed clusters
         id: detect
-        shell: bash
+        working-directory: .
         env:
           INPUT_CLUSTER: ${{ inputs.cluster }}
-          INPUT_MACHINECLASSES: ${{ inputs.machineclasses }}
         run: |
           set -euo pipefail
+          all_clusters=$(
+            find infra/terraform -maxdepth 1 -name 'talos-*.tf' \
+              | sed -E 's#.*/talos-(.+)\.tf$#\1#' \
+              | sort -u \
+              | jq -Rsc 'split("\n") | map(select(length > 0))'
+          )
+          echo "all_clusters=${all_clusters}" >> "$GITHUB_OUTPUT"
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # Empty input means "all" here (per the job input's own description) — same
-            # full-discovery fallback the plain-push branch below uses, not "none".
             if [ -n "$INPUT_CLUSTER" ]; then
               clusters=$(jq -nc --arg c "$INPUT_CLUSTER" '[$c]')
             else
-              clusters=$(
-                find clusters -mindepth 2 -maxdepth 2 -name 'cluster.yaml' \
-                  | cut -d/ -f2 \
-                  | sort -u \
-                  | jq -Rsc 'split("\n") | map(select(length > 0))'
-              )
-            fi
-            if [ -n "$INPUT_MACHINECLASSES" ]; then
-              machineclasses=$(jq -nc --arg m "$INPUT_MACHINECLASSES" '$m | split(",")')
-            else
-              machineclasses=$(
-                { if [ -d infra/omni/machineclasses ]; then find infra/omni/machineclasses -maxdepth 1 -name '*.yaml'; fi; } \
-                  | sed 's|.*/||; s|\.yaml$||' \
-                  | sort -u \
-                  | jq -Rsc 'split("\n") | map(select(length > 0))'
-              )
+              clusters="$all_clusters"
             fi
             deleted_clusters='[]'
-            deleted_machineclasses='[]'
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
-            # No --depth: a shallow fetch would sever the merge-base the triple-dot diff below needs.
             git fetch --no-tags origin "${{ github.base_ref }}"
             range="origin/${{ github.base_ref }}...${{ github.sha }}"
-            clusters=$(
+            changed_tf=$(
               git diff --name-only --diff-filter=d "$range" \
-                | { grep -E '^clusters/[^/]+/cluster\.yaml$' || true; } \
-                | cut -d/ -f2 \
-                | sort -u \
-                | jq -Rsc 'split("\n") | map(select(length > 0))'
+                | { grep -E '^infra/terraform/talos-[^/]+\.tf$' || true; } \
+                | sed -E 's#.*/talos-(.+)\.tf$#\1#' \
+                | sort -u
             )
-            machineclasses=$(
+            patches_changed=$(
               git diff --name-only --diff-filter=d "$range" \
-                | { grep -E '^infra/omni/machineclasses/[^/]+\.yaml$' || true; } \
-                | sed 's|.*/||; s|\.yaml$||' \
-                | sort -u \
-                | jq -Rsc 'split("\n") | map(select(length > 0))'
+                | { grep -E '^infra/talos/patches/[^/]+\.yaml$' || true; } \
+                | wc -l
             )
             deleted_clusters=$(
               git diff --name-only --diff-filter=D "$range" \
-                | { grep -E '^clusters/[^/]+/cluster\.yaml$' || true; } \
-                | cut -d/ -f2 \
+                | { grep -E '^infra/terraform/talos-[^/]+\.tf$' || true; } \
+                | sed -E 's#.*/talos-(.+)\.tf$#\1#' \
                 | sort -u \
                 | jq -Rsc 'split("\n") | map(select(length > 0))'
             )
-            deleted_machineclasses=$(
-              git diff --name-only --diff-filter=D "$range" \
-                | { grep -E '^infra/omni/machineclasses/[^/]+\.yaml$' || true; } \
-                | sed 's|.*/||; s|\.yaml$||' \
-                | sort -u \
-                | jq -Rsc 'split("\n") | map(select(length > 0))'
-            )
+            if [ "$patches_changed" -gt 0 ]; then
+              clusters="$all_clusters"
+            else
+              clusters=$(echo "$changed_tf" | jq -Rsc 'split("\n") | map(select(length > 0))')
+            fi
           else
-            clusters=$(
-              find clusters -mindepth 2 -maxdepth 2 -name 'cluster.yaml' \
-                | cut -d/ -f2 \
-                | sort -u \
-                | jq -Rsc 'split("\n") | map(select(length > 0))'
-            )
-            machineclasses=$(
-              { if [ -d infra/omni/machineclasses ]; then find infra/omni/machineclasses -maxdepth 1 -name '*.yaml'; fi; } \
-                | sed 's|.*/||; s|\.yaml$||' \
-                | sort -u \
-                | jq -Rsc 'split("\n") | map(select(length > 0))'
-            )
+            clusters="$all_clusters"
             deleted_clusters='[]'
-            deleted_machineclasses='[]'
           fi
           echo "clusters=${clusters}" >> "$GITHUB_OUTPUT"
           echo "CLUSTERS=${clusters}" >> "$GITHUB_ENV"
           echo "Clusters detected: ${clusters}"
-          echo "machineclasses=${machineclasses}" >> "$GITHUB_OUTPUT"
-          echo "MACHINECLASSES=${machineclasses}" >> "$GITHUB_ENV"
-          echo "Machine classes detected: ${machineclasses}"
           echo "deleted_clusters=${deleted_clusters}" >> "$GITHUB_OUTPUT"
           echo "Deleted clusters detected: ${deleted_clusters}"
-          echo "deleted_machineclasses=${deleted_machineclasses}" >> "$GITHUB_OUTPUT"
-          echo "Deleted machine classes detected: ${deleted_machineclasses}"
 
       - name: Import Secrets
-        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
+        if: steps.detect.outputs.clusters != '[]'
         uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
         with:
           method: "oidc"
@@ -338,91 +327,72 @@ jobs:
           secret-path: "/ci"
           export-type: env
 
+      # The only job in this repo that needs this: reaching the Talos nodes' own IPs
+      # directly (via the subnet router advertising their LAN) to apply machine config
+      # and run health checks. Removed automatically when the job finishes.
       - name: Connect to Tailscale
-        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
+        if: steps.detect.outputs.clusters != '[]'
         uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd  # v4.2.0
         with:
           oauth-client-id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ env.TAILSCALE_OAUTH_CLIENT_SECRET }}
           tags: tag:github-actions
 
-      - name: Check Omni reachability
-        id: omni_check
-        if: steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]'
+      - name: Request OIDC Token
+        if: steps.detect.outputs.clusters != '[]'
         run: |
-          if curl -sf --max-time 10 https://REDACTED/healthz > /dev/null 2>&1; then
-            echo "reachable=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Omni unreachable — skipping sync"
-            echo "reachable=false" >> "$GITHUB_OUTPUT"
-          fi
+          TOKEN=$(curl -s \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL" \
+            | jq -r '.value')
+          echo "::add-mask::$TOKEN"
+          echo "INFISICAL_AUTH_JWT=$TOKEN" >> "$GITHUB_ENV"
 
-      - name: Install omnictl
-        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false'
-        run: |
-          sudo curl -fsSL -o /usr/local/bin/omnictl \
-            https://REDACTED/api/omnictl/omnictl-linux-amd64
-          sudo chmod +x /usr/local/bin/omnictl
+      - name: Setup Terraform
+        if: steps.detect.outputs.clusters != '[]'
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4
+
+      - name: Initialize Terraform
+        if: steps.detect.outputs.clusters != '[]'
+        run: terraform init
 
       - name: Plan
-        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && github.event_name == 'pull_request'
+        if: steps.detect.outputs.clusters != '[]' && github.event_name == 'pull_request'
         id: plan
         continue-on-error: true
-        env:
-          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
-          DRY_RUN: "true"
         run: |
-          set -o pipefail
-          CLUSTERS="$(echo "$CLUSTERS" | jq -r 'join(",")')" \
-          MACHINECLASSES="$(echo "$MACHINECLASSES" | jq -r 'join(",")')" \
-            ./infra/omni/sync.sh | tee /tmp/omni-plan-output.txt
+          set -euo pipefail
+          failed=false
+          for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
+            echo "Planning cluster: $cluster"
+            if terraform plan -no-color "-target=module.talos_${cluster}" \
+                > "/tmp/talos-${cluster}.txt" 2>&1; then
+              echo "PLAN_${cluster}=success" >> "$GITHUB_ENV"
+            else
+              echo "PLAN_${cluster}=failed" >> "$GITHUB_ENV"
+              failed=true
+            fi
+          done
+          [ "$failed" = "false" ]
 
-      - name: Sync
-        if: (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]') && steps.omni_check.outputs.reachable != 'false' && ((github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.job == 'omni-sync'))
-        env:
-          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
-          DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) || false }}
+      - name: Apply
+        if: steps.detect.outputs.clusters != '[]' && ((github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch') || (github.event_name == 'workflow_dispatch' && inputs.job == 'talos' && inputs.dry_run != true))
         run: |
-          CLUSTERS="$(echo "$CLUSTERS" | jq -r 'join(",")')" \
-          MACHINECLASSES="$(echo "$MACHINECLASSES" | jq -r 'join(",")')" \
-            ./infra/omni/sync.sh
+          set -euo pipefail
+          for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
+            echo "Applying cluster: $cluster"
+            terraform apply -auto-approve "-target=module.talos_${cluster}"
+          done
 
       - name: Post plan results as PR comments
-        if: always() && github.event_name == 'pull_request' && steps.detect.outcome == 'success' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.machineclasses != '[]' || steps.detect.outputs.deleted_clusters != '[]' || steps.detect.outputs.deleted_machineclasses != '[]')
+        if: always() && github.event_name == 'pull_request' && steps.detect.outcome == 'success' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.deleted_clusters != '[]')
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
           CLUSTERS: ${{ steps.detect.outputs.clusters }}
-          MACHINECLASSES: ${{ steps.detect.outputs.machineclasses }}
           DELETED_CLUSTERS: ${{ steps.detect.outputs.deleted_clusters }}
-          DELETED_MACHINECLASSES: ${{ steps.detect.outputs.deleted_machineclasses }}
         with:
           script: |
             const fs = require('fs');
-
-            // sync.sh prints "=== BEGIN/END <KIND> <name> ===" around each item's own
-            // output in the one combined log this job captured — split that back into
-            // per-item results here rather than reading a separate file per item.
-            const fullOutput = fs.existsSync('/tmp/omni-plan-output.txt')
-              ? fs.readFileSync('/tmp/omni-plan-output.txt', 'utf8')
-              : '';
-
-            function extractSection(kind, name) {
-              const begin = `=== BEGIN ${kind} ${name} ===`;
-              const endOk = `=== END ${kind} ${name} OK ===`;
-              const endFail = `=== END ${kind} ${name} FAILED ===`;
-              const start = fullOutput.indexOf(begin);
-              if (start === -1) return { ok: false, output: '(no output — plan step may have failed before reaching this item)' };
-              const afterBegin = start + begin.length;
-              const okIdx = fullOutput.indexOf(endOk, afterBegin);
-              const failIdx = fullOutput.indexOf(endFail, afterBegin);
-              if (okIdx !== -1 && (failIdx === -1 || okIdx < failIdx)) {
-                return { ok: true, output: fullOutput.slice(afterBegin, okIdx).trim() || '(no output)' };
-              }
-              if (failIdx !== -1) {
-                return { ok: false, output: fullOutput.slice(afterBegin, failIdx).trim() || '(no output)' };
-              }
-              return { ok: false, output: fullOutput.slice(afterBegin).trim() || '(no output)' };
-            }
 
             async function upsertComment(marker, body) {
               const { data: comments } = await github.rest.issues.listComments({
@@ -450,30 +420,14 @@ jobs:
 
             const clusters = JSON.parse(process.env.CLUSTERS);
             for (const cluster of clusters) {
-              const { ok, output } = extractSection('CLUSTER', cluster);
+              const ok = process.env[`PLAN_${cluster}`] === 'success';
+              const path = `/tmp/talos-${cluster}.txt`;
+              const output = fs.existsSync(path) ? fs.readFileSync(path, 'utf8').trim() : '(no output — plan step may have failed before reaching this cluster)';
               const icon = ok ? '✅' : '❌';
-              const marker = `<!-- omni-cluster-sync-${cluster} -->`;
+              const marker = `<!-- talos-plan-${cluster} -->`;
               const body = [
                 marker,
-                `## ${icon} Omni cluster template plan — \`${cluster}\``,
-                '',
-                '```',
-                output || '(no output)',
-                '```',
-                '',
-                `> commit \`${{ github.sha }}\``,
-              ].join('\n');
-              await upsertComment(marker, body);
-            }
-
-            const machineclasses = JSON.parse(process.env.MACHINECLASSES);
-            for (const mc of machineclasses) {
-              const { ok, output } = extractSection('MACHINECLASS', mc);
-              const icon = ok ? '✅' : '❌';
-              const marker = `<!-- omni-machineclass-${mc} -->`;
-              const body = [
-                marker,
-                `## ${icon} Omni machine class plan — \`${mc}\``,
+                `## ${icon} Talos plan — \`${cluster}\``,
                 '',
                 '```',
                 output || '(no output)',
@@ -486,26 +440,13 @@ jobs:
 
             const deletedClusters = JSON.parse(process.env.DELETED_CLUSTERS);
             for (const cluster of deletedClusters) {
-              const marker = `<!-- omni-cluster-sync-${cluster} -->`;
+              const marker = `<!-- talos-plan-${cluster} -->`;
               const body = [
                 marker,
-                `## 🗑️ Omni cluster template plan — \`${cluster}\` (removed)`,
+                `## 🗑️ Talos plan — \`${cluster}\` (removed)`,
                 '',
-                `\`clusters/${cluster}/cluster.yaml\` was removed in this PR, so no automated sync will run for it. If the cluster still exists in Omni, it must be torn down manually.`,
-                '',
-                `> commit \`${{ github.sha }}\``,
-              ].join('\n');
-              await upsertComment(marker, body);
-            }
-
-            const deletedMachineclasses = JSON.parse(process.env.DELETED_MACHINECLASSES);
-            for (const mc of deletedMachineclasses) {
-              const marker = `<!-- omni-machineclass-${mc} -->`;
-              const body = [
-                marker,
-                `## 🗑️ Omni machine class plan — \`${mc}\` (removed)`,
-                '',
-                `\`infra/omni/machineclasses/${mc}.yaml\` was removed in this PR, so no automated sync will run for it. Remove it manually in Omni if it still exists.`,
+                `\`infra/terraform/talos-${cluster}.tf\` was removed in this PR. Its resources aren't destroyed automatically.`,
+                `Run \`terraform destroy -target=module.talos_${cluster}\` by hand once you're sure — a Talos cluster's own nodes need separate handling (wipe/reset) first.`,
                 '',
                 `> commit \`${{ github.sha }}\``,
               ].join('\n');
@@ -515,14 +456,14 @@ jobs:
       - name: Fail if plan failed
         if: steps.plan.outcome == 'failure'
         run: |
-          echo "One or more cluster template plans failed. See PR comments for details."
+          echo "One or more Talos cluster plans failed. See PR comments for details."
           exit 1
 
   ansible:
     name: "Ansible"
     runs-on: ubuntu-latest
-    needs: [omni]
-    if: always() && (needs.omni.result == 'success' || needs.omni.result == 'skipped') && github.event_name == 'workflow_dispatch' && inputs.job != 'terraform' && inputs.job != 'omni-sync'
+    needs: [talos]
+    if: always() && (needs.talos.result == 'success' || needs.talos.result == 'skipped') && github.event_name == 'workflow_dispatch' && inputs.job != 'terraform' && inputs.job != 'talos'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -576,19 +517,10 @@ jobs:
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: ansible-playbook playbooks/bootstrap-core.yml -e cluster_name=core
 
-      - name: Install omnictl
-        if: inputs.job == 'bootstrap-cluster'
-        run: |
-          sudo curl -fsSL -o /usr/local/bin/omnictl \
-            https://REDACTED/api/omnictl/omnictl-linux-amd64
-          sudo chmod +x /usr/local/bin/omnictl
-
       - name: Run cluster bootstrap playbook
         if: inputs.job == 'bootstrap-cluster'
         working-directory: infra/ansible
         env:
-          OMNI_ENDPOINT: https://REDACTED
-          OMNI_SERVICE_ACCOUNT_KEY: ${{ env.OMNI_SERVICE_ACCOUNT_KEY }}
           INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
           INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
           CLUSTER: ${{ inputs.cluster }}

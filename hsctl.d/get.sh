@@ -249,30 +249,29 @@ spec:
 
 # Ansible dynamic-inventory JSON for the `clusters` group — bootstrap-cluster.yml's own
 # `hosts: "{{ target | default('clusters') }}"` loops over this, with
-# ansible_connection: local and omni_cluster_name: "{{ inventory_hostname }}"
+# ansible_connection: local and talos_cluster_name: "{{ inventory_hostname }}"
 # (inventory/group_vars/clusters.yml) doing the rest per "host". Deliberately its own early
 # return, not a branch of the table/yaml/json case below: inventory names alone don't need
 # that path's per-cluster `k8s.api.<cluster>REDACTED/version` probe, so skip it
 # regardless of whether the caller (CI's `ansible` job, or a human running `hsctl run
 # bootstrap-cluster -e local`) currently has Tailscale reachability. `_meta.hostvars` is
 # present (even empty) so Ansible's script inventory plugin doesn't fall back to a --host
-# call per host.
+# call per host. Cluster identity is just the `clusters/<name>/` directories committed to
+# this repo (Terraform-managed since Omni's removal), same source hsctl_cluster_names uses.
 _get_clusters_ansible() {
     local names_json
-    # [.metadata.id] | @tsv, not a bare .metadata.id — yq's per-document scalar output
-    # leaks a stray `---` doc separator between entries otherwise (confirmed live); every
-    # other multi-doc extraction in this file already wraps in @tsv for the same reason.
-    names_json=$(omnictl get clusters -o yaml | yq e '[.metadata.id] | @tsv' - | \
-        jq -R -s -c 'split("\n") | map(select(length > 0))')
+    names_json=$(hsctl_cluster_names | tr ',' '\n' | jq -R -s -c 'split("\n") | map(select(length > 0))')
     jq -n --argjson hosts "${names_json:-[]}" '{clusters: {hosts: $hosts}, _meta: {hostvars: {}}}'
 }
 
 get_clusters() {
     [[ "$HSCTL_OUTPUT" == "ansible" ]] && { _get_clusters_ansible; return; }
 
-    local talos_tsv cluster_names
-    talos_tsv=$(omnictl get clusters -o yaml 2>/dev/null | \
-        yq e '[.metadata.id, (.spec.talosversion // "?")] | @tsv' - 2>/dev/null || true)
+    # Talos version isn't queryable from any live API post-Omni — it's just whatever
+    # infra/terraform/talos-<cluster>.tf declares. Left as "?" here rather than parsing
+    # HCL; the version that matters is the one actually applied, visible via `terraform
+    # -chdir=infra/terraform show`.
+    local talos_tsv="" cluster_names
     cluster_names=$(hsctl_cluster_names)
 
     python3 - "$HSCTL_OUTPUT" "$talos_tsv" "$cluster_names" <<'PYEOF'

@@ -29,7 +29,6 @@ Most apps' secrets live at a simple per-app path, with an optional subpath for a
 ```
 
 Examples (all real, from `apps/*/templates/secret.yaml`):
-- `/k8s/omni` — the omni app's secrets
 - `/k8s/argocd` — ArgoCD's SAML and notifications secrets
 - `/k8s/argocd/deploy-key` — ArgoCD's Git deploy key, split out as its own path
 - `/k8s/metrics/grafana`, `/k8s/metrics/alertmanager` — per-component secrets under the `metrics` app
@@ -108,7 +107,10 @@ managedKubeSecretReferences:
         RESTIC_REPOSITORY: "{{ .RESTIC_REPOSITORY.Value }}/{{ .Values.cluster.name }}/my-app"
 ```
 
-See `apps/home-assistant/templates/secret.yaml` or `apps/omni/templates/secret.yaml` for real examples. The resulting Secret is named `<app>-volsync-repo`.
+See `apps/home-assistant/templates/secret.yaml` for a real example. The resulting Secret is named `<app>-volsync-repo`. An app that needs to restore into a cluster under a different name than the one its backup was written under can override `.Values.volsync.restore.sourceCluster` in that same template expression — see CLAUDE.md's VolSync section for the full pattern.
+
+!!! warning "Renaming a cluster orphans its old VolSync Infisical folders"
+    `/k8s/volsync/<cluster>/...` folders are keyed by the literal cluster name. Renaming a cluster directory (as happened with `boa1-prod` → `production` and `boa1-lab` → `development`) makes Terraform plan to destroy the old `/k8s/volsync/boa1-prod/*`/`/k8s/volsync/boa1-lab/*` folders and create fresh, empty ones under the new names — the actual restic repository data in object storage isn't touched, but its *Infisical-stored* `RESTIC_REPOSITORY`/`RESTIC_PASSWORD` values would start fresh under the new path unless every app's `volsync.restore.sourceCluster` override is set to the old cluster name first (see above) to keep writing to/reading from the pre-rename repository path.
 
 !!! note "Terraform also provisions a per-app Infisical folder that goes unused"
     `infra/terraform/volsync.tf` creates a folder at `/k8s/volsync/<cluster>/<app>/` with reference-expression secrets deriving from the shared base. No shipped app's `InfisicalSecret` CR actually points at that path today — they all read `/k8s/volsync` directly and do their own suffixing as shown above. Worth knowing if you're investigating why that per-app folder looks empty or unreferenced.

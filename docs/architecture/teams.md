@@ -73,9 +73,8 @@ Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS conf
 | Path | What it does |
 |------|-------------|
 | `clusters/` | Cluster definitions and bootstrap app-of-apps |
-| `infra/omni/` | Talos machine config patches |
+| `infra/talos/` | Talos machine config patches |
 | `infra/ansible/` | Bootstrap playbooks |
-| `apps/omni/` | Omni control plane |
 
 ### Infrastructure (Terraform)
 
@@ -83,7 +82,7 @@ Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS conf
 |--------|----------------|
 | `infra/terraform/modules/cloudflare/` | Cloudflare DNS records and tunnels |
 | `infra/terraform/modules/tailscale/` | Tailscale ACL, tags, OAuth clients, and DNS preferences (sourced from `app.yaml` `tailscale:` blocks) |
-| `infra/terraform/modules/core_cluster/` | Vultr core cluster (VKE) — co-owned with Security Platforms for cloud security review |
+| `infra/terraform/modules/talos/` | Talos/Kubernetes cluster provisioning (machine secrets, config generation/apply, bootstrap) — bare-metal, not public cloud, so not co-owned with Security Platforms the way `core_cluster` (removed) was |
 
 ### App catalog machinery
 
@@ -117,7 +116,6 @@ Security Platforms is responsible for the security posture of all public cloud a
 
 | Module | What it manages |
 |--------|----------------|
-| `infra/terraform/modules/core_cluster/` | Vultr core cluster (VKE) — co-owned with Infrastructure Platforms |
 | `infra/terraform/modules/region/` | Regional cloud/bare-metal resources — co-owned with Infrastructure Platforms |
 
 ### Infrastructure (Terraform)

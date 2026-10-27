@@ -1,9 +1,0 @@
-apiVersion: v2
-name: omni
-description: Helm chart for Sidero Omni
-type: application
-version: 0.1.0
-dependencies:
-  - name: omni
-    version: 2.12.4
-    repository: oci://ghcr.io/siderolabs/charts

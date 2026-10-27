@@ -1,38 +1,49 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: apps-boa1-prod
+  name: apps-production
   namespace: argocd
 spec:
   project: default
   sources:
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
-      path: clusters/boa1-prod
+      path: clusters/production
       directory:
         recurse: true
-        exclude: 'cluster.yaml'
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
       path: apps
       helm:
-        releaseName: apps-boa1-prod
+        releaseName: apps-production
         values: |
           cluster:
-            name: boa1-prod
+            name: production
             region: boa1
+            shortName: prod
           apps:
             cloudflared:
               deploy: true
               values:
                 cluster:
-                  name: boa1-prod
+                  name: production
+            headlamp:
+              deploy: true
             home-assistant:
               deploy: true
               values:
                 zigbee2mqtt:
                   config:
                     serialPort: "tcp://10.1.246.11:6638"
+                # Restore-into-differently-named-cluster override (see CLAUDE.md's
+                # VolSync section): production was renamed from boa1-prod, so without
+                # this its RESTIC_REPOSITORY path would resolve to a fresh, empty
+                # path under "production" instead of the existing boa1-prod backups.
+                # Leave this in place — don't revert it on a timer — until a restore
+                # has been run and confirmed; removing it is a separate, manual step.
+                volsync:
+                  restore:
+                    sourceCluster: boa1-prod
             homepage:
               deploy: true
             knative:
@@ -322,7 +333,7 @@ spec:
               deploy: true
               values:
                 cluster:
-                  name: boa1-prod
+                  name: production
             multus:
               values:
                 vlans:

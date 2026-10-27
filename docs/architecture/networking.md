@@ -7,7 +7,7 @@
 Tailscale is used for:
 
 - **Developer access** — team members connect their devices to the tailnet and can reach internal services directly
-- **CI connectivity** — GitHub Actions jobs that need to reach internal infrastructure (Omni) join the tailnet as an ephemeral node via `tailscale/github-action`, tagged `tag:github-actions` and automatically removed when the job completes
+- **CI connectivity** — GitHub Actions jobs that need to reach internal infrastructure (the Talos nodes themselves, via the subnet router onto their LAN, for the Terraform-driven Talos provisioning job) join the tailnet as an ephemeral node via `tailscale/github-action`, tagged `tag:github-actions` and automatically removed when the job completes
 - **Service exposure** — internal services are exposed to the tailnet via the Tailscale Kubernetes Operator and reachable at stable DNS names
 
 Human/team access is granted via Entra ID groups, SCIM-synced into Tailscale — see [Access policies](#access-policies) below.
@@ -33,11 +33,13 @@ metadata:
     external-dns.kubernetes.io/hostname: "myapp.{{ .Values.cluster.name }}REDACTED"
 ```
 
-`tailscale.com/proxy-group: ingress` routes the Service through the cluster's shared ingress `ProxyGroup` instead of provisioning a dedicated proxy pod per Service. `external-dns` (running in every cluster) publishes the `external-dns.kubernetes.io/hostname` value as a CNAME in Cloudflare, pointing at whatever `<hostname>.<tailnet>.ts.net` address the Operator assigns the proxy. For example, the ArgoCD server on the management cluster is reachable at:
+`tailscale.com/proxy-group: ingress` routes the Service through the cluster's shared ingress `ProxyGroup` instead of provisioning a dedicated proxy pod per Service. `external-dns` (running in every cluster) publishes the `external-dns.kubernetes.io/hostname` value as a CNAME in Cloudflare, pointing at whatever `<hostname>.<tailnet>.ts.net` address the Operator assigns the proxy. For example, the ArgoCD server on `production` is reachable at:
 
 ```
 REDACTED
 ```
+
+Every Tailscale-exposed Service uses this internal `<name>.<cluster>REDACTED` pattern — the kyverno admission policy (`require-tailscale-service-annotations`) enforces the `REDACTED` suffix, with no exception. Headlamp's two consoles use a friendlier short name within that same pattern (`console.<prod|dev>REDACTED` rather than `headlamp.<cluster>REDACTED`, see `apps/headlamp/templates/service-tailscale.yaml`) but still end in `REDACTED`, so no policy change was needed for them.
 
 Pods that need *outbound* access to tailnet-only targets (rather than being reached) use an `ExternalName` Service annotated `tailscale.com/tailnet-fqdn` — pointing at the target's own tailnet hostname — instead of `loadBalancerClass`/`tailscale.com/proxy-group`:
 
@@ -71,11 +73,9 @@ k8s.api.<cluster>REDACTED
 
 It terminates TLS with a real cert-manager/Let's Encrypt certificate (`apps/tailscale/templates/certificate-apiserver-proxy.yaml`, the same `letsencrypt` `ClusterIssuer` Headlamp's own cert uses) rather than the cluster's internal CA, so clients get standard, publicly-trusted TLS verification — no `insecure-skip-tls-verify`, no CA to distribute. Whatever auth the client presents (e.g. a forwarded per-user OIDC bearer token) passes straight through in the `Authorization` header; the real apiserver still does authn/authz.
 
-`hsctl get kubeconfig`/`hsctl switch` default to this direct path (`kubectl-oidc_login` handles the OIDC login, PKCE, no client secret); `--omni`/`--break-glass` delegate straight to `omnictl kubeconfig` (see [`hsctl` reference](../operations/hsctl.md)).
+`hsctl get kubeconfig`/`hsctl switch` default to this direct path (`kubectl-oidc_login` handles the OIDC login, PKCE, no client secret). Break-glass access (bypassing OIDC entirely, e.g. if the OIDC issuer or Tailscale itself is down) uses the raw admin kubeconfig the `talos` Terraform module fetches at cluster-bootstrap time and stores in Infisical at `/k8s/talos/<prod|dev>/KUBECONFIG` — see CLAUDE.md's Clusters section.
 
-Headlamp shows every other cluster in its picker via this same direct path, with the same per-user RBAC it already has for `core`. Which clusters appear is derived automatically: Terraform (`infra/terraform/headlamp.tf`) enumerates every Omni-managed cluster (each `clusters/*/` with a `cluster.yaml`; their apiservers all trust the shared OIDC issuer via `infra/omni/patches/base.yaml`) and publishes the list to Infisical, which `apps/headlamp/templates/kubeconfig-secret.yaml` renders into one kubeconfig context per cluster pointing straight at `k8s.api.<cluster>REDACTED`.
-
-Headlamp's pod carries a Tailscale sidecar (`tag:app-headlamp`) so the backend dials those addresses directly over the tailnet — no per-cluster egress Services, and adding a cluster needs no Headlamp change at all. The `tag:app-headlamp` → `tag:k8s-api` grant that authorizes this is `local.k8s_grant` in `infra/terraform/modules/tailscale/acl.tf`.
+Headlamp no longer aggregates multiple clusters into one picker. Each cluster (`production`, `development`) runs its own, fully independent Headlamp instance that talks only to its own in-cluster apiserver (the pod's default in-cluster serviceaccount/context — `config.inClusterContextName` in `apps/headlamp/app.yaml` — no kubeconfig Secret, no Tailscale sidecar, no cross-cluster proxying). Each instance is exposed directly at its own friendly tailnet hostname, `REDACTED` / `REDACTED`, via the same Tailscale-ingress mechanism described above.
 
 ## External service exposure
 
@@ -83,7 +83,7 @@ Public internet exposure goes through Cloudflare Zero Trust Tunnels — entirely
 
 ```yaml
 exposePublic:
-  - cluster: boa1-prod   # which cluster's tunnel to route through
+  - cluster: production  # which cluster's tunnel to route through
     fqdn: myapp.io        # public hostname (must be in a Cloudflare zone in the HomeScale account)
     port: 80              # backend service port
     service: myapp        # optional, defaults to releaseName
@@ -108,7 +108,7 @@ Add an `access:` block to an `exposePublic:` entry to require Entra ID (or which
 
 ```yaml
 exposePublic:
-  - cluster: core
+  - cluster: production
     fqdn: REDACTED
     port: 443
     tls: true

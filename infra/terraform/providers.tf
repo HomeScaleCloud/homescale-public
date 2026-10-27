@@ -32,6 +32,10 @@ terraform {
       source  = "hashicorp/random"
       version = "3.9.1"
     }
+    talos = {
+      source  = "siderolabs/talos"
+      version = "0.12.0"
+    }
   }
 }
 
@@ -59,6 +63,11 @@ provider "infisical" {
 }
 
 provider "cloudflare" {}
+
+// No configuration of its own: it talks to each node's apid directly over
+// TCP:50000 using the client certificate talos_machine_secrets generates,
+// not a separate API endpoint/credential.
+provider "talos" {}
 
 provider "tailscale" {
   oauth_client_id     = data.infisical_secrets.ci.secrets["TAILSCALE_OAUTH_CLIENT_ID"].value

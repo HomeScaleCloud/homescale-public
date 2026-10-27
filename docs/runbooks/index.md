@@ -2,15 +2,6 @@
 
 Runbooks for alerts fired by Prometheus. Each alert links back to this page via its `runbook_url` annotation.
 
-## Omni
-
-| Alert | Severity |
-|-------|----------|
-| [OmniDown](omni-down.md) | critical |
-| [OmniNoConnectedMachines](omni-no-connected-machines.md) | critical |
-| [OmniNoMachines](omni-no-machines.md) | critical |
-| [OmniSecureBootDisabled](omni-secure-boot-disabled.md) | warning |
-
 ## ArgoCD
 
 | Alert | Severity |

@@ -25,7 +25,7 @@ Every `PrometheusRule` alert must have a corresponding runbook in `docs/runbooks
 
 This is enforced by `.github/scripts/check-runbooks.sh` (a `runbook-coverage` pre-commit hook, also run in CI): every repo-defined alert needs a `runbook_url` of the form above with a matching `docs/runbooks/<slug>.md` and `mkdocs.yml` nav entry, and every `docs/runbooks/*.md` must be claimed by an alert. The `<slug>` is taken from the `runbook_url` itself, so it doesn't have to be a mechanical kebab-case of the alert name.
 
-Runbooks live under `docs/runbooks/` grouped by system (e.g. Omni alerts → `omni-*.md`, PDU alerts → `apc-pdu-*.md`). See existing runbooks for the expected format: header with severity/alert/dashboard, "What this means" section, "Common causes" table, remediation steps. No "Diagnosis" section — the alert firing is the diagnosis.
+Runbooks live under `docs/runbooks/` grouped by system (e.g. Longhorn alerts → `longhorn-*.md`, PDU alerts → `apc-pdu-*.md`). See existing runbooks for the expected format: header with severity/alert/dashboard, "What this means" section, "Common causes" table, remediation steps. No "Diagnosis" section — the alert firing is the diagnosis.
 
 ## Key Commands
 
@@ -43,7 +43,7 @@ pre-commit run --all-files
 helm template <app-name> apps/<app-name>/
 
 # Render the top-level app catalog (requires cluster.name)
-helm template apps -f apps/values.yaml --set cluster.name=core
+helm template apps -f apps/values.yaml --set cluster.name=production
 
 # Render every catalog + per-app chart the way ArgoCD would, for every cluster,
 # then kubeconform the output against Kubernetes + datreeio CRD schemas. A CR
@@ -86,9 +86,9 @@ Deployment overrides no longer live in `app.yaml`. Instead, `clusters/<cluster>/
 - `apps.<app-name>.*` — any other field deep-merges over that app's base `app.yaml`, for this cluster only
 
 ```yaml
-# clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
+# clusters/production/apps.yaml, spec.sources[1].helm.values
 cluster:
-  name: boa1-prod
+  name: production
   region: boa1
 apps:
   homepage:
@@ -103,29 +103,47 @@ Apps that contain a `Chart.yaml` and `Dockerfile` under `apps/<name>/` are built
 
 ### Clusters (`clusters/`)
 
-One directory per cluster. The set of clusters changes often — read `clusters/` for the current list rather than relying on any list here. Cluster names follow the `<region>-<name>` convention (e.g. `boa1-prod`); `core` is the exception. Each cluster maps to exactly one region.
+One directory per cluster. The fleet is currently two clusters, named for their role rather than a region code: `production` (formerly `boa1-prod`) and `development` (formerly `boa1-lab`). There is no `core`/management cluster any more — each cluster self-hosts its own ArgoCD and is fully independent; no third-party-cloud-hosted central cluster exists or is needed.
 
 - `clusters/<cluster>/apps.yaml` — the bootstrap ArgoCD app-of-apps (applied manually once)
-- `clusters/<cluster>/cluster.yaml` — Omni cluster template (Talos/k8s versions, machine assignments, patches); uses `$CLUSTER_NAME` envsubst substitution at deploy time
 
-#### Registering new machines with Omni
+There is no `clusters/<cluster>/cluster.yaml` any more. Talos/Kubernetes versions, machine inventory (IPs), patches, and system extensions are all Terraform-managed instead — see "Talos cluster provisioning" below.
 
-A machine must be registered with Omni before it can be added to a `cluster.yaml` `machines:` list:
+#### Talos cluster provisioning (Terraform, no Omni)
 
-1. Log in to Omni (`https://REDACTED`), click **Download Installation Media**, and build a schematic (arch, system extensions matching the target cluster's `systemExtensions`, Secure Boot on/off).
-2. Write the downloaded ISO to a USB drive (`dd if=<iso> of=/dev/<device> conv=fdatasync`) or mount it as virtual media via the server's BMC (iDRAC/iLO/IPMI).
-3. Boot the machine from it — Talos boots into maintenance mode and needs outbound access to Omni (REDACTED:443).
-4. It appears in Omni's **Machines** list shortly after boot, identified by its Talos/SMBIOS UUID, in an unallocated state.
-5. Add that UUID to the relevant `machines:` list in `clusters/<cluster>/cluster.yaml` and merge — CI's Omni template sync claims the machine and installs the cluster onto it.
+Each cluster is provisioned directly by Terraform's [`siderolabs/talos`](https://registry.terraform.io/providers/siderolabs/talos/latest) provider — no self-hosted management plane. `infra/terraform/modules/talos/` is the module; `infra/terraform/talos-production.tf`/`talos-development.tf` each instantiate it once (`module "talos_production"`/`module "talos_development"`), carrying that cluster's Talos/Kubernetes version pins, system extensions, shared/inline config patches, and machine inventory (control-plane/worker node names + IPs).
+
+Use the **full** cluster name (`production`/`development`) wherever Talos or this provider has a literal cluster-identity field (`talos_machine_configuration`'s `cluster_name`, etc) — this is also what every app's `.Values.cluster.name` Helm value is set to in `clusters/<cluster>/apps.yaml`, so existing internal `<name>.<cluster>REDACTED` hostnames fleet-wide now read e.g. `REDACTED`. Use the **short** form (`prod`/`dev`) only where something is explicitly shortened: currently just Headlamp's `console.<prod|dev>REDACTED` hostname (`.Values.cluster.shortName`, set alongside `.Values.cluster.name` in each `clusters/<cluster>/apps.yaml` — still within the standard `REDACTED` pattern, no admission-policy exception needed) and this module's own Infisical paths (`/k8s/talos/<prod|dev>/KUBECONFIG`). A fleet-wide short-name parameter for every app's own URLs is a separate, later piece of work, not done here.
+
+The module, per cluster:
+1. Generates machine secrets (`talos_machine_secrets`) — held only in Terraform state; the provider needs no separate credential beyond this, it talks to each node's `apid` directly via the generated client cert.
+2. Builds an Image Factory schematic from `system_extensions` (`talos_image_factory_schematic`) and resolves installer/ISO URLs for it (`talos_image_factory_urls`) — this is the Terraform-era replacement for Omni's "Download Installation Media" wizard.
+3. Generates machine config per role (`talos_machine_configuration` data source) from: the shared patches in `infra/talos/patches/*.yaml` (`templatefile`'d, so `base.yaml`'s `${CLUSTER_NAME}` placeholder — previously substituted by CI's envsubst before an `omnictl` sync — still resolves, now against this module's own `var.cluster_name`), an install-image/disk-selector patch built from step 2, and any role-specific inline patches (e.g. scheduler config) passed in from `talos-<cluster>.tf`.
+4. Layers each machine's own static-addressing patch on top of that shared config, at apply time, via `talos_machine_configuration_apply`'s own `config_patches` argument — generated from `talos-<cluster>.tf`'s shared `network_interface` shape (bond/VLAN config, no addressing) plus that one machine's `ip`, since every machine in a role needs the *same* generated base config but a *different* address, which the role-wide `talos_machine_configuration` data source can't express on its own.
+5. Applies it to every machine by IP (`talos_machine_configuration_apply`), bootstraps etcd on the first control-plane node once (`talos_machine_bootstrap`), waits for cluster health (`talos_cluster_health`), then fetches a break-glass admin kubeconfig and stores it in Infisical at `/k8s/talos/<prod|dev>/KUBECONFIG` (day-to-day access is unaffected — still the direct-OIDC path via the Tailscale apiserver-proxy described below).
+
+**The DHCP/static-IP chicken-and-egg problem.** A freshly imaged machine boots into Talos maintenance mode with no machine config yet, so it only has a DHCP-assigned address — the static address `ip` above is itself delivered *by* the first config apply, not available before it. So step 4's very first apply for a given machine has to target that machine's current DHCP address, not its intended static one. `control_plane_nodes`/`worker_nodes` entries therefore carry both `ip` (the permanent static address — used for literally everything else: the generated static-addressing patch itself, the cluster endpoint, health checks, kubeconfig fetch, every later config update) and an optional `bootstrap_ip`, used only to override the *target* of that one machine's `talos_machine_configuration_apply`/`talos_machine_bootstrap` calls while it's set. The procedure, one time per machine: image and boot it (see "Registering new machines" below), read its DHCP address off the console/router/DHCP lease table by hand, set `bootstrap_ip` to that value in `talos-<cluster>.tf`, run `terraform apply`, confirm the machine now answers at its static `ip` (e.g. `talosctl -e <ip> -n <ip> version`), then remove `bootstrap_ip` again. This is exactly the kind of first-time, must-happen-from-the-LAN step `hsctl run -e local` exists for in the automatron-removal PR — a human runs it locally, from the same network as the target, rather than from CI. Expect the health-check/kubeconfig steps to fail on that first apply (they always target the static `ip`, which may not have taken effect yet mid-run) — that's fine, just re-run `terraform apply` once the machine has settled.
+
+**Known gaps versus Omni**, not currently replicated: there's no control-plane load balancer/VIP (the module uses the first control-plane node's own IP as the cluster endpoint — fine for `development`'s single node, a real but accepted weak point for `production`'s 3), and there's no equivalent of Omni's `backupConfiguration` (etcd snapshot backups) — the Talos provider has no feature for this.
+
+#### Registering new machines
+
+No separate "registration"/claim step with an external control plane any more — Terraform owns machine config directly once an IP is in the relevant `talos-<cluster>.tf`:
+
+1. Build a schematic and get an ISO via the Image Factory HTTP API (`POST https://factory.talos.dev/schematics`, system extensions in `customization.systemExtensions.officialExtensions`; ISO at `https://factory.talos.dev/image/<schematic-id>/<talos-version>/metal-<arch>.iso`) — or just read the relevant `module.talos_<cluster>`'s own `schematic_id`/`iso_url` Terraform outputs, since it's the same schematic that cluster's other machines already run.
+2. Write the ISO to a USB drive (`dd if=<iso> of=/dev/<device> conv=fdatasync`) or mount it as virtual media via the server's BMC (iDRAC/iLO/IPMI).
+3. Boot the machine from it — Talos boots into maintenance mode and prints its DHCP-assigned IP.
+4. Decide the machine's permanent static IP, and add `{ name = "<cluster>-cp-N", ip = "<the static IP>", bootstrap_ip = "<its current DHCP IP from step 3>" }` to the relevant `control_plane_nodes`/`worker_nodes` list in `talos-<cluster>.tf`. Merge, apply (this is the "DHCP/static-IP chicken-and-egg problem" case above), confirm the machine now answers at its static IP, then remove `bootstrap_ip` in a follow-up commit.
+
+The machine (and every other node in the cluster) must be reachable from wherever Terraform runs — directly, or via a Tailscale subnet router advertising the nodes' own LAN; CI's `talos` job joins the tailnet specifically for this.
 
 Full walkthrough: `docs/operations/registering-machines.md`.
 
 ### Infrastructure (`infra/`)
 
-- `infra/terraform/` — Terraform for cloud resources (Cloudflare DNS, DigitalOcean, Infisical project setup, Tailscale ACL/tags, core cluster bootstrap). State is in Terraform Cloud (`homescale` org, `homescale` workspace). `infra/terraform/plan-apply.sh` is the shared plan/apply logic CI's `terraform` job and `hsctl run terraform -e local` both call.
-- `infra/ansible/` — Bootstrapping playbooks (e.g., core/workload cluster bootstrap), run by CI's `ansible` job or `hsctl run <playbook> -e local`
-- `infra/omni/patches/` — shared Talos machine config patches applied to clusters during Omni template sync
-- `infra/omni/sync.sh` — syncs cluster templates and machine classes into Omni; called by CI's `omni` job and `hsctl run omni-sync -e local`
+- `infra/terraform/` — Terraform for cloud resources (Cloudflare DNS, DigitalOcean, Infisical project setup, Tailscale ACL/tags, Talos cluster provisioning). State is in Terraform Cloud (`homescale` org, `homescale` workspace). `infra/terraform/plan-apply.sh` is the shared plan/apply logic CI's `terraform` job and `hsctl run terraform -e local` both call.
+- `infra/ansible/` — Bootstrapping playbooks (e.g., workload cluster bootstrap), run by CI's `ansible` job or `hsctl run <playbook> -e local`
+- `infra/talos/patches/` — shared Talos machine config patches, applied directly by Terraform (`infra/terraform/modules/talos/`) to every machine in a cluster
 
 ### Secrets
 
@@ -136,18 +154,18 @@ Infisical is the secrets store. The Infisical k8s operator (deployed as an ArgoC
 Four jobs in `deploy.yaml`, called (along with `scan`/`build`/`mirror`) from `ci.yaml`:
 - **scan** — pre-commit, PR title lint (Conventional Commits), CodeQL, Trivy config scan
 - **build** — builds only changed apps on PRs and on pushes to main (all apps on a published release), builds Docker images, runs Trivy image scan; Helm charts are linted but not published
-- **deploy** (`terraform` → `omni` → `ansible`) — runs `terraform`/`omnictl`/`ansible-playbook` directly on the runner, serialized repo-wide via a `concurrency: deploy` group:
+- **deploy** (`terraform` → `talos` → `ansible`) — runs `terraform`/`ansible-playbook` directly on the runner, serialized repo-wide via a `concurrency: deploy` group:
   - **`terraform`** — plans on every PR/push (posts the plan as a PR comment, including the rendered Tailnet ACL as an artifact), applies on merge to `main` (gated by a GitHub Environment). Authenticates to Infisical via GitHub OIDC (`provider "infisical"`'s default `oidc` auth method, `infra/terraform/providers.tf`) — no Tailscale needed, everything it talks to (Cloudflare, Terraform Cloud, Infisical, Vultr) is a public API. Shared plan/apply logic lives in `infra/terraform/plan-apply.sh`.
-  - **`omni`** — detects changed `clusters/<name>/cluster.yaml`/`infra/omni/machineclasses/*.yaml` files, plans on PR (posts per-cluster/per-machine-class PR comments) and syncs on merge to `main` via `infra/omni/sync.sh`. Needs Tailscale to reach Omni directly (see Networking below).
-  - **`ansible`** — only runs on `workflow_dispatch` (manual trigger, or `hsctl run <name> -e remote`'s default dispatch path — see `docs/operations/hsctl.md`); runs `bootstrap-core`/`bootstrap-cluster`/any other `infra/ansible/playbooks/*.yml`. Also needs Tailscale (bootstrap-cluster fetches kubeconfigs from Omni).
-  - `workflow_dispatch` also lets `terraform`/`omni` run on demand outside their push/PR triggers (`inputs.job == 'terraform'`/`'omni-sync'`) — this is what `hsctl run terraform|omni-sync -e remote` dispatches to.
+  - **`talos`** — detects changed `infra/terraform/talos-*.tf`/`infra/talos/patches/*.yaml` files, plans on PR (posts per-cluster PR comments) and applies on merge to `main`, `terraform -target=module.talos_<cluster>` for each affected cluster — this replaces the old Omni-sync job (there's no management cluster to dispatch to any more). Needs Tailscale to reach the Talos nodes' own IPs directly (see Networking below).
+  - **`ansible`** — only runs on `workflow_dispatch` (manual trigger, or `hsctl run <name> -e remote`'s default dispatch path — see `docs/operations/hsctl.md`); runs `bootstrap-core`/`bootstrap-cluster`/any other `infra/ansible/playbooks/*.yml`. Also needs Tailscale — `bootstrap-cluster` fetches its target cluster's kubeconfig from Infisical (`/k8s/talos/<prod|dev>/KUBECONFIG`, written by the `talos` Terraform module), then reaches that cluster's apiserver directly over the same subnet-routed LAN the `talos` job uses.
+  - `workflow_dispatch` also lets `terraform`/`talos` run on demand outside their push/PR triggers (`inputs.job == 'terraform'`/`'talos'`) — this is what `hsctl run terraform|talos -e remote` dispatches to.
 
 ### Networking
 
-Tailscale is the zero-trust mesh used for human and machine access to services — CI reaching internal infra (when it needs to), and service exposure to end users.
-CI joins the tailnet as an ephemeral node (`tailscale/github-action`, tagged `tag:github-actions`) in the `omni`/`ansible` jobs — both need to reach Omni directly (`omnictl`, or a kubeconfig fetch for `bootstrap-cluster`). `terraform` never joins — it only calls public APIs. `tag:github-actions` is a `sources` identifier any app's own `tailscale:` policy block can grant access to (see below) — `apps/omni`'s own block already does, for the `omni`/`ansible` jobs' `omnictl` traffic.
+Tailscale is the zero-trust mesh used for human and machine access to services — CI reaching internal infra (the Talos nodes themselves, and the clusters they become), and service exposure to end users.
+CI joins the tailnet as an ephemeral node (`tailscale/github-action`, tagged `tag:github-actions`, removed when the job completes) in the `talos`/`ansible` jobs — `talos` to reach the Talos nodes' own IPs directly for Terraform's machine-config apply/bootstrap, `ansible` to reach a cluster's apiserver for `bootstrap-cluster`. Both rely on a Tailscale subnet router advertising the nodes' own LAN. `terraform` (the general workspace) never joins — it only calls public APIs. `tag:github-actions` is also a valid `sources` identifier any app's own `tailscale:` policy block can grant access to (see below) — currently no app does.
 
-**Internal service exposure** — the `tailscale` app deploys the official Tailscale Kubernetes Operator plus a shared per-cluster ingress `ProxyGroup` to every cluster. A Service opts in with `type: LoadBalancer` / `loadBalancerClass: tailscale`, annotated `tailscale.com/tags`/`tailscale.com/hostname`/`tailscale.com/proxy-group: ingress` (routes through the shared ProxyGroup instead of a dedicated proxy pod) and `external-dns.kubernetes.io/hostname` for a friendly `<name>.<cluster>REDACTED` CNAME, published by `external-dns` running in every cluster.
+**Internal service exposure** — the `tailscale` app deploys the official Tailscale Kubernetes Operator plus a shared per-cluster ingress `ProxyGroup` to every cluster. A Service opts in with `type: LoadBalancer` / `loadBalancerClass: tailscale`, annotated `tailscale.com/tags`/`tailscale.com/hostname`/`tailscale.com/proxy-group: ingress` (routes through the shared ProxyGroup instead of a dedicated proxy pod) and `external-dns.kubernetes.io/hostname` for a friendly `<name>.<cluster>REDACTED` CNAME, published by `external-dns` running in every cluster. The admission policy (`require-tailscale-service-annotations` in `apps/kyverno`) enforces that `REDACTED` suffix with no exception — Headlamp's two consoles (`REDACTED`/`REDACTED`) just use a friendlier short name (`console.<prod|dev>`) within that same pattern, rather than `headlamp.<cluster>`, so they pass the policy as-is.
 
 **External service exposure** — public internet exposure goes through Cloudflare Zero Trust Tunnels via the `exposePublic:` app.yaml block, entirely independent of Tailscale.
 
@@ -173,8 +191,7 @@ tailscale:
 In addition to the per-app rules above, the ACL always includes these grants defined directly in `acl.tf`, not app-specific policy:
 - `local.self_grant` — every member reaches their own other devices on every port/protocol (`src: autogroup:member`, `dst: autogroup:self`, `ip: ["*"]`); Tailscale's standard self-access pattern.
 - `local.remote_control_grant` — Infrastructure Platforms (`group:team-infra-plat@REDACTED`) reaches every tailnet endpoint (`dst: ["*"]`) on `tcp:5252`, the Tailscale client remote control web UI, and carries a `tailscale.com/cap/webui` app capability with `canEdit: ["*"]` granting full management/admin access (SSH, subnet routes, exit nodes, account settings) through that web UI on tagged devices.
-- `local.k8s_grant` — workload-cluster apiserver proxies (`dst: tag:k8s-api`, the `tailscale` app's `kube-apiserver-proxy` Service) on `tcp:443`, for Infrastructure Platforms, Security Platforms, `sg-k8s-admin`, and `tag:app-headlamp`.
-- `local.omni_k8s_grant` — the Omni Kubernetes proxy (`dst: tag:omni-k8s`, Omni's `k8s` Service at `REDACTED`) on `tcp:443`, restricted to `group:sg-k8s-admin@REDACTED` only (PIM activation required). This endpoint is deliberately **not** covered by omni's `tag:app-omni` policy (which gates the Omni UI/API) — it's the Talos/Omni kube proxy, break-glass human access only. CI's `ansible` job fetches per-cluster kubeconfigs through Omni's regular kubeconfig-issuing API (`omnictl kubeconfig --service-account`) instead, so it never touches this grant either. A Tailscale-exposed Service reaches this grant by carrying `tag:omni-k8s` (allowed by the kyverno annotation policy alongside `tag:app-*` and `tag:k8s-api`) instead of `tag:app-<name>`.
+- `local.k8s_grant` — workload-cluster apiserver proxies (`dst: tag:k8s-api`, the `tailscale` app's `kube-apiserver-proxy` Service) on `tcp:443`, for Infrastructure Platforms, Security Platforms, and `sg-k8s-admin`. `tag:app-headlamp` is deliberately **not** a source here any more — each Headlamp instance now talks only to its own in-cluster apiserver (default in-cluster serviceaccount, no Tailscale egress), not to every cluster's `kube-apiserver-proxy`, so it no longer needs this grant. (`local.omni_k8s_grant`, Omni's break-glass Kubernetes proxy grant, no longer exists — removed along with Omni/`core` itself. Talos cluster break-glass access now uses the admin kubeconfig the `talos` Terraform module stores in Infisical at `/k8s/talos/<prod|dev>/KUBECONFIG` instead of a Tailscale-exposed proxy.)
 
 ## VolSync Backups
 
@@ -191,7 +208,7 @@ values:
     backupSchedule: "0 */2 * * *"  # every 2 hours
 ```
 
-The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a secret named `<app>-volsync-repo` in the app's namespace, synced from Infisical at `/k8s/volsync/<cluster-name>/<app>` via an `InfisicalSecret` CR in the app's `templates/secret.yaml`. Since that repository path is derived from the deploying cluster's own `.Values.cluster.name`, restoring into a cluster under a different name than the one the backup was written under (e.g. after a rename, or standing up a replacement cluster) needs an explicit `volsync.restore.sourceCluster` override — otherwise it resolves to a fresh, empty path under the new name instead of the old backup data. `apps/omni/templates/secret.yaml` implements this (`{{ (((.Values.volsync).restore).sourceCluster) | default .Values.cluster.name }}`); other apps' `secret.yaml` would need the same pattern added before they could use it. It's a one-time bootstrap workaround, not a standing feature — remove the `sourceCluster` override (along with `restore.enabled`) once the restore is confirmed, so ongoing backups resume writing under the cluster's real name.
+The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a secret named `<app>-volsync-repo` in the app's namespace, synced from Infisical at `/k8s/volsync/<cluster-name>/<app>` via an `InfisicalSecret` CR in the app's `templates/secret.yaml`. Since that repository path is derived from the deploying cluster's own `.Values.cluster.name`, restoring into a cluster under a different name than the one the backup was written under (e.g. after a rename, or standing up a replacement cluster) needs an explicit `volsync.restore.sourceCluster` override — otherwise it resolves to a fresh, empty path under the new name instead of the old backup data. `apps/home-assistant/templates/secret.yaml` implements this (`{{ (((($.Values).volsync).restore).sourceCluster) | default $.Values.cluster.name }}`); other apps' `secret.yaml` would need the same pattern added before they could use it. It's a one-time bootstrap workaround, not a standing feature — remove the `sourceCluster` override (along with `restore.enabled`) once the restore is confirmed, so ongoing backups resume writing under the cluster's real name.
 
 ### Restore procedure
 
@@ -200,14 +217,13 @@ The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a 
    hsctl get snapshot <app>
    ```
 
-2. **Scale down and enable restore** in `clusters/<cluster>/apps.yaml`'s `apps` source values. For example, for omni on `core`:
+2. **Scale down and enable restore** in `clusters/<cluster>/apps.yaml`'s `apps` source values. For example, for home-assistant on `production`:
    ```yaml
-   # clusters/core/apps.yaml, spec.sources[1].helm.values
+   # clusters/production/apps.yaml, spec.sources[1].helm.values
    apps:
-     omni:
+     home-assistant:
        values:
-         omni:
-           replicaCount: 0
+         replicaCount: 0
          volsync:
            restore:
              enabled: true

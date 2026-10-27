@@ -23,7 +23,6 @@ locals {
     {
       "tag:k8s"            = ["autogroup:admin", "tag:k8s"]
       "tag:k8s-api"        = ["tag:k8s"]
-      "tag:omni-k8s"       = ["tag:k8s"]
       "tag:github-actions" = ["autogroup:admin"]
       "tag:tv"             = ["autogroup:admin"]
     },
@@ -39,15 +38,13 @@ locals {
     }
   ]
 
+  # tag:app-headlamp is deliberately NOT a source here: each Headlamp
+  # instance now talks only to its own in-cluster apiserver (default
+  # in-cluster serviceaccount, no Tailscale egress) instead of proxying to
+  # every cluster's kube-apiserver-proxy, so it no longer needs this grant.
   k8s_grant = {
-    src = ["group:team-infra-plat@REDACTED", "group:team-sec-plat@REDACTED", "group:sg-k8s-admin@REDACTED", "tag:app-headlamp"]
+    src = ["group:team-infra-plat@REDACTED", "group:team-sec-plat@REDACTED", "group:sg-k8s-admin@REDACTED"]
     dst = ["tag:k8s-api"]
-    ip  = ["tcp:443"]
-  }
-
-  omni_k8s_grant = {
-    src = ["group:sg-k8s-admin@REDACTED"]
-    dst = ["tag:omni-k8s"]
     ip  = ["tcp:443"]
   }
 
@@ -70,7 +67,7 @@ locals {
     }
   }
 
-  grants = concat(local.app_grants, [local.k8s_grant, local.omni_k8s_grant, local.self_grant, local.remote_control_grant])
+  grants = concat(local.app_grants, [local.k8s_grant, local.self_grant, local.remote_control_grant])
 
   node_attrs = [
     {

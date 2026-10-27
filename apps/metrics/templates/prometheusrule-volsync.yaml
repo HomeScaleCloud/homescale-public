@@ -1,4 +1,4 @@
-{{- if eq .Values.cluster.name "boa1-prod" }}
+{{- if eq .Values.cluster.name "production" }}
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:

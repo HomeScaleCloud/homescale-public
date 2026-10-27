@@ -39,7 +39,7 @@ defaultDeploy: false      # don't accidentally deploy everywhere
 Then enable it on the clusters you want in each `clusters/<cluster>/apps.yaml` (see [Deployment overrides](#deployment-overrides) below):
 
 ```yaml
-# clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
+# clusters/production/apps.yaml, spec.sources[1].helm.values
 apps:
   my-app:
     deploy: true
@@ -114,7 +114,7 @@ See [Secrets management](../architecture/secrets.md) for full details.
 helm template my-app apps/my-app/
 
 # Render the full catalog including the new app
-helm template apps -f apps/values.yaml --set cluster.name=boa1-prod
+helm template apps -f apps/values.yaml --set cluster.name=production
 
 # YAML lint
 yamllint -c .yamllint.yaml apps/my-app/
@@ -189,7 +189,7 @@ Add an `exposePublic:` block to `app.yaml` — it's a list, so one app can expos
 
 ```yaml
 exposePublic:
-  - cluster: boa1-prod       # which cluster's Cloudflare tunnel to route through
+  - cluster: production       # which cluster's Cloudflare tunnel to route through
     fqdn: myapp.example.com  # must be in a Cloudflare zone in the HomeScale account
     port: 80                 # backend service port
 ```
@@ -210,9 +210,9 @@ values:
 ```
 
 ```yaml
-# clusters/boa1-prod/apps.yaml, spec.sources[1].helm.values
+# clusters/production/apps.yaml, spec.sources[1].helm.values
 cluster:
-  name: boa1-prod
+  name: production
   region: boa1
 apps:
   my-app:

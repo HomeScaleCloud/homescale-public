@@ -27,7 +27,7 @@ spec:
     app.kubernetes.io/name: prometheus
     operator.prometheus.io/name: metrics-kube-prometheus-st-prometheus
 ---
-{{- if eq .Values.cluster.name "boa1-prod" }}
+{{- if eq .Values.cluster.name "production" }}
 apiVersion: v1
 kind: Service
 metadata:

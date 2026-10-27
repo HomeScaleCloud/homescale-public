@@ -1,4 +1,4 @@
-{{- if eq .Values.cluster.name "boa1-prod" }}
+{{- if eq .Values.cluster.name "production" }}
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -10,8 +10,10 @@ spec:
     name: {{ .Values.certIssuer | default "letsencrypt" }}
     kind: ClusterIssuer
 {{- $homescale := default (dict) .Values.homescale }}
-{{- /* pre-existing hardcoded names, kept for backwards compatibility */}}
-{{- $staticNames := list "REDACTED" "REDACTED" }}
+{{- /* pre-existing hardcoded names, kept for backwards compatibility — also keeping the
+      pre-rename boa1-prod hostname around as a static fallback SAN, since this cluster was
+      renamed boa1-prod -> production in the same change that introduced this comment */}}
+{{- $staticNames := list "REDACTED" "REDACTED" "REDACTED" }}
 {{- $dnsNames := concat (default (list) $homescale.exposePublicFqdns) $staticNames | uniq }}
   dnsNames:
 {{- range $dnsNames }}
