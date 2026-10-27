@@ -33,7 +33,7 @@ spec:
         runAsNonRoot: true
       containers:
       - name: controller
-        image: gcr.io/knative-releases/knative.dev/serving/cmd/controller@sha256:ca5062ece0329d002a81940cf4268d7898866434d70049bb93f27d3a786d3292
+        image: gcr.io/knative-releases/knative.dev/serving/cmd/controller@sha256:9bf7db638f617e2d8086919cece028bb6b7598449039bc8eb4018cc599c324c4
         resources:
           requests:
             cpu: 100m
