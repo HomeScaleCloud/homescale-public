@@ -93,10 +93,17 @@ run_usage() {
 # Usage: _run_infisical_secrets <path>   -> flat JSON object {KEY: value, ...} on stdout
 _run_infisical_secrets() {
     local path="$1" raw
-    raw=$(hsctl_infisical_call export --silent --env=prod --path="$path" --format=json) || {
+    if ! raw=$(hsctl_infisical_call export --silent --env=prod --path="$path" --format=json); then
+        # A folder that's never had anything written to it (e.g. /k8s/talos/<env> before
+        # that cluster's first bootstrap) 404s instead of returning an empty list -- same
+        # as "no secrets yet", not a real failure.
+        if grep -q "was not found" "/tmp/.hsctl-infisical-err.$$" 2>/dev/null; then
+            echo '[]'
+            return 0
+        fi
         hsctl_log_error "failed to fetch secrets from Infisical (path $path)"
         return 1
-    }
+    fi
     jq 'map({(.key): .value}) | add // {}' <<< "$raw"
 }
 

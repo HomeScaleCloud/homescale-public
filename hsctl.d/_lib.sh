@@ -66,6 +66,11 @@ hsctl_infisical_login() {
 # Usage: out=$(hsctl_infisical_call secrets get X --env=prod --path=/y --plain) || <caller's own error>
 hsctl_infisical_call() {
     local out err
+    # A fixed per-process path, not a plain variable: a caller capturing this function's
+    # stdout via $(...) runs it in a subshell, where a variable assignment made in here
+    # would be discarded the instant that subshell exits. $$ is unaffected by that same
+    # subshell nesting, so every caller in this process computes the same path.
+    : > "/tmp/.hsctl-infisical-err.$$"
     err=$(mktemp)
     if out=$(infisical "$@" </dev/null 2>"$err"); then
         rm -f "$err"
@@ -84,7 +89,20 @@ hsctl_infisical_call() {
         rm -f "$err"
         hsctl_infisical_login || return 1
     fi
-    infisical "$@" </dev/null
+    err=$(mktemp)
+    if out=$(infisical "$@" </dev/null 2>"$err"); then
+        rm -f "$err"
+        printf '%s' "$out"
+        return 0
+    fi
+    # Left for the caller to inspect (e.g. a 404 "folder not found" on a /k8s/talos/<env>
+    # path that's never been written to yet, normal before that cluster's first bootstrap,
+    # vs. a real auth/permissions failure) -- still echoed here too, so a caller that
+    # doesn't check it isn't left silent about why the call failed.
+    cp "$err" "/tmp/.hsctl-infisical-err.$$"
+    cat "$err" >&2
+    rm -f "$err"
+    return 1
 }
 
 # Resolve OIDC issuer/client ID from Infisical into HSCTL_OIDC_ISSUER_URL/HSCTL_OIDC_CLIENT_ID
