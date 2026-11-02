@@ -27,6 +27,19 @@
     - name: Generate this cluster's Talos secrets.yaml/talosconfig (one-time)
       when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0) and not _talm_secrets.stat.exists
       block:
+        # --force only populates a real talosconfig (client certs included) when
+        # secrets.yaml is ALSO being freshly generated in the same call -- confirmed
+        # directly: deleting only a stale talosconfig while secrets.yaml already exists
+        # still comes back as an empty "context: \"\"\ncontexts: {}" skeleton. Remove both
+        # first so init always regenerates them together, fresh and consistent.
+        - name: Remove any stale/partial secrets before a clean (re-)init
+          ansible.builtin.file:
+            path: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/{{ item }}"
+            state: absent
+          loop:
+            - talosconfig
+            - secrets.yaml
+
         - name: Run talm init --force to generate fresh secrets
           ansible.builtin.command: talm init -p generic -N {{ talos_cluster_name }} --force
           args:

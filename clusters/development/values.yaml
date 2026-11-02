@@ -1,5 +1,7 @@
 endpoint: "https://10.1.247.21:6443"
 
+installerImage: "factory.talos.dev/metal-installer-secureboot/2d7c7dc5ad9e03abe929ee1d1a59e79ffbc30cb0ff02f773c61fd0fe803c3ec8:v1.14.5"
+
 podSubnets:
   - 10.90.0.0/16
 serviceSubnets:
@@ -18,6 +20,8 @@ network:
         lacpRate: fast
         miimon: 100
       addresses: [10.1.247.21/24]
+      routes:
+        - gateway: 10.1.247.1
       vlans:
         - vlanId: 241
         - vlanId: 271

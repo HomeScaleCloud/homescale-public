@@ -40,6 +40,9 @@ machine:
   install:
     {{- (include "talm.discovered.disks_info" .) | nindent 4 }}
     disk: {{ include "talm.discovered.system_disk_name" . | quote }}
+    {{- with .Values.installerImage }}
+    image: {{ . | quote }}
+    {{- end }}
   {{- include "talm.guard.time_servers" . }}
   {{- with .Values.timeServers }}
   time:

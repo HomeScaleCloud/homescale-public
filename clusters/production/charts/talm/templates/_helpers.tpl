@@ -1241,7 +1241,13 @@ link: {{ .Values.vipLink }}
        a RouteConfig on the bond can express. */}}
 {{- $missingDestinations := list }}
 {{- range fromJsonArray (include "talm.discovered.routes_by_link" $slaveName) }}
-{{- if eq (.table | toString) "main" }}
+{{- /* A gateway-less (on-link) route -- fe80::/64 et al -- is kernel-assigned to
+       every interface automatically, never something an admin configured, and
+       the bond gets its own copy the moment it comes up. It also can't be
+       restated even if someone wanted to: talm.render.link_routes_mtu hard-fails
+       on a routes[] entry with no gateway, so flagging it here would be an
+       unfixable false positive, not a real loss. */}}
+{{- if and (eq (.table | toString) "main") (.gateway) }}
 {{- if not (has (.dst | toString) $bondDestinations) }}
 {{- $missingDestinations = append $missingDestinations (printf "%s via %s" (.dst | toString) (.gateway | toString)) }}
 {{- end }}
