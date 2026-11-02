@@ -1,25 +1,10 @@
-# REQUIRED. Cluster control-plane endpoint every node's kubelet/kube-proxy
-# dials. For multi-node, point this at a VIP (floatingIP) or external LB —
-# not a single node's IP, or there's no HA path to the apiserver.
 endpoint: "https://10.1.245.20:6443"
-
-# Layer-2 VIP for multi-node HA. Must equal the host portion of `endpoint`.
-# .20 is unused on the 10.1.245.0/24 LAN, one below the cp-1..3 range
-# (.21-.23) and inside bond0's own /24, so talm auto-pins it there.
 floatingIP: "10.1.245.20"
 
 podSubnets:
-  - 10.244.0.0/16
+  - 10.100.0.0/16
 serviceSubnets:
-  - 10.96.0.0/16
+  - 10.105.0.0/16
 
-# Subnets kubelet/etcd advertise. Leave empty to auto-derive from the node's
-# default-gateway link.
 advertisedSubnets:
   - 10.1.245.0/24
-
-# Per-node network topology lives in values/<node>.yaml (each control-plane
-# node has its own address). Other knobs this chart supports (vipLink,
-# clusterName, certSANs, registry mirrors, extra kernel modules/sysctls/
-# files, component args, etc.) are all unused here — see
-# charts/talm/templates/_helpers.tpl for their semantics if you need one.

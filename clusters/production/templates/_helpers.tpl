@@ -96,6 +96,9 @@ apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
   REDACTED/name: {{ .Values.clusterName | default .Chart.Name | quote }}
+  {{- with .Values.nodeRole }}
+  REDACTED/role: {{ . | quote }}
+  {{- end }}
 nodeIP:
   validSubnets:
     {{- include "talm.advertised_subnets" (dict "root" . "indent" 4) }}

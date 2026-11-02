@@ -357,6 +357,8 @@ spec:
                 subnetRouter:
                   advertiseRoutes:
                     - 10.1.245.0/24
+                    - 10.100.0.0/16
+                    - 10.105.0.0/16
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

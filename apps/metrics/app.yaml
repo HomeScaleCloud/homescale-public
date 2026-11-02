@@ -284,6 +284,7 @@ values:
         retention: 2h
         externalLabels:
           cluster: "{{ .Values.env.name }}"
+          region: "{{ .Values.env.region }}"
         ruleSelectorNilUsesHelmValues: false
         ruleSelector:
           matchLabels:

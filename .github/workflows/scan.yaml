@@ -85,6 +85,8 @@ jobs:
   talm:
     name: "Talm"
     runs-on: ubuntu-latest
+    env:
+      YQ_VERSION: "4.47.1"
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -101,6 +103,10 @@ jobs:
           tar -xzf /tmp/talm.tar.gz -C /tmp/talm-src --strip-components=1
           (cd /tmp/talm-src && sudo go build -o /usr/local/bin/talm -ldflags "-X main.Version=${TALM_VERSION}" .)
           talm --version
+      - name: Install yq
+        run: |
+          sudo curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64"
+          sudo chmod +x /usr/local/bin/yq
       - name: Render clusters/*/ talm projects offline
         run: .github/scripts/validate-talm.sh
 

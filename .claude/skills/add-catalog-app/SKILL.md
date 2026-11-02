@@ -93,7 +93,7 @@ Add `exposePublic:` (a list — one app can expose multiple Services/ports/fqdns
 
 ```yaml
 exposePublic:
-  - cluster: boa1-prod       # which cluster's Cloudflare tunnel to route through
+  - env: production         # which cluster's Cloudflare tunnel to route through
     fqdn: myapp.example.com  # must be in a Cloudflare zone in the HomeScale account
     port: 80
 ```
@@ -102,7 +102,7 @@ To gate it behind Entra ID login at Cloudflare's edge, add `access:`:
 
 ```yaml
 exposePublic:
-  - cluster: boa1-prod
+  - env: production
     fqdn: myapp.example.com
     port: 80
     access:

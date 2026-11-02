@@ -32,7 +32,8 @@ trap _run_cleanup EXIT
 
 run_usage() {
     echo "Usage: hsctl run <name> [--cluster <name>] [--arg key=value]... [-e|--execution-mode local|remote] [--dry-run] [--chain <name>[,<name>...]] [--git-ref <ref>]"
-    echo "       hsctl run talm --cluster <name> -- <talm args...>"
+    echo "       hsctl run bootstrap-cluster --cluster <name> -e local --nodes <file>"
+    echo "       hsctl run talm --cluster <name> <talm args...>"
     echo ""
     echo "<name> is one of:"
     echo "  bootstrap-core      bootstrap the core cluster (playbook)"
@@ -45,7 +46,7 @@ run_usage() {
     echo "                      to/from Infisical around the call. Always local — talm talks"
     echo "                      directly to Talos nodes on your LAN, the same way talosctl does, so"
     echo "                      -e/--execution-mode, --chain, and --dry-run don't apply to it."
-    echo "                      Everything after '--' is forwarded verbatim to talm."
+    echo "                      Everything else is forwarded verbatim to talm."
     echo "  <anything else>     (local mode only) any other playbook under"
     echo "                      infra/ansible/playbooks/<name>.yml"
     echo ""
@@ -57,6 +58,15 @@ run_usage() {
     echo "                              bootstrap-cluster (-e target=<name>) and terraform"
     echo "                              (scopes the plan/apply to that cluster's own resources)."
     echo "                              Required (not sugar) for talm — see above."
+    echo "  --nodes <file>              (bootstrap-cluster, local mode only) YAML/JSON file"
+    echo "                              listing this cluster's new nodes as {name, dhcp_ip,"
+    echo "                              static_ip} — folds the full Talm bootstrap (render,"
+    echo "                              apply, wait for the static IP, bootstrap etcd) into"
+    echo "                              this run, ahead of the usual cilium/argocd setup."
+    echo "                              Requires --cluster and -e local. Only for a cluster's"
+    echo "                              very first bootstrap — adding a node to an already"
+    echo "                              running cluster is still a manual 'hsctl run talm'"
+    echo "                              sequence against that one node (see CLAUDE.md)."
     echo "  -e, --execution-mode <mode> 'local' or 'remote' (default: remote). remote dispatches"
     echo "                              .github/workflows/deploy.yaml via 'gh workflow run' and"
     echo "                              follows the triggered run (requires 'gh auth login' and"
@@ -93,12 +103,19 @@ _run_infisical_secrets() {
 # Run bootstrap-core or bootstrap-cluster locally, pre-fetching secrets via the local
 # Infisical CLI session and handing them to Ansible as hsctl_local_secrets.
 _run_bootstrap_local() {
-    local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4"
+    local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4" nodes_file="$5"
 
     command -v infisical &>/dev/null || { echo "hsctl run: the infisical CLI is required (brew install infisical)" >&2; exit 1; }
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
 
     [[ -n "$cluster" && "$playbook" == "bootstrap-core" ]] && hsctl_log_info "--cluster is ignored for bootstrap-core"
+
+    local bootstrap_nodes_json='[]'
+    if [[ -n "$nodes_file" ]]; then
+        command -v yq &>/dev/null || { echo "hsctl run: yq is required (brew install yq)" >&2; exit 1; }
+        [[ -f "$nodes_file" ]] || { hsctl_log_error "no such file: $nodes_file"; exit 1; }
+        bootstrap_nodes_json=$(yq -o=json '.' "$nodes_file") || { hsctl_log_error "failed to parse $nodes_file as YAML/JSON"; exit 1; }
+    fi
 
     hsctl_log_info "fetching secrets from Infisical via local CLI session"
     local argocd_secrets infisical_op_secrets ci_secrets='{}' talos_kubeconfigs='{}'
@@ -126,7 +143,9 @@ _run_bootstrap_local() {
         --argjson infisical_op "$infisical_op_secrets" \
         --argjson ci "$ci_secrets" \
         --argjson talos_kubeconfig "$talos_kubeconfigs" \
-        '{hsctl_local: true, hsctl_local_secrets: {argocd_deploy_key: $argocd, infisical_operator: $infisical_op, ci: $ci, talos_kubeconfig: $talos_kubeconfig}}' \
+        --argjson bootstrap_nodes "$bootstrap_nodes_json" \
+        --arg hsctl_repo_root "$HSCTL_REPO_ROOT" \
+        '{hsctl_local: true, hsctl_repo_root: $hsctl_repo_root, bootstrap_nodes: $bootstrap_nodes, hsctl_local_secrets: {argocd_deploy_key: $argocd, infisical_operator: $infisical_op, ci: $ci, talos_kubeconfig: $talos_kubeconfig}}' \
         > "$extra_vars_file"
 
     (
@@ -303,14 +322,14 @@ _run_local_clone_repo() {
 }
 
 _run_local() {
-    local name="$1" cluster="$2" dry_run="$3" repo_root="$4"
+    local name="$1" cluster="$2" dry_run="$3" repo_root="$4" nodes_file="${5:-}"
 
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
 
     case "$name" in
         bootstrap-core|bootstrap-cluster)
             command -v ansible-playbook &>/dev/null || { echo "hsctl run: ansible-playbook is required (brew install ansible)" >&2; exit 1; }
-            _run_bootstrap_local "$name" "$cluster" "$dry_run" "$repo_root"
+            _run_bootstrap_local "$name" "$cluster" "$dry_run" "$repo_root" "$nodes_file"
             ;;
         terraform)
             _run_terraform_local "$cluster" "$dry_run" "$repo_root"
@@ -370,12 +389,36 @@ _run_remote() {
 }
 
 run_main() {
+    # talm is neither a dispatched CI job nor a playbook run against a frozen clone of
+    # main — it talks directly to live Talos nodes on the operator's own LAN, the same way
+    # talosctl does, so it bypasses the remote-dispatch/local-clone machinery below entirely
+    # and runs straight against $HSCTL_REPO_ROOT's own clusters/<cluster>/ project dir.
+    #
+    # It gets its own tiny arg grammar: talm has its own -f, --dry-run, -i, etc., which
+    # would otherwise collide with hsctl run's own flags of the same name. The only thing
+    # hsctl run looks for is --cluster, wherever it appears; everything else (a stray --
+    # included) passes straight through to talm untouched.
+    if [[ "${1:-}" == "talm" ]]; then
+        shift
+        local cluster="" talm_args=()
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --cluster) cluster="${2:-}"; [[ -z "$cluster" ]] && run_usage; shift 2 ;;
+                --) shift ;;
+                *) talm_args+=("$1"); shift ;;
+            esac
+        done
+        _run_talm "$cluster" "${talm_args[@]}"
+        return $?
+    fi
+
     local playbook="" cluster="" mode="remote" dry_run="false" playbook_set=false
-    local chain_raw="" arg_kvs=() git_ref="main" talm_args=()
+    local chain_raw="" arg_kvs=() git_ref="main" nodes_file=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --cluster) cluster="${2:-}"; [[ -z "$cluster" ]] && run_usage; shift 2 ;;
+            --nodes) nodes_file="${2:-}"; [[ -z "$nodes_file" ]] && run_usage; shift 2 ;;
             --arg)
                 [[ -z "${2:-}" || "${2:-}" != *=* ]] && run_usage
                 arg_kvs+=("$2"); shift 2 ;;
@@ -390,8 +433,6 @@ run_main() {
             --git-ref)
                 git_ref="${2:-}"; [[ -z "$git_ref" ]] && run_usage
                 shift 2 ;;
-            --)
-                shift; talm_args=("$@"); break ;;
             -h|--help) run_usage ;;
             --*) echo "hsctl run: unknown flag '$1'" >&2; run_usage ;;
             *)
@@ -401,15 +442,9 @@ run_main() {
     done
 
     [[ -z "$playbook" ]] && { echo "hsctl run: a name is required" >&2; run_usage; }
-
-    # talm is neither a dispatched CI job nor a playbook run against a frozen clone of
-    # main — it talks directly to live Talos nodes on the operator's own LAN, the same way
-    # talosctl does, so it bypasses the remote-dispatch/local-clone machinery below entirely
-    # and runs straight against $HSCTL_REPO_ROOT's own clusters/<cluster>/ project dir.
-    if [[ "$playbook" == "talm" ]]; then
-        _run_talm "$cluster" "${talm_args[@]}"
-        return $?
-    fi
+    [[ -n "$nodes_file" && "$playbook" != "bootstrap-cluster" ]] && { echo "hsctl run: --nodes is only valid with bootstrap-cluster" >&2; run_usage; }
+    [[ -n "$nodes_file" && "$mode" != "local" ]] && { echo "hsctl run: --nodes requires -e local (talm needs direct access to your LAN)" >&2; run_usage; }
+    [[ -n "$nodes_file" && -z "$cluster" ]] && { echo "hsctl run: --nodes requires --cluster" >&2; run_usage; }
 
     local local_repo_root=""
     if [[ "$mode" == "local" ]]; then
@@ -436,7 +471,7 @@ run_main() {
         fi
         for p in "$playbook" "${chain_templates[@]:-}"; do
             [[ -z "$p" ]] && continue
-            _run_local "$p" "$cluster" "$dry_run" "$local_repo_root"
+            _run_local "$p" "$cluster" "$dry_run" "$local_repo_root" "$nodes_file"
         done
     fi
 }

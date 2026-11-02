@@ -131,9 +131,8 @@ for cluster_dir in clusters/*/; do
     # minus anything matching its own `directory.exclude` glob (matched against the path
     # relative to the source dir, same as ArgoCD's own directory.exclude — a pattern like
     # `ansible/**` would skip a whole subtree the same way, not just one filename). The
-    # talm project files and tailscale.yaml (Terraform-only data) live one level up at
-    # clusters/<cluster>/, outside this source path entirely, so there's nothing to
-    # exclude here any more.
+    # talm project files live one level up at clusters/<cluster>/, outside this source
+    # path entirely, so there's nothing to exclude here any more.
     # Scans every Application-kind manifest directly under clusters/<cluster>/apps/, not
     # just apps.yaml — a directory-synced CR tree may deliberately live in its own
     # independently-synced Application instead of as another source on apps.yaml's (e.g.

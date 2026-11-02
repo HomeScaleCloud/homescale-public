@@ -1,3 +1,5 @@
+nodeRole: cp-1
+
 network:
   extraLinks:
     - interface: bond0

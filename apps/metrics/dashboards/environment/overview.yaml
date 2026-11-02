@@ -26,7 +26,7 @@ templating:
       datasource:
         type: prometheus
         uid: prometheus
-      definition: label_values({__name__=~"apc_rpdu_input_voltage_volts|homeassistant_entity_available"}, cluster)
+      definition: label_values({__name__=~"apc_rpdu_input_voltage_volts|homeassistant_entity_available"}, region)
       hide: 0
       includeAll: false
       label: Region
@@ -34,10 +34,9 @@ templating:
       name: region
       options: []
       query:
-        query: label_values({__name__=~"apc_rpdu_input_voltage_volts|homeassistant_entity_available"}, cluster)
+        query: label_values({__name__=~"apc_rpdu_input_voltage_volts|homeassistant_entity_available"}, region)
         refId: StandardVariableQuery
       refresh: 2
-      regex: '/^([^-]+)-/'
       sort: 1
       type: query
 panels:
@@ -109,7 +108,7 @@ panels:
           - datasource:
               type: prometheus
               uid: prometheus
-            expr: max without (alertstate) ((ALERTS{cluster=~"$region-.*", alertname=~"ApcPdu.*", severity="critical", alertstate="firing"} * 2) or (ALERTS{cluster=~"$region-.*", alertname=~"ApcPdu.*", alertstate="pending"} * 1) or (ALERTS{cluster=~"$region-.*", alertname=~"ApcPdu.*", severity="warning"} * 1))
+            expr: max without (alertstate) ((ALERTS{region=~"$region", alertname=~"ApcPdu.*", severity="critical", alertstate="firing"} * 2) or (ALERTS{region=~"$region", alertname=~"ApcPdu.*", alertstate="pending"} * 1) or (ALERTS{region=~"$region", alertname=~"ApcPdu.*", severity="warning"} * 1))
             legendFormat: '{{alertname}} ({{cluster}} - {{job}})'
             range: true
             instant: false
@@ -219,7 +218,7 @@ panels:
           - datasource:
               type: prometheus
               uid: prometheus
-            expr: ALERTS{cluster=~"$region-.*", alertname=~"ApcPdu.*", alertstate=~"firing|pending"}
+            expr: ALERTS{region=~"$region", alertname=~"ApcPdu.*", alertstate=~"firing|pending"}
             instant: true
             format: table
             legendFormat: ''
@@ -333,7 +332,7 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: apc_rpdu_input_voltage_volts{cluster=~"$region-.*"}
+        expr: apc_rpdu_input_voltage_volts{region=~"$region"}
         legendFormat: '{{cluster}} - {{job}}'
     title: Input Voltage
     type: stat
@@ -379,7 +378,7 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: apc_rpdu_bank_load_deciamps{cluster=~"$region-.*"} / 10 / on(cluster, job) group_left() apc_rpdu_device_rated_amps{cluster=~"$region-.*"} * 100
+        expr: apc_rpdu_bank_load_deciamps{region=~"$region"} / 10 / on(cluster, job) group_left() apc_rpdu_device_rated_amps{region=~"$region"} * 100
         legendFormat: '{{cluster}} - {{job}}'
     title: Bank Load (% of rated capacity)
     type: stat
@@ -419,7 +418,7 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: apc_rpdu_uptime_seconds{cluster=~"$region-.*"}
+        expr: apc_rpdu_uptime_seconds{region=~"$region"}
         legendFormat: '{{cluster}} - {{job}}'
     title: PDU Uptime
     type: stat
@@ -459,7 +458,7 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: homeassistant_sensor_temperature_celsius{cluster=~"$region-.*", entity="sensor.rack_climate_sensor_temperature"}
+        expr: homeassistant_sensor_temperature_celsius{region=~"$region", entity="sensor.rack_climate_sensor_temperature"}
         legendFormat: '{{cluster}}'
     title: Temperature
     type: stat
@@ -501,7 +500,7 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: homeassistant_sensor_humidity_percent{cluster=~"$region-.*", entity="sensor.rack_climate_sensor_humidity"}
+        expr: homeassistant_sensor_humidity_percent{region=~"$region", entity="sensor.rack_climate_sensor_humidity"}
         legendFormat: '{{cluster}}'
     title: Humidity
     type: stat
@@ -541,7 +540,7 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: time() - homeassistant_last_updated_time_seconds{cluster=~"$region-.*", entity="sensor.rack_climate_sensor_temperature"}
+        expr: time() - homeassistant_last_updated_time_seconds{region=~"$region", entity="sensor.rack_climate_sensor_temperature"}
         legendFormat: '{{cluster}}'
     title: Climate Sensor — Time Since Last Report
     type: stat
@@ -584,7 +583,7 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: apc_rpdu_device_rated_amps{cluster=~"$region-.*"}
+        expr: apc_rpdu_device_rated_amps{region=~"$region"}
         format: table
         instant: true
         legendFormat: ''
@@ -696,19 +695,19 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: apc_rpdu_bank_load_deciamps{cluster=~"$region-.*"} / 10
+        expr: apc_rpdu_bank_load_deciamps{region=~"$region"} / 10
         legendFormat: '{{cluster}} - {{job}}'
         refId: load
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: apc_rpdu_bank_near_overload_threshold_amps{cluster=~"$region-.*"} * 0.7
+        expr: apc_rpdu_bank_near_overload_threshold_amps{region=~"$region"} * 0.7
         legendFormat: '{{cluster}} - {{job}} warning threshold (70%)'
         refId: warning
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: apc_rpdu_bank_near_overload_threshold_amps{cluster=~"$region-.*"}
+        expr: apc_rpdu_bank_near_overload_threshold_amps{region=~"$region"}
         legendFormat: '{{cluster}} - {{job}} near-overload threshold'
         refId: threshold
     title: Bank Load (Amps)
@@ -761,7 +760,7 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: apc_rpdu_input_voltage_volts{cluster=~"$region-.*"}
+        expr: apc_rpdu_input_voltage_volts{region=~"$region"}
         legendFormat: '{{cluster}} - {{job}}'
     title: Input Voltage
     type: timeseries
@@ -805,7 +804,7 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: homeassistant_sensor_temperature_celsius{cluster=~"$region-.*", entity="sensor.rack_climate_sensor_temperature"}
+        expr: homeassistant_sensor_temperature_celsius{region=~"$region", entity="sensor.rack_climate_sensor_temperature"}
         legendFormat: '{{cluster}}'
     title: Temperature
     type: timeseries
@@ -842,7 +841,7 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: homeassistant_sensor_humidity_percent{cluster=~"$region-.*", entity="sensor.rack_climate_sensor_humidity"}
+        expr: homeassistant_sensor_humidity_percent{region=~"$region", entity="sensor.rack_climate_sensor_humidity"}
         legendFormat: '{{cluster}}'
     title: Humidity
     type: timeseries
@@ -899,7 +898,7 @@ panels:
       - datasource:
           type: prometheus
           uid: prometheus
-        expr: apc_rpdu_outlet_state{cluster=~"$region-.*"}
+        expr: apc_rpdu_outlet_state{region=~"$region"}
         legendFormat: '{{cluster}} {{job}} — {{outlet_name}}'
     title: Outlet States
     type: stat

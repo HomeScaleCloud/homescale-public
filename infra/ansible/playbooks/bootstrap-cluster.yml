@@ -18,11 +18,85 @@
       kubeconfig: "{{ kubeconfig_path }}"
 
   pre_tasks:
+    - name: Determine Talos config patches to stack
+      ansible.builtin.set_fact:
+        _talos_base_patches: "{{ lookup('fileglob', hsctl_repo_root + '/infra/talm/patches/base/*.yaml', wantlist=true) }}"
+        _talos_cluster_patches: "{{ lookup('fileglob', hsctl_repo_root + '/infra/talm/patches/' + talos_cluster_name + '/*.yaml', wantlist=true) }}"
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+
+    - name: Exclude patches this node count doesn't meet
+      ansible.builtin.set_fact:
+        _talos_patch_files: "{{ (_talos_base_patches | reject('search', '/spegel-containerd.yaml') | list) + _talos_cluster_patches if (bootstrap_nodes | length) < 3 else _talos_base_patches + _talos_cluster_patches }}"
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+
+    - name: Render Talos config for each new node
+      ansible.builtin.shell: >
+        hsctl run talm --cluster {{ talos_cluster_name }}
+        --nodes {{ item.dhcp_ip }} -e {{ item.dhcp_ip }}
+        template -t templates/controlplane.yaml --values values/{{ item.name }}.yaml
+        > nodes/{{ item.name }}.yaml
+      environment:
+        HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
+      loop: "{{ bootstrap_nodes | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+
+    - name: Apply Talos config to each new node
+      ansible.builtin.command: >
+        hsctl run talm --cluster {{ talos_cluster_name }}
+        apply -f nodes/{{ item.name }}.yaml
+        {{ _talos_patch_files | map('regex_replace', '^', '-f ') | join(' ') }} -i
+      environment:
+        HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
+      loop: "{{ bootstrap_nodes | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+
+    - name: Wait for each node's new static IP
+      ansible.builtin.wait_for:
+        host: "{{ item.static_ip }}"
+        port: 50000
+        delay: 10
+        timeout: 300
+      loop: "{{ bootstrap_nodes | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+
+    - name: Bootstrap etcd on the first node
+      ansible.builtin.command: >
+        hsctl run talm --cluster {{ talos_cluster_name }}
+        --nodes {{ bootstrap_nodes[0].static_ip }} -e {{ bootstrap_nodes[0].static_ip }}
+        bootstrap -f nodes/{{ bootstrap_nodes[0].name }}.yaml
+      environment:
+        HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+
+    - name: Wait for the k8s API on the freshly bootstrapped cluster
+      ansible.builtin.wait_for:
+        host: "{{ bootstrap_nodes[0].static_ip }}"
+        port: 6443
+        delay: 10
+        timeout: 300
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+
+    - name: Use the kubeconfig a fresh bootstrap just pushed
+      ansible.builtin.copy:
+        src: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/kubeconfig"
+        dest: "{{ kubeconfig_path }}"
+        mode: "0600"
+        remote_src: true
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+
     # The break-glass admin kubeconfig a human pushes to Infisical via `hsctl run talm
-    # --cluster <name> -- kubeconfig` (see _run_talm in hsctl.d/run.sh) after bootstrapping
+    # --cluster <name> kubeconfig` (see _run_talm in hsctl.d/run.sh) after bootstrapping
     # Talos itself — CI authenticates via GitHub Actions OIDC the same way cluster-secrets'
     # own role does; `hsctl run` (local) pre-fetches via the already-logged-in `infisical`
     # CLI instead (see _run_bootstrap_local), skipping straight to writing the file below.
+    # A fresh bootstrap in this same run (bootstrap_nodes above) skips this entirely — its
+    # kubeconfig comes straight off disk, since the pre-fetch above predates it.
     - name: Login to Infisical
       infisical.vault.login:
         url: "{{ infisical_url }}"
@@ -58,7 +132,7 @@
         dest: "{{ kubeconfig_path }}"
         mode: "0600"
       no_log: true
-      when: hsctl_local | default(false)
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length == 0)
 
     - name: Wait for k8s API to be reachable
       kubernetes.core.k8s_info:

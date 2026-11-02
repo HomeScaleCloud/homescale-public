@@ -3,6 +3,8 @@
 # values.yaml/template/patch before merge. Needs no real cluster secrets: generates one
 # throwaway secrets.yaml in a scratch dir and points every render at it via --with-secrets,
 # without ever touching (or needing --force on) the real, already-checked-out project dirs.
+# Also checks that no two clusters share a podSubnets/serviceSubnets entry -- Tailscale
+# can't route to two clusters claiming the same destination CIDR.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -38,5 +40,26 @@ for cluster_dir in "$repo_root"/clusters/*/; do
         fi
     done
 done
+
+subnets_seen="$scratch/subnets-seen"
+: > "$subnets_seen"
+for cluster_dir in "$repo_root"/clusters/*/; do
+    cluster="$(basename "$cluster_dir")"
+    [[ -f "$cluster_dir/values.yaml" ]] || continue
+
+    while IFS= read -r cidr; do
+        [[ -z "$cidr" || "$cidr" == "null" ]] && continue
+        echo "$cidr $cluster" >> "$subnets_seen"
+    done < <(yq '(.podSubnets // [])[], (.serviceSubnets // [])[]' "$cluster_dir/values.yaml")
+done
+
+dupe_subnets="$(awk '{print $1}' "$subnets_seen" | sort | uniq -d)"
+if [[ -n "$dupe_subnets" ]]; then
+    while IFS= read -r cidr; do
+        owners="$(awk -v c="$cidr" '$1 == c { printf "%s ", $2 }' "$subnets_seen")"
+        echo "FAILED: $cidr is used by more than one cluster ($owners) -- podSubnets/serviceSubnets must be unique per cluster" >&2
+    done <<< "$dupe_subnets"
+    fail=1
+fi
 
 exit $fail

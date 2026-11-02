@@ -260,13 +260,12 @@ jobs:
 
             # The talm project files (Chart.yaml, values.yaml, templates/, charts/,
             # values/, nodes/) live directly under clusters/<cluster>/, alongside
-            # apps/ (the ArgoCD app-of-apps, unrelated to talm) and tailscale.yaml
-            # (Terraform-only data) — exclude both so changes there don't trigger
-            # a talm apply.
+            # apps/ (the ArgoCD app-of-apps, unrelated to talm) — exclude it so
+            # changes there don't trigger a talm apply.
             changed_cluster_dirs=$(
               echo "$changed_files" \
                 | { grep -E '^clusters/[^/]+/' || true; } \
-                | { grep -vE '^clusters/[^/]+/apps/|^clusters/[^/]+/tailscale\.yaml$' || true; } \
+                | { grep -vE '^clusters/[^/]+/apps/' || true; } \
                 | sed -E 's#^clusters/([^/]+)/.*#\1#'
             )
             changed_cluster_patches=$(
