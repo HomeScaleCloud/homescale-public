@@ -35,7 +35,7 @@ spec:
         runAsNonRoot: true
       containers:
       - name: webhook
-        image: gcr.io/knative-releases/knative.dev/serving/cmd/webhook@sha256:3846e9a416665c5b9ec2e4de246cfcb5c4ab0d01ba19348aa008caf30144b650
+        image: gcr.io/knative-releases/knative.dev/serving/cmd/webhook@sha256:7cc4b7bc704086497cf2b5733e20856f6e2d8c95822212d1e06f1fb8697c9a08
         resources:
           requests:
             cpu: 100m
