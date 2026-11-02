@@ -33,7 +33,8 @@
       ansible.builtin.shell: >
         hsctl run talm --cluster {{ talos_cluster_name }}
         --nodes {{ item.dhcp_ip }} -e {{ item.dhcp_ip }}
-        template -t templates/controlplane.yaml --values values/{{ item.name }}.yaml
+        template -t templates/controlplane.yaml
+        {{ ((hsctl_repo_root + '/clusters/' + talos_cluster_name + '/values/' + item.name + '.yaml') is file) | ternary('--values values/' + item.name + '.yaml', '') }}
         > nodes/{{ item.name }}.yaml
       environment:
         HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
