@@ -98,7 +98,10 @@ _run_infisical_secrets() {
         # that cluster's first bootstrap) 404s instead of returning an empty list -- same
         # as "no secrets yet", not a real failure.
         if grep -q "was not found" "/tmp/.hsctl-infisical-err.$$" 2>/dev/null; then
-            echo '[]'
+            # The success path below always flattens into a JSON object
+            # ({KEY: value, ...}), never a raw array -- callers that key-index the
+            # result (e.g. _run_talm's `.[$k] // ""`) need that same shape here.
+            echo '{}'
             return 0
         fi
         hsctl_log_error "failed to fetch secrets from Infisical (path $path)"

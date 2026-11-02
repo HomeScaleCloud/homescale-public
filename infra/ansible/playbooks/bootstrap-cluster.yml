@@ -18,6 +18,38 @@
       kubeconfig: "{{ kubeconfig_path }}"
 
   pre_tasks:
+    - name: Check whether this cluster's Talm project already has secrets
+      ansible.builtin.stat:
+        path: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/secrets.yaml"
+      register: _talm_secrets
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+
+    - name: Generate this cluster's Talos secrets.yaml/talosconfig (one-time)
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0) and not _talm_secrets.stat.exists
+      block:
+        - name: Run talm init --force to generate fresh secrets
+          ansible.builtin.command: talm init -p generic -N {{ talos_cluster_name }} --force
+          args:
+            chdir: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}"
+
+        # --force regenerates the whole project scaffold to get a fresh secrets.yaml,
+        # including the encrypted copies and talm.key this project doesn't use (see
+        # CLAUDE.md's Secrets section) -- drop those, then restore every committed file
+        # it just overwrote from git, leaving only the new secrets.yaml/talosconfig.
+        - name: Drop the encrypted copies and key this project doesn't use
+          ansible.builtin.file:
+            path: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/{{ item }}"
+            state: absent
+          loop:
+            - secrets.encrypted.yaml
+            - talosconfig.encrypted
+            - talm.key
+
+        - name: Restore every committed file talm init --force just overwrote
+          ansible.builtin.command: git checkout -- Chart.yaml charts templates values.yaml .gitignore
+          args:
+            chdir: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}"
+
     - name: Determine Talos config patches to stack
       ansible.builtin.set_fact:
         _talos_base_patches: "{{ lookup('fileglob', hsctl_repo_root + '/infra/talm/patches/base/*.yaml', wantlist=true) }}"
@@ -43,6 +75,8 @@
         template -t templates/controlplane.yaml
         {{ ((hsctl_repo_root + '/clusters/' + talos_cluster_name + '/values/' + item.name + '.yaml') is file) | ternary('--values values/' + item.name + '.yaml', '') }}
         > {{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/nodes/{{ item.name }}.yaml
+      args:
+        chdir: "{{ hsctl_repo_root }}"
       environment:
         HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
       loop: "{{ bootstrap_nodes | default([]) }}"
@@ -55,6 +89,8 @@
         hsctl run talm --cluster {{ talos_cluster_name }}
         apply -f nodes/{{ item.name }}.yaml
         {{ _talos_patch_files | map('regex_replace', '^', '-f ') | join(' ') }} -i
+      args:
+        chdir: "{{ hsctl_repo_root }}"
       environment:
         HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
       loop: "{{ bootstrap_nodes | default([]) }}"
@@ -78,6 +114,8 @@
         hsctl run talm --cluster {{ talos_cluster_name }}
         --nodes {{ bootstrap_nodes[0].static_ip }} -e {{ bootstrap_nodes[0].static_ip }}
         bootstrap -f nodes/{{ bootstrap_nodes[0].name }}.yaml
+      args:
+        chdir: "{{ hsctl_repo_root }}"
       environment:
         HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
       when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
