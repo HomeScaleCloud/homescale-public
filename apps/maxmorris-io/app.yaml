@@ -8,7 +8,7 @@ values:
     repository: ghcr.io/homescalecloud/maxmorris-io
     tag: "latest"
 exposePublic:
-  - cluster: production
+  - env: production
     fqdn: maxmorris.io
     port: 80
 

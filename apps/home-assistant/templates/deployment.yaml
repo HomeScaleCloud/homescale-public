@@ -195,8 +195,7 @@ spec:
               drop: ["ALL"]
       volumes:
         - name: mqtt-config
-          persistentVolumeClaim:
-            claimName: mqtt-config
+          emptyDir: {}
         - name: mosquitto-conf
           configMap:
             name: mosquitto-conf

@@ -18,11 +18,11 @@
       kubeconfig: "{{ kubeconfig_path }}"
 
   pre_tasks:
-    # The break-glass admin kubeconfig Terraform's talos module writes to Infisical (see
-    # infra/terraform/modules/talos/kubeconfig.tf) — CI authenticates via GitHub Actions
-    # OIDC the same way cluster-secrets' own role does; `hsctl run` (local) pre-fetches via
-    # the already-logged-in `infisical` CLI instead (see _run_bootstrap_local), skipping
-    # straight to writing the file below.
+    # The break-glass admin kubeconfig a human pushes to Infisical via `hsctl run talm
+    # --cluster <name> -- kubeconfig` (see _run_talm in hsctl.d/run.sh) after bootstrapping
+    # Talos itself — CI authenticates via GitHub Actions OIDC the same way cluster-secrets'
+    # own role does; `hsctl run` (local) pre-fetches via the already-logged-in `infisical`
+    # CLI instead (see _run_bootstrap_local), skipping straight to writing the file below.
     - name: Login to Infisical
       infisical.vault.login:
         url: "{{ infisical_url }}"

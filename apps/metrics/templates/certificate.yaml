@@ -1,4 +1,4 @@
-{{- if eq .Values.cluster.name "production" }}
+{{- if eq .Values.env.name "production" }}
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:

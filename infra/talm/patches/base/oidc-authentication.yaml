@@ -1,0 +1,17 @@
+apiVersion: v1alpha1
+kind: KubeAuthenticationConfig
+configuration:
+  apiVersion: apiserver.config.k8s.io/v1beta1
+  kind: AuthenticationConfiguration
+  jwt:
+    - issuer:
+        url: "https://login.microsoftonline.com/REDACTED/v2.0"  # pragma: allowlist secret
+        audiences:
+          - "REDACTED"  # pragma: allowlist secret
+      claimMappings:
+        username:
+          claim: email
+          prefix: ""
+        groups:
+          claim: groups
+          prefix: ""

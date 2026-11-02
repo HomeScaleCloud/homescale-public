@@ -19,7 +19,7 @@ locals {
   }
 
   clusters_with_public_apps = toset([
-    for _, v in local.public_apps : v.cluster
+    for _, v in local.public_apps : v.env
   ])
 
   # Extract the apex zone (last two labels) from each app's FQDN

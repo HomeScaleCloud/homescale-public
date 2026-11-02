@@ -9,8 +9,8 @@ spec:
     name: {{ .Values.certIssuer | default "letsencrypt" }}
     kind: ClusterIssuer
 {{- $homescale := default (dict) .Values.homescale }}
-{{- $clusterName := required "cluster.name is required" .Values.cluster.name }}
-{{- $dnsNames := concat (list (printf "headlamp.headlamp.%REDACTED" $clusterName) (printf "headlamp.%REDACTED" $clusterName)) (default (list) $homescale.exposePublicFqdns) | uniq }}
+{{- $envName := required "env.name is required" .Values.env.name }}
+{{- $dnsNames := concat (list (printf "headlamp.headlamp.%REDACTED" $envName) (printf "headlamp.%REDACTED" $envName)) (default (list) $homescale.exposePublicFqdns) | uniq }}
   dnsNames:
 {{- range $dnsNames }}
     - {{ . }}

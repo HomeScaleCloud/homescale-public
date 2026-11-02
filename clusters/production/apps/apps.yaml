@@ -8,7 +8,7 @@ spec:
   sources:
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
-      path: clusters/production
+      path: clusters/production/apps
       directory:
         recurse: true
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
@@ -17,7 +17,7 @@ spec:
       helm:
         releaseName: apps-production
         values: |
-          cluster:
+          env:
             name: production
             region: boa1
             shortName: prod
@@ -25,7 +25,7 @@ spec:
             cloudflared:
               deploy: true
               values:
-                cluster:
+                env:
                   name: production
             headlamp:
               deploy: true
@@ -35,15 +35,22 @@ spec:
                 zigbee2mqtt:
                   config:
                     serialPort: "tcp://10.1.246.11:6638"
-                # Restore-into-differently-named-cluster override (see CLAUDE.md's
-                # VolSync section): production was renamed from boa1-prod, so without
-                # this its RESTIC_REPOSITORY path would resolve to a fresh, empty
-                # path under "production" instead of the existing boa1-prod backups.
-                # Leave this in place — don't revert it on a timer — until a restore
-                # has been run and confirmed; removing it is a separate, manual step.
+                  replicaCount: 0
+                homebridge:
+                  replicaCount: 0
+                mqtt:
+                  replicaCount: 0
+                replicaCount: 0
+                # Restoring into the renamed cluster (production was boa1-prod) — every
+                # app reading these PVCs (home-assistant, matter, homebridge, mqtt/mosquitto,
+                # zigbee2mqtt, all scaled to 0 above) stays down until the restore is
+                # confirmed. See docs/operations volsync-restore / CLAUDE.md's VolSync
+                # section. Remove restore.enabled/sourceEnv and the replicaCount: 0
+                # overrides together, once confirmed — not on a timer.
                 volsync:
                   restore:
-                    sourceCluster: boa1-prod
+                    enabled: true
+                    sourceEnv: boa1-prod
             homepage:
               deploy: true
             knative:
@@ -332,7 +339,7 @@ spec:
             metrics-aggr:
               deploy: true
               values:
-                cluster:
+                env:
                   name: production
             multus:
               values:
@@ -345,6 +352,11 @@ spec:
               deploy: true
             slurm:
               deploy: true
+            tailscale:
+              values:
+                subnetRouter:
+                  advertiseRoutes:
+                    - 10.1.245.0/24
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

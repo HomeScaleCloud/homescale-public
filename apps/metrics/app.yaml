@@ -13,8 +13,8 @@ tailscale:
         protocol: tcp
         ports: ["80", "443", "9090", "3100"]
 values:
-  cluster:
-    name: "{{ .Values.cluster.name }}"
+  env:
+    name: "{{ .Values.env.name }}"
   tailscale:
     tailnet: "tail7c652c.ts.net"
   snmpExporter:
@@ -283,7 +283,7 @@ values:
       prometheusSpec:
         retention: 2h
         externalLabels:
-          cluster: "{{ .Values.cluster.name }}"
+          cluster: "{{ .Values.env.name }}"
         ruleSelectorNilUsesHelmValues: false
         ruleSelector:
           matchLabels:
@@ -292,10 +292,10 @@ values:
         serviceMonitorSelectorNilUsesHelmValues: false
         additionalAlertManagerConfigs:
           - static_configs:
-              - targets: ["metrics-{{ .Values.cluster.name }}-egress-alertmanager.metrics.svc.cluster.local:80"]
+              - targets: ["metrics-{{ .Values.env.name }}-egress-alertmanager.metrics.svc.cluster.local:80"]
         remoteWrite:
           - name: prometheus-aggregator
-            url: "http://metrics-{{ .Values.cluster.name }}-egress.metrics.svc.cluster.local:9090/api/v1/write"
+            url: "http://metrics-{{ .Values.env.name }}-egress.metrics.svc.cluster.local:9090/api/v1/write"
             remoteTimeout: 2m
             queueConfig:
               maxSamplesPerSend: 500
@@ -433,10 +433,10 @@ values:
 
           loki.write "loki" {
             endpoint {
-              url = "http://metrics-{{ .Values.cluster.name }}-egress-loki.metrics.svc.cluster.local:3100/loki/api/v1/push"
+              url = "http://metrics-{{ .Values.env.name }}-egress-loki.metrics.svc.cluster.local:3100/loki/api/v1/push"
             }
             external_labels = {
-              cluster = "{{ .Values.cluster.name }}",
+              cluster = "{{ .Values.env.name }}",
             }
           }
     controller:

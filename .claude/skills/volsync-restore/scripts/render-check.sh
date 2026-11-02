@@ -22,7 +22,7 @@ fi
 cd "$repo_root"
 
 [[ -f "apps/$app/app.yaml" ]] || { echo "render-check.sh: no apps/$app/app.yaml" >&2; exit 1; }
-[[ -f "clusters/$cluster/apps.yaml" ]] || { echo "render-check.sh: no clusters/$cluster/apps.yaml" >&2; exit 1; }
+[[ -f "clusters/$cluster/apps/apps.yaml" ]] || { echo "render-check.sh: no clusters/$cluster/apps/apps.yaml" >&2; exit 1; }
 
 for bin in helm yq; do
     command -v "$bin" &>/dev/null || { echo "render-check.sh: '$bin' is required" >&2; exit 1; }
@@ -32,9 +32,9 @@ done
 # `defaultDeploy: true`, missing anything enabled only via the per-cluster
 # `apps:` override (the common case here). So render with the real embedded
 # values block from the `apps` source instead.
-apps_values=$(yq e '.spec.sources[] | select(.path == "apps") | .helm.values' "clusters/$cluster/apps.yaml")
+apps_values=$(yq e '.spec.sources[] | select(.path == "apps") | .helm.values' "clusters/$cluster/apps/apps.yaml")
 if [[ -z "$apps_values" || "$apps_values" == "null" ]]; then
-    echo "render-check.sh: couldn't find the 'apps' source in clusters/$cluster/apps.yaml" >&2
+    echo "render-check.sh: couldn't find the 'apps' source in clusters/$cluster/apps/apps.yaml" >&2
     exit 1
 fi
 

@@ -6,6 +6,17 @@ locals {
     split("/", f)[0] => yamldecode(file("${path.module}/../../../../apps/${f}"))
   }
 
+  cluster_tailscale_files = fileset("${path.module}/../../../../clusters", "*/tailscale.yaml")
+
+  cluster_tailscale_yamls = {
+    for f in local.cluster_tailscale_files :
+    split("/", f)[0] => yamldecode(file("${path.module}/../../../../clusters/${f}"))
+  }
+
+  cluster_advertise_routes = sort(distinct(flatten([
+    for name, y in local.cluster_tailscale_yamls : try(y.advertise_routes, [])
+  ])))
+
   app_policies = {
     for name, y in local.app_yamls :
     name => y.tailscale.policy
@@ -27,7 +38,7 @@ locals {
       "tag:tv"             = ["autogroup:admin"]
     },
     { for k in local.app_names : "tag:app-${k}" => ["tag:k8s"] },
-    { for k in local.cluster_names : "tag:cluster-${k}" => ["tag:k8s"] },
+    { for k in local.cluster_names : "tag:env-${k}" => ["tag:k8s"] },
   )
 
   app_grants = [
@@ -67,7 +78,15 @@ locals {
     }
   }
 
-  grants = concat(local.app_grants, [local.k8s_grant, local.self_grant, local.remote_control_grant])
+  lan_grants = local.cluster_advertise_routes == [] ? [] : [
+    {
+      src = ["group:sg-k8s-admin@REDACTED", "tag:github-actions"]
+      dst = local.cluster_advertise_routes
+      ip  = ["*"]
+    }
+  ]
+
+  grants = concat(local.app_grants, [local.k8s_grant, local.self_grant, local.remote_control_grant], local.lan_grants)
 
   node_attrs = [
     {
@@ -90,6 +109,7 @@ resource "tailscale_acl" "this" {
       services = {
         "tag:k8s" = ["tag:k8s"]
       }
+      routes = { for cidr in local.cluster_advertise_routes : cidr => ["tag:k8s"] }
     }
   })
 

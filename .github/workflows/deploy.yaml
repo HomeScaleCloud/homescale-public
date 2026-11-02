@@ -17,15 +17,15 @@ on:
   workflow_dispatch:
     inputs:
       job:
-        description: "'terraform', 'talos', 'bootstrap-core', 'bootstrap-cluster', or any other ansible playbook filename under infra/ansible/playbooks/ (without .yml)"
+        description: "'terraform', 'talm', 'bootstrap-core', 'bootstrap-cluster', or any other ansible playbook filename under infra/ansible/playbooks/ (without .yml)"
         type: string
         required: true
       cluster:
-        description: "Cluster to target — bootstrap-cluster's -e target=<cluster>, terraform's own scoping, or a single cluster to plan/apply for talos (leave empty for all clusters)"
+        description: "Cluster to target — bootstrap-cluster's -e target=<cluster>, terraform's own scoping, or talm's single-cluster filter (leave empty for all clusters)"
         type: string
         required: false
       dry_run:
-        description: "Plan/--dry-run only — terraform and talos only, ignored by ansible playbooks"
+        description: "Plan/--dry-run only — terraform and talm only, ignored by ansible playbooks"
         type: boolean
         required: false
         default: false
@@ -220,58 +220,32 @@ jobs:
           CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
         run: ./infra/terraform/plan-apply.sh
 
-  # Replaces the old "omni" job. Talos cluster provisioning is now just more of the
-  # same `infra/terraform` workspace the `terraform` job above already plans/applies in
-  # full every run — this job's only reason to exist separately is to give each
-  # cluster's own Talos plan/apply its own PR comment (mirroring the old per-cluster
-  # Omni plan comments) and, more importantly, to be the one job that joins the tailnet
-  # (the `terraform` job above deliberately doesn't — nothing else it manages needs
-  # node-level network reachability). It re-runs `terraform plan`/`apply`, scoped with
-  # `-target` to just the changed clusters' own `module.talos_<cluster>`, against the
-  # same state the `terraform` job already touched — redundant in the sense that the
-  # general apply above would eventually reconcile these resources too, but doing it
-  # here, targeted, is what makes the Tailscale join conditional on an actual Talos
-  # change rather than every single deploy.
-  talos:
-    name: "Talos"
+  # Finds which clusters/<cluster>/ talm projects a PR/push/dispatch actually touches, so the
+  # talm job below only joins the tailnet and applies for clusters that changed.
+  talm-detect:
+    name: "Talm: detect"
     runs-on: ubuntu-latest
-    needs: [terraform]
-    if: always() && (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') && (github.event_name != 'workflow_dispatch' || inputs.job == 'talos')
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./infra/terraform
-    env:
-      TF_IN_AUTOMATION: "true"
-      TF_INPUT: "false"
-      TF_VAR_infisical_github_actions: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-      TF_VAR_infisical_org_id: ${{ secrets.INFISICAL_ORG_ID }}
+    if: github.event_name != 'workflow_dispatch' || inputs.job == 'talm'
+    outputs:
+      clusters: ${{ steps.detect.outputs.clusters }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
 
-      # Every cluster is re-applied on merge to main (matches the old omni job's own
-      # behavior), but a PR's plan only covers clusters actually affected by that PR —
-      # either its own talos-<cluster>.tf changed, or a shared patch file did (which
-      # affects every cluster that references it, so treated as "all clusters changed").
-      # workflow_dispatch's own `cluster` input (empty = all) scopes a manual run the same
-      # way it already does for the terraform job above.
-      - name: Detect changed clusters
+      - name: Detect affected clusters
         id: detect
-        working-directory: .
         env:
           INPUT_CLUSTER: ${{ inputs.cluster }}
         run: |
           set -euo pipefail
           all_clusters=$(
-            find infra/terraform -maxdepth 1 -name 'talos-*.tf' \
-              | sed -E 's#.*/talos-(.+)\.tf$#\1#' \
+            find clusters -mindepth 1 -maxdepth 1 -type d -exec test -f '{}/Chart.yaml' ';' -print \
+              | sed 's#.*/##' \
               | sort -u \
               | jq -Rsc 'split("\n") | map(select(length > 0))'
           )
-          echo "all_clusters=${all_clusters}" >> "$GITHUB_OUTPUT"
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ -n "$INPUT_CLUSTER" ]; then
@@ -279,45 +253,69 @@ jobs:
             else
               clusters="$all_clusters"
             fi
-            deleted_clusters='[]'
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch --no-tags origin "${{ github.base_ref }}"
             range="origin/${{ github.base_ref }}...${{ github.sha }}"
-            changed_tf=$(
-              git diff --name-only --diff-filter=d "$range" \
-                | { grep -E '^infra/terraform/talos-[^/]+\.tf$' || true; } \
-                | sed -E 's#.*/talos-(.+)\.tf$#\1#' \
-                | sort -u
+            changed_files=$(git diff --name-only --diff-filter=d "$range")
+
+            # The talm project files (Chart.yaml, values.yaml, templates/, charts/,
+            # values/, nodes/) live directly under clusters/<cluster>/, alongside
+            # apps/ (the ArgoCD app-of-apps, unrelated to talm) and tailscale.yaml
+            # (Terraform-only data) — exclude both so changes there don't trigger
+            # a talm apply.
+            changed_cluster_dirs=$(
+              echo "$changed_files" \
+                | { grep -E '^clusters/[^/]+/' || true; } \
+                | { grep -vE '^clusters/[^/]+/apps/|^clusters/[^/]+/tailscale\.yaml$' || true; } \
+                | sed -E 's#^clusters/([^/]+)/.*#\1#'
             )
-            patches_changed=$(
-              git diff --name-only --diff-filter=d "$range" \
-                | { grep -E '^infra/talos/patches/[^/]+\.yaml$' || true; } \
+            changed_cluster_patches=$(
+              echo "$changed_files" \
+                | { grep -E '^infra/talm/patches/[^/]+/' || true; } \
+                | sed -E 's#^infra/talm/patches/([^/]+)/.*#\1#' \
+                | { grep -vE '^base$' || true; }
+            )
+            base_patches_changed=$(
+              echo "$changed_files" \
+                | { grep -E '^infra/talm/patches/base/' || true; } \
                 | wc -l
             )
-            deleted_clusters=$(
-              git diff --name-only --diff-filter=D "$range" \
-                | { grep -E '^infra/terraform/talos-[^/]+\.tf$' || true; } \
-                | sed -E 's#.*/talos-(.+)\.tf$#\1#' \
-                | sort -u \
-                | jq -Rsc 'split("\n") | map(select(length > 0))'
-            )
-            if [ "$patches_changed" -gt 0 ]; then
+            if [ "$base_patches_changed" -gt 0 ]; then
               clusters="$all_clusters"
             else
-              clusters=$(echo "$changed_tf" | jq -Rsc 'split("\n") | map(select(length > 0))')
+              clusters=$(
+                printf '%s\n%s\n' "$changed_cluster_dirs" "$changed_cluster_patches" \
+                  | sort -u \
+                  | jq -Rsc 'split("\n") | map(select(length > 0))'
+              )
             fi
           else
             clusters="$all_clusters"
-            deleted_clusters='[]'
           fi
           echo "clusters=${clusters}" >> "$GITHUB_OUTPUT"
-          echo "CLUSTERS=${clusters}" >> "$GITHUB_ENV"
           echo "Clusters detected: ${clusters}"
-          echo "deleted_clusters=${deleted_clusters}" >> "$GITHUB_OUTPUT"
-          echo "Deleted clusters detected: ${deleted_clusters}"
+
+  # Applies (or, on PR, dry-runs and posts the drift preview as a PR comment) every node
+  # under each affected cluster's clusters/<cluster>/nodes/. Needs the cluster's own
+  # subnet router already up (see CLAUDE.md's Networking section) — this is why it joins
+  # the tailnet as tag:github-actions, the one identity (besides sg-k8s-admin) the Tailscale
+  # ACL grants access to a cluster's advertised LAN at all.
+  talm:
+    name: "Talm"
+    needs: [terraform, talm-detect]
+    if: always() && (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') && (github.event_name != 'workflow_dispatch' || inputs.job == 'talm') && join(fromJson(needs.talm-detect.outputs.clusters || '[]'), '') != ''
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cluster: ${{ fromJson(needs.talm-detect.outputs.clusters || '[]') }}
+    env:
+      TALM_VERSION: "0.36.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Import Secrets
-        if: steps.detect.outputs.clusters != '[]'
         uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
         with:
           method: "oidc"
@@ -327,19 +325,39 @@ jobs:
           secret-path: "/ci"
           export-type: env
 
-      # The only job in this repo that needs this: reaching the Talos nodes' own IPs
-      # directly (via the subnet router advertising their LAN) to apply machine config
-      # and run health checks. Removed automatically when the job finishes.
       - name: Connect to Tailscale
-        if: steps.detect.outputs.clusters != '[]'
         uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd  # v4.2.0
         with:
           oauth-client-id: ${{ env.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ env.TAILSCALE_OAUTH_CLIENT_SECRET }}
           tags: tag:github-actions
 
+      - name: Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00  # v6
+        with:
+          go-version: 'stable'
+
+      - name: Install talm
+        run: |
+          curl -fsSL -o /tmp/talm.tar.gz "https://github.com/cozystack/talm/archive/refs/tags/v${TALM_VERSION}.tar.gz"
+          mkdir -p /tmp/talm-src
+          tar -xzf /tmp/talm.tar.gz -C /tmp/talm-src --strip-components=1
+          (cd /tmp/talm-src && sudo go build -o /usr/local/bin/talm -ldflags "-X main.Version=${TALM_VERSION}" .)
+          talm --version
+
+      # The Infisical/secrets-action step above bundles its own internal binary and never
+      # puts `infisical` on PATH — the next step needs the real CLI for its dynamic,
+      # per-cluster secret path (see that step's own comment).
+      - name: Install infisical CLI
+        run: |
+          curl -1sLf 'https://artifacts-cli.infisical.com/setup.deb.sh' | sudo -E bash
+          sudo apt-get update && sudo apt-get install -y infisical
+          infisical --version
+
+      # Requested right before it's used, not any earlier — this JWT is short-lived, and
+      # the talm build above (a few minutes, no go.sum to cache against) was long enough to
+      # expire a token requested before it.
       - name: Request OIDC Token
-        if: steps.detect.outputs.clusters != '[]'
         run: |
           TOKEN=$(curl -s \
             -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
@@ -348,51 +366,110 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "INFISICAL_AUTH_JWT=$TOKEN" >> "$GITHUB_ENV"
 
-      - name: Setup Terraform
-        if: steps.detect.outputs.clusters != '[]'
-        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4
-
-      - name: Initialize Terraform
-        if: steps.detect.outputs.clusters != '[]'
-        run: terraform init
-
-      - name: Plan
-        if: steps.detect.outputs.clusters != '[]' && github.event_name == 'pull_request'
-        id: plan
-        continue-on-error: true
+      # SECRETS_YAML/TALOSCONFIG are fetched read-only, straight into the ephemeral
+      # runner's own /tmp (never written into the checkout, never pushed back — that only
+      # happens from hsctl run talm, see CLAUDE.md). Uses the same OIDC identity as the
+      # terraform job, but a dynamic per-cluster path, so it goes through the raw infisical
+      # CLI rather than the fixed-path Infisical/secrets-action above.
+      - name: Fetch cluster secrets from Infisical
+        id: secrets
+        env:
+          CLUSTER: ${{ matrix.cluster }}
+          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
         run: |
-          set -euo pipefail
-          failed=false
-          for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
-            echo "Planning cluster: $cluster"
-            if terraform plan -no-color "-target=module.talos_${cluster}" \
-                > "/tmp/talos-${cluster}.txt" 2>&1; then
-              echo "PLAN_${cluster}=success" >> "$GITHUB_ENV"
-            else
-              echo "PLAN_${cluster}=failed" >> "$GITHUB_ENV"
-              failed=true
+          set +e -uo pipefail # GitHub's default `bash -e {0}` would otherwise abort at the
+                               # export call below before its exit status can be inspected
+          shortname=$(jq -rn --arg c "$CLUSTER" '{production: "prod", development: "dev"}[$c] // empty')
+          [ -n "$shortname" ] || { echo "unknown cluster '$CLUSTER'" >&2; exit 1; }
+
+          token=$(infisical login --method=oidc-auth --machine-identity-id="$INFISICAL_IDENTITY_ID" --jwt="$INFISICAL_AUTH_JWT" --plain --silent)
+          [ -n "$token" ] || { echo "infisical login failed" >&2; exit 1; }
+          secrets_json=$(infisical export --silent --env=prod --path="/k8s/talos/$shortname" --projectId="$INFISICAL_PROJECT_ID" --token="$token" --format=json 2>/tmp/infisical-export-err.txt)
+          export_status=$?
+
+          # Not bootstrapped yet (no /k8s/talos/<shortname> folder, or the folder exists
+          # but SECRETS_YAML/TALOSCONFIG haven't been pushed into it) isn't a CI failure —
+          # it's the expected state before a cluster's first `hsctl run talm --cluster
+          # $CLUSTER -- bootstrap ...`. Skip the apply step instead of failing the job.
+          if [ "$export_status" -ne 0 ]; then
+            if grep -qi "was not found" /tmp/infisical-export-err.txt; then
+              echo "::notice::no /k8s/talos/$shortname folder in Infisical yet — '$CLUSTER' hasn't been bootstrapped locally. Skipping apply."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
             fi
-          done
-          [ "$failed" = "false" ]
+            cat /tmp/infisical-export-err.txt >&2
+            exit "$export_status"
+          fi
 
-      - name: Apply
-        if: steps.detect.outputs.clusters != '[]' && ((github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch') || (github.event_name == 'workflow_dispatch' && inputs.job == 'talos' && inputs.dry_run != true))
+          secrets_yaml=$(jq -r '.[] | select(.key=="SECRETS_YAML") | .value' <<<"$secrets_json")
+          talosconfig=$(jq -r '.[] | select(.key=="TALOSCONFIG") | .value' <<<"$secrets_json")
+          if [ -z "$secrets_yaml" ] || [ -z "$talosconfig" ]; then
+            echo "::notice::no SECRETS_YAML/TALOSCONFIG in Infisical yet for '$CLUSTER' — bootstrap it locally first (hsctl run talm --cluster $CLUSTER -- ...). Skipping apply."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          printf '%s' "$secrets_yaml" > "/tmp/$CLUSTER-secrets.yaml"
+          printf '%s' "$talosconfig" > "/tmp/$CLUSTER-talosconfig"
+          chmod 600 "/tmp/$CLUSTER-secrets.yaml" "/tmp/$CLUSTER-talosconfig"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      # Patches apply in the same order the hsctl run talm wrapper's own instructions use
+      # (base/ then <cluster>/), gated by each file's own `apply_conditions.nodes.min`
+      # against this cluster's real node count (clusters/<cluster>/nodes/*.yaml) — see
+      # CLAUDE.md's "Talos cluster provisioning" section.
+      - name: Apply (or dry-run) every node
+        id: apply
+        if: steps.secrets.outputs.skip != 'true'
+        continue-on-error: true
+        env:
+          CLUSTER: ${{ matrix.cluster }}
+          TALOSCONFIG: /tmp/${{ matrix.cluster }}-talosconfig
         run: |
           set -euo pipefail
-          for cluster in $(echo "$CLUSTERS" | jq -r '.[]'); do
-            echo "Applying cluster: $cluster"
-            terraform apply -auto-approve "-target=module.talos_${cluster}"
+          cd "clusters/$CLUSTER"
+
+          node_count=$(find nodes -maxdepth 1 -name '*.yaml' 2>/dev/null | wc -l | tr -d ' ')
+          patch_args=()
+          for p in ../../infra/talm/patches/base/*.yaml "../../infra/talm/patches/$CLUSTER"/*.yaml; do
+            [ -f "$p" ] || continue
+            min=$(yq e '.apply_conditions.nodes.min // 0' "$p")
+            [ "$node_count" -ge "$min" ] && patch_args+=(-f "$p")
           done
 
-      - name: Post plan results as PR comments
-        if: always() && github.event_name == 'pull_request' && steps.detect.outcome == 'success' && (steps.detect.outputs.clusters != '[]' || steps.detect.outputs.deleted_clusters != '[]')
+          dry_run_flag=""
+          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ inputs.dry_run }}" = "true" ]; then
+            dry_run_flag="--dry-run"
+          fi
+
+          fail=0
+          shopt -s nullglob
+          for node in nodes/*.yaml; do
+            name=$(basename "$node" .yaml)
+            name_safe="${name//-/_}" # GITHUB_ENV keys can't contain hyphens; node file names (e.g. production-cp-1) do
+            echo "=== $name ==="
+            if talm apply -f "$node" "${patch_args[@]}" --with-secrets "/tmp/$CLUSTER-secrets.yaml" $dry_run_flag > "/tmp/$CLUSTER-$name.txt" 2>&1; then
+              echo "RESULT_${name_safe}=success" >> "$GITHUB_ENV"
+            else
+              echo "RESULT_${name_safe}=failed" >> "$GITHUB_ENV"
+              fail=1
+            fi
+            cat "/tmp/$CLUSTER-$name.txt"
+          done
+          exit $fail
+
+      - name: Post results as a PR comment
+        if: always() && github.event_name == 'pull_request'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
-          CLUSTERS: ${{ steps.detect.outputs.clusters }}
-          DELETED_CLUSTERS: ${{ steps.detect.outputs.deleted_clusters }}
+          CLUSTER: ${{ matrix.cluster }}
+          SKIP: ${{ steps.secrets.outputs.skip }}
         with:
           script: |
             const fs = require('fs');
+            const path = require('path');
+            const cluster = process.env.CLUSTER;
 
             async function upsertComment(marker, body) {
               const { data: comments } = await github.rest.issues.listComments({
@@ -402,68 +479,83 @@ jobs:
               });
               const existing = comments.find(c => c.body.includes(marker));
               if (existing) {
-                await github.rest.issues.updateComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  comment_id: existing.id,
-                  body,
-                });
+                await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: existing.id, body });
               } else {
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                  body,
-                });
+                await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
               }
             }
 
-            const clusters = JSON.parse(process.env.CLUSTERS);
-            for (const cluster of clusters) {
-              const ok = process.env[`PLAN_${cluster}`] === 'success';
-              const path = `/tmp/talos-${cluster}.txt`;
-              const output = fs.existsSync(path) ? fs.readFileSync(path, 'utf8').trim() : '(no output — plan step may have failed before reaching this cluster)';
-              const icon = ok ? '✅' : '❌';
-              const marker = `<!-- talos-plan-${cluster} -->`;
-              const body = [
+            const marker = `<!-- talm-plan-${cluster} -->`;
+
+            if (process.env.SKIP === 'true') {
+              await upsertComment(marker, [
                 marker,
-                `## ${icon} Talos plan — \`${cluster}\``,
+                `## 🟡 Talm — \`${cluster}\``,
                 '',
-                '```',
-                output || '(no output)',
-                '```',
+                `\`${cluster}\` hasn't been bootstrapped yet (no secrets under \`/k8s/talos/\` in Infisical) — nothing to apply.`,
                 '',
                 `> commit \`${{ github.sha }}\``,
-              ].join('\n');
-              await upsertComment(marker, body);
+              ].join('\n'));
+              return;
             }
 
-            const deletedClusters = JSON.parse(process.env.DELETED_CLUSTERS);
-            for (const cluster of deletedClusters) {
-              const marker = `<!-- talos-plan-${cluster} -->`;
-              const body = [
+            const nodesDir = path.join('clusters', cluster, 'nodes');
+            const nodeFiles = fs.existsSync(nodesDir) ? fs.readdirSync(nodesDir).filter(f => f.endsWith('.yaml')) : [];
+
+            if (nodeFiles.length === 0) {
+              await upsertComment(marker, [
                 marker,
-                `## 🗑️ Talos plan — \`${cluster}\` (removed)`,
+                `## 🟡 Talm — \`${cluster}\``,
                 '',
-                `\`infra/terraform/talos-${cluster}.tf\` was removed in this PR. Its resources aren't destroyed automatically.`,
-                `Run \`terraform destroy -target=module.talos_${cluster}\` by hand once you're sure — a Talos cluster's own nodes need separate handling (wipe/reset) first.`,
+                'No nodes under `clusters/' + cluster + '/nodes/` yet — nothing to plan.',
                 '',
                 `> commit \`${{ github.sha }}\``,
-              ].join('\n');
-              await upsertComment(marker, body);
+              ].join('\n'));
+            } else {
+              const body = [marker, `## Talm plan — \`${cluster}\``, ''];
+              for (const f of nodeFiles) {
+                const name = f.replace(/\.yaml$/, '');
+                const ok = process.env[`RESULT_${name.replace(/-/g, '_')}`] === 'success';
+                const outPath = `/tmp/${cluster}-${name}.txt`;
+                const output = fs.existsSync(outPath) ? fs.readFileSync(outPath, 'utf8').trim() : '(no output)';
+                body.push(`### ${ok ? '✅' : '❌'} \`${name}\``, '', '```', output || '(no output)', '```', '');
+              }
+              body.push(`> commit \`${{ github.sha }}\``);
+              await upsertComment(marker, body.join('\n'));
             }
 
-      - name: Fail if plan failed
-        if: steps.plan.outcome == 'failure'
+      - name: Fail if apply failed
+        if: steps.apply.outcome == 'failure'
         run: |
-          echo "One or more Talos cluster plans failed. See PR comments for details."
+          echo "One or more Talm applies failed. See the PR comment / job output above."
           exit 1
+
+  # The matrixed talm job above only exists for clusters talm-detect actually
+  # found changed — for a PR that doesn't touch clusters/ at all, it never
+  # runs, and a required-status-check on its own name would block that PR
+  # forever waiting for a check that will never post. This job always runs
+  # (always()) and is what branch protection should require instead: it
+  # passes when talm succeeded OR was legitimately skipped (not relevant to
+  # this PR), and only fails when talm actually failed.
+  talm-gate:
+    name: "Talm Gate"
+    runs-on: ubuntu-latest
+    needs: [talm]
+    if: always()
+    steps:
+      - name: Check talm result
+        run: |
+          result="${{ needs.talm.result }}"
+          echo "talm job result: $result"
+          if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+            exit 1
+          fi
 
   ansible:
     name: "Ansible"
     runs-on: ubuntu-latest
-    needs: [talos]
-    if: always() && (needs.talos.result == 'success' || needs.talos.result == 'skipped') && github.event_name == 'workflow_dispatch' && inputs.job != 'terraform' && inputs.job != 'talos'
+    needs: [terraform, talm]
+    if: always() && (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') && (needs.talm.result == 'success' || needs.talm.result == 'skipped') && github.event_name == 'workflow_dispatch' && inputs.job != 'terraform' && inputs.job != 'talm'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1

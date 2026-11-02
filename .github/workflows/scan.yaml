@@ -82,6 +82,28 @@ jobs:
       - name: Render and validate manifests
         run: .github/scripts/validate-manifests.sh
 
+  talm:
+    name: "Talm"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00  # v6
+        with:
+          go-version: 'stable'
+      - name: Install talm
+        env:
+          TALM_VERSION: "0.36.0"
+        run: |
+          curl -fsSL -o /tmp/talm.tar.gz "https://github.com/cozystack/talm/archive/refs/tags/v${TALM_VERSION}.tar.gz"
+          mkdir -p /tmp/talm-src
+          tar -xzf /tmp/talm.tar.gz -C /tmp/talm-src --strip-components=1
+          (cd /tmp/talm-src && sudo go build -o /usr/local/bin/talm -ldflags "-X main.Version=${TALM_VERSION}" .)
+          talm --version
+      - name: Render clusters/*/ talm projects offline
+        run: .github/scripts/validate-talm.sh
+
   trivy:
     name: Trivy
     runs-on: ubuntu-26.04

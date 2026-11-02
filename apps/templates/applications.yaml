@@ -1,16 +1,16 @@
 {{- $root := . -}}
-{{- $clusterName := required "cluster.name is required" $root.Values.cluster.name -}}
+{{- $envName := required "env.name is required" $root.Values.env.name -}}
 {{- $namespaces := dict -}}
 {{- $systemNamespaces := list "argocd" "kube-system" "kube-public" "kube-node-lease" "default" -}}
 {{- range $path, $_ := $root.Files.Glob "*/app.yaml" }}
 {{- $appName := $path | dir }}
 {{- $appBase := $root.Files.Get $path | fromYaml }}
-{{- $clusterOverride := default (dict) (get (default (dict) $root.Values.apps) $appName) }}
+{{- $envOverride := default (dict) (get (default (dict) $root.Values.apps) $appName) }}
 {{- $enabled := false }}
 {{- if hasKey $appBase "defaultDeploy" }}{{- $enabled = $appBase.defaultDeploy }}{{- end }}
-{{- if hasKey $clusterOverride "deploy" }}{{- $enabled = $clusterOverride.deploy }}{{- end }}
+{{- if hasKey $envOverride "deploy" }}{{- $enabled = $envOverride.deploy }}{{- end }}
 {{- if $enabled }}
-{{- $app := mergeOverwrite (deepCopy $appBase) (omit $clusterOverride "deploy") }}
+{{- $app := mergeOverwrite (deepCopy $appBase) (omit $envOverride "deploy") }}
 {{- $appPath := required (printf "path is required (set in apps/%s/app.yaml)" $appName) $app.path -}}
 {{- $appNamespace := required (printf "namespace is required (set in apps/%s/app.yaml)" $appName) $app.namespace -}}
 {{- $repoURL := required (printf "repoURL or apps.%s.repoURL is required" $appName) (default $root.Values.repoURL $app.repoURL) -}}
@@ -18,7 +18,7 @@
 {{- $project := default $root.Values.project $app.project -}}
 {{- $destination := default (dict) $app.destination -}}
 {{- $destinationServer := default $root.Values.destination.server $destination.server -}}
-{{- $destinationName := default (default $clusterName $root.Values.destination.name) $destination.name -}}
+{{- $destinationName := default (default $envName $root.Values.destination.name) $destination.name -}}
 {{- $releaseName := default $appName $app.releaseName -}}
 {{- $exposePublicFqdns := list -}}
 {{- range (default (list) $appBase.exposePublic) }}
@@ -37,7 +37,7 @@ metadata:
   name: {{ $appNamespace | quote }}
   labels:
     app.kubernetes.io/part-of: homescale
-    REDACTED/name: {{ $clusterName | quote }}
+    REDACTED/name: {{ $envName | quote }}
 {{- if $app.podSecurity }}
     pod-security.kubernetes.io/enforce: {{ $app.podSecurity | quote }}
     pod-security.kubernetes.io/warn: {{ $app.podSecurity | quote }}
@@ -56,7 +56,7 @@ metadata:
     app.kubernetes.io/name: {{ $appName | quote }}
     app.kubernetes.io/part-of: homescale
     REDACTED/name: {{ $appName | quote }}
-    REDACTED/name: {{ $clusterName | quote }}
+    REDACTED/name: {{ $envName | quote }}
   finalizers:
     - resources-finalizer.argocd.argoproj.io
   annotations:

@@ -22,7 +22,8 @@ PR merged to main
                               Infisical project structure, VolSync secret paths,
                               Talos machine config generation/apply/bootstrap
                               (infra/terraform/modules/talos/, one module
-                              instance per cluster — see talos-*.tf)
+                              instance per cluster — see talos.tf, which
+                              discovers clusters from clusters/*/cluster.yaml)
 ```
 
 ### Path 2 — ArgoCD (pull-based, continuous)
@@ -110,7 +111,7 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 | `production` | Talos (Terraform-managed) | Primary cluster — general compute, production workloads. |
 | `development` | Talos (Terraform-managed) | Lab/development cluster. |
 
-There is no separate management cluster — each cluster self-hosts its own ArgoCD and is fully self-sufficient; no third-party-cloud-hosted central cluster is required. Talos node config, Kubernetes version, machine identity, and bootstrap are all managed directly by Terraform's `siderolabs/talos` provider (one `module "talos_<cluster>"` instance per cluster in `infra/terraform/talos-production.tf`/`talos-development.tf`, backed by `infra/terraform/modules/talos/`) — see [Clusters](clusters.md) for the full flow.
+There is no separate management cluster — each cluster self-hosts its own ArgoCD and is fully self-sufficient; no third-party-cloud-hosted central cluster is required. Talos node config, Kubernetes version, machine identity, and bootstrap are all managed directly by Terraform's `siderolabs/talos` provider (`infra/terraform/talos.tf` discovers every cluster from `clusters/*/cluster.yaml` and instantiates `infra/terraform/modules/talos/` once per cluster via `for_each`, addressed as `module.talos["<cluster>"]`) — see [Clusters](clusters.md) for the full flow.
 
 ## Sync wave order
 
@@ -164,12 +165,12 @@ Manages Cloudflare DNS, Infisical project structure, Tailscale ACL and tags, Vol
 
 #### 2. `talos` (after terraform)
 
-Replaces the old `omni` job — there's no management cluster to dispatch anything to any more. Detects changes under `infra/terraform/talos-*.tf` and `infra/talos/patches/*.yaml`, and runs a `terraform plan`/`apply` targeted at just the affected cluster's `module.talos_<cluster>` (mirrors the old job's per-cluster plan/apply + PR-comment shape, just against the `talos` Terraform module instead of `omnictl`). **Joins the tailnet** as an ephemeral node (`tailscale/github-action`, tagged `tag:github-actions`, removed when the job finishes) — it needs to reach the Talos nodes' own IPs directly, over the subnet router advertising their LAN.
+Replaces the old `omni` job — there's no management cluster to dispatch anything to any more. Detects changes under `clusters/*/cluster.yaml` and `infra/talos/patches/**/*.yaml` (a `patches/base/` change affects every cluster; a `patches/<cluster>/` change affects only that cluster), and runs a `terraform plan`/`apply` targeted at just the affected cluster's `module.talos["<cluster>"]` (mirrors the old job's per-cluster plan/apply + PR-comment shape, just against the `talos` Terraform module instead of `omnictl`). **Joins the tailnet** as an ephemeral node (`tailscale/github-action`, tagged `tag:github-actions`, removed when the job finishes) — it needs to reach the Talos nodes' own IPs directly, over the subnet router advertising their LAN.
 
-- **On PR**: `terraform plan -target=module.talos_<cluster>` for each changed cluster, posted as a PR comment per cluster (same marker-based pattern the old `omni` job used).
-- **On merge to `main`**: `terraform apply -target=module.talos_<cluster>` for each changed cluster — generates/applies machine config, bootstraps new clusters, re-applies config drift on existing ones.
+- **On PR**: `terraform plan -target=module.talos["<cluster>"]` for each changed cluster, posted as a PR comment per cluster (same marker-based pattern the old `omni` job used).
+- **On merge to `main`**: `terraform apply -target=module.talos["<cluster>"]` for each changed cluster — generates/applies machine config, bootstraps new clusters, re-applies config drift on existing ones.
 
-Onboarding a brand-new machine (building its Image Factory schematic/ISO, booting it into Talos maintenance mode) is still a manual step — see [Clusters: registering new machines](clusters.md#registering-new-machines) — before its IP can be added to `talos-<cluster>.tf` and picked up here.
+Onboarding a brand-new machine (building its Image Factory schematic/ISO, booting it into Talos maintenance mode) is still a manual step — see [Clusters: registering new machines](clusters.md#registering-new-machines) — before its IP can be added to `clusters/<cluster>/cluster.yaml` and picked up here.
 
 #### 3. `ansible` (after talos)
 

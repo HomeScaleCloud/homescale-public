@@ -7,17 +7,17 @@ targetRevision: main
 applicationNamePrefix: ""
 revisionHistoryLimit: 10
 
-cluster:
+env:
   name: ""
   region: ""
-  # Short identifier (e.g. "prod"/"dev"), distinct from cluster.name's full
+  # Short identifier (e.g. "prod"/"dev"), distinct from env.name's full
   # Talos cluster identity. Currently consumed only by apps/headlamp's
   # console.<shortName>.REDACTED tailnet hostname — not a fleet-wide
   # parameter (see CLAUDE.md's Clusters section).
   shortName: ""
 
 # Per-cluster app deploy toggles and value overrides, keyed by app directory
-# name. Set in clusters/<cluster>/apps.yaml, not here.
+# name. Set in clusters/<cluster>/apps/apps.yaml, not here.
 apps: {}
 
 destination:

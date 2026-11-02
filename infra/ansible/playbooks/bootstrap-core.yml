@@ -7,7 +7,7 @@
     cluster_name: core
     kubeconfig_secret_key: "{{ cluster_name | upper | replace('-', '_') }}_KUBECONFIG"
     kubeconfig_path: "/tmp/kubeconfig-{{ cluster_name }}"
-    omni_cluster_name: "{{ cluster_name }}"
+    talos_cluster_name: "{{ cluster_name }}"
 
   module_defaults:
     kubernetes.core.k8s:

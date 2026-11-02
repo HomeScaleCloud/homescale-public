@@ -7,8 +7,8 @@ syncWave: -10
 # to each cluster's own registry.
 defaultDeploy: true
 values:
-  cluster:
-    name: "{{ .Values.cluster.name }}"
+  env:
+    name: "{{ .Values.env.name }}"
   external-dns:
     policy: sync
     # Pinned explicitly (not the chart default) so a future upstream prefix
@@ -29,4 +29,4 @@ values:
     domainFilters: ["REDACTED"]
     # Distinct per cluster so each instance's TXT registry doesn't fight over
     # records another cluster's instance created.
-    txtOwnerId: "{{ .Values.cluster.name }}"
+    txtOwnerId: "{{ .Values.env.name }}"

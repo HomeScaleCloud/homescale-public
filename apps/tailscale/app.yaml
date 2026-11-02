@@ -7,14 +7,14 @@ syncOptions:
   - ServerSideApply=true
 defaultDeploy: true
 values:
-  cluster:
-    name: '{{ .Values.cluster.name }}'
+  env:
+    name: '{{ .Values.env.name }}'
   tailscale-operator:
     installCRDs: true
     operatorConfig:
-      hostname: 'ts-operator-{{ .Values.cluster.name }}'
+      hostname: 'ts-operator-{{ .Values.env.name }}'
       defaultTags:
         - 'tag:k8s'
     proxyConfig:
-      defaultTags: 'tag:k8s,tag:cluster-{{ .Values.cluster.name }}'
+      defaultTags: 'tag:k8s,tag:env-{{ .Values.env.name }}'
       defaultProxyClass: default

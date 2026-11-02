@@ -112,7 +112,7 @@ endgroup
 shopt -s nullglob
 for cluster_dir in clusters/*/; do
     cluster="$(basename "$cluster_dir")"
-    apps_yaml="${cluster_dir}apps.yaml"
+    apps_yaml="${cluster_dir}apps/apps.yaml"
     [[ -f "$apps_yaml" ]] || continue
 
     group "cluster: $cluster"
@@ -125,19 +125,21 @@ for cluster_dir in clusters/*/; do
 
     bootstrap_name="$(yq e '.metadata.name' "$apps_yaml")"
 
-    # Raw `directory` sources (clusters/<cluster>/ itself, and anything else synced
+    # Raw `directory` sources (clusters/<cluster>/apps/ itself, and anything else synced
     # straight from git with no Helm rendering) aren't covered by the catalog/per-app
     # render below, so conform them directly — every *.yaml/*.yml under the source path,
     # minus anything matching its own `directory.exclude` glob (matched against the path
-    # relative to the source dir, same as ArgoCD's own directory.exclude — e.g.
-    # clusters/<cluster>/apps.yaml excludes its own cluster.yaml, which is an Omni template,
-    # not a Kubernetes manifest, and would otherwise fail kubeconform outright; a pattern
-    # like `ansible/**` would skip a whole subtree the same way, not just one filename).
-    # Scans every Application-kind manifest directly under clusters/<cluster>/, not just
-    # apps.yaml — a directory-synced CR tree may deliberately live in its own independently
-    # -synced Application instead of as another source on apps.yaml's (e.g. so a CRD-not-
-    # -registered-yet retry on that tree can't block apps.yaml's own multi-source sync).
-    for app_manifest in "$cluster_dir"*.yaml; do
+    # relative to the source dir, same as ArgoCD's own directory.exclude — a pattern like
+    # `ansible/**` would skip a whole subtree the same way, not just one filename). The
+    # talm project files and tailscale.yaml (Terraform-only data) live one level up at
+    # clusters/<cluster>/, outside this source path entirely, so there's nothing to
+    # exclude here any more.
+    # Scans every Application-kind manifest directly under clusters/<cluster>/apps/, not
+    # just apps.yaml — a directory-synced CR tree may deliberately live in its own
+    # independently-synced Application instead of as another source on apps.yaml's (e.g.
+    # so a CRD-not-registered-yet retry on that tree can't block apps.yaml's own
+    # multi-source sync).
+    for app_manifest in "${cluster_dir}apps/"*.yaml; do
         [[ "$(yq e '.kind' "$app_manifest")" == "Application" ]] || continue
         while IFS= read -r dir_path; do
             [[ -n "$dir_path" && -d "$dir_path" ]] || continue

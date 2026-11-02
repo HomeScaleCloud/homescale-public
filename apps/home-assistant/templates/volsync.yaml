@@ -1,4 +1,4 @@
-{{- $pvcs := list "home-assistant" "zigbee2mqtt" "mqtt-config" "mqtt-data" "matter" "homebridge" -}}
+{{- $pvcs := list "home-assistant" "zigbee2mqtt" "mqtt-data" "matter" "homebridge" -}}
 {{- $schedule := ((.Values.volsync).backupSchedule) | default "0 2 * * *" -}}
 {{- $restore := ((.Values.volsync).restore).enabled -}}
 {{- if not $restore }}
@@ -49,12 +49,6 @@ spec:
     {{- end }}
     {{- if (($.Values.volsync).restore).previous }}
     previous: {{ $.Values.volsync.restore.previous }}
-    {{- end }}
-    {{- if eq . "mqtt-config" }}
-    moverSecurityContext:
-      runAsUser: 100
-      runAsGroup: 101
-      fsGroup: 101
     {{- end }}
     {{- if eq . "matter" }}
     moverSecurityContext:

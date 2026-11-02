@@ -1,0 +1,34 @@
+# REQUIRED. Cluster control-plane endpoint every node's kubelet/kube-proxy
+# dials. For multi-node, point this at a VIP or external LB — not a single
+# node's IP, or there's no HA path to the apiserver. Single-node here, so
+# this is just the node's own address.
+endpoint: "https://10.1.247.21:6443"
+
+podSubnets:
+  - 10.244.0.0/16
+serviceSubnets:
+  - 10.96.0.0/16
+
+# Subnets kubelet/etcd advertise. Leave empty to auto-derive from the node's
+# default-gateway link.
+advertisedSubnets:
+  - 10.1.247.0/24
+
+# This cluster's single node's own network topology (no per-node values/
+# override needed — there's only one node). Other knobs this chart supports
+# (floatingIP, vipLink, clusterName, certSANs, registry mirrors, extra
+# kernel modules/sysctls/files, component args, etc.) are all unused here —
+# see charts/talm/templates/_helpers.tpl for their semantics if you need one.
+network:
+  extraLinks:
+    - interface: bond0
+      bond:
+        interfaces: [eno1, eno2]
+        mode: 802.3ad
+        xmitHashPolicy: layer3+4
+        lacpRate: fast
+        miimon: 100
+      addresses: [10.1.247.21/24]
+      vlans:
+        - vlanId: 241
+        - vlanId: 271

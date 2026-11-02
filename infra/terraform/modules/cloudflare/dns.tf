@@ -10,7 +10,7 @@ resource "cloudflare_dns_record" "public_app" {
 
   zone_id = local.app_zone_ids[each.key]
   name    = each.value.fqdn
-  content = "${cloudflare_zero_trust_tunnel_cloudflared.cluster[each.value.cluster].id}.cfargotunnel.com"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.cluster[each.value.env].id}.cfargotunnel.com"
   type    = "CNAME"
   ttl     = 1
   proxied = true

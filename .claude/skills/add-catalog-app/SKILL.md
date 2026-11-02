@@ -35,7 +35,7 @@ defaultDeploy: false      # don't accidentally deploy everywhere
 
 ## 3. Enable it per cluster
 
-Do **not** set `deploy: true` in `app.yaml` itself. Enable in `clusters/<cluster>/apps.yaml`, under `spec.sources[1].helm.values.apps.<name>`:
+Do **not** set `deploy: true` in `app.yaml` itself. Enable in `clusters/<cluster>/apps/apps.yaml`, under `spec.sources[1].helm.values.apps.<name>`:
 
 ```yaml
 apps:
@@ -79,13 +79,13 @@ and set **all four** of these annotations — a Kyverno `ValidatingPolicy` (`app
 ```yaml
 metadata:
   annotations:
-    tailscale.com/tags: "tag:k8s,tag:app-<name>,tag:cluster-{{ .Values.cluster.name }}"
-    tailscale.com/hostname: "<name>-{{ .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-<name>,tag:env-{{ .Values.env.name }}"
+    tailscale.com/hostname: "<name>-{{ .Values.env.name }}"
     tailscale.com/proxy-group: ingress
-    external-dns.kubernetes.io/hostname: "<name>.{{ .Values.cluster.name }}REDACTED"
+    external-dns.kubernetes.io/hostname: "<name>.{{ .Values.env.name }}REDACTED"
 ```
 
-The policy specifically requires: `tailscale.com/tags` containing both `tag:k8s` and a `tag:app-*`/`tag:k8s-api`/`tag:omni-k8s` entry and `tag:cluster-<cluster.name>`, and `external-dns.kubernetes.io/hostname` ending in `REDACTED`.
+The policy specifically requires: `tailscale.com/tags` containing both `tag:k8s` and a `tag:app-*`/`tag:k8s-api`/`tag:omni-k8s` entry and `tag:env-<env.name>`, and `external-dns.kubernetes.io/hostname` ending in `REDACTED`.
 
 ## 6. External exposure (optional, public internet)
 
@@ -168,7 +168,7 @@ Every alert needs, in the same change: a runbook at `docs/runbooks/<alert-name-k
 
 ```bash
 helm template <name> apps/<name>/
-helm template apps -f apps/values.yaml --set cluster.name=<cluster>
+helm template apps -f apps/values.yaml --set env.name=<cluster>
 yamllint -c .yamllint.yaml apps/<name>/
 ```
 

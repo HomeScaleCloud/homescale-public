@@ -11,10 +11,10 @@ metadata:
   name: prometheus-proxy
   namespace: metrics
   annotations:
-    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-{{ .Values.cluster.name }}"
-    tailscale.com/hostname: "prometheus-metrics-{{ .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:env-{{ .Values.env.name }}"
+    tailscale.com/hostname: "prometheus-metrics-{{ .Values.env.name }}"
     tailscale.com/proxy-group: ingress
-    external-dns.kubernetes.io/hostname: "prometheus-proxy.metrics.{{ .Values.cluster.name }}REDACTED"
+    external-dns.kubernetes.io/hostname: "prometheus-proxy.metrics.{{ .Values.env.name }}REDACTED"
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale
@@ -27,15 +27,15 @@ spec:
     app.kubernetes.io/name: prometheus
     operator.prometheus.io/name: metrics-kube-prometheus-st-prometheus
 ---
-{{- if eq .Values.cluster.name "production" }}
+{{- if eq .Values.env.name "production" }}
 apiVersion: v1
 kind: Service
 metadata:
   name: grafana
   namespace: metrics
   annotations:
-    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-{{ .Values.cluster.name }}"
-    tailscale.com/hostname: "grafana-metrics-{{ .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:env-{{ .Values.env.name }}"
+    tailscale.com/hostname: "grafana-metrics-{{ .Values.env.name }}"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "REDACTED"
 spec:
@@ -55,8 +55,8 @@ metadata:
   name: alertmanager
   namespace: metrics
   annotations:
-    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:cluster-{{ .Values.cluster.name }}"
-    tailscale.com/hostname: "alertmanager-metrics-{{ .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:env-{{ .Values.env.name }}"
+    tailscale.com/hostname: "alertmanager-metrics-{{ .Values.env.name }}"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "REDACTED"
 spec:

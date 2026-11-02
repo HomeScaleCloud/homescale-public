@@ -23,17 +23,6 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mqtt-config
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: {{ .Values.mqtt.pvc.config.size }}
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
   name: mqtt-data
 spec:
   accessModes:

@@ -57,8 +57,14 @@ _machine_table_rows() {
 # ClusterMachineIdentity join the table view above uses (the k8s *node* name, which is a
 # different concept and not what a bare-metal/BMC playbook would connect to).
 _get_machines_ansible() {
-    local ms_json
-    ms_json=$(omnictl get machinestatus -o yaml | yq e -o=json '.' - | jq -s -c '.')
+    # Post-Omni, there's no MachineStatus source for this any more — returns an empty
+    # inventory instead of erroring, since every ansible run scans this whole directory
+    # (ansible.cfg's inventory = inventory) and a failing script here would break playbooks
+    # that don't even target this group, like bootstrap-cluster.yml.
+    local ms_json='[]'
+    if command -v omnictl &>/dev/null; then
+        ms_json=$(omnictl get machinestatus -o yaml 2>/dev/null | yq e -o=json '.' - 2>/dev/null | jq -s -c '.' 2>/dev/null) || ms_json='[]'
+    fi
     python3 - "${ms_json:-[]}" <<'PYEOF'
 import json, re, sys
 
@@ -268,9 +274,9 @@ get_clusters() {
     [[ "$HSCTL_OUTPUT" == "ansible" ]] && { _get_clusters_ansible; return; }
 
     # Talos version isn't queryable from any live API post-Omni — it's just whatever
-    # infra/terraform/talos-<cluster>.tf declares. Left as "?" here rather than parsing
-    # HCL; the version that matters is the one actually applied, visible via `terraform
-    # -chdir=infra/terraform show`.
+    # clusters/<cluster>/Chart.yaml's templateOptions.talosVersion declares. Left as
+    # "?" here rather than parsing it; the version that matters is whatever's actually
+    # running, visible via `talosctl version`.
     local talos_tsv="" cluster_names
     cluster_names=$(hsctl_cluster_names)
 

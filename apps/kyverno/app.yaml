@@ -5,8 +5,8 @@ defaultDeploy: true
 syncOptions:
   - ServerSideApply=true
 values:
-  cluster:
-    name: "{{ .Values.cluster.name }}"
+  env:
+    name: "{{ .Values.env.name }}"
 ignoreDifferences:
   - group: apiextensions.k8s.io
     kind: CustomResourceDefinition

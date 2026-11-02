@@ -34,14 +34,14 @@ terraform plan -input=false -out=/tmp/tfplan-full
 if [[ -n "$cluster" ]]; then
     # cloudflare_dns_record/cloudflare_zero_trust_access_application are keyed by FQDN, not
     # cluster name, so matching on the resource address alone (like everything else below)
-    # would miss them — scan apps/*/app.yaml's own exposePublic[].cluster filter instead,
+    # would miss them — scan apps/*/app.yaml's own exposePublic[].env filter instead,
     # kept independent of any hardcoded resource-type list so it can't drift from the HCL.
     fqdns=()
     for f in "$repo_root"/apps/*/app.yaml; do
         [[ -f "$f" ]] || continue
         while IFS= read -r fqdn; do
             [[ -n "$fqdn" ]] && fqdns+=("$fqdn")
-        done < <(yq -o json "$f" | jq -r --arg c "$cluster" '.exposePublic[]? | select(.cluster == $c) | .fqdn')
+        done < <(yq -o json "$f" | jq -r --arg c "$cluster" '.exposePublic[]? | select(.env == $c) | .fqdn')
     done
     fqdns_json=$(printf '%s\n' "${fqdns[@]:-}" | jq -R 'select(length > 0)' | jq -s '.')
 

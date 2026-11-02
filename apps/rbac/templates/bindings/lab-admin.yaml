@@ -1,4 +1,4 @@
-{{- if hasSuffix "-lab" .Values.cluster.name }}
+{{- if hasSuffix "-lab" .Values.env.name }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

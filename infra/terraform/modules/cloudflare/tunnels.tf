@@ -27,7 +27,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
           # Backend cert's SANs cover app.fqdn, not the in-cluster Service DNS name.
           origin_server_name = app.fqdn
         } : null
-      } if app.cluster == each.key],
+      } if app.env == each.key],
       [{ service = "http_status:404" }]
     )
   }

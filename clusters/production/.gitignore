@@ -1,0 +1,5 @@
+secrets.yaml
+talosconfig
+talm.key
+values-secret.yaml
+kubeconfig

@@ -1,0 +1,16 @@
+{{- if (((.Values).subnetRouter).advertiseRoutes) }}
+apiVersion: tailscale.com/v1alpha1
+kind: Connector
+metadata:
+  name: subnet-router
+spec:
+  hostname: 'subnet-router-{{ required "env.name is required" .Values.env.name }}'
+  tags:
+    - 'tag:k8s'
+    - 'tag:env-{{ required "env.name is required" .Values.env.name }}'
+  subnetRouter:
+    advertiseRoutes:
+      {{- range .Values.subnetRouter.advertiseRoutes }}
+      - {{ . }}
+      {{- end }}
+{{- end }}

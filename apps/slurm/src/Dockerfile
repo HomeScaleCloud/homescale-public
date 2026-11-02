@@ -3,9 +3,10 @@ FROM ghcr.io/slinkyproject/login:26.05-ubuntu26.04
 # Only the `tailscale` CLI is needed here (for `tailscale whois`) — the
 # daemon runs in a sidecar container in the same pod, sharing its socket
 # over a mounted emptyDir at /var/run/tailscale.
-ARG TAILSCALE_VERSION=1.102.4
+ARG TAILSCALE_VERSION=1.104.4
 ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends jq ca-certificates \
+    && apt-get upgrade -y libbrotli1 \
     && rm -rf /var/lib/apt/lists/* \
     && curl -fsSL "https://pkgs.tailscale.com/stable/tailscale_${TAILSCALE_VERSION}_${TARGETARCH}.tgz" \
       | tar -xz --strip-components=1 -C /usr/local/bin "tailscale_${TAILSCALE_VERSION}_${TARGETARCH}/tailscale" \

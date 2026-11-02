@@ -12,8 +12,8 @@ tailscale:
         protocol: tcp
         ports: ["80", "443"]
 values:
-  cluster:
-    name: "{{ .Values.cluster.name }}"
+  env:
+    name: "{{ .Values.env.name }}"
   argo-cd:
     crds:
       install: true
@@ -21,7 +21,7 @@ values:
       cm:
         admin.enabled: "false"
         timeout.reconciliation: "30s"
-        url: "https://argocd.{{ .Values.cluster.name }}REDACTED"
+        url: "https://argocd.{{ .Values.env.name }}REDACTED"
         dex.config: |
           connectors:
             - type: saml
@@ -30,15 +30,15 @@ values:
               config:
                 ssoURL: "$argocd-saml:entra-saml-sso-url"
                 caData: "$argocd-saml:entra-saml-ca"
-                redirectURI: "https://argocd.{{ .Values.cluster.name }}REDACTED/api/dex/callback"
-                entityIssuer: "https://argocd.{{ .Values.cluster.name }}REDACTED/api/dex/callback"
+                redirectURI: "https://argocd.{{ .Values.env.name }}REDACTED/api/dex/callback"
+                entityIssuer: "https://argocd.{{ .Values.env.name }}REDACTED/api/dex/callback"
                 usernameAttr: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"
                 emailAttr: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
                 groupsAttr: "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups"
                 nameIDPolicyFormat: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
       rbac:
         scopes: "[groups]"
-        policy.default: '{{ if hasSuffix "-lab" .Values.cluster.name }}role:admin{{ end }}'
+        policy.default: '{{ if hasSuffix "-lab" .Values.env.name }}role:admin{{ end }}'
         policy.csv: |
           g, sg-k8s-admin, role:admin
           g, team-infra-plat, role:readonly
@@ -62,10 +62,10 @@ values:
         type: LoadBalancer
         loadBalancerClass: tailscale
         annotations:
-          tailscale.com/tags: "tag:k8s,tag:app-argocd,tag:cluster-{{ .Values.cluster.name }}"
-          tailscale.com/hostname: "argocd-{{ .Values.cluster.name }}"
+          tailscale.com/tags: "tag:k8s,tag:app-argocd,tag:env-{{ .Values.env.name }}"
+          tailscale.com/hostname: "argocd-{{ .Values.env.name }}"
           tailscale.com/proxy-group: ingress
-          external-dns.kubernetes.io/hostname: "argocd.{{ .Values.cluster.name }}REDACTED"
+          external-dns.kubernetes.io/hostname: "argocd.{{ .Values.env.name }}REDACTED"
       metrics:
         enabled: true
         serviceMonitor:
@@ -84,7 +84,7 @@ values:
       enabled: true
       secret:
         create: false
-      argocdUrl: "https://argocd.{{ .Values.cluster.name }}REDACTED"
+      argocdUrl: "https://argocd.{{ .Values.env.name }}REDACTED"
       notifiers:
         service.slack: |
           token: $slack-token
@@ -183,22 +183,22 @@ values:
                 ]
               }]
         template.app-github-status-syncing: |
-          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is syncing on cluster {{ .Values.cluster.name }}"
+          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is syncing on cluster {{ .Values.env.name }}"
           github:
             repoURLPath: "{{ "{{" }}if .app.spec.source.repoURL{{ "}}" }}{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}(index .app.spec.sources 0).repoURL{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             revisionPath: "{{ "{{" }}if .app.status.sync.revision{{ "}}" }}{{ "{{" }}.app.status.sync.revision{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}index .app.status.sync.revisions 0{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             status:
               state: pending
-              label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              label: "argocd/{{ .Values.env.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
         template.app-github-status-pending: |
-          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is out of sync on cluster {{ .Values.cluster.name }}"
+          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is out of sync on cluster {{ .Values.env.name }}"
           github:
             repoURLPath: "{{ "{{" }}if .app.spec.source.repoURL{{ "}}" }}{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}(index .app.spec.sources 0).repoURL{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             revisionPath: "{{ "{{" }}if .app.status.sync.revision{{ "}}" }}{{ "{{" }}.app.status.sync.revision{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}index .app.status.sync.revisions 0{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             status:
               state: pending
-              label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              label: "argocd/{{ .Values.env.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
         template.app-github-status-success: |
           github:
@@ -206,25 +206,25 @@ values:
             revisionPath: "{{ "{{" }}if .app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}index .app.status.operationState.syncResult.revisions 0{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             status:
               state: success
-              label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              label: "argocd/{{ .Values.env.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
         template.app-github-status-failure: |
-          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} failed to sync on cluster {{ .Values.cluster.name }}"
+          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} failed to sync on cluster {{ .Values.env.name }}"
           github:
             repoURLPath: "{{ "{{" }}if .app.spec.source.repoURL{{ "}}" }}{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}(index .app.spec.sources 0).repoURL{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             revisionPath: "{{ "{{" }}if .app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}index .app.status.operationState.syncResult.revisions 0{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             status:
               state: failure
-              label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              label: "argocd/{{ .Values.env.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
         template.app-github-status-degraded: |
-          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is in a degraded state on cluster {{ .Values.cluster.name }}"
+          message: "App {{ "{{" }}.app.metadata.name{{ "}}" }} is in a degraded state on cluster {{ .Values.env.name }}"
           github:
             repoURLPath: "{{ "{{" }}if .app.spec.source.repoURL{{ "}}" }}{{ "{{" }}.app.spec.source.repoURL{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}(index .app.spec.sources 0).repoURL{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             revisionPath: "{{ "{{" }}if .app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}.app.status.operationState.syncResult.revision{{ "}}" }}{{ "{{" }}else{{ "}}" }}{{ "{{" }}index .app.status.operationState.syncResult.revisions 0{{ "}}" }}{{ "{{" }}end{{ "}}" }}"
             status:
               state: failure
-              label: "argocd/{{ .Values.cluster.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
+              label: "argocd/{{ .Values.env.name }}/{{ "{{" }}.app.metadata.name{{ "}}" }}"
               targetURL: "{{ "{{" }}.context.argocdUrl{{ "}}" }}/applications/{{ "{{" }}.app.metadata.name{{ "}}" }}"
   argocd-image-updater:
     config:

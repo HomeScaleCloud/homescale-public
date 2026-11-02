@@ -5,7 +5,7 @@ metadata:
 spec:
   type: ingress
   replicas: 3
-  hostnamePrefix: 'ingress-{{ required "cluster.name is required" .Values.cluster.name }}'
+  hostnamePrefix: 'ingress-{{ required "env.name is required" .Values.env.name }}'
   tags:
     - 'tag:k8s'
-    - 'tag:cluster-{{ required "cluster.name is required" .Values.cluster.name }}'
+    - 'tag:env-{{ required "env.name is required" .Values.env.name }}'

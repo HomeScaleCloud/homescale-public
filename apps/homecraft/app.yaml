@@ -10,8 +10,8 @@ tailscale:
         protocol: tcp
         ports: ["25565"]
 values:
-  cluster:
-    name: "{{ .Values.cluster.name }}"
+  env:
+    name: "{{ .Values.env.name }}"
   global:
     env: ""
   minecraft:
@@ -25,7 +25,7 @@ values:
       type: "PAPER"
       gameMode: "creative"
       ops: "m4xm0rris"
-      motd: "HomeCraft - {{ .Values.cluster.name }}"
+      motd: "HomeCraft - {{ .Values.env.name }}"
       icon: "https://raw.githubusercontent.com/HomeScaleCloud/.github/refs/heads/main/homecraft.png"
     extraEnv:
       MC_PORT: "25565"

@@ -8,7 +8,7 @@ values:
     repository: ghcr.io/homescalecloud/homepage
     tag: "latest"  # pragma: allowlist secret
 exposePublic:
-  - cluster: production
+  - env: production
     fqdn: REDACTED
     port: 80
 

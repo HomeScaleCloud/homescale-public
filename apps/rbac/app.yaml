@@ -3,6 +3,6 @@ namespace: rbac
 releaseName: rbac
 syncWave: -30
 values:
-  cluster:
-    name: "{{ .Values.cluster.name }}"
+  env:
+    name: "{{ .Values.env.name }}"
 defaultDeploy: true

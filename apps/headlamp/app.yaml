@@ -11,9 +11,9 @@ tailscale:
         protocol: tcp
         ports: ["443"]
 values:
-  cluster:
-    name: "{{ .Values.cluster.name }}"
-    shortName: "{{ .Values.cluster.shortName }}"
+  env:
+    name: "{{ .Values.env.name }}"
+    shortName: "{{ .Values.env.shortName }}"
   headlamp:
     replicaCount: 1
     deploymentAnnotations:
@@ -21,7 +21,7 @@ values:
     service:
       port: 443
     config:
-      inClusterContextName: "{{ .Values.cluster.name }}"
+      inClusterContextName: "{{ .Values.env.name }}"
       tlsCertPath: /headlamp-tls/tls.crt
       tlsKeyPath: /headlamp-tls/tls.key
       oidc:

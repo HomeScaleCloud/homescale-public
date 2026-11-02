@@ -24,7 +24,7 @@ spec:
             - --credentials-file
             - /etc/cloudflared/credentials.json
             - run
-            - "homescale-{{ .Values.cluster.name }}"
+            - "homescale-{{ .Values.env.name }}"
           securityContext:
             runAsNonRoot: true
             runAsUser: 65532

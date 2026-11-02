@@ -29,7 +29,7 @@ Note the snapshot time (for `restoreAsOf`) or count back from latest (for `previ
 
 Read the app's actual chart values (its `values.yaml`, or the upstream subchart's, under `apps/<app>/charts/`) to find the real replica-count path. It varies: `apps/omni/app.yaml` uses `values.omni.replicaCount`, but another chart might use a bare `replicaCount`, `controller.replicaCount`, or something else entirely depending on the upstream chart's conventions. A wrong path merges into the override silently — no error, no warning — and the app keeps running at its normal replica count while VolSync overwrites the PVC underneath it.
 
-## 4. Edit `clusters/<cluster>/apps.yaml` — scale-down and restore together
+## 4. Edit `clusters/<cluster>/apps/apps.yaml` — scale-down and restore together
 
 In the app's override block, add **both** the scale-down and the `volsync.restore` block in the same change:
 
@@ -60,7 +60,7 @@ Confirm the output shows:
 
 If replicas isn't 0, or a `ReplicationSource` is still there, the value path in step 3/4 is wrong — fix it and re-run before committing.
 
-> The script needs `apps/.helmignore` to exclude `node_modules/` if any app directory (e.g. a Headlamp plugin under active development) has one checked out locally — Helm's chart loader errors on oversized files anywhere under `apps/`, not just files that would actually be templated. This also affects the plain `helm template apps -f apps/values.yaml --set cluster.name=<cluster>` command from CLAUDE.md. If you hit `Error: chart file "..." is larger than the maximum file size`, that's this — flag it to the user rather than deleting their local build artifacts.
+> The script needs `apps/.helmignore` to exclude `node_modules/` if any app directory (e.g. a Headlamp plugin under active development) has one checked out locally — Helm's chart loader errors on oversized files anywhere under `apps/`, not just files that would actually be templated. This also affects the plain `helm template apps -f apps/values.yaml --set env.name=<cluster>` command from CLAUDE.md. If you hit `Error: chart file "..." is larger than the maximum file size`, that's this — flag it to the user rather than deleting their local build artifacts.
 
 ## 6. Push, wait, confirm live
 
@@ -74,7 +74,7 @@ Done when `.status.lastSyncTime` is set and conditions show `Reconciled=True`. A
 
 ## 7. Roll back — same care, same verification, in reverse
 
-Remove **both** the scale-down override and the `volsync.restore` block from `clusters/<cluster>/apps.yaml` in one commit (per CLAUDE.md). Re-run the same check before pushing:
+Remove **both** the scale-down override and the `volsync.restore` block from `clusters/<cluster>/apps/apps.yaml` in one commit (per CLAUDE.md). Re-run the same check before pushing:
 
 ```bash
 .claude/skills/volsync-restore/scripts/render-check.sh <cluster> <app>

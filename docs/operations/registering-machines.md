@@ -1,6 +1,6 @@
 # Registering New Machines
 
-This page walks through onboarding a new bare-metal machine so Terraform can manage it as part of a cluster. There's no separate "registration"/claim step with an external control plane any more — Terraform owns the machine's config directly once its IP is in the relevant `talos-<cluster>.tf` file.
+This page walks through onboarding a new bare-metal machine so Terraform can manage it as part of a cluster. There's no separate "registration"/claim step with an external control plane any more — Terraform owns the machine's config directly once its IP is in the relevant `clusters/<cluster>/cluster.yaml` file.
 
 ## 1. Build a schematic and get an ISO
 
@@ -9,11 +9,11 @@ Talos [Image Factory](https://factory.talos.dev) replaces Omni's "Download Insta
 **Reuse the cluster's existing schematic (preferred — matches what its other machines already run):**
 
 ```bash
-terraform -chdir=infra/terraform output -raw module.talos_production.schematic_id
-terraform -chdir=infra/terraform output -raw module.talos_production.iso_url
+terraform -chdir=infra/terraform console <<< 'module.talos["production"].schematic_id'
+terraform -chdir=infra/terraform console <<< 'module.talos["production"].iso_url'
 ```
 
-(swap `talos_production` for `talos_development` as needed). Download the ISO from the printed URL.
+(swap `"production"` for `"development"` as needed — every cluster is a `for_each` instance of the same module, see `talos.tf`). Download the ISO from the printed URL.
 
 **Or build a schematic by hand**, if you need different system extensions than the cluster currently runs:
 
@@ -25,7 +25,7 @@ curl -X POST https://factory.talos.dev/schematics \
 curl -LO "https://factory.talos.dev/image/<schematic-id>/v1.14.0/metal-amd64.iso"
 ```
 
-Check the target cluster's `system_extensions` list in `infra/terraform/talos-<cluster>.tf` so the media matches what Terraform will configure the machine with.
+Check the target cluster's `system_extensions` list in `clusters/<cluster>/cluster.yaml` so the media matches what Terraform will configure the machine with.
 
 !!! note "Secure Boot"
     Image Factory supports Secure Boot assets (`-secureboot` suffixed paths/installer tags). Omni's `OmniSecureBootDisabled` alert (and its runbook) no longer exist — there is currently no equivalent automated check that a machine has Secure Boot enabled if you intend to enforce it. Verify manually if that matters for your hardware.
@@ -52,13 +52,16 @@ The machine must also be reachable from wherever Terraform runs (CI, or locally)
 
 ## 4. Add it to Terraform
 
-Terraform's Talos module addresses machines by IP directly (no Omni-style UUID identity/discovery service in between) and configures each one with a permanent **static** address — but a freshly booted machine only has the **DHCP** address from step 3, since the static one is itself delivered by the very first config apply. Add both to the relevant `control_plane_nodes`/`worker_nodes` list in `infra/terraform/talos-<cluster>.tf`:
+Terraform's Talos module addresses machines by IP directly (no Omni-style UUID identity/discovery service in between) and configures each one with a permanent **static** address — but a freshly booted machine only has the **DHCP** address from step 3, since the static one is itself delivered by the very first config apply. Add both to the relevant `control_plane.nodes`/`workers.nodes` list in `clusters/<cluster>/cluster.yaml`:
 
-```hcl
-control_plane_nodes = [
-  { name = "production-cp-1", ip = "10.1.245.21" }, # existing node
-  { name = "production-cp-4", ip = "<new machine's intended permanent static IP>", bootstrap_ip = "<its DHCP IP from step 3>" },
-]
+```yaml
+control_plane:
+  nodes:
+    - name: production-cp-1
+      ip: 10.1.245.21 # existing node
+    - name: production-cp-4
+      ip: "<new machine's intended permanent static IP>"
+      bootstrap_ip: "<its DHCP IP from step 3>"
 ```
 
 Commit and merge to `main`. CI's `talos` job generates this machine's config (including the same installer image/system extensions as the rest of the cluster) and applies it directly — no separate claim/allocate step — but, with `bootstrap_ip` set, targets the machine's DHCP address for this one first apply rather than the static `ip` it's being configured with.

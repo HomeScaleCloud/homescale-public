@@ -114,6 +114,13 @@ _pim_resolve_azure_role_def_id() {
     printf '%s\n' "$id"
 }
 
+_pim_oidc_login_clean() {
+    if command -v kubectl &>/dev/null; then
+        kubectl oidc-login clean &>/dev/null || true
+    fi
+    return 0
+}
+
 _pim_activate_role() {
     local name="$1" reason="$2" duration="$3"
     local my_id; my_id=$(_pim_my_id_graph) || exit 1
@@ -126,6 +133,7 @@ _pim_activate_role() {
     }')
     resp=$(_pim_graph_rest POST "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentScheduleRequests" "$body") || exit 1
     hsctl_log_success "role '$name' activation request $(jq -r '.id' <<< "$resp"): $(jq -r '.status // "submitted"' <<< "$resp")"
+    _pim_oidc_login_clean
 }
 
 _pim_deactivate_role() {
@@ -151,6 +159,7 @@ _pim_activate_group() {
     }')
     resp=$(_pim_graph_rest POST "https://graph.microsoft.com/v1.0/identityGovernance/privilegedAccess/group/assignmentScheduleRequests" "$body") || exit 1
     hsctl_log_success "group '$name' activation request $(jq -r '.id' <<< "$resp"): $(jq -r '.status // "submitted"' <<< "$resp")"
+    _pim_oidc_login_clean
 }
 
 _pim_deactivate_group() {

@@ -8,7 +8,7 @@ spec:
   sources:
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
       targetRevision: main
-      path: clusters/development
+      path: clusters/development/apps
       directory:
         recurse: true
     - repoURL: git@github.com:HomeScaleCloud/homescale.git
@@ -17,7 +17,7 @@ spec:
       helm:
         releaseName: apps-development
         values: |
-          cluster:
+          env:
             name: development
             region: boa1
             shortName: dev
@@ -31,6 +31,11 @@ spec:
               deploy: true
             headlamp:
               deploy: true
+            tailscale:
+              values:
+                subnetRouter:
+                  advertiseRoutes:
+                    - 10.1.247.0/24
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
