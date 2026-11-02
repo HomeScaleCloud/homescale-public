@@ -85,6 +85,13 @@ hsctl_infisical_call() {
         # makes it found regardless of where hsctl gets run from next, not just this one
         # invocation's own directory.
         (cd "$HOME" && infisical init --silent --domain https://app.infisical.com) || return 1
+    elif grep -q "was not found" "$err"; then
+        # A nonexistent folder/path, not an auth problem — a login retry can't fix this,
+        # so return it to the caller straight away instead of forcing a pointless re-auth.
+        cp "$err" "/tmp/.hsctl-infisical-err.$$"
+        cat "$err" >&2
+        rm -f "$err"
+        return 1
     else
         rm -f "$err"
         hsctl_infisical_login || return 1

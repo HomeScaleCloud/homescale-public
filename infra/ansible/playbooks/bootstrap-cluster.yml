@@ -29,13 +29,20 @@
         _talos_patch_files: "{{ (_talos_base_patches | reject('search', '/spegel-containerd.yaml') | list) + _talos_cluster_patches if (bootstrap_nodes | length) < 3 else _talos_base_patches + _talos_cluster_patches }}"
       when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
 
+    - name: Ensure the cluster's nodes/ directory exists
+      ansible.builtin.file:
+        path: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/nodes"
+        state: directory
+        mode: "0755"
+      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+
     - name: Render Talos config for each new node
       ansible.builtin.shell: >
         hsctl run talm --cluster {{ talos_cluster_name }}
         --nodes {{ item.dhcp_ip }} -e {{ item.dhcp_ip }}
         template -t templates/controlplane.yaml
         {{ ((hsctl_repo_root + '/clusters/' + talos_cluster_name + '/values/' + item.name + '.yaml') is file) | ternary('--values values/' + item.name + '.yaml', '') }}
-        > nodes/{{ item.name }}.yaml
+        > {{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/nodes/{{ item.name }}.yaml
       environment:
         HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
       loop: "{{ bootstrap_nodes | default([]) }}"
