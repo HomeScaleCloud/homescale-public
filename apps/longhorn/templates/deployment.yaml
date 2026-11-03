@@ -20,7 +20,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: snapshot-controller
-          image: registry.k8s.io/sig-storage/snapshot-controller:v8.6.0
+          image: registry.k8s.io/sig-storage/snapshot-controller:v8.7.0
           imagePullPolicy: IfNotPresent
           args:
             - --http-endpoint=:8080
