@@ -1,24 +1,8 @@
 #!/usr/bin/env bash
-# hsctl run — run a playbook or script, either remotely (dispatches
-# .github/workflows/deploy.yaml on GitHub Actions and follows the triggered run) or
-# locally (clones main fresh and runs it directly against that checkout).
-#
-# <name> is one of a small set of known jobs — bootstrap-core, bootstrap-cluster,
-# terraform — or, in local mode only, the bare filename (without .yml) of any other
-# playbook under infra/ansible/playbooks/. talm is a separate case entirely (see _run_talm).
-#
-# bootstrap-core/bootstrap-cluster get special local-secrets handling for their playbook
-# (see _run_bootstrap_local); terraform gets the same treatment for its own Infisical
-# universal-auth creds (see _run_terraform_local) — needed to bootstrap core itself (and
-# the rest of infra/terraform) from a human's own machine, before CI/Tailscale can reach
-# anything.
-#
-# Local mode never runs against $HSCTL_REPO_ROOT — it clones HomeScaleCloud/homescale@main
-# fresh into a temp dir instead (_run_local_clone_repo), so it always matches main. talm
-# bypasses this and always runs against $HSCTL_REPO_ROOT directly (see _run_talm).
+# Dispatch workflows remotely or run commands from HSCTL_REPO_ROOT locally.
+# Bootstrap and Terraform fetch local Infisical credentials; TOPF uses its provider.
 
-# Cleanup registry: a later `trap ... EXIT` call replaces any earlier one instead of
-# stacking, so independent cleanups register a path here rather than trapping directly.
+# Register cleanup paths under one EXIT trap.
 _run_cleanup_paths=()
 _run_register_cleanup() { _run_cleanup_paths+=("$1"); }
 _run_cleanup() {
@@ -33,20 +17,18 @@ trap _run_cleanup EXIT
 run_usage() {
     echo "Usage: hsctl run <name> [--cluster <name>] [--arg key=value]... [-e|--execution-mode local|remote] [--dry-run] [--chain <name>[,<name>...]] [--git-ref <ref>]"
     echo "       hsctl run bootstrap-cluster --cluster <name> -e local --nodes <file>"
-    echo "       hsctl run talm --cluster <name> <talm args...>"
+    echo "       hsctl run topf --cluster <name> <topf args...>"
     echo ""
     echo "<name> is one of:"
-    echo "  bootstrap-core      bootstrap the core cluster (playbook)"
     echo "  bootstrap-cluster   bootstrap workload clusters (all, or one via --cluster) (playbook)"
+    echo "  update-cluster      reconcile Talos/Kubernetes versions and config (playbook)"
     echo "  terraform           plan/apply infra/terraform (script) — cloud resources, Tailscale"
     echo "                      ACL, Infisical project structure; no Talos cluster provisioning"
-    echo "                      any more (see 'talm')"
-    echo "  talm                run the talm CLI directly against clusters/<cluster>/ (--cluster"
-    echo "                      required), fetching/pushing its secrets.yaml/talosconfig/kubeconfig"
-    echo "                      to/from Infisical around the call. Always local — talm talks"
-    echo "                      directly to Talos nodes on your LAN, the same way talosctl does, so"
-    echo "                      -e/--execution-mode, --chain, and --dry-run don't apply to it."
-    echo "                      Everything else is forwarded verbatim to talm."
+    echo "                      (see 'topf')"
+    echo "  topf                run native TOPF against clusters/<cluster>/ (--cluster required)."
+    echo "                      Uses the existing Infisical CA bundle and a local private cache."
+    echo "                      Prefix --refresh-secrets to refresh, --init-secrets for first use."
+    echo "                      Native TOPF flags, including apply --dry-run, pass through."
     echo "  <anything else>     (local mode only) any other playbook under"
     echo "                      infra/ansible/playbooks/<name>.yml"
     echo ""
@@ -55,52 +37,44 @@ run_usage() {
     echo "                              'cluster' is passed as an extra ansible -e key=value to"
     echo "                              the generic-playbook fallback job only"
     echo "  --cluster <name>            sugar for --arg cluster=<name> — meaningful for"
-    echo "                              bootstrap-cluster (-e target=<name>) and terraform"
+    echo "                              bootstrap-cluster/update-cluster (-e target=<name>) and terraform"
     echo "                              (scopes the plan/apply to that cluster's own resources)."
-    echo "                              Required (not sugar) for talm — see above."
+    echo "                              Required for topf — see above."
     echo "  --nodes <file>              (bootstrap-cluster, local mode only) YAML/JSON file"
     echo "                              listing this cluster's new nodes as {name, dhcp_ip,"
-    echo "                              static_ip} — folds the full Talm bootstrap (render,"
+    echo "                              static_ip} — folds the full Talos bootstrap (render,"
     echo "                              apply, wait for the static IP, bootstrap etcd) into"
     echo "                              this run, ahead of the usual cilium/argocd setup."
     echo "                              Requires --cluster and -e local. Only for a cluster's"
     echo "                              very first bootstrap — adding a node to an already"
-    echo "                              running cluster is still a manual 'hsctl run talm'"
+    echo "                              running cluster uses 'hsctl run topf'"
     echo "                              sequence against that one node (see CLAUDE.md)."
     echo "  -e, --execution-mode <mode> 'local' or 'remote' (default: remote). remote dispatches"
     echo "                              .github/workflows/deploy.yaml via 'gh workflow run' and"
     echo "                              follows the triggered run (requires 'gh auth login' and"
-    echo "                              write access to HomeScaleCloud/homescale). local clones"
-    echo "                              main fresh (via gh) and runs <name> directly against it —"
+    echo "                              write access to HomeScaleCloud/homescale). local runs"
+    echo "                              directly against HSCTL_REPO_ROOT, including local changes —"
     echo "                              still required for the very first cluster bootstrap, or"
     echo "                              any time CI/Tailscale can't reach what you're changing yet."
-    echo "  --dry-run                   terraform: plan only, no apply. Ignored by ansible playbooks."
+    echo "  --dry-run                   terraform/update-cluster: preview only. Ignored by bootstrap playbooks."
     echo "  --chain <name>[,...]        (local mode only) run <name> plus this list"
     echo "                              (comma-separated, no spaces) in sequence against the same"
     echo "                              checkout. Not supported in -e remote mode — GitHub Actions'"
     echo "                              workflow_dispatch can't compose an arbitrary step sequence"
     echo "                              at dispatch time; run each one separately with its own"
     echo "                              'hsctl run ... -e remote' instead."
-    echo "  --git-ref <ref>              (remote mode only, default: main) branch/tag/SHA for"
-    echo "                              deploy.yaml's own checkout step — lets a PR's own branch"
+    echo "  --git-ref <ref>              (remote only, default: main) branch/tag for"
+    echo "                              deploy.yaml checkout — lets a PR's own branch"
     echo "                              be planned instead of main's current content."
     exit 1
 }
 
-# Fetch a secrets folder from Infisical via the caller's already-authenticated CLI session,
-# retrying once (against infisical init or infisical login, whichever it actually needs —
-# see hsctl_infisical_call) if the first attempt fails.
-# Usage: _run_infisical_secrets <path>   -> flat JSON object {KEY: value, ...} on stdout
+# Export Infisical secrets as a JSON object using the existing CLI session.
 _run_infisical_secrets() {
     local path="$1" raw
     if ! raw=$(hsctl_infisical_call export --silent --env=prod --path="$path" --format=json); then
-        # A folder that's never had anything written to it (e.g. /k8s/talos/<env> before
-        # that cluster's first bootstrap) 404s instead of returning an empty list -- same
-        # as "no secrets yet", not a real failure.
+        # Preserve the empty-object result for missing folders.
         if grep -q "was not found" "/tmp/.hsctl-infisical-err.$$" 2>/dev/null; then
-            # The success path below always flattens into a JSON object
-            # ({KEY: value, ...}), never a raw array -- callers that key-index the
-            # result (e.g. _run_talm's `.[$k] // ""`) need that same shape here.
             echo '{}'
             return 0
         fi
@@ -110,38 +84,38 @@ _run_infisical_secrets() {
     jq 'map({(.key): .value}) | add // {}' <<< "$raw"
 }
 
-# Run bootstrap-core or bootstrap-cluster locally, pre-fetching secrets via the local
-# Infisical CLI session and handing them to Ansible as hsctl_local_secrets.
+# Prepare the pinned collections before invoking a local playbook.
+_run_ansible() {
+    ansible-galaxy collection install -r "$HSCTL_REPO_ROOT/infra/ansible/requirements.yml" >&2
+    ansible-playbook "$@"
+}
+
+# Pass local service credentials to Ansible in a private extra-vars file.
 _run_bootstrap_local() {
-    local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4" nodes_file="$5"
+    local cluster="$1" dry_run="$2" repo_root="$3" nodes_file="$4"
 
     command -v infisical &>/dev/null || { echo "hsctl run: the infisical CLI is required (brew install infisical)" >&2; exit 1; }
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
-
-    [[ -n "$cluster" && "$playbook" == "bootstrap-core" ]] && hsctl_log_info "--cluster is ignored for bootstrap-core"
 
     local bootstrap_nodes_json='[]'
     if [[ -n "$nodes_file" ]]; then
         command -v yq &>/dev/null || { echo "hsctl run: yq is required (brew install yq)" >&2; exit 1; }
         [[ -f "$nodes_file" ]] || { hsctl_log_error "no such file: $nodes_file"; exit 1; }
         bootstrap_nodes_json=$(yq -o=json '.' "$nodes_file") || { hsctl_log_error "failed to parse $nodes_file as YAML/JSON"; exit 1; }
+        jq -e 'type == "array" and length > 0 and
+            all(.[]; (.name | type == "string" and test("^[a-z0-9][a-z0-9-]*$")) and
+                (.dhcp_ip | type == "string" and test("^[0-9a-fA-F:.]+$")) and
+                (.static_ip | type == "string" and test("^[0-9a-fA-F:.]+$"))) and
+            ((map(.name) | unique | length) == length) and
+            ((map(.static_ip) | unique | length) == length) and
+            ((map(.dhcp_ip) | unique | length) == length)' <<<"$bootstrap_nodes_json" >/dev/null ||
+            { hsctl_log_error "nodes must be a nonempty list of unique {name, dhcp_ip, static_ip} entries"; exit 1; }
     fi
 
     hsctl_log_info "fetching secrets from Infisical via local CLI session"
-    local argocd_secrets infisical_op_secrets ci_secrets='{}' talos_kubeconfigs='{}'
+    local argocd_secrets infisical_op_secrets
     argocd_secrets=$(_run_infisical_secrets /k8s/argocd/deploy-key) || exit 1
     infisical_op_secrets=$(_run_infisical_secrets /k8s/infisical) || exit 1
-    [[ "$playbook" == "bootstrap-core" ]] && { ci_secrets=$(_run_infisical_secrets /ci) || exit 1; }
-    if [[ "$playbook" == "bootstrap-cluster" ]]; then
-        # Only the two clusters that will ever exist — see infra/ansible/inventory/group_vars/clusters.yml
-        # for the same inline name->shortname mapping, kept here since this runs before any
-        # inventory is loaded. Fetched for both regardless of --cluster, since a target-less
-        # run loops over every "clusters" host and each needs its own kubeconfig.
-        local prod_kc dev_kc
-        prod_kc=$(_run_infisical_secrets /k8s/talos/prod) || exit 1
-        dev_kc=$(_run_infisical_secrets /k8s/talos/dev) || exit 1
-        talos_kubeconfigs=$(jq -n --argjson prod "$prod_kc" --argjson dev "$dev_kc" '{production: $prod, development: $dev}')
-    fi
 
     local extra_vars_file
     extra_vars_file=$(mktemp)
@@ -151,35 +125,25 @@ _run_bootstrap_local() {
     jq -n \
         --argjson argocd "$argocd_secrets" \
         --argjson infisical_op "$infisical_op_secrets" \
-        --argjson ci "$ci_secrets" \
-        --argjson talos_kubeconfig "$talos_kubeconfigs" \
         --argjson bootstrap_nodes "$bootstrap_nodes_json" \
         --arg hsctl_repo_root "$HSCTL_REPO_ROOT" \
-        '{hsctl_local: true, hsctl_repo_root: $hsctl_repo_root, bootstrap_nodes: $bootstrap_nodes, hsctl_local_secrets: {argocd_deploy_key: $argocd, infisical_operator: $infisical_op, ci: $ci, talos_kubeconfig: $talos_kubeconfig}}' \
+        '{hsctl_local: true, hsctl_repo_root: $hsctl_repo_root, bootstrap_nodes: $bootstrap_nodes, hsctl_local_secrets: {argocd_deploy_key: $argocd, infisical_operator: $infisical_op}}' \
         > "$extra_vars_file"
 
     (
-        export HSCTL_REPO_ROOT="$repo_root" # so a nested `hsctl get machines` (via the inventory/machines dynamic inventory script) resolves against the same fresh checkout
+        export HSCTL_REPO_ROOT="$repo_root"
         cd "$repo_root/infra/ansible" || exit 1
 
-        case "$playbook" in
-            bootstrap-core)
-                hsctl_log_action "running bootstrap-core.yml"
-                ansible-playbook playbooks/bootstrap-core.yml -e cluster_name=core -e "dry_run=$dry_run" --extra-vars "@$extra_vars_file"
-                ;;
-            bootstrap-cluster)
-                hsctl_log_action "running bootstrap-cluster.yml${cluster:+ (target: $cluster)}"
-                if [[ -n "$cluster" ]]; then
-                    ansible-playbook playbooks/bootstrap-cluster.yml -e target="$cluster" -e "dry_run=$dry_run" --extra-vars "@$extra_vars_file"
-                else
-                    ansible-playbook playbooks/bootstrap-cluster.yml -e "dry_run=$dry_run" --extra-vars "@$extra_vars_file"
-                fi
-                ;;
-        esac
+        hsctl_log_action "running bootstrap-cluster.yml${cluster:+ (target: $cluster)}"
+        if [[ -n "$cluster" ]]; then
+            _run_ansible playbooks/bootstrap-cluster.yml -e target="$cluster" -e "dry_run=$dry_run" --extra-vars "@$extra_vars_file"
+        else
+            _run_ansible playbooks/bootstrap-cluster.yml -e "dry_run=$dry_run" --extra-vars "@$extra_vars_file"
+        fi
     )
 }
 
-# Run any other playbook locally, as-is — no local secrets handling (see module comment).
+# Run other playbooks from the current checkout.
 _run_generic_local() {
     local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4"
     local playbook_file="$repo_root/infra/ansible/playbooks/$playbook.yml"
@@ -187,21 +151,18 @@ _run_generic_local() {
     [[ -f "$playbook_file" ]] || { hsctl_log_error "no such playbook: infra/ansible/playbooks/$playbook.yml"; exit 1; }
 
     (
-        export HSCTL_REPO_ROOT="$repo_root" # so a nested `hsctl get machines` (via the inventory/machines dynamic inventory script) resolves against the same fresh checkout
+        export HSCTL_REPO_ROOT="$repo_root"
         cd "$repo_root/infra/ansible" || exit 1
         hsctl_log_action "running $playbook.yml${cluster:+ (target: $cluster)}"
         if [[ -n "$cluster" ]]; then
-            ansible-playbook "playbooks/$playbook.yml" -e target="$cluster" -e "dry_run=$dry_run"
+            _run_ansible "playbooks/$playbook.yml" -e hsctl_local=true -e target="$cluster" -e "dry_run=$dry_run"
         else
-            ansible-playbook "playbooks/$playbook.yml" -e "dry_run=$dry_run"
+            _run_ansible "playbooks/$playbook.yml" -e hsctl_local=true -e "dry_run=$dry_run"
         fi
     )
 }
 
-# Run infra/terraform/plan-apply.sh locally, pre-fetching the "ci" identity's universal-auth
-# credentials via the caller's own Infisical CLI session (there's no GitHub OIDC token to
-# present outside an Actions runner — see providers.tf) and exporting the TF_VAR_* the
-# provider needs straight into the script's environment.
+# Supply Terraform universal-auth credentials from the local Infisical session.
 _run_terraform_local() {
     local cluster="$1" dry_run="$2" repo_root="$3"
 
@@ -229,106 +190,28 @@ _run_terraform_local() {
     )
 }
 
-# hsctl run talm --cluster <name> -- <talm args...>
-#
-# talm keeps its own cluster secrets (secrets.yaml, talosconfig, kubeconfig) as plain
-# files in clusters/<cluster>/, git-ignored — this fetches them from Infisical into that
-# directory before running, and pushes back whatever's there afterward, so Infisical stays
-# the source of truth and these files never land in git or in Terraform state. Always runs
-# against $HSCTL_REPO_ROOT's own checkout, not a fresh clone — talm is an interactive,
-# iterative tool (render, inspect, apply against live hardware), not a frozen-at-main job.
-_run_talm() {
+_run_topf() {
     local cluster="$1"; shift
-    local -a talm_args=("$@")
-
-    [[ -z "$cluster" ]] && { hsctl_log_error "hsctl run talm requires --cluster <name>"; exit 1; }
-    [[ ${#talm_args[@]} -eq 0 ]] && { hsctl_log_error "hsctl run talm requires talm arguments after '--' (e.g. hsctl run talm --cluster production -- template -t templates/controlplane.yaml)"; exit 1; }
-
-    command -v talm &>/dev/null || { echo "hsctl run: talm is required (brew install talm)" >&2; exit 1; }
-    command -v infisical &>/dev/null || { echo "hsctl run: the infisical CLI is required (brew install infisical)" >&2; exit 1; }
-    command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
-
-    local project_dir="$HSCTL_REPO_ROOT/clusters/$cluster"
-    [[ -d "$project_dir" ]] || { hsctl_log_error "no such talm project: clusters/$cluster (known clusters: $(hsctl_cluster_names))"; exit 1; }
-
-    local shortname
-    shortname=$({ jq -rn --arg c "$cluster" '{production: "prod", development: "dev"}[$c] // empty'; }) # see infra/ansible/inventory/group_vars/clusters.yml for the same mapping
-    [[ -z "$shortname" ]] && { hsctl_log_error "unknown cluster '$cluster' (expected production or development)"; exit 1; }
-    local secrets_path="/k8s/talos/$shortname"
-
-    hsctl_log_info "fetching Talos secrets from Infisical ($secrets_path) via local CLI session"
-    local secrets_json
-    secrets_json=$(_run_infisical_secrets "$secrets_path") || exit 1
-
-    local f val
-    for f in SECRETS_YAML:secrets.yaml TALOSCONFIG:talosconfig KUBECONFIG:kubeconfig; do
-        val=$(jq -r --arg k "${f%%:*}" '.[$k] // ""' <<<"$secrets_json")
-        if [[ -n "$val" ]]; then
-            printf '%s' "$val" > "$project_dir/${f##*:}"
-            chmod 600 "$project_dir/${f##*:}"
-        fi
+    local init_secrets=false refresh_secrets=false
+    while [[ "${1:-}" == --init-secrets || "${1:-}" == --refresh-secrets ]]; do
+        case "$1" in
+            --init-secrets) init_secrets=true ;;
+            --refresh-secrets) refresh_secrets=true ;;
+        esac
+        shift
     done
-
+    [[ -n "$cluster" && $# -gt 0 ]] || { hsctl_log_error "topf requires --cluster and a command"; return 1; }
+    local project="$HSCTL_REPO_ROOT/clusters/$cluster"
+    [[ -f "$project/topf.yaml" ]] || { hsctl_log_error "no such TOPF cluster: $cluster"; return 1; }
+    command -v topf >/dev/null || { hsctl_log_error "topf is required (brew install postfinance/tap/topf)"; return 1; }
     (
-        export TALOSCONFIG="$project_dir/talosconfig"
-        cd "$project_dir" || exit 1
-        hsctl_log_action "running: talm ${talm_args[*]}"
-        talm "${talm_args[@]}"
+        export HSCTL_REPO_ROOT
+        export HSCTL_TOPF_INIT_SECRETS="$init_secrets"
+        export HSCTL_TOPF_REFRESH_SECRETS="$refresh_secrets"
+        cd "$project" || exit 1
+        umask 077
+        topf "$@"
     )
-    local status=$?
-
-    # A successful first-time etcd bootstrap is also the first point a kubeconfig/fresh
-    # client cert can even be fetched, and the whole reason bootstrap-cluster can read them
-    # from Infisical afterward (see CLAUDE.md's Networking section) is that something runs
-    # these two and pushes the result — so do it here automatically rather than relying on
-    # the operator to remember a second and third command. Reuses whichever -f node file(s)
-    # the bootstrap call itself targeted, since that's what carries the right nodes/endpoints.
-    if [[ $status -eq 0 && "${talm_args[0]:-}" == "bootstrap" ]]; then
-        local -a bootstrap_file_args=()
-        local i
-        for ((i = 0; i < ${#talm_args[@]}; i++)); do
-            if [[ "${talm_args[$i]}" == "-f" || "${talm_args[$i]}" == "--file" ]]; then
-                bootstrap_file_args+=(-f "${talm_args[$((i + 1))]}")
-            fi
-        done
-        if [[ ${#bootstrap_file_args[@]} -gt 0 ]]; then
-            hsctl_log_action "bootstrap succeeded — following up with talm kubeconfig/talosconfig"
-            (
-                export TALOSCONFIG="$project_dir/talosconfig"
-                cd "$project_dir" || exit 1
-                talm kubeconfig "${bootstrap_file_args[@]}" --merge=false || hsctl_log_error "talm kubeconfig failed — run it by hand once the cluster has settled"
-                talm talosconfig || hsctl_log_error "talm talosconfig failed — run it by hand"
-            )
-        else
-            hsctl_log_error "bootstrap succeeded, but couldn't find a -f node file in its own arguments to reuse for kubeconfig/talosconfig — run them by hand"
-        fi
-    fi
-
-    hsctl_log_info "syncing secrets.yaml/talosconfig/kubeconfig back to Infisical ($secrets_path)"
-    for f in SECRETS_YAML:secrets.yaml TALOSCONFIG:talosconfig KUBECONFIG:kubeconfig; do
-        if [[ -f "$project_dir/${f##*:}" ]]; then
-            hsctl_infisical_call secrets set "${f%%:*}=@$project_dir/${f##*:}" --path="$secrets_path" --env=prod --type=shared >/dev/null \
-                || hsctl_log_error "failed to push ${f%%:*} back to Infisical — re-run to retry, or push it by hand"
-        fi
-    done
-
-    return $status
-}
-
-# Clones `main` fresh into a temp dir, once per `hsctl run` invocation (not per chained
-# playbook). Doesn't call _run_register_cleanup itself — this runs in a $(...) subshell,
-# so the caller registers the returned path in its own, non-subshell scope instead.
-_run_local_clone_repo() {
-    command -v gh &>/dev/null || { echo "hsctl run: gh is required for local runs (brew install gh)" >&2; exit 1; }
-
-    local tmpdir
-    tmpdir=$(mktemp -d)
-    if ! gh repo clone HomeScaleCloud/homescale "$tmpdir" -- --depth 1 --branch main --quiet; then
-        hsctl_log_error "failed to clone HomeScaleCloud/homescale@main (check: gh auth status)"
-        rm -rf "$tmpdir"
-        return 1
-    fi
-    echo "$tmpdir"
 }
 
 _run_local() {
@@ -337,9 +220,9 @@ _run_local() {
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
 
     case "$name" in
-        bootstrap-core|bootstrap-cluster)
+        bootstrap-cluster)
             command -v ansible-playbook &>/dev/null || { echo "hsctl run: ansible-playbook is required (brew install ansible)" >&2; exit 1; }
-            _run_bootstrap_local "$name" "$cluster" "$dry_run" "$repo_root" "$nodes_file"
+            _run_bootstrap_local "$cluster" "$dry_run" "$repo_root" "$nodes_file"
             ;;
         terraform)
             _run_terraform_local "$cluster" "$dry_run" "$repo_root"
@@ -351,12 +234,7 @@ _run_local() {
     esac
 }
 
-# _run_remote <name> <cli-args-json> <dry_run> <chain_raw> <git_ref> — dispatches
-# .github/workflows/deploy.yaml via `gh workflow run` and follows the triggered run.
-# cli_args_json's "cluster" key becomes the 'cluster' workflow_dispatch input (bootstrap-
-# cluster's target, or terraform's scoping); any other key
-# is folded into a space-separated "key=value ..." string for the 'extra_args' input, which
-# only the generic-ansible-playbook fallback job consumes.
+# Dispatch deploy.yaml; cluster selects the target, other arguments become extra_args.
 _run_remote() {
     local name="$1" cli_args_json="$2" dry_run="$3" chain_raw="$4" git_ref="${5:-main}"
     local repo="HomeScaleCloud/homescale"
@@ -399,31 +277,22 @@ _run_remote() {
 }
 
 run_main() {
-    # talm is neither a dispatched CI job nor a playbook run against a frozen clone of
-    # main — it talks directly to live Talos nodes on the operator's own LAN, the same way
-    # talosctl does, so it bypasses the remote-dispatch/local-clone machinery below entirely
-    # and runs straight against $HSCTL_REPO_ROOT's own clusters/<cluster>/ project dir.
-    #
-    # It gets its own tiny arg grammar: talm has its own -f, --dry-run, -i, etc., which
-    # would otherwise collide with hsctl run's own flags of the same name. The only thing
-    # hsctl run looks for is --cluster, wherever it appears; everything else (a stray --
-    # included) passes straight through to talm untouched.
-    if [[ "${1:-}" == "talm" ]]; then
+    if [[ "${1:-}" == "topf" ]]; then
         shift
-        local cluster="" talm_args=()
+        local cluster="" topf_args=()
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 --cluster) cluster="${2:-}"; [[ -z "$cluster" ]] && run_usage; shift 2 ;;
                 --) shift ;;
-                *) talm_args+=("$1"); shift ;;
+                *) topf_args+=("$1"); shift ;;
             esac
         done
-        _run_talm "$cluster" "${talm_args[@]}"
+        _run_topf "$cluster" "${topf_args[@]}"
         return $?
     fi
 
     local playbook="" cluster="" mode="remote" dry_run="false" playbook_set=false
-    local chain_raw="" arg_kvs=() git_ref="main" nodes_file=""
+    local chain_raw="" arg_kvs=() git_ref="main" git_ref_set=false nodes_file=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -441,7 +310,7 @@ run_main() {
                 chain_raw="${2:-}"; [[ -z "$chain_raw" ]] && run_usage
                 shift 2 ;;
             --git-ref)
-                git_ref="${2:-}"; [[ -z "$git_ref" ]] && run_usage
+                git_ref="${2:-}"; git_ref_set=true; [[ -z "$git_ref" ]] && run_usage
                 shift 2 ;;
             -h|--help) run_usage ;;
             --*) echo "hsctl run: unknown flag '$1'" >&2; run_usage ;;
@@ -453,13 +322,14 @@ run_main() {
 
     [[ -z "$playbook" ]] && { echo "hsctl run: a name is required" >&2; run_usage; }
     [[ -n "$nodes_file" && "$playbook" != "bootstrap-cluster" ]] && { echo "hsctl run: --nodes is only valid with bootstrap-cluster" >&2; run_usage; }
-    [[ -n "$nodes_file" && "$mode" != "local" ]] && { echo "hsctl run: --nodes requires -e local (talm needs direct access to your LAN)" >&2; run_usage; }
+    [[ -n "$nodes_file" && "$mode" != "local" ]] && { echo "hsctl run: --nodes requires -e local (bootstrap needs direct LAN access)" >&2; run_usage; }
     [[ -n "$nodes_file" && -z "$cluster" ]] && { echo "hsctl run: --nodes requires --cluster" >&2; run_usage; }
 
     local local_repo_root=""
     if [[ "$mode" == "local" ]]; then
-        local_repo_root=$(_run_local_clone_repo) || exit 1
-        _run_register_cleanup "$local_repo_root"
+        [[ "$git_ref_set" == false ]] || { hsctl_log_error "--git-ref is remote-only; check out the desired revision locally"; return 1; }
+        local_repo_root="$HSCTL_REPO_ROOT"
+        [[ -d "$local_repo_root/infra/ansible" ]] || { hsctl_log_error "HSCTL_REPO_ROOT is not a HomeScale checkout: $local_repo_root"; return 1; }
     fi
 
     if [[ "$mode" == "remote" ]]; then

@@ -16,24 +16,28 @@ on:
     types: [published]
 
 jobs:
+  build:
+    uses: ./.github/workflows/build.yaml
+    secrets: inherit  # pragma: allowlist secret
+
   scan:
     uses: ./.github/workflows/scan.yaml
     with:
       pr_title: ${{ github.event.pull_request.title }}
     secrets: inherit  # pragma: allowlist secret
 
-  build:
-    uses: ./.github/workflows/build.yaml
-    secrets: inherit  # pragma: allowlist secret
+  test:
+    uses: ./.github/workflows/test.yaml
+    needs: [build, scan]
 
   deploy:
     uses: ./.github/workflows/deploy.yaml
-    needs: [scan]
+    needs: [test]
     if: github.event_name != 'release'
     secrets: inherit  # pragma: allowlist secret
 
   mirror:
     uses: ./.github/workflows/mirror.yaml
-    needs: [scan]
+    needs: [test]
     if: github.event_name == 'push'
     secrets: inherit  # pragma: allowlist secret

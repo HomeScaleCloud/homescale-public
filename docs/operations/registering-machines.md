@@ -1,75 +1,38 @@
 # Registering New Machines
 
-This page walks through onboarding a new bare-metal machine so Terraform can manage it as part of a cluster. There's no separate "registration"/claim step with an external control plane any more — Terraform owns the machine's config directly once its IP is in the relevant `clusters/<cluster>/cluster.yaml` file.
+Add machines to `clusters/<cluster>/topf.yaml`. TOPF generates Talos configuration; Terraform manages external services.
 
-## 1. Build a schematic and get an ISO
+## Installation media
 
-Talos [Image Factory](https://factory.talos.dev) replaces Omni's "Download Installation Media" wizard. Two ways to get there:
+Reuse the cluster's schematicId and talosVersion. Download matching media from `https://factory.talos.dev/image/<schematic-id>/v<talos-version>/metal-<arch>-secureboot.iso`. Write it to USB or mount it through the server's BMC.
 
-**Reuse the cluster's existing schematic (preferred — matches what its other machines already run):**
-
-```bash
-terraform -chdir=infra/terraform console <<< 'module.talos["production"].schematic_id'
-terraform -chdir=infra/terraform console <<< 'module.talos["production"].iso_url'
-```
-
-(swap `"production"` for `"development"` as needed — every cluster is a `for_each` instance of the same module, see `talos.tf`). Download the ISO from the printed URL.
-
-**Or build a schematic by hand**, if you need different system extensions than the cluster currently runs:
+Enable UEFI SecureBoot. Where required, enroll the image's SecureBoot keys from the boot menu while firmware is in setup mode. Boot into maintenance mode, record its DHCP address and verify:
 
 ```bash
-curl -X POST https://factory.talos.dev/schematics \
-  -d '{"customization":{"systemExtensions":{"officialExtensions":["siderolabs/iscsi-tools","siderolabs/util-linux-tools"]}}}'
-# → {"id": "<schematic-id>", "schematic": "..."}
-
-curl -LO "https://factory.talos.dev/image/<schematic-id>/v1.14.0/metal-amd64.iso"
+talosctl --nodes <dhcp-ip> get securitystate --insecure
+talosctl --nodes <dhcp-ip> get disks --insecure
 ```
 
-Check the target cluster's `system_extensions` list in `clusters/<cluster>/cluster.yaml` so the media matches what Terraform will configure the machine with.
+Confirm the actual installation disk, NIC names, permanent address, DNS and gateway before editing inventory. Do not infer them from another machine.
 
-!!! note "Secure Boot"
-    Image Factory supports Secure Boot assets (`-secureboot` suffixed paths/installer tags). Omni's `OmniSecureBootDisabled` alert (and its runbook) no longer exist — there is currently no equivalent automated check that a machine has Secure Boot enabled if you intend to enforce it. Verify manually if that matters for your hardware.
+## First cluster
 
-## 2. Write the ISO to media
+Complete the permanent inventory and run the LAN bootstrap with a nodes.yaml listing every control-plane node. Follow [Clusters: bootstrap](../architecture/clusters.md#bootstrap-adding-a-new-cluster). The DHCP address is only the initial apply target; authenticated bootstrap uses the permanent address.
 
-**USB drive:**
+## Additional nodes
+
+Add a unique host alias, permanent ip and role to topf.yaml. The alias names the rendered file; Talos generates its own stable hostname. Cluster-wide disk and network settings apply automatically; put a verified installDiskMatch override in the node data only if its disk differs. Shared role and network patches apply automatically.
+
+From the LAN, render into a private temporary directory and apply only the new node's file:
 
 ```bash
-# macOS — find the device with `diskutil list`, then:
-dd if=<path-to-iso> of=/dev/diskN conv=fdatasync
-
-# Linux — find the device with `lsblk`, then:
-dd if=<path-to-iso> of=/dev/sdX conv=fdatasync
+umask 077
+workspace=$(mktemp -d)
+hsctl run topf --cluster production render --output "$workspace/configs"
+talosctl --nodes <dhcp-ip> apply-config --insecure --file "$workspace/configs/<alias>.yaml"
+rm -rf "$workspace"
 ```
 
-**Servers with out-of-band management** (iDRAC, iLO, IPMI): mount the ISO directly as virtual media instead of burning a USB — consult your BMC's documentation for the exact steps.
+Clean up the workspace even if apply fails. Rendered files contain credentials; never commit them. Once the node answers at its permanent address, preview future changes with `hsctl run topf --cluster production --nodes-filter '^alias$' apply --dry-run`. Existing cluster credentials are reused. Do not initialize a new CA or bootstrap etcd again.
 
-## 3. Boot the machine
-
-Boot the target machine from the USB/virtual media (may require a one-time boot-order override in BIOS/UEFI). Talos boots into maintenance mode and the console prints its DHCP-assigned IP address — **write this down**, you need it for the next step.
-
-The machine must also be reachable from wherever Terraform runs (CI, or locally) — directly, or via the Tailscale subnet router advertising its LAN, since CI's `talos` job joins the tailnet specifically to reach it.
-
-## 4. Add it to Terraform
-
-Terraform's Talos module addresses machines by IP directly (no Omni-style UUID identity/discovery service in between) and configures each one with a permanent **static** address — but a freshly booted machine only has the **DHCP** address from step 3, since the static one is itself delivered by the very first config apply. Add both to the relevant `control_plane.nodes`/`workers.nodes` list in `clusters/<cluster>/cluster.yaml`:
-
-```yaml
-control_plane:
-  nodes:
-    - name: production-cp-1
-      ip: 10.1.245.21 # existing node
-    - name: production-cp-4
-      ip: "<new machine's intended permanent static IP>"
-      bootstrap_ip: "<its DHCP IP from step 3>"
-```
-
-Commit and merge to `main`. CI's `talos` job generates this machine's config (including the same installer image/system extensions as the rest of the cluster) and applies it directly — no separate claim/allocate step — but, with `bootstrap_ip` set, targets the machine's DHCP address for this one first apply rather than the static `ip` it's being configured with.
-
-This first-time step has to happen from somewhere that can actually reach the machine's fresh DHCP address — the same reason `hsctl run -e local` exists in the automatron-removal PR: a human runs it from the LAN, not from CI, when CI's own Tailscale-routed reachability isn't enough (e.g. the subnet router isn't up yet, or the DHCP address is on a network segment CI can't reach).
-
-## 5. Confirm it, then drop `bootstrap_ip`
-
-Once CI's apply succeeds, confirm the machine now answers at its static IP (`talosctl -e <static-ip> -n <static-ip> version`, or similar). Then remove `bootstrap_ip` from its entry in a follow-up commit — every Terraform operation after that targets the static `ip` the same as every other machine in the cluster. See [Clusters: the DHCP/static-IP chicken-and-egg problem](../architecture/clusters.md#the-dhcpstatic-ip-chicken-and-egg-problem) for why this two-step dance exists.
-
-See [Clusters: bootstrap a new cluster](../architecture/clusters.md#bootstrap-adding-a-new-cluster) if this is the first machine for a brand-new cluster rather than an addition to an existing one.
+CI reaches existing clusters through their Tailscale subnet routers. Keep a new cluster's data.bootstrapComplete false until local bootstrap, ArgoCD sync and remote connectivity have succeeded.

@@ -1,121 +1,118 @@
 # Clusters
 
-## Overview
+TOPF manages Talos machine configuration. Ansible orders initial bootstrap and installs Infisical credentials, Cilium and ArgoCD. Each cluster self-hosts ArgoCD. Terraform manages external services; Talos credentials never enter Terraform state.
 
-Each Talos cluster is managed directly by Terraform, using the [`siderolabs/talos`](https://registry.terraform.io/providers/siderolabs/talos/latest) provider — no self-hosted management plane (no Omni, no separate "core"/mgmt cluster on a third-party cloud). Each cluster self-hosts its own ArgoCD and is otherwise fully independent. ArgoCD handles application state exactly as it always has; Terraform now also handles Talos machine config generation, applying it to nodes, and cluster bootstrap.
+## Inventory and shared policy
 
-## Cluster directory structure
-
-Each cluster has a directory at `clusters/<cluster>/`:
-
-| File | Purpose |
+| Path | Purpose |
 |------|---------|
-| `apps.yaml` | Bootstrap ArgoCD app-of-apps — applied manually once to seed the cluster |
-| `cluster.yaml` | That cluster's Talos data: version pins, system extensions, network interface shape, inline config patches, machine inventory, and the LAN subnet(s) its own Tailscale subnet router should advertise (`tailscale.advertise_routes`). Pure data read by Terraform (`yamldecode`) — not an ArgoCD source; `apps.yaml` excludes it via `directory.exclude`. Rename to `cluster.yaml.disabled` to pull a cluster out of Terraform entirely (`production` is disabled this way right now) |
+| `clusters/<cluster>/topf.yaml` | Version pins, SecureBoot schematic, endpoint, CIDRs and permanent node inventory |
+| `infra/topf/all/` | Shared installation, network, identity, kubelet and optional storage patches |
+| `infra/topf/control-plane/` | etcd, OIDC, Cilium prerequisites, scheduling and optional VIP patches |
+| `infra/topf/secrets-provider.sh` | Native TOPF provider backed by Infisical and a private local cache |
+| `clusters/<cluster>/apps.yaml` | ArgoCD app-of-apps; recursively syncs the cluster directory, excluding `topf.yaml` |
 
-Raw Kubernetes manifests placed in `clusters/<cluster>/` are picked up directly by the app-of-apps as a second source and applied to the cluster. This is used for cluster-scoped resources that don't belong in any app chart (e.g. cluster-level RBAC, storage class config).
+Cluster-wide settings live under `data`: node subnet, bond NICs, installation disk, gateway, DNS, pod/service CIDRs and optional platform features. Node entries contain an inventory alias (`host`), permanent IP, role and any node label. Talos generates stable `talos-…` hostnames; the aliases select TOPF nodes and name rendered files. Kubernetes inventory checks use permanent IPs instead of assuming aliases equal hostnames. A node can override the installation disk in its own data when necessary.
 
-## Cluster naming
+The shared network patch contains the native BondConfig, VLANConfig and ResolverConfig documents. It creates bond1 addresses from each node's IP and the nodeSubnet prefix, applies the cluster gateway/DNS/NICs, and creates VLANs 241 and 271. There are no repeated network documents or YAML anchors in node inventory. Edit the shared patch when changing network policy.
 
-The fleet is currently two clusters, named for their role rather than a region code:
+`data.nodeSubnet` is the node LAN CIDR. Kubelet and etcd use it to select node addresses; Terraform reads the same value for Tailscale LAN access and route auto-approval. Actual Tailscale advertisement remains in apps.yaml.
 
-| Cluster | Short form (used in URLs/hostnames) | Role |
-|---------|--------------------------------------|------|
-| `production` | `prod` | Production workloads |
-| `development` | `dev` | Lab/development workloads |
+Ordinary TOPF render/apply commands automatically select every applicable patch. There is no hardware discovery, Helm dependency, vendored library, modeline or generated config to commit.
 
-The full name (`production`/`development`) is used wherever Talos or Terraform has a literal cluster-identity field (the `siderolabs/talos` provider's `cluster_name`, the `cluster.name` Helm value passed to every app, etc). The short form (`prod`/`dev`) is used only in places that are explicitly shortened — currently just Headlamp's `console.<prod|dev>REDACTED` tailnet hostname (still within the standard `REDACTED` pattern — no admission-policy exception needed) and this module's own Infisical secret paths (`/k8s/talos/<prod|dev>/KUBECONFIG`). Existing internal `<name>.<cluster>REDACTED` hostnames across the rest of the app catalog use the full cluster name (e.g. `REDACTED`) — introducing a dedicated short-name parameter fleet-wide is a separate, later piece of work, not done as part of this change.
+Legacy Talm `nodes/` configs, cluster `Chart.lock` files and Helm archives are obsolete. Remove them when updating an existing checkout. Keep `secrets.yaml`: TOPF reuses that CA bundle. Old generated `talosconfig` files can be regenerated with `hsctl run topf --cluster <name> talosconfig`.
 
-## Talos/Terraform module (`infra/terraform/modules/talos/`)
+Both clusters use bond1 to avoid the kernel-created bond0, LACP, storage VLAN 241 and media VLAN 271. Production retains its four-NIC bonds, API VIP, role labels, Longhorn volume and Spegel containerd setting. Development uses two NICs. Spegel requires at least three nodes. Installer schematic and version pins retain the existing SecureBoot image.
 
-`infra/terraform/talos.tf` discovers every cluster directly from `clusters/*/cluster.yaml` (`fileset` + `yamldecode`, keyed by directory name) and instantiates the module once per cluster via a single `module "talos" { for_each = ... }` block — addressed per cluster as `module.talos["production"]`/`module.talos["development"]`. There's no separate Terraform file per cluster to create or maintain; adding a cluster is just adding its `cluster.yaml`. The module:
+Production uses `/dev/nvme0n1` for installation on all three control-plane nodes. The old boa1-prod configuration selected NVMe disks, and the disk path was confirmed during this migration. Its gateway and DNS still need confirmation and remain omitted. Rendering that inventory fails; validation substitutes clearly identified temporary fixtures only for missing settings. CI applies default to disabled until data.bootstrapComplete is explicitly true.
 
-1. **Generates machine secrets** (`talos_machine_secrets`) — CA material, bootstrap token, etc, held in Terraform state (Terraform Cloud). No external credential is needed beyond this; the provider talks to each node's `apid` directly using the generated client certificate.
-2. **Builds an Image Factory schematic** (`talos_image_factory_schematic`) from the cluster's `system_extensions` list, and resolves installer/ISO URLs for it (`talos_image_factory_urls`) — this replaces Omni's "Download Installation Media" step. The resulting installer image reference is injected into every machine's config via `machine.install.image`.
-3. **Generates machine configuration** (`talos_machine_configuration` data source, once per role — controlplane/worker) from: every patch in `infra/talos/patches/base/` (applies to all clusters) plus every patch in `infra/talos/patches/<cluster>/` (applies only to this cluster) — both templated, so e.g. `base/cluster-name-label.yaml`'s `${CLUSTER_NAME}` placeholder still resolves — the install-image/disk-selector patch from step 2, and any role-specific inline patches (e.g. control-plane-only scheduler config) declared directly in that cluster's `cluster.yaml` (`control_plane.patches`/`workers.patches`).
-4. **Layers each machine's own static-addressing patch on top, at apply time** (`talos_machine_configuration_apply`'s own `config_patches` argument), generated from `cluster.yaml`'s shared `network_interface` shape (bond/VLAN config, no addressing) plus that one machine's `ip` — every machine in a role shares the same base config from step 3 but needs a *different* address, which that step's single shared data source can't express.
-5. **Applies it to every machine** (`talos_machine_configuration_apply`, one resource per node, keyed by the node's IP — see "The DHCP/static-IP chicken-and-egg problem" below for what it's actually keyed by on a machine's very first apply).
-6. **Bootstraps etcd** on the first control plane node (`talos_machine_bootstrap`) — a one-time action, not re-run as config changes.
-7. **Waits for cluster health** (`talos_cluster_health`), then **fetches a break-glass admin kubeconfig** (`talos_cluster_kubeconfig`) and stores it in Infisical at `/k8s/talos/<prod|dev>/KUBECONFIG`. Day-to-day human/CI access is unaffected — it still goes through the direct-OIDC path described in [Networking](networking.md); this is purely a disaster-recovery credential.
+ArgoCD recursively syncs arbitrary Kubernetes YAML/JSON manifests under `clusters/<cluster>/`, excluding only `topf.yaml`. Generated Talos configs and credentials stay gitignored. If an existing Application still points to the old `apps/` directory, reapply the moved `apps.yaml` once to update its source path.
 
-### The DHCP/static-IP chicken-and-egg problem
+## Credentials and execution
 
-A freshly imaged machine boots into Talos maintenance mode with no machine config yet, so the only address it has is whatever its DHCP server assigns — the static address (`ip`) above is itself delivered *by* that first config apply, not available before it. So step 4/5's very first apply for a given machine has to target its current DHCP address, not its intended static one.
+Infisical stores the existing SECRETS_YAML CA bundle at /k8s/talos/prod and /k8s/talos/dev, both in environment prod. Folders remain manually managed. TOPF consumes the same Talos bundle directly; this migration does not rotate CAs or change the bundle format.
 
-Each `control_plane.nodes`/`workers.nodes` entry therefore carries both:
-- `ip` — the permanent static address. Used for everything else: the generated static-addressing patch itself, the cluster endpoint, health checks, the kubeconfig fetch, every later config update.
-- `bootstrap_ip` (optional) — overrides the *target* of that one machine's `talos_machine_configuration_apply`/`talos_machine_bootstrap` calls while it's set.
+`hsctl run topf --cluster <name> ...` invokes native TOPF in the cluster directory. The provider restores a missing local secrets.yaml; ordinary operations then use that private, gitignored cache without repeated remote reads. Prefix --refresh-secrets before the TOPF subcommand to fetch the current backup deliberately.
 
-One-time procedure per machine:
+First use requires explicit initialization:
 
-1. Image and boot it (see "Registering new machines" below).
-2. Read its DHCP-assigned address off the console, router, or DHCP lease table by hand.
-3. Set that machine's `bootstrap_ip` to that address in `clusters/<cluster>/cluster.yaml`, commit, and apply.
-4. Confirm the machine now answers at its static `ip` (e.g. `talosctl -e <ip> -n <ip> version`).
-5. Remove `bootstrap_ip` from that machine's entry in a follow-up commit.
+```bash
+hsctl run topf --cluster development --init-secrets --confirm=false secrets >/dev/null
+```
 
-This is the same kind of first-time, must-happen-from-the-LAN step `hsctl run -e local` exists for in the automatron-removal PR — a human runs it locally, from the same network as the target, rather than from CI. Expect the health-check/kubeconfig steps (which always target the static `ip`) to fail on that very first apply if the machine hasn't fully settled onto its static address yet — that's fine, just re-run `terraform apply` once it has.
+This restores the remote bundle first. If none exists, it backs up an existing local bundle or creates and backs up a new one. Credentials without a recoverable bundle cause failure. Never delete a bundle to fix authentication. A failed backup leaves secrets.pending.yaml; repeat initialization to upload that same bundle before proceeding. Export/authentication failures stop the operation; they never trigger CA generation. The provider uses the existing Infisical CLI session/token without triggering login or project setup. Local bundles are mode 0600; symlinks, competing local writes and mismatches with the remote bundle are refused. Resolve differing bundles manually after verifying the correct CA. Run first initialization from one machine at a time.
 
-### Known gaps versus the old Omni-managed setup
+CI supplies a read-only private bundle via HSCTL_TOPF_SECRETS_FILE. It cannot generate or upload cluster secrets. Client credentials are disposable: topf talosconfig and topf kubeconfig generate them from the bundle. Bootstrap creates a fresh 12-hour admin kubeconfig for each run, then deletes it and rendered machine configs on success or failure. Full renders contain secrets and must remain private and uncommitted. Existing remote TALOSCONFIG/KUBECONFIG values can remain for recovery; TOPF does not depend on them.
 
-- **No control-plane load balancer/VIP.** The module uses the first control plane node's own IP as the cluster endpoint. `production` (3 CP nodes) loses its endpoint if that specific node goes down, even though etcd/the rest of the control plane would still be healthy. Omni's embedded discovery service sidestepped this; nothing in this module does yet. Worth revisiting with a kube-vip machine patch if it matters in practice.
-- **No equivalent of Omni's `backupConfiguration` (etcd snapshot backups to Omni's own storage).** The Talos Terraform provider has no feature for this; it would need a separate mechanism (e.g. a scheduled `talosctl etcd snapshot` somewhere) if etcd backups beyond VolSync's PVC-level backups are needed.
-
-## Shared and cluster-specific Talos patches
-
-`infra/talos/patches/` (renamed from `infra/omni/patches/`) contains Talos machine config patches, split into:
-
-- `infra/talos/patches/base/` — applied to every machine in every cluster, automatically. Includes kubelet server certificate rotation, OIDC/JWT authentication wiring for the apiserver, disabling kube-proxy/Flannel (this fleet uses Cilium instead), making control-plane nodes schedulable, and the cluster-name node label.
-- `infra/talos/patches/<cluster>/` — applied only to that one cluster's machines, also automatically (e.g. `infra/talos/patches/production/longhorn.yaml`). A cluster with none of its own still needs the directory to exist (tracked via `.gitkeep`), since the module globs it unconditionally.
-
-Neither directory needs listing anywhere in `cluster.yaml` — the module globs both at plan time (`infra/terraform/modules/talos/machine_config.tf`). Each patch file is named for what it does. See [Talos configuration docs](https://www.talos.dev/latest/reference/configuration/) for the patch schema.
-
-## Registering new machines
-
-A machine needs no separate "registration" step with any external control plane any more — Terraform owns its config directly. To onboard one:
-
-1. **Build a schematic and get an ISO** via the Image Factory HTTP API (`POST https://factory.talos.dev/schematics` with the target system extensions in `customization.systemExtensions.officialExtensions`; download the ISO from `https://factory.talos.dev/image/<schematic-id>/<talos-version>/metal-<arch>.iso`) — or just read the `schematic_id`/`iso_url` output already computed by the relevant `module.talos["<cluster>"]` instance, since it's the same schematic the cluster's other machines already run.
-2. **Write the ISO to media** — USB drive (`dd if=<iso> of=/dev/<device> conv=fdatasync`) or mounted as virtual media via the server's BMC (iDRAC/iLO/IPMI).
-3. **Boot the machine from it** — Talos boots into maintenance mode; the console prints its DHCP-assigned IP.
-4. **Decide the machine's permanent static IP, and add it to `clusters/<cluster>/cluster.yaml`** — append `{ name: "<cluster>-cp-N", ip: "<the permanent static IP>", bootstrap_ip: "<its current DHCP IP from step 3>" }` to the relevant `control_plane.nodes`/`workers.nodes` list. Commit and merge — CI's `talos` job applies that machine's config directly (no separate claim/allocate step the way Omni required), including the static-addressing patch that gives it `ip` going forward.
-5. **Confirm the static address took, then drop `bootstrap_ip`** — once the machine answers at its static `ip`, remove `bootstrap_ip` from its entry in a follow-up commit. See "The DHCP/static-IP chicken-and-egg problem" above for why this two-step dance exists.
-
-Full walkthrough: [Registering new machines](../operations/registering-machines.md).
+Local operations use HSCTL_REPO_ROOT, including uncommitted changes. Invoke the checked-out branch's ./hsctl; --git-ref selects remote workflow revisions only.
 
 ## Bootstrap: adding a new cluster
 
-A brand-new cluster has no Tailscale reachability at all until it has already bootstrapped and synced once — its own Tailscale subnet router (see [Networking](networking.md)) is an ArgoCD-managed workload inside it, not something that pre-exists on the LAN. So, unlike adding a machine to an *existing* cluster, **the entire first pass below runs locally** (`hsctl ... -e local`, from a machine physically on that LAN), not through CI. If another cluster already advertises the same LAN (e.g. `development` bootstrapping before `production`, both on `10.1.245.0/24`), CI *may* already be able to reach the new nodes via that other cluster's router — but don't rely on it for a cluster's own first bootstrap; do it locally regardless.
+The first bootstrap runs from the LAN. Tailscale subnet routing is an ArgoCD workload and cannot provide initial connectivity.
 
-1. **Create `clusters/<cluster>/cluster.yaml`** (versions, system extensions, network interface shape, machine inventory, `tailscale.advertise_routes` — follow `clusters/development/cluster.yaml` as a template) and, if it needs any of its own, an `infra/talos/patches/<cluster>/` directory (a `.gitkeep` if empty). `infra/terraform/talos.tf` discovers it automatically — no Terraform file to create.
-2. **Create `clusters/<cluster>/apps.yaml`** — the ArgoCD app-of-apps pointing at this repo. Give its `clusters/<cluster>` directory source `directory: { recurse: true, exclude: cluster.yaml* }`, same as `production`/`development` — otherwise ArgoCD (and `validate-manifests.sh`) try to apply `cluster.yaml` as a Kubernetes manifest. Also set `apps.tailscale.values.subnetRouter.advertiseRoutes` to the same CIDR(s) as `cluster.yaml`'s `tailscale.advertise_routes` — the two are separate (one's Terraform-only data, the other's what Helm actually renders) but need to agree.
-3. **Add any other deployment overrides**, if needed, to that same `clusters/<cluster>/apps.yaml`'s `apps` source values (see [Deployment overrides](../operations/deploying-an-app.md#deployment-overrides)).
-4. **Image and boot the machine(s)** — see [Registering new machines](#registering-new-machines) below. Record each one's DHCP-assigned IP, decide its permanent static IP, and fill in `control_plane.nodes`/`workers.nodes` in `cluster.yaml` with both (`ip` + `bootstrap_ip`).
-5. **From a machine on that LAN, run `hsctl run terraform -e local`** (untargeted — it covers the whole `infra/terraform` workspace, Talos module included). This generates the Image Factory schematic, applies machine config to each node (via `bootstrap_ip` the first time), bootstraps etcd, waits for cluster health, and stores a break-glass kubeconfig in Infisical at `/k8s/talos/<short>/KUBECONFIG`. Confirm each node now answers at its static `ip`, then drop `bootstrap_ip` and re-run the same command once more (still locally — the subnet router still doesn't exist yet) to reconcile that removal.
-6. **Still from that LAN, run `hsctl run bootstrap-cluster --cluster <name> -e local`** — seeds the critical credentials (ArgoCD deploy key, Infisical operator creds) the cluster's own self-hosted ArgoCD needs at startup, and installs Cilium.
-7. **Apply `clusters/<cluster>/apps.yaml` manually, once**, against the kubeconfig from step 5 (still only reachable from that LAN at this point). ArgoCD takes over from here, syncing in sync-wave order: Infisical → cert-manager/ArgoCD/RBAC → **Tailscale** (this is where the subnet router actually comes up and advertises the LAN) → external-dns → apps.
-8. **Confirm the route is live and auto-approved** (`tailscale status` from an admin device, or the Tailscale admin console) — Terraform's `autoApprovers.routes` entry for this CIDR means no manual approval step should be needed. From here on, CI (`tag:github-actions`) and `sg-k8s-admin` members can reach this cluster's LAN directly, and any future `hsctl run ... -e remote` against it works normally.
+1. Complete topf.yaml, including the real install disk, node subnet, bond NICs, gateway and DNS. Keep pod/service CIDRs unique across clusters.
+2. Boot matching Image Factory SecureBoot media. Confirm maintenance-mode access and SecureBoot with `talosctl --nodes <dhcp-ip> get securitystate --insecure`.
+3. Write an uncommitted nodes.yaml listing every control-plane node:
 
-## Upgrading Talos or Kubernetes
+   ```yaml
+   - name: development-1
+     dhcp_ip: 10.1.247.219
+     static_ip: 10.1.247.21
+   ```
 
-Update `talos_version`/`kubernetes_version` in the relevant `clusters/<cluster>/cluster.yaml` and merge to `main`. The `talos` CI job re-applies machine configuration across the cluster's machines (this works remotely once the cluster has its own subnet router up — see [Networking](networking.md)); `kubernetes_version` only takes effect for new nodes bootstrapping — upgrading a running cluster's Kubernetes version requires the dedicated `talos_cluster` resource's `upgrade-k8s` workflow (not currently wired into this module — add it if/when a live Kubernetes upgrade is needed, rather than relying on `kubernetes_version` drift to trigger one).
+4. Run `./hsctl run bootstrap-cluster --cluster development -e local --nodes nodes.yaml`.
+5. Confirm bootstrap, ArgoCD sync and Tailscale connectivity. Set `data.bootstrapComplete: true` in topf.yaml once those checks succeed to enable declarative CI updates.
 
-## Terraform
+The bootstrap names and permanent addresses must match the aliases and IPs in topf.yaml. Bootstrap backs up the CA, renders offline from permanent configuration, applies through each DHCP address with native talosctl --insecure, waits for permanent Talos addresses, and then uses authenticated TOPF bootstrap at the first permanent address. It waits for the Kubernetes API, generates fresh credentials and installs cluster services. Existing etcd membership is detected by TOPF's bootstrap operation.
 
-Cloud resources (Cloudflare DNS, Infisical project setup, Tailscale configuration, Talos cluster provisioning) live in `infra/terraform/`. State is in [Terraform Cloud](https://developer.hashicorp.com/terraform/cloud-docs) (`homescale` org, `homescale` workspace).
+After Talos bootstrap succeeds, retry service installation without --nodes to avoid replaying the maintenance-mode apply.
 
-CI authenticates to Infisical via GitHub OIDC. On merge to `main`, CI runs `terraform apply` automatically (after `scan` and `build` pass). On PRs, CI runs `terraform plan` and posts the plan as a PR comment. A human can also run Terraform directly via `hsctl run terraform -e local` (Infisical universal auth instead of GitHub OIDC) — the only way to bootstrap a brand-new cluster, since CI has no Tailscale route to it until its own in-cluster subnet router is up (see [Networking](networking.md) and "Bootstrap: adding a new cluster" above).
-
-To format Terraform files locally:
+## Later applies and additional nodes
 
 ```bash
-terraform -chdir=infra/terraform fmt
+hsctl run topf --cluster development render
+hsctl run topf --cluster development apply --dry-run
+hsctl run topf --cluster development apply
 ```
 
-### Terraform modules
+Native dry-run exit code 2 means changes were detected; CI treats it as a successful preview. Source inventory and shared patches determine the entire configuration. Generated output is private and gitignored.
 
-| Module | What it manages |
-|--------|----------------|
-| `modules/tailscale/` | Tailscale ACL, tags, and OAuth clients — reads `tailscale:` blocks from `app.yaml` files via `fileset`, and each cluster's `tailscale.advertise_routes` from `cluster.yaml` (for grants + `autoApprovers.routes`) |
-| `modules/cloudflare/` | DNS records and Cloudflare Zero Trust Tunnel config — reads `exposePublic:` from `app.yaml` |
-| `modules/infisical/` | Infisical project structure and machine identities. VolSync's per-app secret scaffolding is separate — see `volsync.tf` in the Terraform root |
-| `modules/talos/` | A single Talos/Kubernetes cluster — machine secrets, Image Factory schematic, machine config generation/apply, bootstrap, health check, break-glass kubeconfig. Instantiated once per cluster via `talos.tf`'s `for_each` over `clusters/*/cluster.yaml` |
+For a new node, add its inventory alias, permanent IP and role to the inventory, render to a private directory, then apply that node's file to its maintenance-mode DHCP address using talosctl --insecure. Once it answers at its permanent IP, use TOPF's --nodes-filter '^alias$' for later operations. Do not initialize new cluster secrets or bootstrap etcd for an additional node. See [Registering new machines](../operations/registering-machines.md).
+
+CI performs read-only previews on PRs and applies on merge only after bootstrapComplete. It never auto-bootstraps. The required check display names scan / Talm and deploy / Talm Gate remain for compatibility with the existing GitHub ruleset; both execute TOPF checks now.
+
+## Updates
+
+Renovate tracks `talosVersion` and `kubernetesVersion` in each topf.yaml, plus the TOPF CLI pin in the installer. These dependencies get separate PRs and never auto-merge. Review release notes, the supported Talos/Kubernetes combination, etcd snapshots and application backups before merging a version bump. Development has one node, so upgrades cause downtime.
+
+`infra/ansible/playbooks/update-cluster.yml` reconciles the versions declared in Git:
+
+1. On a PR that changes an inventory, shared patches or upgrade code, CI reads live state and posts native Talos/Kubernetes upgrade plans plus a redacted config preview. It never upgrades, drains or applies in preview mode.
+2. On every main deployment, CI reconciles all bootstrapped clusters, even when the commit did not change topf.yaml. When both clusters are selected, development runs before production; any failure stops the run.
+3. TOPF upgrades Talos to the desired SecureBoot installer/schematic, drains one node at a time and waits for recovery. PodDisruptionBudgets remain enforced.
+4. If Kubernetes versions differ, `talosctl upgrade-k8s --to <desired version>` orchestrates control-plane components and kubelets. One control-plane API entry addresses the whole cluster. Every replica is inspected so an interrupted rollout can resume even when the API already reports the target version.
+5. Every running version must match Git before `topf apply` reconciles the remaining configuration. This prevents a normal config apply from bypassing Kubernetes upgrade orchestration. The final check requires reachable, Ready nodes.
+
+The playbook refuses downgrades and skips across minor releases, keeps native compatibility checks enabled, and stops if anything fails. If a Kubernetes preview is rejected because the installed Talos is too old, merge a Talos-only bump first, then rerun the Kubernetes PR. Use separate PRs to maintain a supported intermediate combination; CI does not bypass those checks.
+
+Nothing upgrades when a pin already matches the running version (unless the Talos schematic changed); ordinary configuration is still reconciled. Retries discover live state and finish outstanding work. CI only reads the existing Infisical CA bundle, generates private short-lived client configs and removes its workspace on success or failure. It never initializes secrets or bootstraps etcd. Both inventories currently remain disabled until their first bootstrap is confirmed with `data.bootstrapComplete: true`.
+
+To run the same procedure explicitly:
+
+```bash
+# GitHub Actions, desired pins from the selected branch (main by default):
+hsctl run update-cluster --cluster development --dry-run
+hsctl run update-cluster --cluster development
+
+# From the LAN using the current checkout and existing local CA cache/session:
+./hsctl run update-cluster --cluster development -e local --dry-run
+./hsctl run update-cluster --cluster development -e local
+```
+
+App chart/image updates continue through Renovate and ArgoCD. Direct TOPF commands remain available for inspecting nodes and specialized maintenance; use update-cluster for version changes.
+
+## Operational limits
+
+Schedule etcd snapshots separately from VolSync application backups.
+
+Regression tests in `tests/` cover native Talos schemas, shared network policy, installation, platform patches, worker roles, CIDR uniqueness, secret recovery and bootstrap ordering/cleanup. Production hardware validation uses temporary fixtures until its missing values are confirmed. Offline tests cannot establish successful disk installation, LACP convergence or live cluster health.

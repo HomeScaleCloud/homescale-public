@@ -1,0 +1,43 @@
+clusterName: production
+clusterEndpoint: https://10.1.245.20:6443
+
+talosVersion: 1.14.5
+kubernetesVersion: 1.37.1
+schematicId: 2d7c7dc5ad9e03abe929ee1d1a59e79ffbc30cb0ff02f773c61fd0fe803c3ec8  # pragma: allowlist secret
+secureboot: true
+
+patchesDir: ../../infra/topf
+secretsProvider: ../../infra/topf/secrets-provider.sh
+
+data:
+  nodeSubnet: 10.1.245.0/24
+  podSubnets: [10.100.0.0/16]
+  serviceSubnets: [10.105.0.0/16]
+
+  bondLinks: [eno1, eno2, eno3, eno4]
+  gateway: 10.1.245.1
+  nameservers: [10.1.245.1]
+  vip: 10.1.245.20
+  vipLink: bond1
+
+  installDiskMatch: disk.dev_path == "/dev/nvme0n1"
+  longhornEnabled: true
+
+  spegelEnabled: true
+
+nodes:
+  - host: production-cp-1
+    ip: 10.1.245.21
+    role: control-plane
+    data:
+      nodeRole: cp-1
+  - host: production-cp-2
+    ip: 10.1.245.22
+    role: control-plane
+    data:
+      nodeRole: cp-2
+  - host: production-cp-3
+    ip: 10.1.245.23
+    role: control-plane
+    data:
+      nodeRole: cp-3

@@ -4,7 +4,8 @@
   gather_facts: false
 
   vars:
-    kubeconfig_path: "/tmp/kubeconfig-{{ talos_cluster_name }}"
+    hsctl_repo_root: "{{ lookup('env', 'HSCTL_REPO_ROOT') | default(playbook_dir + '/../../..', true) }}"
+    kubeconfig_path: "{{ _bootstrap_workspace.path }}/kubeconfig"
     infisical_url: https://app.infisical.com
     infisical_project_id: "{{ lookup('env', 'INFISICAL_PROJECT_ID') }}"
     infisical_env_slug: prod
@@ -18,198 +19,48 @@
       kubeconfig: "{{ kubeconfig_path }}"
 
   pre_tasks:
-    - name: Check whether this cluster's Talm project already has secrets
-      ansible.builtin.stat:
-        path: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/secrets.yaml"
-      register: _talm_secrets
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
-
-    - name: Generate this cluster's Talos secrets.yaml/talosconfig (one-time)
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0) and not _talm_secrets.stat.exists
-      block:
-        # --force only populates a real talosconfig (client certs included) when
-        # secrets.yaml is ALSO being freshly generated in the same call -- confirmed
-        # directly: deleting only a stale talosconfig while secrets.yaml already exists
-        # still comes back as an empty "context: \"\"\ncontexts: {}" skeleton. Remove both
-        # first so init always regenerates them together, fresh and consistent.
-        - name: Remove any stale/partial secrets before a clean (re-)init
-          ansible.builtin.file:
-            path: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/{{ item }}"
-            state: absent
-          loop:
-            - talosconfig
-            - secrets.yaml
-
-        - name: Run talm init --force to generate fresh secrets
-          ansible.builtin.command: talm init -p generic -N {{ talos_cluster_name }} --force
-          args:
-            chdir: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}"
-
-        # --force regenerates the whole project scaffold to get a fresh secrets.yaml,
-        # including the encrypted copies and talm.key this project doesn't use (see
-        # CLAUDE.md's Secrets section) -- drop those, then restore every committed file
-        # it just overwrote from git, leaving only the new secrets.yaml/talosconfig.
-        - name: Drop the encrypted copies and key this project doesn't use
-          ansible.builtin.file:
-            path: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/{{ item }}"
-            state: absent
-          loop:
-            - secrets.encrypted.yaml
-            - talosconfig.encrypted
-            - talm.key
-
-        - name: Restore every committed file talm init --force just overwrote
-          ansible.builtin.command: git checkout -- Chart.yaml charts templates values.yaml .gitignore
-          args:
-            chdir: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}"
-
-    - name: Determine Talos config patches to stack
-      ansible.builtin.set_fact:
-        _talos_base_patches: "{{ lookup('fileglob', hsctl_repo_root + '/infra/talm/patches/base/*.yaml', wantlist=true) }}"
-        _talos_cluster_patches: "{{ lookup('fileglob', hsctl_repo_root + '/infra/talm/patches/' + talos_cluster_name + '/*.yaml', wantlist=true) }}"
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
-
-    - name: Exclude patches this node count doesn't meet
-      ansible.builtin.set_fact:
-        _talos_patch_files: "{{ (_talos_base_patches | reject('search', '/spegel-containerd.yaml') | list) + _talos_cluster_patches if (bootstrap_nodes | length) < 3 else _talos_base_patches + _talos_cluster_patches }}"
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
-
-    - name: Ensure the cluster's nodes/ directory exists
-      ansible.builtin.file:
-        path: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/nodes"
+    - name: Allocate a private bootstrap workspace
+      ansible.builtin.tempfile:
         state: directory
-        mode: "0755"
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+        prefix: hsctl-bootstrap-
+      register: _bootstrap_workspace
 
-    - name: Render Talos config for each new node
-      ansible.builtin.shell: >
-        hsctl run talm --cluster {{ talos_cluster_name }}
-        --nodes {{ item.dhcp_ip }} -e {{ item.dhcp_ip }}
-        template -t templates/controlplane.yaml
-        {{ ((hsctl_repo_root + '/clusters/' + talos_cluster_name + '/values/' + item.name + '.yaml') is file) | ternary('--values values/' + item.name + '.yaml', '') }}
-        > {{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/nodes/{{ item.name }}.yaml
-      args:
-        chdir: "{{ hsctl_repo_root }}"
-      environment:
-        HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
-      loop: "{{ bootstrap_nodes | default([]) }}"
-      loop_control:
-        label: "{{ item.name }}"
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+  tasks:
+    - name: Configure Talos and install cluster services
+      block:
+        - name: Bootstrap a new Talos cluster from the LAN
+          ansible.builtin.include_tasks: ../tasks/bootstrap-talos.yml
+          when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
 
-    - name: Apply Talos config to each new node
-      ansible.builtin.command: >
-        hsctl run talm --cluster {{ talos_cluster_name }}
-        apply -f nodes/{{ item.name }}.yaml
-        {{ _talos_patch_files | map('regex_replace', '^', '-f ') | join(' ') }} -i
-      args:
-        chdir: "{{ hsctl_repo_root }}"
-      environment:
-        HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
-      loop: "{{ bootstrap_nodes | default([]) }}"
-      loop_control:
-        label: "{{ item.name }}"
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+        - name: Load short-lived cluster credentials
+          ansible.builtin.include_tasks: ../tasks/cluster-credentials.yml
+          vars:
+            cluster_credentials_dir: "{{ _bootstrap_workspace.path }}"
 
-    - name: Wait for each node's new static IP
-      ansible.builtin.wait_for:
-        host: "{{ item.static_ip }}"
-        port: 50000
-        delay: 10
-        timeout: 300
-      loop: "{{ bootstrap_nodes | default([]) }}"
-      loop_control:
-        label: "{{ item.name }}"
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+        - name: Wait for the Kubernetes API to respond
+          kubernetes.core.k8s_info:
+            api_version: v1
+            kind: Namespace
+            name: kube-system
+          register: _api_probe
+          retries: 12
+          delay: 5
+          until: _api_probe is not failed
 
-    - name: Bootstrap etcd on the first node
-      ansible.builtin.command: >
-        hsctl run talm --cluster {{ talos_cluster_name }}
-        --nodes {{ bootstrap_nodes[0].static_ip }} -e {{ bootstrap_nodes[0].static_ip }}
-        bootstrap -f nodes/{{ bootstrap_nodes[0].name }}.yaml
-      args:
-        chdir: "{{ hsctl_repo_root }}"
-      environment:
-        HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+        - name: Seed cluster credentials
+          ansible.builtin.include_role:
+            name: cluster-secrets
 
-    - name: Wait for the k8s API on the freshly bootstrapped cluster
-      ansible.builtin.wait_for:
-        host: "{{ bootstrap_nodes[0].static_ip }}"
-        port: 6443
-        delay: 10
-        timeout: 300
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+        - name: Install Cilium
+          ansible.builtin.include_role:
+            name: cilium
 
-    - name: Use the kubeconfig a fresh bootstrap just pushed
-      ansible.builtin.copy:
-        src: "{{ hsctl_repo_root }}/clusters/{{ talos_cluster_name }}/kubeconfig"
-        dest: "{{ kubeconfig_path }}"
-        mode: "0600"
-        remote_src: true
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+        - name: Install ArgoCD
+          ansible.builtin.include_role:
+            name: argocd
 
-    # The break-glass admin kubeconfig a human pushes to Infisical via `hsctl run talm
-    # --cluster <name> kubeconfig` (see _run_talm in hsctl.d/run.sh) after bootstrapping
-    # Talos itself — CI authenticates via GitHub Actions OIDC the same way cluster-secrets'
-    # own role does; `hsctl run` (local) pre-fetches via the already-logged-in `infisical`
-    # CLI instead (see _run_bootstrap_local), skipping straight to writing the file below.
-    # A fresh bootstrap in this same run (bootstrap_nodes above) skips this entirely — its
-    # kubeconfig comes straight off disk, since the pre-fetch above predates it.
-    - name: Login to Infisical
-      infisical.vault.login:
-        url: "{{ infisical_url }}"
-        auth_method: oidc_auth
-        identity_id: "{{ lookup('env', 'INFISICAL_IDENTITY_ID') }}"
-        jwt: "{{ lookup('env', 'INFISICAL_AUTH_JWT') }}"
-      register: _infisical
-      no_log: true
-      when: not (hsctl_local | default(false))
-
-    - name: Read cluster kubeconfig from Infisical
-      infisical.vault.read_secrets:
-        login_data: "{{ _infisical.login_data }}"
-        project_id: "{{ infisical_project_id }}"
-        env_slug: "{{ infisical_env_slug }}"
-        path: "/k8s/talos/{{ talos_shortname }}"
-        as_dict: true
-      register: _talos_kubeconfig_secret
-      no_log: true
-      when: not (hsctl_local | default(false))
-
-    - name: Write cluster kubeconfig (CI)
-      ansible.builtin.copy:
-        content: "{{ _talos_kubeconfig_secret.secrets.KUBECONFIG }}"
-        dest: "{{ kubeconfig_path }}"
-        mode: "0600"
-      no_log: true
-      when: not (hsctl_local | default(false))
-
-    - name: Write cluster kubeconfig (local)
-      ansible.builtin.copy:
-        content: "{{ hsctl_local_secrets.talos_kubeconfig[talos_cluster_name].KUBECONFIG }}"
-        dest: "{{ kubeconfig_path }}"
-        mode: "0600"
-      no_log: true
-      when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length == 0)
-
-    - name: Wait for k8s API to be reachable
-      kubernetes.core.k8s_info:
-        api_version: v1
-        kind: Namespace
-        name: kube-system
-      register: _api_probe
-      retries: 2
-      delay: 5
-      until: _api_probe is not failed
-
-  roles:
-    - cluster-secrets
-    - cilium
-    - argocd
-
-  post_tasks:
-    - name: Remove temporary kubeconfig
-      ansible.builtin.file:
-        path: "{{ kubeconfig_path }}"
-        state: absent
+      always:
+        - name: Remove private bootstrap files
+          ansible.builtin.file:
+            path: "{{ _bootstrap_workspace.path }}"
+            state: absent

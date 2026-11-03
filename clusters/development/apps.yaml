@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apps-development
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: git@github.com:HomeScaleCloud/homescale.git
+      targetRevision: main
+      path: clusters/development
+      directory:
+        recurse: true
+        exclude: topf.yaml
+    - repoURL: git@github.com:HomeScaleCloud/homescale.git
+      targetRevision: main
+      path: apps
+      helm:
+        releaseName: apps-development
+        values: |
+          env:
+            name: development
+            region: boa1
+            shortName: dev
+          apps:
+            multus:
+              values:
+                vlans:
+                  wlan:
+                    enabled: true
+            kubevirt:
+              deploy: true
+            headlamp:
+              deploy: true
+            tailscale:
+              values:
+                subnetRouter:
+                  advertiseRoutes:
+                    - 10.1.247.0/24
+                    - 10.90.0.0/16
+                    - 10.95.0.0/16
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  ignoreDifferences:
+    - group: argoproj.io
+      kind: Application
+      jsonPointers:
+        - /metadata/finalizers
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

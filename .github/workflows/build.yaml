@@ -26,13 +26,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       docker: ${{ steps.set.outputs.docker }}
-      helm: ${{ steps.set.outputs.helm }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
-      - name: Find Docker & Helm targets
+      - name: Find Docker targets
         id: set
         shell: bash
         env:
@@ -60,16 +59,7 @@ jobs:
               image="$(<"$context/.image-name")"
             fi
             docker_json="$(jq --arg n "$name" --arg i "$image" --arg c "$context" '. + [{name:$n, image:$i, context:$c}]' <<<"$docker_json")"
-          done < <(find apps -type f -iname Dockerfile | sort)
-
-          # Find Helm charts as any apps/*/Chart.yaml (and apps/*/charts/<subchart>/Chart.yaml ignored)
-          helm_json='[]'
-          while IFS= read -r chart; do
-            chart_dir="$(dirname "$chart")"
-            # app name is the directory containing Chart.yaml
-            name="$(basename "$chart_dir")"
-            helm_json="$(jq --arg n "$name" --arg p "$chart_dir" '. + [{name:$n, path:$p}]' <<<"$helm_json")"
-          done < <(find apps -maxdepth 2 -type f -name Chart.yaml | sort)
+          done < <(git ls-files 'apps/**/Dockerfile' | sort)
 
           event="${GITHUB_EVENT_NAME}"
           is_pr="false"
@@ -103,11 +93,9 @@ jobs:
                 echo "Changed apps detected: ${changed_apps[*]}"
                 apps_json="$(printf '%s\n' "${changed_apps[@]}" | jq -R . | jq -s 'map(select(length>0))')"
                 docker_json="$(jq --argjson apps "$apps_json" 'map(select(.name as $n | ($apps | index($n))))' <<<"$docker_json")"
-                helm_json="$(jq --argjson apps "$apps_json" 'map(select(.name as $n | ($apps | index($n))))' <<<"$helm_json")"
               else
-                echo "No app changes detected; skipping Docker and Helm builds."
+                echo "No app changes detected; skipping Docker builds."
                 docker_json='[]'
-                helm_json='[]'
               fi
             fi
           fi
@@ -115,11 +103,9 @@ jobs:
           if [[ -n "${INPUT_APP:-}" ]]; then
             echo "Filtering to app: $INPUT_APP"
             docker_json="$(jq --arg app "$INPUT_APP" 'map(select(.name == $app))' <<<"$docker_json")"
-            helm_json="$(jq --arg app "$INPUT_APP" 'map(select(.name == $app))' <<<"$helm_json")"
           fi
 
           echo "docker=$(jq -c . <<<"$docker_json")" >> "$GITHUB_OUTPUT"
-          echo "helm=$(jq -c . <<<"$helm_json")" >> "$GITHUB_OUTPUT"
 
   docker:
     name: "Docker - ${{ matrix.name }}"

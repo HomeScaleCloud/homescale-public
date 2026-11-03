@@ -1,0 +1,26 @@
+clusterName: development
+clusterEndpoint: https://10.1.247.21:6443
+
+talosVersion: 1.14.5
+kubernetesVersion: 1.37.1
+schematicId: 2d7c7dc5ad9e03abe929ee1d1a59e79ffbc30cb0ff02f773c61fd0fe803c3ec8  # pragma: allowlist secret
+secureboot: true
+
+patchesDir: ../../infra/topf
+secretsProvider: ../../infra/topf/secrets-provider.sh
+
+data:
+  nodeSubnet: 10.1.247.0/24
+  podSubnets: [10.90.0.0/16]
+  serviceSubnets: [10.95.0.0/16]
+
+  bondLinks: [eno1, eno2]
+  gateway: 10.1.247.1
+  nameservers: [10.1.247.1]
+
+  installDiskMatch: disk.dev_path == "/dev/nvme0n1"
+
+nodes:
+  - host: development-1
+    ip: 10.1.247.21
+    role: control-plane

@@ -1,0 +1,10 @@
+{{- if get .Data "longhornEnabled" }}
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: longhorn
+provisioning:
+  diskSelector:
+    match: '!system_disk'
+  minSize: 900GiB
+  grow: false
+{{- end }}

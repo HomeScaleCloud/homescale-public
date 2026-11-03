@@ -1,6 +1,0 @@
-# Managed by talm. Records the preset this project was generated from and the
-# content hash of that preset at init time, so talm can warn when the installed
-# binary ships a newer preset. Do not edit by hand; run
-# `talm init --update --preset <preset>` to refresh.
-preset: generic
-presetHash: df2488886d96c17ed79a073eeb49896c9d95ebb555bf412a6e3bb16d2ecd4ca1

@@ -3,6 +3,9 @@ set -euo pipefail
 
 HSCTL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export HSCTL_ROOT
+if [[ -z "${HSCTL_REPO_ROOT:-}" && -d "$HSCTL_ROOT/infra/ansible" ]]; then
+    HSCTL_REPO_ROOT="$HSCTL_ROOT"
+fi
 HSCTL_REPO_ROOT="${HSCTL_REPO_ROOT:-$HOME/Repos/homescale}"
 export HSCTL_REPO_ROOT
 

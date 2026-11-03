@@ -3,3 +3,7 @@ talosconfig
 talm.key
 values-secret.yaml
 kubeconfig
+secrets.pending.yaml
+.secrets.*
+output/
+nodes/

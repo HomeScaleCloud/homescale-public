@@ -1,19 +1,10 @@
 extends: default
 ignore: |
+  infra/topf/**/*.yaml.tpl
   apps/**/templates/**
   argocd/**/templates/**
   apps/volsync/crds/crds.yaml
-  clusters/production/Chart.yaml
-  clusters/production/values.yaml
-  clusters/production/templates/**
-  clusters/production/charts/**
-  clusters/production/values/**
-  clusters/production/nodes/**
-  clusters/development/Chart.yaml
-  clusters/development/values.yaml
-  clusters/development/templates/**
-  clusters/development/charts/**
-  clusters/development/nodes/**
+  clusters/*/output/**
 rules:
   truthy: disable
   document-start: disable

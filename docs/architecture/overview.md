@@ -18,12 +18,9 @@ PR merged to main
        │
        └─► deploy
               │
-              └─► terraform apply ── Cloudflare DNS, Tailscale ACL/tags,
-                              Infisical project structure, VolSync secret paths,
-                              Talos machine config generation/apply/bootstrap
-                              (infra/terraform/modules/talos/, one module
-                              instance per cluster — see talos.tf, which
-                              discovers clusters from clusters/*/cluster.yaml)
+              ├─► terraform apply ── External services, DNS, Infisical, Tailscale ACL
+              ├─► TOPF apply ─────── Existing Talos clusters (after local bootstrap)
+              └─► Ansible ────────── Manually dispatched cluster service bootstrap
 ```
 
 ### Path 2 — ArgoCD (pull-based, continuous)
@@ -35,14 +32,14 @@ Git (main)
     ▼  │
 ArgoCD (on each cluster)
     │
-    ├── Source 1: clusters/<cluster>/   raw Kubernetes manifests
+    ├── Source 1: clusters/<cluster>/       recursive manifests; exclude topf.yaml
     │
     └── Source 2: apps/                 Helm chart → one ArgoCD Application per enabled app
                                                 │
                                                 └─► syncs apps/<name>/ charts to cluster
 ```
 
-These two paths are independent. CI handles infrastructure and Talos cluster/machine config (all of it now Terraform-managed — see [Clusters](clusters.md)); ArgoCD handles every Kubernetes workload. App-only changes (editing `app.yaml`, chart templates, values) are picked up by ArgoCD once merged into the `main` branch without any CI deploy step.
+These two paths are independent. CI handles external infrastructure through Terraform and Talos config through TOPF (see [Clusters](clusters.md)); ArgoCD handles every Kubernetes workload. App-only changes (editing `app.yaml`, chart templates, values) are picked up by ArgoCD once merged into the `main` branch without any CI deploy step.
 
 ## Secrets
 
@@ -108,10 +105,10 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 
 | Cluster | Kind | Role |
 |---------|------|------|
-| `production` | Talos (Terraform-managed) | Primary cluster — general compute, production workloads. |
-| `development` | Talos (Terraform-managed) | Lab/development cluster. |
+| `production` | Talos (TOPF-managed) | Primary cluster — general compute, production workloads. |
+| `development` | Talos (TOPF-managed) | Lab/development cluster. |
 
-There is no separate management cluster — each cluster self-hosts its own ArgoCD and is fully self-sufficient; no third-party-cloud-hosted central cluster is required. Talos node config, Kubernetes version, machine identity, and bootstrap are all managed directly by Terraform's `siderolabs/talos` provider (`infra/terraform/talos.tf` discovers every cluster from `clusters/*/cluster.yaml` and instantiates `infra/terraform/modules/talos/` once per cluster via `for_each`, addressed as `module.talos["<cluster>"]`) — see [Clusters](clusters.md) for the full flow.
+There is no separate management cluster. Each cluster self-hosts ArgoCD. TOPF reads permanent node inventory from `clusters/<cluster>/topf.yaml` and shared native patches from infra/topf. Ansible orders first bootstrap from the LAN; Terraform manages external services. See [Clusters](clusters.md).
 
 ## Sync wave order
 
@@ -152,30 +149,45 @@ Runs on every PR and push:
 
 ### `deploy` — infrastructure and cluster sync
 
-Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. Three jobs — `terraform` → `talos` → `ansible` — run their own tool (`terraform`/`ansible-playbook`) directly on the runner (no in-cluster dispatch of any kind — there is no management cluster to dispatch to).
+Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. Three jobs — `terraform` → `update-cluster` → `ansible` — run their own tool (`terraform`/`ansible-playbook`) directly on the runner (no in-cluster dispatch of any kind — there is no management cluster to dispatch to).
 
 #### 1. `terraform`
 
-Manages Cloudflare DNS, Infisical project structure, Tailscale ACL and tags, VolSync secret paths, etc — the single shared `infra/terraform` workspace (state in Terraform Cloud), unconditionally, no changed-file detection (unlike `talos` below, almost any change could be terraform-relevant). Authenticates to Infisical via GitHub OIDC — no Tailscale needed, everything it talks to (Cloudflare, Terraform Cloud, Infisical) is a public API.
+Manages Cloudflare DNS, Infisical project structure, Tailscale ACL and tags, VolSync secret paths, etc — the single shared `infra/terraform` workspace (state in Terraform Cloud), unconditionally, no changed-file detection (unlike `topf` below, almost any change could be terraform-relevant). Authenticates to Infisical via GitHub OIDC — no Tailscale needed, everything it talks to (Cloudflare, Terraform Cloud, Infisical) is a public API.
 
-- **On PR**: plans (`infra/terraform/plan-apply.sh`, `DRY_RUN=true`) and posts the plan as a PR comment; the rendered Tailnet ACL (if changed) is extracted from the plan's JSON and uploaded as an artifact + topology map.
+- **On PR**: plans (`infra/terraform/plan-apply.sh`, `DRY_RUN=true`) and posts the plan as a PR comment; the rendered Tailnet ACL (if changed) is extracted from the plan's JSON and uploaded as an JSON artifact.
 - **On merge to `main`**: applies (gated by a GitHub Environment).
 
 `infra/terraform/plan-apply.sh` optionally takes a `CLUSTER` env var to scope the plan/apply to just that cluster's own resources (Cloudflare tunnel, DNS records, VolSync secrets, etc) — computed from an untargeted plan's own JSON output so it still catches not-yet-created resources, not from `terraform state list`. `hsctl run terraform --cluster <name>` (either execution mode) uses this.
 
-#### 2. `talos` (after terraform)
+#### 2. `update-cluster` (after Terraform)
 
-Replaces the old `omni` job — there's no management cluster to dispatch anything to any more. Detects changes under `clusters/*/cluster.yaml` and `infra/talos/patches/**/*.yaml` (a `patches/base/` change affects every cluster; a `patches/<cluster>/` change affects only that cluster), and runs a `terraform plan`/`apply` targeted at just the affected cluster's `module.talos["<cluster>"]` (mirrors the old job's per-cluster plan/apply + PR-comment shape, just against the `talos` Terraform module instead of `omnictl`). **Joins the tailnet** as an ephemeral node (`tailscale/github-action`, tagged `tag:github-actions`, removed when the job finishes) — it needs to reach the Talos nodes' own IPs directly, over the subnet router advertising their LAN.
+PRs preview affected inventories, shared patches and upgrade code over Tailscale. Every main deployment reconciles all bootstrapped clusters through the update-cluster Ansible playbook: native TOPF Talos upgrade, native talosctl Kubernetes upgrade, then ordinary config apply after version convergence. Clusters run serially, development before production, and failures stop the run. TOPF dry-run exit 2 is expected when changes exist. CI requires data.bootstrapComplete true and an existing read-only CA bundle; it never creates secrets or bootstraps a fresh cluster. Both inventories start disabled pending local bootstrap.
 
-- **On PR**: `terraform plan -target=module.talos["<cluster>"]` for each changed cluster, posted as a PR comment per cluster (same marker-based pattern the old `omni` job used).
-- **On merge to `main`**: `terraform apply -target=module.talos["<cluster>"]` for each changed cluster — generates/applies machine config, bootstraps new clusters, re-applies config drift on existing ones.
+The legacy required check display names scan / Talm and deploy / Talm Gate remain compatible with the existing GitHub ruleset. Their implementation now validates TOPF inventories, Talos schemas and bootstrap/secret recovery behavior.
 
-Onboarding a brand-new machine (building its Image Factory schematic/ISO, booting it into Talos maintenance mode) is still a manual step — see [Clusters: registering new machines](clusters.md#registering-new-machines) — before its IP can be added to `clusters/<cluster>/cluster.yaml` and picked up here.
+#### 3. `ansible` (after TOPF)
 
-#### 3. `ansible` (after talos)
+Runs on workflow_dispatch for bootstrap-cluster or other repository playbooks. It generates a fresh short-lived Kubernetes admin kubeconfig from the existing Infisical SECRETS_YAML bundle and connects over the cluster's Tailscale subnet route. The first bootstrap must run locally because that route is an in-cluster workload. See [hsctl](../operations/hsctl.md) and [Registering new machines](../operations/registering-machines.md).
 
-Only runs on `workflow_dispatch` (manual trigger, or the default dispatch path for `hsctl run <name> -e remote` — see [Operations → hsctl](../operations/hsctl.md)). Also joins the tailnet — `bootstrap-cluster` fetches its target cluster's kubeconfig from Infisical (`/k8s/talos/<prod|dev>/KUBECONFIG`, written by the `talos` Terraform module), then reaches that cluster's apiserver directly over the subnet-routed LAN. Runs whichever of `bootstrap-core`, `bootstrap-cluster`, or any other `infra/ansible/playbooks/*.yml` the dispatch requested.
+ArgoCD continuously reconciles workloads after merge. App-only changes do not require a TOPF apply.
 
-`workflow_dispatch` can also force an on-demand `terraform`/`talos` run outside the normal push/PR trigger (`inputs.job == 'terraform'`/`'talos'`) — this is what `hsctl run terraform|talos -e remote` dispatches to.
+## Checks and CI helpers
 
-ArgoCD picks up any Git changes and reconciles cluster state automatically — no deploy step is needed for app-only changes.
+The scripts under .github/scripts have three purposes:
+
+| Script | Purpose |
+|--------|---------|
+| install-talos-tools.sh | Pin the TOPF CLI version, install matching talosctl, and verify both release checksums for CI/local validation |
+| validate-manifests.sh | Render app charts and validate Kubernetes schemas, including recursive cluster manifests |
+| check-runbooks.sh | Check that repository alerts link to existing runbooks |
+
+Regression tests live under tests/: talos.py checks generated Talos configs, bootstrap.py checks credentials and bootstrap ordering, and manifests.py checks recursive manifest selection. These are tests, not deployment entrypoints. CI calls the same commands that can be run locally:
+
+```bash
+python3 tests/talos.py
+python3 tests/bootstrap.py
+python3 tests/manifests.py
+```
+
+Terraform PRs retain the plain plan and rendered ACL JSON. There is no separate topology-map generator or unused Helm build matrix. ArgoCD owns app reconciliation; TOPF owns Talos configuration; Ansible orders initial bootstrap; Terraform owns external services.

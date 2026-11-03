@@ -7,25 +7,25 @@
 Tailscale is used for:
 
 - **Developer access** — team members connect their devices to the tailnet and can reach internal services directly
-- **CI connectivity** — GitHub Actions jobs that need to reach internal infrastructure (the Talos nodes themselves, via each cluster's own in-cluster subnet router onto their LAN — see [LAN reachability](#lan-reachability-per-cluster-subnet-routers) below — for the Terraform-driven Talos provisioning job) join the tailnet as an ephemeral node via `tailscale/github-action`, tagged `tag:github-actions` and automatically removed when the job completes
+- **CI connectivity** — GitHub Actions jobs that need to reach internal infrastructure (the Talos nodes themselves, via each cluster's own in-cluster subnet router onto their LAN — see [LAN reachability](#lan-reachability-per-cluster-subnet-routers) below — for the TOPF configuration job) join the tailnet as an ephemeral node via `tailscale/github-action`, tagged `tag:github-actions` and automatically removed when the job completes
 - **Service exposure** — internal services are exposed to the tailnet via the Tailscale Kubernetes Operator and reachable at stable DNS names
 
 Human/team access is granted via Entra ID groups, SCIM-synced into Tailscale — see [Access policies](#access-policies) below.
 
 ## LAN reachability — per-cluster subnet routers
 
-There is no standalone subnet-router device anywhere in HomeScale. Instead, **each cluster runs its own**, as an in-cluster workload — a Tailscale Kubernetes Operator `Connector` resource (`apps/tailscale/templates/connector-subnet-router.yaml`), advertising the LAN its own Talos nodes physically sit on. This is what makes the Talos nodes' own IPs (and anything else on that LAN) reachable from CI and from `sg-k8s-admin` members — needed for Terraform's Talos provisioning, among other things.
+There is no standalone subnet-router device anywhere in HomeScale. Instead, **each cluster runs its own**, as an in-cluster workload — a Tailscale Kubernetes Operator `Connector` resource (`apps/tailscale/templates/connector-subnet-router.yaml`), advertising the LAN its own Talos nodes physically sit on. This is what makes the Talos nodes' own IPs (and anything else on that LAN) reachable from CI and from `sg-k8s-admin` members — needed for TOPF's Talos configuration, among other things.
 
 Each cluster declares which CIDR(s) to advertise in two places that have to agree, because they're read by two different systems:
 
-- `clusters/<cluster>/cluster.yaml`'s `tailscale.advertise_routes` — Terraform-only data, read by `infra/terraform/modules/tailscale/acl.tf` to build the ACL grant and auto-approver entries below.
+- `clusters/<cluster>/topf.yaml`'s `data.nodeSubnet` — inventory data, read by `infra/terraform/modules/tailscale/acl.tf` to build the ACL grant and auto-approver entries below.
 - `clusters/<cluster>/apps.yaml`'s `apps.tailscale.values.subnetRouter.advertiseRoutes` — the actual Helm value that renders the `Connector` itself.
 
-Clusters that happen to share a physical LAN (`production` and `development` both sit on `10.1.245.0/24`) advertise the *same* CIDR, redundantly, from two independent clusters — Tailscale load-balances/fails over between whichever subnet routers are actually up for a given route, so neither cluster depends on the other's router.
+Production advertises 10.1.245.0/24; development advertises 10.1.247.0/24. Their pod/service CIDRs are also unique.
 
 Access to these routes is deliberately narrow: only `group:sg-k8s-admin@REDACTED` and `tag:github-actions` can reach them at all (`local.lan_grants` in `acl.tf`), and the routes auto-approve for any `tag:k8s` device (`autoApprovers.routes` — otherwise every advertised route needs manual approval in the Tailscale admin console before anything can use it).
 
-**This has a real bootstrap-ordering implication.** A `Connector` is an ArgoCD-managed resource — it doesn't exist, and so advertises nothing, until the cluster has already been bootstrapped and completed at least one ArgoCD sync. For a cluster's *first* bootstrap, there is therefore no Tailscale path to it at all: Terraform's `terraform apply`, the ansible `bootstrap-cluster` playbook, and applying `clusters/<cluster>/apps.yaml` itself all have to run from a human's machine actually on that LAN (`hsctl run ... -e local`), not from CI. Once that first sync brings the `tailscale` app (and its `Connector`) up, the route goes live and CI/`sg-k8s-admin` access works from then on — see [Clusters: bootstrap a new cluster](clusters.md#bootstrap-adding-a-new-cluster) for the full sequence.
+**This has a real bootstrap-ordering implication.** A `Connector` is an ArgoCD-managed resource — it doesn't exist, and so advertises nothing, until the cluster has already been bootstrapped and completed at least one ArgoCD sync. For a cluster's *first* bootstrap, there is therefore no Tailscale path to it at all: the first Talos and service bootstrap must run from a human's machine actually on that LAN (`hsctl run ... -e local`), not from CI. Once that first sync brings the `tailscale` app (and its `Connector`) up, the route goes live and CI/`sg-k8s-admin` access works from then on — see [Clusters: bootstrap a new cluster](clusters.md#bootstrap-adding-a-new-cluster) for the full sequence.
 
 ## Internal service exposure
 
@@ -88,7 +88,7 @@ k8s.api.<cluster>REDACTED
 
 It terminates TLS with a real cert-manager/Let's Encrypt certificate (`apps/tailscale/templates/certificate-apiserver-proxy.yaml`, the same `letsencrypt` `ClusterIssuer` Headlamp's own cert uses) rather than the cluster's internal CA, so clients get standard, publicly-trusted TLS verification — no `insecure-skip-tls-verify`, no CA to distribute. Whatever auth the client presents (e.g. a forwarded per-user OIDC bearer token) passes straight through in the `Authorization` header; the real apiserver still does authn/authz.
 
-`hsctl get kubeconfig`/`hsctl switch` default to this direct path (`kubectl-oidc_login` handles the OIDC login, PKCE, no client secret). Break-glass access (bypassing OIDC entirely, e.g. if the OIDC issuer or Tailscale itself is down) uses the raw admin kubeconfig the `talos` Terraform module fetches at cluster-bootstrap time and stores in Infisical at `/k8s/talos/<prod|dev>/KUBECONFIG` — see CLAUDE.md's Clusters section.
+`hsctl get kubeconfig`/`hsctl switch` default to this direct path (`kubectl-oidc_login` handles the OIDC login, PKCE, no client secret). Break-glass access uses `hsctl get kubeconfig <cluster> --break-glass` to generate fresh TOPF admin credentials from the existing Infisical CA bundle. It uses the cluster endpoint in topf.yaml and can work directly from the LAN if Tailscale or OIDC is unavailable.
 
 Headlamp no longer aggregates multiple clusters into one picker. Each cluster (`production`, `development`) runs its own, fully independent Headlamp instance that talks only to its own in-cluster apiserver (the pod's default in-cluster serviceaccount/context — `config.inClusterContextName` in `apps/headlamp/app.yaml` — no kubeconfig Secret, no Tailscale sidecar, no cross-cluster proxying). Each instance is exposed directly at its own friendly tailnet hostname, `REDACTED` / `REDACTED`, via the same Tailscale-ingress mechanism described above.
 

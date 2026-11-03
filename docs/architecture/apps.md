@@ -186,7 +186,7 @@ Requires a matching [`tailscale.policy`](#tailscale-access-policy-tailscale) rul
 ### Public exposure (`exposePublic:`)
 
 !!! warning "Mostly a Terraform input, not Helm config"
-    Terraform (`infra/terraform/modules/cloudflare/`) reads this block directly to create a Cloudflare tunnel ingress rule and a DNS record per entry. Never delete it thinking it's dead config. The one exception: the app catalog chart also reads each entry's `fqdn` to populate `.Values.homescale.exposePublicFqdns` — see [below](#using-cname-lists-in-your-chart-valueshomescale).
+    Terraform (`infra/terraform/modules/cloudflare/`) reads this block directly to create a Cloudflare tunnel ingress rule and a DNS record per entry. Never delete it thinking it's dead config. The one exception: the app catalog chart also reads each entry's `fqdn` to populate `.Values.homescale.exposePublicFqdns` — see [below](#using-exposepublic-fqdns-in-your-chart-valueshomescale).
 
 Exposes one or more Kubernetes Services to the public internet via a Cloudflare Zero Trust Tunnel. See [External service exposure](networking.md#external-service-exposure) for how it works.
 
@@ -211,7 +211,7 @@ exposePublic:
 | `fqdn` | string | Public fully-qualified domain name. Must be globally unique across all apps. The apex zone must be a Cloudflare-managed zone |
 | `port` | int | Port on the Kubernetes Service that receives traffic |
 | `service` | string | Optional. Kubernetes Service name (`<service>.<namespace>.svc.cluster.local:<port>`) to route to. Defaults to `releaseName` (or the app directory name) |
-| `tls` | bool | Optional, defaults to `false`. Set `true` if the backend Service only accepts TLS (`http://` otherwise). cloudflared verifies the origin cert against `fqdn`, so the app's own `Certificate` must include `fqdn` in `dnsNames` (add `.Values.homescale.exposePublicFqdns` there — see [below](#using-cname-lists-in-your-chart-valueshomescale)) |
+| `tls` | bool | Optional, defaults to `false`. Set `true` if the backend Service only accepts TLS (`http://` otherwise). cloudflared verifies the origin cert against `fqdn`, so the app's own `Certificate` must include `fqdn` in `dnsNames` (add `.Values.homescale.exposePublicFqdns` there — see [below](#using-exposepublic-fqdns-in-your-chart-valueshomescale)) |
 | `cacheBypass` | bool | Optional, defaults to `false`. Set `true` to bypass Cloudflare's edge cache for this hostname — for live/dynamic apps (dashboards, APIs) where a stale cached response would be wrong; leave `false` for static sites that benefit from CDN caching |
 | `access` | object | Optional. Gates this hostname behind [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) — omit entirely to leave it open to the internet. Any authenticated user is allowed through (no group/email restriction) once they pass one of the allowed identity providers |
 | `access.allowedIdps` | list of strings | Optional. Identity provider names (as configured in the Cloudflare Zero Trust dashboard) users may authenticate with. Omit to allow any IdP configured in the account (today: Entra ID only) |

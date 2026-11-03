@@ -73,7 +73,7 @@ Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS conf
 | Path | What it does |
 |------|-------------|
 | `clusters/` | Cluster definitions and bootstrap app-of-apps |
-| `infra/talos/` | Talos machine config patches |
+| `infra/topf/` | Talos machine config patches |
 | `infra/ansible/` | Bootstrap playbooks |
 
 ### Infrastructure (Terraform)
@@ -82,7 +82,6 @@ Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS conf
 |--------|----------------|
 | `infra/terraform/modules/cloudflare/` | Cloudflare DNS records and tunnels |
 | `infra/terraform/modules/tailscale/` | Tailscale ACL, tags, OAuth clients, and DNS preferences (sourced from `app.yaml` `tailscale:` blocks) |
-| `infra/terraform/modules/talos/` | Talos/Kubernetes cluster provisioning (machine secrets, config generation/apply, bootstrap) — bare-metal, not public cloud, so not co-owned with Security Platforms the way `core_cluster` (removed) was |
 
 ### App catalog machinery
 

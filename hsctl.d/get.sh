@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
-# hsctl get — query Omni/cluster resources
-#
-# Output format: controlled by -o flag (table, yaml, json, ansible); default is table.
-# `ansible` is only meaningful for `clusters`/`machines` — see infra/ansible/inventory/'s
-# clusters/machines wrapper scripts, which call `hsctl get <resource> -o
-# ansible` as Ansible dynamic inventory sources (replaced a standalone omni.py that
-# duplicated this same Omni-querying logic).
-# HSCTL_OUTPUT is set by get_main and read by all subcommand handlers
+# Query cluster, node and PIM resources; get_main sets HSCTL_OUTPUT.
 
 get_usage() {
     echo "Usage: hsctl get <resource> [-o table|yaml|json|ansible] [flags...]"
@@ -14,10 +7,8 @@ get_usage() {
     echo "Resources:"
     echo "  clusters                      List Kubernetes clusters reachable via Tailscale"
     echo "  kubeconfig <cluster> [flags]  Write kubeconfig context for a cluster; default is direct apiserver + OIDC"
-    echo "      --omni                        run 'omnictl kubeconfig --cluster <cluster>' instead"
-    echo "      --break-glass                 run 'omnictl kubeconfig --break-glass --cluster <cluster>' instead"
-    echo "  machines [--cluster <name>]   List all machines with power state; enriches with node name for assigned ones"
-    echo "  machine  <id>                 Show details for a specific machine"
+    echo "      --break-glass                 Generate a short-lived TOPF admin kubeconfig"
+    echo "  nodes [name]                  List Kubernetes nodes in the active kubectl context"
     echo "  snapshot <app>                List restic snapshots for an app"
     echo "  pimrole                     List your Entra directory role PIM eligibility/assignments"
     echo "  pimgroup                    List your Entra group PIM eligibility/assignments"
@@ -26,174 +17,159 @@ get_usage() {
     exit 1
 }
 
-# Maps MachineStatus .spec.connected to a power state label. Omni doesn't track
-# physical power state, so "off" really means "not connected" (could also be a
-# network-unreachable machine).
-_machine_power_state() {
-    [[ "$1" == "true" ]] && echo "on" || echo "off"
+_hsctl_kubernetes() {
+    python3 -c "$(cat <<'KUBERNETES_PY'
+"""Cluster discovery and node output for hsctl get."""
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
+import json
+import re
+import subprocess
+import sys
+
+
+def command_json(command, timeout=None):
+    return json.loads(subprocess.run(command, check=True, stdout=subprocess.PIPE, text=True, timeout=timeout).stdout)
+
+
+def discover_clusters():
+    status = command_json(['tailscale', 'status', '--json'], timeout=2)
+    if status.get('BackendState') != 'Running':
+        raise ValueError('Tailscale is not connected')
+    names = set()
+    peers = list((status.get('Peer') or {}).values()) + [status.get('Self') or {}]
+    for peer in peers:
+        tags = peer.get('Tags') or []
+        if not peer.get('Online') or 'tag:k8s' not in tags:
+            continue
+        for tag in tags:
+            if tag.startswith('tag:env-'):
+                name = tag.removeprefix('tag:env-')
+                if re.fullmatch(r'[a-z0-9](?:[a-z0-9-]*[a-z0-9])?', name):
+                    names.add(name)
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        return [cluster for cluster in executor.map(probe_cluster, sorted(names)) if cluster]
+
+
+def probe_cluster(name):
+    fqdn = f'k8s.api.{name}REDACTED'
+    cluster = dict(name=name, fqdn=fqdn, k8s_version='-')
+    try:
+        response = subprocess.run([
+            'curl', '--disable', '--silent', '--noproxy', '*', '--connect-timeout', '1',
+            '--max-time', '2', '--retry', '0', '--write-out', '\n%{http_code}',
+            f'https://{fqdn}/version',
+        ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=3)
+        if response.returncode:
+            return None
+        body, code = response.stdout.rsplit('\n', 1)
+        if code == '200':
+            cluster['k8s_version'] = json.loads(body)['gitVersion']
+        elif code not in ('401', '403'):
+            return None
+    except (subprocess.TimeoutExpired, OSError, ValueError, KeyError):
+        return None
+    return cluster
+
+
+def print_table(headers, rows):
+    rows = [headers, *rows]
+    widths = [max(len(str(row[index])) for row in rows) for index in range(len(headers))]
+    for row in rows:
+        print('  '.join(str(value).ljust(width) for value, width in zip(row, widths)).rstrip())
+
+
+def age(timestamp):
+    if not timestamp:
+        return '-'
+    seconds = int((datetime.now(timezone.utc) - datetime.fromisoformat(timestamp.replace('Z', '+00:00'))).total_seconds())
+    if seconds < 0:
+        return '<invalid>'
+    if seconds < 120:
+        return f'{seconds}s'
+    minutes, seconds = divmod(seconds, 60)
+    if minutes < 10:
+        return f'{minutes}m' + (f'{seconds}s' if seconds else '')
+    if minutes < 180:
+        return f'{minutes}m'
+    hours, minutes = divmod(minutes, 60)
+    if hours < 8:
+        return f'{hours}h' + (f'{minutes}m' if minutes else '')
+    if hours < 48:
+        return f'{hours}h'
+    days, hours = divmod(hours, 24)
+    if days < 8:
+        return f'{days}d' + (f'{hours}h' if hours else '')
+    if days < 730:
+        return f'{days}d'
+    years, days = divmod(days, 365)
+    return f'{years}y' + (f'{days}d' if years < 8 and days else '')
+
+
+def node_row(node):
+    metadata = node['metadata']
+    labels = metadata.get('labels') or {}
+    status = node.get('status') or {}
+    info = status.get('nodeInfo') or {}
+    ready = next((condition['status'] for condition in status.get('conditions', []) if condition['type'] == 'Ready'), None)
+    state = 'Unknown' if ready is None else ('Ready' if ready == 'True' else 'NotReady')
+    if node.get('spec', {}).get('unschedulable'):
+        state += ',SchedulingDisabled'
+    control_plane = any(key in labels for key in ['node-role.kubernetes.io/control-plane', 'node-role.kubernetes.io/master'])
+    ip = next((entry['address'] for entry in status.get('addresses', []) if entry['type'] == 'InternalIP'), '-')
+    return [metadata['name'], state, 'control-plane' if control_plane else 'worker',
+            labels.get('REDACTED/role') or '-', ip, info.get('osImage') or '-',
+            info.get('kernelVersion') or '-', info.get('kubeletVersion') or '-',
+            info.get('containerRuntimeVersion') or '-', age(metadata.get('creationTimestamp'))]
+
+
+def main():
+    resource, output, *arguments = sys.argv[1:]
+    if resource == 'nodes':
+        if output not in ['table', 'json', 'yaml'] or len(arguments) > 1 or any(arg.startswith('-') for arg in arguments):
+            raise ValueError('usage: hsctl get nodes [name] [-o table|json|yaml]')
+        command = ['kubectl', 'get', 'nodes', *arguments]
+        if output != 'table':
+            subprocess.run([*command, '-o', output], check=True)
+            return
+        result = command_json([*command, '-o', 'json'])
+        nodes = result['items'] if result.get('kind') == 'NodeList' else [result]
+        print_table(['NAME', 'STATUS', 'TYPE', 'ROLE', 'IP', 'IMAGE', 'KERNEL', 'KUBELET', 'RUNTIME', 'AGE'],
+                    [node_row(node) for node in nodes])
+    elif resource == 'clusters':
+        if arguments:
+            raise ValueError('usage: hsctl get clusters [-o table|json|yaml|ansible]')
+        clusters = discover_clusters()
+        if output == 'table':
+            print_table(['CLUSTER', 'API FQDN', 'K8S VERSION'],
+                        [[cluster['name'], cluster['fqdn'], cluster['k8s_version']] for cluster in clusters])
+        elif output == 'ansible':
+            print(json.dumps({'clusters': {'hosts': [cluster['name'] for cluster in clusters]}, '_meta': {'hostvars': {}}}))
+        elif output == 'yaml':
+            subprocess.run(['yq', '-p=json', '-o=yaml', '.'], input=json.dumps(clusters), text=True, check=True)
+        else:
+            print(json.dumps(clusters, indent=2))
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except subprocess.CalledProcessError as error:
+        if error.stderr:
+            print(error.stderr.strip(), file=sys.stderr)
+        sys.exit(error.returncode)
+    except subprocess.TimeoutExpired:
+        print('hsctl get: Tailscale status timed out', file=sys.stderr)
+        sys.exit(1)
+    except (ValueError, KeyError, OSError) as error:
+        print(f'hsctl get: {error}', file=sys.stderr)
+        sys.exit(1)
+KUBERNETES_PY
+)" "$@"
 }
 
-# Reads ClusterMachineIdentity YAML from stdin, prints table rows (no header)
-# power: pre-resolved power state string for this machine (see _machine_power_state)
-_machine_table_rows() {
-    local power="$1"
-    yq e '[
-      .metadata.id,
-      (.spec.nodename // "-"),
-      (.metadata.labels["omni.sidero.dev/cluster"] // "-"),
-      (.metadata.labels | to_entries | map(select(.key | test("omni.sidero.dev/role-"))) | .[0].key | sub("omni.sidero.dev/role-"; "") // "-"),
-      (.spec.nodeips // [] | join(","))
-    ] | @tsv' | \
-    while IFS=$'\t' read -r id nodename cluster role ips; do
-        printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "$id" "$nodename" "$cluster" "$role" "$power" "$ips"
-    done
-}
-
-# Ansible dynamic-inventory JSON for the `machines` group, sub-grouped by cluster
-# (cluster_<sanitized-name>) — reserved for future firmware/BMC management playbooks (see
-# inventory/group_vars/machines.yml); no current playbook targets this group. Deliberately
-# reads straight off MachineStatus's own metadata.labels/spec.network (the machine's actual
-# reported hostname/addresses — what SSHing into the physical box needs), not the
-# ClusterMachineIdentity join the table view above uses (the k8s *node* name, which is a
-# different concept and not what a bare-metal/BMC playbook would connect to).
-_get_machines_ansible() {
-    # Post-Omni, there's no MachineStatus source for this any more — returns an empty
-    # inventory instead of erroring, since every ansible run scans this whole directory
-    # (ansible.cfg's inventory = inventory) and a failing script here would break playbooks
-    # that don't even target this group, like bootstrap-cluster.yml.
-    local ms_json='[]'
-    if command -v omnictl &>/dev/null; then
-        ms_json=$(omnictl get machinestatus -o yaml 2>/dev/null | yq e -o=json '.' - 2>/dev/null | jq -s -c '.' 2>/dev/null) || ms_json='[]'
-    fi
-    python3 - "${ms_json:-[]}" <<'PYEOF'
-import json, re, sys
-
-machines = json.loads(sys.argv[1])
-
-
-def group_key(cluster_name):
-    return "cluster_" + re.sub(r"[^a-zA-Z0-9_]", "_", cluster_name)
-
-
-hosts = []
-hostvars = {}
-cluster_groups = {}
-
-for res in machines:
-    meta = res.get("metadata", {})
-    spec = res.get("spec", {})
-    labels = meta.get("labels", {})
-
-    machine_id = meta.get("id")
-    hostname = spec.get("network", {}).get("hostname") or machine_id
-    if not hostname:
-        continue
-
-    addresses = spec.get("network", {}).get("addresses", [])
-    primary_ip = addresses[0].split("/")[0] if addresses else None
-
-    cluster = labels.get("omni.sidero.dev/cluster")
-    role = "controlplane" if "omni.sidero.dev/role-controlplane" in labels else "worker"
-
-    hosts.append(hostname)
-    hostvars[hostname] = {
-        "machine_id": machine_id,
-        "omni_cluster": cluster,
-        "machine_role": role,
-        "machine_platform": labels.get("omni.sidero.dev/platform"),
-        **({"ansible_host": primary_ip} if primary_ip else {}),
-    }
-    if cluster:
-        cluster_groups.setdefault(group_key(cluster), []).append(hostname)
-
-inventory = {
-    "machines": {"hosts": hosts, "children": list(cluster_groups.keys())},
-    **{key: {"hosts": h} for key, h in cluster_groups.items()},
-    "_meta": {"hostvars": hostvars},
-}
-print(json.dumps(inventory, indent=2))
-PYEOF
-}
-
-get_machines() {
-    local cluster_filter=""
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --cluster|-c) cluster_filter="$2"; shift 2 ;;
-            *) echo "hsctl get machines: unknown flag '$1'" >&2; get_usage ;;
-        esac
-    done
-
-    [[ "$HSCTL_OUTPUT" == "ansible" ]] && { _get_machines_ansible; return; }
-
-    # status_tsv: id, connected, IPv4 addresses — from MachineStatus, for all connected machines
-    local status_tsv identity_tsv
-    status_tsv=$(omnictl get machinestatus -o yaml | \
-        yq e '[
-          .metadata.id,
-          (.spec.connected // false),
-          (.spec.network.addresses // [] | map(select(test("^[0-9]"))) | map(sub("/[0-9]+$"; "")) | join(","))
-        ] | @tsv')
-    # identity_tsv: id, nodename, cluster, role — assigned machines only
-    identity_tsv=$(omnictl get clustermachineidentity -o yaml | \
-        yq e '[
-          .metadata.id,
-          (.spec.nodename // "-"),
-          (.metadata.labels["omni.sidero.dev/cluster"] // "-"),
-          (.metadata.labels | to_entries | map(select(.key | test("omni.sidero.dev/role-"))) | .[0].key | sub("omni.sidero.dev/role-"; "") // "-")
-        ] | @tsv')
-
-    case "$HSCTL_OUTPUT" in
-        table)
-            printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "MACHINE ID" "NODE NAME" "CLUSTER" "ROLE" "POWER" "NODE IPs"
-            while IFS=$'\t' read -r machine_id connected ips; do
-                power=$(_machine_power_state "$connected")
-                identity_row=""
-                [[ -n "$identity_tsv" ]] && identity_row=$(awk -F'\t' -v id="$machine_id" '$1==id{print;exit}' <<< "$identity_tsv")
-                if [[ -n "$identity_row" ]]; then
-                    IFS=$'\t' read -r _ nodename cluster role <<< "$identity_row"
-                    [[ -n "$cluster_filter" && "$cluster" != "$cluster_filter" ]] && continue
-                    printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "$machine_id" "$nodename" "$cluster" "$role" "$power" "$ips"
-                else
-                    [[ -n "$cluster_filter" ]] && continue
-                    printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "$machine_id" "-" "-" "-" "$power" "$ips"
-                fi
-            done <<< "$status_tsv"
-            ;;
-        yaml) omnictl get machinestatus -o yaml ;;
-        json) omnictl get machinestatus -o yaml | yq -o json ;;
-    esac
-}
-
-get_machine() {
-    local input="${1:-}"
-    [[ -z "$input" ]] && { echo "Usage: hsctl get machine <id|node-name>"; exit 1; }
-
-    # Resolve node name → UUID via ClusterMachineIdentity if input isn't already a UUID
-    local id
-    id=$(hsctl_resolve_machine_id "$input") || {
-        echo "hsctl: no machine found with node name '$input'" >&2
-        exit 1
-    }
-
-    case "$HSCTL_OUTPUT" in
-        table)
-            printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "MACHINE ID" "NODE NAME" "CLUSTER" "ROLE" "POWER" "NODE IPs"
-            local connected power
-            connected=$(omnictl get machinestatus "$id" -o yaml | yq e '.spec.connected // false')
-            power=$(_machine_power_state "$connected")
-            local identity_yaml
-            identity_yaml=$(omnictl get clustermachineidentity "$id" -o yaml)
-            if printf '%s\n' "$identity_yaml" | grep -q "^metadata:"; then
-                printf '%s\n' "$identity_yaml" | _machine_table_rows "$power"
-            else
-                local mgmt_addr
-                mgmt_addr=$(omnictl get machine "$id" -o yaml | yq e '.spec.managementaddress // "-"')
-                printf "%-38s  %-16s  %-20s  %-14s  %-6s  %s\n" "$id" "-" "-" "-" "$power" "$mgmt_addr"
-            fi
-            ;;
-        yaml|json) hsctl_omni_output "$HSCTL_OUTPUT" machine "$id" ;;
-    esac
+get_nodes() {
+    _hsctl_kubernetes nodes "$HSCTL_OUTPUT" "$@"
 }
 
 get_snapshot() {
@@ -253,71 +229,11 @@ spec:
     kubectl -n "$namespace" delete pod "$pod_name" --ignore-not-found=true >/dev/null 2>&1
 }
 
-# Ansible dynamic-inventory JSON for the `clusters` group — bootstrap-cluster.yml's own
-# `hosts: "{{ target | default('clusters') }}"` loops over this, with
-# ansible_connection: local and talos_cluster_name: "{{ inventory_hostname }}"
-# (inventory/group_vars/clusters.yml) doing the rest per "host". Deliberately its own early
-# return, not a branch of the table/yaml/json case below: inventory names alone don't need
-# that path's per-cluster `k8s.api.<cluster>REDACTED/version` probe, so skip it
-# regardless of whether the caller (CI's `ansible` job, or a human running `hsctl run
-# bootstrap-cluster -e local`) currently has Tailscale reachability. `_meta.hostvars` is
-# present (even empty) so Ansible's script inventory plugin doesn't fall back to a --host
-# call per host. Cluster identity is just the `clusters/<name>/` directories committed to
-# this repo (Terraform-managed since Omni's removal), same source hsctl_cluster_names uses.
-_get_clusters_ansible() {
-    local names_json
-    names_json=$(hsctl_cluster_names | tr ',' '\n' | jq -R -s -c 'split("\n") | map(select(length > 0))')
-    jq -n --argjson hosts "${names_json:-[]}" '{clusters: {hosts: $hosts}, _meta: {hostvars: {}}}'
-}
-
 get_clusters() {
-    [[ "$HSCTL_OUTPUT" == "ansible" ]] && { _get_clusters_ansible; return; }
-
-    # Talos version isn't queryable from any live API post-Omni — it's just whatever
-    # clusters/<cluster>/Chart.yaml's templateOptions.talosVersion declares. Left as
-    # "?" here rather than parsing it; the version that matters is whatever's actually
-    # running, visible via `talosctl version`.
-    local talos_tsv="" cluster_names
-    cluster_names=$(hsctl_cluster_names)
-
-    python3 - "$HSCTL_OUTPUT" "$talos_tsv" "$cluster_names" <<'PYEOF'
-import json, sys, urllib.request
-
-output_fmt    = sys.argv[1]
-talos_tsv     = sys.argv[2]
-cluster_names = [c for c in sys.argv[3].split(',') if c]
-
-talos_versions = {}
-for line in talos_tsv.strip().splitlines():
-    parts = line.split('\t')
-    if len(parts) == 2:
-        talos_versions[parts[0]] = parts[1]
-
-clusters = []
-for c in cluster_names:
-    fqdn = f'k8s.api.{c}REDACTED'
-    try:
-        k8s_ver = json.loads(urllib.request.urlopen(f'https://{fqdn}/version', timeout=5).read()).get('gitVersion', '?')
-    except Exception:
-        k8s_ver = '?'
-    clusters.append({'name': c, 'fqdn': fqdn, 'k8s_version': k8s_ver, 'talos_version': talos_versions.get(c, '?')})
-
-if output_fmt == 'json':
-    print(json.dumps(clusters, indent=2))
-elif output_fmt == 'yaml':
-    for cl in clusters:
-        print(f'- name: {cl["name"]}')
-        print(f'  fqdn: {cl["fqdn"]}')
-        print(f'  k8sVersion: {cl["k8s_version"]}')
-        print(f'  talosVersion: {cl["talos_version"]}')
-else:
-    print(f'{"CLUSTER":<20}  {"API FQDN":<44}  {"K8S VERSION":<14}  TALOS VERSION')
-    for cl in clusters:
-        print(f'{cl["name"]:<20}  {cl["fqdn"]:<44}  {cl["k8s_version"]:<14}  {cl["talos_version"]}')
-PYEOF
+    _hsctl_kubernetes clusters "$HSCTL_OUTPUT" "$@"
 }
 
-_hsctl_write_kubeconfig_direct() {
+_hsctl_write_kubeconfig_direct() (
     local cluster="$1" kubeconfig="$2"
     local fqdn="k8s.api.${cluster}REDACTED"
     local user="${cluster}"
@@ -326,20 +242,19 @@ _hsctl_write_kubeconfig_direct() {
 
     mkdir -p "$(dirname "$kubeconfig")"
 
-    # Round-trips the existing kubeconfig through yq (already a hard dependency, used
-    # everywhere else in this file for YAML) so the upsert logic below only needs Python's
-    # stdlib json module — not PyYAML, which a bare `brew install python3` doesn't bundle
-    # ("available via system python on macOS" was never actually reliable; confirmed live,
-    # ModuleNotFoundError: No module named 'yaml' on a machine whose python3 never had it).
+    # Convert through yq so merging needs only Python's standard library.
+    umask 077
     local existing_json_file
-    existing_json_file=$(mktemp)
+    _hsctl_kubeconfig_workspace=$(mktemp -d "$(dirname "$kubeconfig")/.hsctl-kubeconfig.XXXXXX")
+    trap 'rm -rf "$_hsctl_kubeconfig_workspace"' EXIT
+    existing_json_file="$_hsctl_kubeconfig_workspace/existing.json"
     if [[ -f "$kubeconfig" ]]; then
         yq -p=yaml -o=json '.' "$kubeconfig" > "$existing_json_file"
     else
         echo '{}' > "$existing_json_file"
     fi
 
-    python3 - "$cluster" "$fqdn" "$user" "$HSCTL_OIDC_ISSUER_URL" "$HSCTL_OIDC_CLIENT_ID" "$existing_json_file" <<'PYEOF' | yq -p=json -o=yaml '.' > "$kubeconfig"
+    python3 - "$cluster" "$fqdn" "$user" "$HSCTL_OIDC_ISSUER_URL" "$HSCTL_OIDC_CLIENT_ID" "$existing_json_file" <<'PYEOF' | yq -p=json -o=yaml '.' > "$_hsctl_kubeconfig_workspace/config"
 import json, sys
 from pathlib import Path
 
@@ -384,34 +299,48 @@ cfg['current-context'] = cluster
 print(json.dumps(cfg))
 PYEOF
 
-    rm -f "$existing_json_file"
+    chmod 600 "$_hsctl_kubeconfig_workspace/config"
+    mv "$_hsctl_kubeconfig_workspace/config" "$kubeconfig"
     echo "Switched to cluster '$cluster'"
-}
+)
 
 get_kubeconfig() {
     local cluster="" mode="direct"
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --omni) mode="omni"; shift ;;
             --break-glass) mode="break-glass"; shift ;;
             -*) echo "hsctl get kubeconfig: unknown flag '$1'" >&2; get_usage ;;
             *) cluster="$1"; shift ;;
         esac
     done
-    [[ -z "$cluster" ]] && { echo "Usage: hsctl get kubeconfig <cluster> [--omni|--break-glass]"; exit 1; }
+    [[ -z "$cluster" ]] && { echo "Usage: hsctl get kubeconfig <cluster> [--break-glass]"; exit 1; }
 
     local kubeconfig="${KUBECONFIG:-$HOME/.kube/config}"
+    kubeconfig="${kubeconfig%%:*}"
 
     case "$mode" in
-        omni)
-            omnictl kubeconfig "$kubeconfig" --cluster "$cluster"
-            echo "Switched to cluster '$cluster'"
-            ;;
         break-glass)
-            omnictl kubeconfig "$kubeconfig" --break-glass --cluster "$cluster"
-            echo "Switched to cluster '$cluster'"
+            (
+                set -euo pipefail
+                umask 077
+                local workspace
+                workspace=$(mktemp -d)
+                trap 'rm -rf "$workspace"' EXIT
+                "$HSCTL_REPO_ROOT/hsctl" run topf --cluster "$cluster" kubeconfig > "$workspace/admin"
+                KUBECONFIG="$workspace/admin:$kubeconfig" kubectl config view --flatten --raw > "$workspace/merged"
+                kubectl --kubeconfig="$workspace/merged" config use-context "topf@$cluster" >/dev/null
+                mkdir -p "$(dirname "$kubeconfig")"
+                install -m 600 "$workspace/merged" "$kubeconfig"
+                echo "Switched to short-lived admin context 'topf@$cluster'"
+            )
             ;;
         direct)
+            local clusters
+            clusters=$(HSCTL_OUTPUT=json get_clusters) || return 1
+            jq -e --arg cluster "$cluster" 'any(.[]; .name == $cluster)' <<<"$clusters" >/dev/null || {
+                hsctl_log_error "cluster '$cluster' is not reachable through Tailscale"
+                return 1
+            }
             _hsctl_write_kubeconfig_direct "$cluster" "$kubeconfig"
             ;;
     esac
@@ -858,12 +787,8 @@ get_main() {
         kubeconfig|kc)
             get_kubeconfig "$@"
             ;;
-        machine|machines|m)
-            if [[ $# -gt 0 && "$1" != -* ]]; then
-                get_machine "$@"
-            else
-                get_machines "$@"
-            fi
+        node|nodes|no)
+            get_nodes "$@"
             ;;
         snapshot|snapshots)
             get_snapshot "$@"

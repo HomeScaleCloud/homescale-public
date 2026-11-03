@@ -38,6 +38,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Setup Python
+        id: python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: "3.x"
@@ -45,70 +46,17 @@ jobs:
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4
       - name: Install pre-commit
         run: python -m pip install pre-commit
+      - name: Cache pre-commit environments
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6
+        with:
+          path: ~/.cache/pre-commit
+          key: ${{ runner.os }}-pre-commit-${{ steps.python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Run pre-commit
+        env:
+          SKIP: runbook-coverage
         run: pre-commit run --show-diff-on-failure --color=always --all-files
       - uses: pre-commit-ci/lite-action@062bca0919bc9d6e66755cc05074b70c77e111fc  # v1.2.0
         if: always()
-
-
-  manifests:
-    name: "Manifests"
-    runs-on: ubuntu-latest
-    env:
-      KUBECONFORM_VERSION: "0.7.0"
-      KUBERNETES_VERSION: "1.34.0"
-      YQ_VERSION: "4.47.1"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - name: Install helm and yq
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-          sudo curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64"
-          sudo chmod +x /usr/local/bin/yq
-      - name: Install kubeconform
-        run: |
-          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
-            | sudo tar -xz -C /usr/local/bin kubeconform
-      - name: Cache chart dependencies
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6
-        with:
-          path: |
-            apps/*/charts
-            apps/*/Chart.lock
-          key: helm-deps-${{ hashFiles('apps/*/Chart.yaml') }}
-          restore-keys: |
-            helm-deps-
-      - name: Render and validate manifests
-        run: .github/scripts/validate-manifests.sh
-
-  talm:
-    name: "Talm"
-    runs-on: ubuntu-latest
-    env:
-      YQ_VERSION: "4.47.1"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - name: Setup Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16  # v6
-        with:
-          go-version: 'stable'
-      - name: Install talm
-        env:
-          TALM_VERSION: "0.36.0"
-        run: |
-          curl -fsSL -o /tmp/talm.tar.gz "https://github.com/cozystack/talm/archive/refs/tags/v${TALM_VERSION}.tar.gz"
-          mkdir -p /tmp/talm-src
-          tar -xzf /tmp/talm.tar.gz -C /tmp/talm-src --strip-components=1
-          (cd /tmp/talm-src && sudo go build -o /usr/local/bin/talm -ldflags "-X main.Version=${TALM_VERSION}" .)
-          talm --version
-      - name: Install yq
-        run: |
-          sudo curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64"
-          sudo chmod +x /usr/local/bin/yq
-      - name: Render clusters/*/ talm projects offline
-        run: .github/scripts/validate-talm.sh
 
   trivy:
     name: Trivy

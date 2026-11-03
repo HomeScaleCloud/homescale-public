@@ -1,0 +1,176 @@
+---
+- name: Reconcile Talos and Kubernetes versions before applying configuration
+  hosts: "{{ target | default('clusters') }}"
+  order: sorted
+  serial: 1
+  any_errors_fatal: true
+  gather_facts: false
+
+  vars:
+    hsctl_repo_root: "{{ lookup('env', 'HSCTL_REPO_ROOT') | default(playbook_dir + '/../../..', true) }}"
+    _preview: "{{ dry_run | default(false) | bool }}"
+    cluster_credentials_dir: "{{ _update_workspace.path }}"
+    kubeconfig_path: "{{ cluster_credentials_dir }}/kubeconfig"
+    infisical_url: https://app.infisical.com
+    infisical_project_id: "{{ lookup('env', 'INFISICAL_PROJECT_ID') }}"
+    infisical_env_slug: prod
+    _topf_command:
+      - "{{ hsctl_repo_root }}/hsctl"
+      - run
+      - topf
+      - --cluster
+      - "{{ talos_cluster_name }}"
+      - --redact=true
+      - --confirm=false
+    _talos_command:
+      - talosctl
+      - --talosconfig
+      - "{{ cluster_credentials_dir }}/talosconfig"
+      - --nodes
+      - "{{ (_topf_config.nodes | selectattr('role', 'equalto', 'control-plane') | first).ip }}"
+
+  pre_tasks:
+    - name: Load desired versions and node inventory
+      ansible.builtin.set_fact:
+        _topf_config: "{{ lookup('file', hsctl_repo_root + '/clusters/' + talos_cluster_name + '/topf.yaml') | from_yaml }}"
+
+    - name: Explain why a new cluster is skipped
+      ansible.builtin.debug:
+        msg: "{{ talos_cluster_name }}: bootstrap locally and set data.bootstrapComplete: true before CI can reconcile this cluster."
+      when: not ((_topf_config.data | default({})).bootstrapComplete | default(false) | bool)
+
+    - name: Leave unbootstrapped clusters untouched
+      ansible.builtin.meta: end_host
+      when: not ((_topf_config.data | default({})).bootstrapComplete | default(false) | bool)
+
+    - name: Require explicit stable version pins and a control-plane entry node
+      ansible.builtin.assert:
+        that:
+          - _topf_config.talosVersion is match('^\d+\.\d+\.\d+$')
+          - _topf_config.kubernetesVersion is match('^\d+\.\d+\.\d+$')
+          - _topf_config.nodes | selectattr('role', 'equalto', 'control-plane') | list | length > 0
+
+    - name: Allocate a private update workspace
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: hsctl-update-
+      register: _update_workspace
+
+  tasks:
+    - name: Preview or reconcile an existing cluster
+      environment:
+        HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
+        HSCTL_TOPF_SECRETS_FILE: "{{ '' if (hsctl_local | default(false) | bool) else cluster_credentials_dir + '/secrets.yaml' }}"
+        KUBECONFIG: "{{ kubeconfig_path }}"
+      block:
+        - name: Load short-lived cluster credentials
+          ansible.builtin.include_tasks: ../tasks/cluster-credentials.yml
+
+        - name: Generate a private Talos client config
+          ansible.builtin.shell: >
+            umask 077;
+            {{ (_topf_command + ['talosconfig']) | map('quote') | join(' ') }}
+            > {{ (cluster_credentials_dir + '/talosconfig') | quote }}
+          no_log: true
+
+        - name: Read live versions and readiness
+          ansible.builtin.include_tasks: ../tasks/cluster-state.yml
+
+        - name: Reject Talos downgrades and skipped minor releases
+          ansible.builtin.assert:
+            that:
+              - item is match('^\d+\.\d+\.\d+$')
+              - _topf_config.talosVersion is version(item, '>=', version_type='semver')
+              - _topf_config.talosVersion.split('.')[0] == item.split('.')[0]
+              - (_topf_config.talosVersion.split('.')[1] | int) - (item.split('.')[1] | int) <= 1
+            fail_msg: "Talos {{ item }} -> {{ _topf_config.talosVersion }} requires a supported forward upgrade, at most one minor release at a time."
+          loop: "{{ _talos_versions }}"
+
+        - name: Reject Kubernetes downgrades and skipped minor releases
+          ansible.builtin.assert:
+            that:
+              - item is match('^\d+\.\d+\.\d+$')
+              - _topf_config.kubernetesVersion is version(item, '>=', version_type='semver')
+              - _topf_config.kubernetesVersion.split('.')[0] == item.split('.')[0]
+              - (_topf_config.kubernetesVersion.split('.')[1] | int) - (item.split('.')[1] | int) <= 1
+            fail_msg: "Kubernetes {{ item }} -> {{ _topf_config.kubernetesVersion }} requires a supported forward upgrade, at most one minor release at a time."
+          loop: "{{ _kubernetes_versions }}"
+
+        - name: Determine whether Kubernetes needs orchestration
+          ansible.builtin.set_fact:
+            _upgrade_kubernetes: "{{ _kubernetes_versions | difference([_topf_config.kubernetesVersion]) | length > 0 }}"
+
+        - name: Preview Talos OS and schematic upgrades
+          ansible.builtin.command:
+            argv: "{{ _topf_command + ['upgrade', '--dry-run'] }}"
+          register: _talos_plan
+          changed_when: _talos_plan.rc == 2
+          failed_when: _talos_plan.rc not in [0, 2]
+
+        - name: Show the Talos upgrade plan
+          ansible.builtin.debug:
+            msg: "{{ _talos_plan.stdout ~ _talos_plan.stderr }}"
+
+        # Native preflight checks remain enabled. If the installed Talos cannot support
+        # the target Kubernetes yet, upgrade Talos in a separate PR first.
+        - name: Preview the native Kubernetes upgrade
+          ansible.builtin.command:
+            argv: "{{ _talos_command + ['upgrade-k8s', '--to', _topf_config.kubernetesVersion, '--dry-run'] }}"
+          register: _kubernetes_plan
+          changed_when: false
+          when: _upgrade_kubernetes
+
+        - name: Show the Kubernetes upgrade plan
+          ansible.builtin.debug:
+            msg: "{{ _kubernetes_plan.stdout ~ _kubernetes_plan.stderr }}"
+          when: _upgrade_kubernetes
+
+        - name: Upgrade Talos one node at a time with draining and health checks
+          ansible.builtin.command:
+            argv: "{{ _topf_command + ['upgrade'] }}"
+          when: not _preview and _talos_plan.rc == 2
+
+        - name: Upgrade Kubernetes components and kubelets through one control-plane entry node
+          ansible.builtin.command:
+            argv: "{{ _talos_command + ['upgrade-k8s', '--to', _topf_config.kubernetesVersion] }}"
+          when: not _preview and _upgrade_kubernetes
+
+        - name: Check upgraded versions before any ordinary config apply
+          ansible.builtin.include_tasks: ../tasks/cluster-state.yml
+          when: not _preview
+
+        - name: Require every running version to match the desired pins
+          ansible.builtin.assert:
+            that:
+              - _talos_versions | difference([_topf_config.talosVersion]) | length == 0
+              - _kubernetes_versions | difference([_topf_config.kubernetesVersion]) | length == 0
+            fail_msg: "An upgrade has not converged. Refusing to bypass orchestration with topf apply. Rerun update-cluster to resume."
+          when: not _preview
+
+        - name: Apply configuration only after upgrades, or preview it on a PR
+          ansible.builtin.command:
+            argv: "{{ _topf_command + ['apply'] + (['--dry-run'] if _preview else []) }}"
+          register: _config_apply
+          changed_when: not _preview or _config_apply.rc == 2
+          failed_when: _config_apply.rc not in ([0, 2] if _preview else [0])
+
+        - name: Show the redacted configuration result
+          ansible.builtin.debug:
+            msg: "{{ _config_apply.stdout ~ _config_apply.stderr }}"
+
+        - name: Verify the reconciled cluster
+          ansible.builtin.include_tasks: ../tasks/cluster-state.yml
+          when: not _preview
+
+        - name: Require final versions to remain converged after config apply
+          ansible.builtin.assert:
+            that:
+              - _talos_versions | difference([_topf_config.talosVersion]) | length == 0
+              - _kubernetes_versions | difference([_topf_config.kubernetesVersion]) | length == 0
+          when: not _preview
+
+      always:
+        - name: Remove private update credentials
+          ansible.builtin.file:
+            path: "{{ _update_workspace.path }}"
+            state: absent

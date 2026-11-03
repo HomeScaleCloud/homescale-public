@@ -1,0 +1,107 @@
+---
+- name: Load the permanent TOPF inventory
+  ansible.builtin.set_fact:
+    _topf_config: "{{ lookup('file', hsctl_repo_root + '/clusters/' + talos_cluster_name + '/topf.yaml') | from_yaml }}"
+
+- name: Check the first-bootstrap inventory
+  ansible.builtin.assert:
+    that:
+      - bootstrap_nodes | length > 0
+      - _topf_config.data.nodeSubnet | default('') | length > 0
+      - _topf_config.data.gateway | default('') | length > 0
+      - _topf_config.data.nameservers | default([]) | length > 0
+      - (bootstrap_nodes | map(attribute='name') | list | difference(_topf_config.nodes | selectattr('role', 'equalto', 'control-plane') | map(attribute='host') | list)) | length == 0
+      - (_topf_config.nodes | selectattr('role', 'equalto', 'control-plane') | map(attribute='host') | list | difference(bootstrap_nodes | map(attribute='name') | list)) | length == 0
+    fail_msg: "Complete the cluster subnet, gateway and DNS, and list every control-plane node in --nodes."
+
+- name: Verify each DHCP target and permanent address
+  ansible.builtin.assert:
+    that:
+      - item.static_ip == _node.ip
+      - (_node.data | default({})).get('installDiskMatch', _topf_config.data.get('installDiskMatch', '')) | length > 0
+    fail_msg: "The node name, permanent address, network and install disk must match topf.yaml."
+  vars:
+    _node: "{{ _topf_config.nodes | selectattr('host', 'equalto', item.name) | first }}"
+  loop: "{{ bootstrap_nodes }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Restore or initialize and back up the cluster CA bundle
+  ansible.builtin.command:
+    argv:
+      - "{{ hsctl_repo_root }}/hsctl"
+      - run
+      - topf
+      - --cluster
+      - "{{ talos_cluster_name }}"
+      - --init-secrets
+      - --confirm=false
+      - secrets
+  environment:
+    HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
+  no_log: true
+
+- name: Render private configs from the permanent inventory
+  ansible.builtin.command:
+    argv:
+      - "{{ hsctl_repo_root }}/hsctl"
+      - run
+      - topf
+      - --cluster
+      - "{{ talos_cluster_name }}"
+      - render
+      - --output
+      - "{{ _bootstrap_workspace.path }}/configs"
+  environment:
+    HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
+  no_log: true
+
+- name: Apply each node's config through its maintenance-mode DHCP address
+  ansible.builtin.command:
+    argv:
+      - talosctl
+      - --nodes
+      - "{{ item.dhcp_ip }}"
+      - apply-config
+      - --insecure
+      - --file
+      - "{{ _bootstrap_workspace.path }}/configs/{{ item.name }}.yaml"
+  loop: "{{ bootstrap_nodes }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+
+- name: Wait for permanent Talos addresses
+  ansible.builtin.wait_for:
+    host: "{{ item.static_ip }}"
+    port: 50000
+    delay: 10
+    timeout: 300
+  loop: "{{ bootstrap_nodes }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Bootstrap etcd through the first permanent control-plane address
+  ansible.builtin.command:
+    argv:
+      - "{{ hsctl_repo_root }}/hsctl"
+      - run
+      - topf
+      - --cluster
+      - "{{ talos_cluster_name }}"
+      - --confirm=false
+      - --nodes-filter
+      - "^{{ bootstrap_nodes[0].name | regex_escape }}$"
+      - apply
+      - --allow-not-ready
+      - --skip-post-apply-checks
+      - --auto-bootstrap
+  environment:
+    HSCTL_REPO_ROOT: "{{ hsctl_repo_root }}"
+
+- name: Wait for the Kubernetes API
+  ansible.builtin.wait_for:
+    host: "{{ bootstrap_nodes[0].static_ip }}"
+    port: 6443
+    delay: 10
+    timeout: 300

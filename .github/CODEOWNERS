@@ -13,8 +13,7 @@ apps/templates/                                 @HomeScaleCloud/team-infra-plat
 
 # Cluster definitions and lifecycle
 clusters/                                       @HomeScaleCloud/team-infra-plat
-apps/omni/                                      @HomeScaleCloud/team-infra-plat
-infra/omni/                                     @HomeScaleCloud/team-infra-plat
+infra/topf/                                     @HomeScaleCloud/team-infra-plat
 infra/ansible/                                  @HomeScaleCloud/team-infra-plat
 
 # Kubernetes platform
@@ -48,9 +47,6 @@ apps/metrics-aggr/                              @HomeScaleCloud/team-infra-plat
 # Terraform – infra-plat modules
 infra/terraform/modules/cloudflare/             @HomeScaleCloud/team-infra-plat
 infra/terraform/modules/tailscale/              @HomeScaleCloud/team-infra-plat
-
-# Terraform – public cloud modules (both teams: infra-plat operates, sec-plat reviews for security posture)
-infra/terraform/modules/core_cluster/           @HomeScaleCloud/team-infra-plat @HomeScaleCloud/team-sec-plat
 
 # ── Security Platforms ────────────────────────────────────────────────────────
 

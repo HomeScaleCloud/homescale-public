@@ -5,7 +5,10 @@ fzf
 gh
 ipmitool
 talosctl
+postfinance/tap/topf
+helm
 kubectl
+tailscale
 siderolabs/tap/omnictl
 infisical
 curl

@@ -1,0 +1,78 @@
+---
+- name: Read every Talos node's live status
+  ansible.builtin.command:
+    argv: "{{ _topf_command + ['nodes', '--output', 'yaml'] }}"
+  register: _talos_state
+  changed_when: false
+
+- name: Require a complete Talos response, including when the response is empty
+  ansible.builtin.assert:
+    that:
+      - (_talos_state.stdout | from_yaml) | map(attribute='node.host') | sort == _topf_config.nodes | map(attribute='host') | sort
+
+- name: Require every configured Talos node to be reachable and ready
+  ansible.builtin.assert:
+    that:
+      - item.error | default('') | length == 0
+      - item.talosversion | default('') | length > 0
+      - item.machinestatus.status.ready | bool
+    fail_msg: "Cannot safely update {{ item.node.host }}: {{ item.error | default('node not ready or version unknown') }}"
+  loop: "{{ _talos_state.stdout | from_yaml }}"
+  loop_control:
+    label: "{{ item.node.host }}"
+
+- name: Read Kubernetes API version
+  kubernetes.core.k8s_cluster_info:
+    kubeconfig: "{{ kubeconfig_path }}"
+  register: _kubernetes_info
+  no_log: true
+
+- name: Read Kubernetes nodes
+  kubernetes.core.k8s_info:
+    kubeconfig: "{{ kubeconfig_path }}"
+    api_version: v1
+    kind: Node
+  register: _kubernetes_nodes
+
+- name: Read control-plane component images, including partially upgraded replicas
+  kubernetes.core.k8s_info:
+    kubeconfig: "{{ kubeconfig_path }}"
+    api_version: v1
+    kind: Pod
+    namespace: kube-system
+  register: _kubernetes_pods
+  no_log: true
+
+- name: Require a complete Kubernetes node response
+  ansible.builtin.assert:
+    that:
+      - _kubernetes_nodes.resources | length == _topf_config.nodes | length
+      - >-
+        _kubernetes_nodes.resources | map(attribute='status.addresses') | flatten
+        | selectattr('type', 'equalto', 'InternalIP') | map(attribute='address')
+        | intersect(_topf_config.nodes | map(attribute='ip') | list) | sort
+        == _topf_config.nodes | map(attribute='ip') | sort
+
+- name: Require all configured Kubernetes nodes and control-plane components
+  ansible.builtin.assert:
+    that:
+      - >-
+        item.status.addresses | selectattr('type', 'equalto', 'InternalIP') | map(attribute='address')
+        | intersect(_topf_config.nodes | map(attribute='ip') | list) | length == 1
+      - item.status.conditions | selectattr('type', 'equalto', 'Ready') | selectattr('status', 'equalto', 'True') | list | length == 1
+      - _component_pods | length == (_topf_config.nodes | selectattr('role', 'equalto', 'control-plane') | list | length) * 3
+  vars:
+    _component_pods: "{{ _kubernetes_pods.resources | selectattr('metadata.name', 'match', '^kube-(apiserver|controller-manager|scheduler)-') | list }}"
+  loop: "{{ _kubernetes_nodes.resources }}"
+  loop_control:
+    label: "{{ item.metadata.name }}"
+
+- name: Collect all running versions for upgrade guards and convergence checks
+  ansible.builtin.set_fact:
+    _talos_versions: "{{ (_talos_state.stdout | from_yaml) | map(attribute='talosversion') | map('regex_replace', '^v', '') | unique | list }}"
+    _kubernetes_versions: >-
+      {{ ([_kubernetes_info.version.server.kubernetes.gitVersion]
+          + (_kubernetes_nodes.resources | map(attribute='status.nodeInfo.kubeletVersion') | list)
+          + (_kubernetes_pods.resources | selectattr('metadata.name', 'match', '^kube-(apiserver|controller-manager|scheduler)-')
+             | map(attribute='spec.containers') | flatten | map(attribute='image') | map('regex_replace', '^.*:', '') | list))
+         | map('regex_replace', '^v', '') | unique | list }}

@@ -9,7 +9,7 @@ This monorepo contains the Infrastructure as Code (IaC) used to manage **HomeSca
 ### ☁️ **Infrastructure**
 - [Kubernetes (k8s)](https://kubernetes.io/) - Workload/container orchestration
 - [Talos Linux](https://www.talos.dev) - Immutable, API-driven OS for k8s
-- [Omni](https://omni.siderolabs.com) - Talos lifecycle management
+- [TOPF](https://github.com/postfinance/topf) - Talos configuration management
 - [Terraform](https://developer.hashicorp.com/terraform) - Cloud infrastructure provisioning
 
 ### 🔒 **Networking & Security**
@@ -28,6 +28,6 @@ This monorepo contains the Infrastructure as Code (IaC) used to manage **HomeSca
 | Directory | Purpose |
 |-----------|---------|
 | `apps/` | App bundle definitions |
-| `clusters/` | Omni cluster definitions and app-of-apps deployments |
+| `clusters/` | TOPF inventories and ArgoCD app-of-apps deployments |
 | `infra/terraform/` | Cloud and provider resource provisioning |
 | `infra/ansible/` | Bootstrapping and configuration/firmware management |

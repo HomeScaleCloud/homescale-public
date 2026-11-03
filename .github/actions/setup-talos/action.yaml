@@ -1,0 +1,28 @@
+name: "Setup Talos tools"
+description: "Install checksum-verified TOPF and talosctl on Linux x64 runners"
+runs:
+  using: composite
+  steps:
+    - name: Install pinned Talos tools
+      shell: bash
+      run: |
+        set -euo pipefail
+        [[ "$RUNNER_OS/$RUNNER_ARCH" == Linux/X64 ]] || { echo "Linux x64 runner required" >&2; exit 1; }
+        topf_version=0.6.2
+        talos_version=$(sed -n 's/^talosVersion: *//p' "$GITHUB_WORKSPACE"/clusters/*/topf.yaml | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
+        [[ "$topf_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ && "$talos_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+        scratch=$(mktemp -d)
+        trap 'rm -rf "$scratch"' EXIT
+        archive=topf_linux_amd64.tar.gz
+        curl -fsSL --retry 3 "https://github.com/postfinance/topf/releases/download/v$topf_version/$archive" -o "$scratch/$archive"
+        curl -fsSL --retry 3 "https://github.com/postfinance/topf/releases/download/v$topf_version/topf_${topf_version}_checksums.txt" -o "$scratch/topf-checksums"
+        (cd "$scratch" && awk -v archive="$archive" '$2 == archive {print}' topf-checksums | sha256sum -c -)
+        tar -xzf "$scratch/$archive" -C "$scratch" topf
+        curl -fsSL --retry 3 "https://github.com/siderolabs/talos/releases/download/v$talos_version/talosctl-linux-amd64" -o "$scratch/talosctl-linux-amd64"
+        curl -fsSL --retry 3 "https://github.com/siderolabs/talos/releases/download/v$talos_version/sha256sum.txt" -o "$scratch/talos-checksums"
+        (cd "$scratch" && awk '$2 == "talosctl-linux-amd64" {print}' talos-checksums | sha256sum -c -)
+        destination="$RUNNER_TEMP/talos-bin"
+        mkdir -p "$destination"
+        install -m 755 "$scratch/topf" "$destination/topf"
+        install -m 755 "$scratch/talosctl-linux-amd64" "$destination/talosctl"
+        echo "$destination" >> "$GITHUB_PATH"

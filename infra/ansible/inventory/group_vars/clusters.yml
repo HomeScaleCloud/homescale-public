@@ -1,8 +1,6 @@
 ---
 ansible_connection: local
+ansible_python_interpreter: "{{ ansible_playbook_python }}"
 talos_cluster_name: "{{ inventory_hostname }}"
-# hsctl run talm pushes each cluster's break-glass admin kubeconfig to this Infisical path
-# after bootstrap (see _run_talm in hsctl.d/run.sh) — the only two clusters that will ever
-# exist, so a small inline map beats inventing a shortName lookup mechanism ansible has no
-# other reason to need.
+# Cluster CA bundles remain in the existing Infisical folders.
 talos_shortname: "{{ {'production': 'prod', 'development': 'dev'}[inventory_hostname] }}"

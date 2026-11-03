@@ -1,10 +1,10 @@
 # hsctl
 
-`hsctl` is a small bash CLI for day-to-day operator tasks against the HomeScale fleet: listing clusters and machines, fetching kubeconfigs, browsing restic snapshots, power-cycling machines, jumping into ArgoCD, and managing Entra PIM assignments.
+`hsctl` is a small bash CLI for day-to-day operator tasks against the HomeScale fleet: listing clusters and Kubernetes nodes, fetching kubeconfigs, browsing restic snapshots, power-cycling machines, jumping into ArgoCD, and managing Entra PIM assignments.
 
-Most commands talk to Omni and each cluster's API server over Tailscale, so they need an active Tailscale connection. The exception is `hsctl pim` and the `pim*` resources under `hsctl get`, which talk to Microsoft Graph/ARM directly and don't need Tailscale.
+Cluster discovery and normal kubeconfig selection use Tailscale and the cluster API proxies. Node queries use only the active kubectl context. PIM commands talk directly to Microsoft Graph/ARM.
 
-Source: `hsctl` (entrypoint) and `hsctl.d/*.sh` (one file per top-level command) at the repo root.
+Source: `hsctl` (entrypoint) and `hsctl.d/*.sh` (command modules) at the repo root.
 
 ## Installing / updating
 
@@ -22,19 +22,20 @@ Also installs any missing dependencies listed in `hsctl.d/requirements.txt` (one
 hsctl get <resource> [-o table|yaml|json|ansible] [flags...]
 ```
 
-Output format defaults to `table`; pass `-o yaml` or `-o json` for scripting. `-o ansible` is only meaningful for `clusters`/`machines` — it's what `infra/ansible/inventory/clusters`/`machines` (Ansible dynamic inventory scripts) call under the hood, so ansible-playbook always sees the same live Omni state `hsctl get` itself would show.
+Output defaults to `table`; use `-o yaml` or `-o json` for scripting. Node JSON/YAML is native kubectl output. `get clusters -o ansible` returns only reachable clusters. Ansible's own inventory independently reads committed `clusters/*/topf.yaml`, so initial bootstrap and outage handling never depend on discovery, an active kubeconfig or Omni.
 
 | Resource | Usage | Description |
 |----------|-------|-------------|
-| `clusters` | `hsctl get clusters` | List Kubernetes clusters reachable via Tailscale |
-| `kubeconfig` | `hsctl get kubeconfig <cluster> [--omni\|--break-glass]` | Write a kubeconfig context for `<cluster>`. Default: [direct to the real apiserver](../architecture/networking.md#direct-cluster-api-access) via OIDC login (needs the `kubectl-oidc_login` [krew](https://krew.sigs.k8s.io/) plugin; issuer/client ID come from Infisical at `/k8s/oidc`). `--omni` runs `omnictl kubeconfig --cluster <cluster>`. `--break-glass` runs `omnictl kubeconfig --break-glass --cluster <cluster>` to bypass Omni and reach nodes directly |
-| `machines` | `hsctl get machines [--cluster <name>]` | List all Omni machines with power state, enriched with node name, cluster, and role for machines already assigned to a cluster. Filter to one cluster with `--cluster`/`-c` |
-| `machine` | `hsctl get machine <id\|node-name>` | Show details for a single machine, by Omni machine ID or Kubernetes node name |
+| `clusters` | `hsctl get clusters` | Discover online `tag:k8s` peers with `tag:env-<cluster>`, then verify their TLS API endpoints. Includes shared ingress proxies and clusters outside this checkout; offline or unhealthy APIs are excluded |
+| `kubeconfig` | `hsctl get kubeconfig <cluster> [--break-glass]` | Select a reachable cluster and merge an OIDC context for its API proxy. Requires kubectl-oidc_login and OIDC settings from `/k8s/oidc`. `--break-glass` generates a short-lived TOPF admin context using the existing CA and can work from the LAN without Tailscale |
+| `nodes` | `hsctl get nodes [name]` | Query the current kubectl context; columns: NAME, STATUS, TYPE, ROLE, IP, IMAGE, KERNEL, KUBELET, RUNTIME, AGE |
 | `snapshot` | `hsctl get snapshot <app>` | List restic snapshots for an app's VolSync-backed PVC, with timestamps and IDs — see [Backups: restore procedure](../architecture/backups.md#restore-procedure) |
 | `pimrole` | `hsctl get pimrole` | List your eligible + active Entra directory role PIM assignments (Graph API) |
 | `pimgroup` | `hsctl get pimgroup` | List your eligible + active PIM-for-Groups assignments (Graph API) |
 | `pimazurerole` | `hsctl get pimazurerole --scope <arm-scope>` | List your eligible + active Azure resource RBAC PIM assignments (ARM API) |
 | `pimapproval` | `hsctl get pimapproval [role\|group\|azure] [--scope <arm-scope>]` | List pending PIM approval requests: ones you can approve and your own, tagged `approver`/`requestor`, with the requester's display name and email (`role`/`group` only — Graph API). No type given: shows both `role` and `group` |
+
+`STATUS` follows Kubernetes readiness and includes `SchedulingDisabled` for cordoned nodes. `TYPE` is control-plane when the standard control-plane/master role label exists, otherwise worker. `ROLE` comes from `REDACTED/role`; missing values show `-`. `IP` is the first InternalIP. The other columns come from node system information and creation time. Node queries never switch contexts or select another cluster.
 
 ## `hsctl argocd`
 
@@ -52,7 +53,7 @@ hsctl machine power on|off|reset [--force] <id|node-name> [<id|node-name>...]
 hsctl machine bmcreset <id|node-name>
 ```
 
-Takes action directly against a physical machine — unlike `hsctl get`, this changes real hardware state. Accepts an Omni machine ID or a Kubernetes node name (resolved the same way as `hsctl get machine`).
+Takes action directly against a physical machine — unlike `hsctl get`, this changes real hardware state. These older BMC commands still accept historical machine UUIDs; their node-name resolver remains Omni-based. They are separate from the Kubernetes node commands and Ansible inventory.
 
 `power` accepts multiple space-separated targets and acts on each in turn. It continues past a single machine's failure (unresolved name, credential fetch, or ipmitool/talosctl error) but exits non-zero if any target failed.
 
@@ -96,34 +97,28 @@ BMC connection info (`IP`, `VENDOR_USERNAME`, `VENDOR_PASSWORD`) is fetched at r
 
 ## `hsctl run`
 
+```bash
+hsctl run <name> [--cluster <name>] [-e local|remote] [--git-ref <branch-or-tag>]
+hsctl run bootstrap-cluster --cluster development -e local --nodes nodes.yaml
+hsctl run topf --cluster development <topf arguments...>
+hsctl run update-cluster --cluster development --dry-run
 ```
-hsctl run <name> [--cluster <name>] [--arg key=value]... [-e|--execution-mode local|remote] [--dry-run] [--chain <name>[,<name>...]] [--git-ref <ref>]
-```
 
-Runs a playbook or script, either remotely (dispatches [`.github/workflows/deploy.yaml`](../architecture/overview.md#cicd-pipeline) via `gh workflow run` and follows the triggered run) or locally (clones `main` fresh and runs it directly against that checkout). `<name>` is required (no "run everything" shortcut), and is one of:
+`bootstrap-cluster` installs cluster services; `--nodes` first provisions a new cluster's Talos control plane from the LAN. See [Clusters](../architecture/clusters.md) for node inventory, credential handling and recovery instructions. Run subsequent service-installation retries without `--nodes` after etcd has bootstrapped.
 
-| `<name>` | Runs | Notes |
-|----------|------|-------|
-| `bootstrap-core` | `infra/ansible/playbooks/bootstrap-core.yml` | Bootstraps the `core` cluster |
-| `bootstrap-cluster` | `infra/ansible/playbooks/bootstrap-cluster.yml` | Bootstraps workload clusters (all, or one via `--cluster`) |
-| `omni-sync` | `infra/omni/sync.sh` | Syncs cluster templates + machine classes into Omni |
-| `terraform` | `infra/terraform/plan-apply.sh` | Plans/applies `infra/terraform` — the only way to bootstrap `core` itself, before CI can reach it over Tailscale |
-| anything else | `infra/ansible/playbooks/<name>.yml` | **Local mode only** — any other committed playbook |
+`topf` runs natively against `HSCTL_REPO_ROOT/clusters/<cluster>/topf.yaml` and the shared patches under infra/topf. All TOPF flags pass through, including apply --dry-run (exit 2 means changes). Missing CA bundles are restored from Infisical; routine calls use the private cache. Prefix --refresh-secrets to refresh deliberately or --init-secrets to restore/create and back up the first bundle. Generated configs and credentials contain secrets and must remain uncommitted. Bootstrap generates a fresh short-lived kubeconfig each run. `hsctl get kubeconfig <cluster> --break-glass` also generates a fresh TOPF admin context; default access continues to use OIDC.
 
-`-e`/`--execution-mode` is `local` or `remote` (default `remote`):
+`update-cluster` previews or reconciles the Talos/Kubernetes versions and remaining configuration declared in topf.yaml, locally or in CI. It requires data.bootstrapComplete true. See [Updates](../architecture/clusters.md#updates).
 
-- **`remote`** runs `gh workflow run deploy.yaml` (requires `gh auth login` and write access to `HomeScaleCloud/homescale`) with `job`/`cluster`/`machineclasses`/`dry_run`/`extra_args` inputs built from `<name>`/`--cluster`/`--arg`/`--dry-run`, waits for the resulting run to appear, then follows it with `gh run watch --exit-status`. `terraform`/`omni-sync` dispatch to those jobs directly (`inputs.job`); anything else dispatches to the `ansible` job's generic-playbook fallback.
-- **`local`** clones `HomeScaleCloud/homescale@main` fresh into a temp directory (`gh repo clone`, requires `gh auth login`) and runs `<name>` directly against that checkout, cleaning it up afterward — never against whatever's checked out locally, which could be a branch, stale, or have uncommitted changes. Still needed for the very first core bootstrap, or any time CI/Tailscale can't yet reach what you're changing — `terraform -e local` is in fact the *only* way to stand up `core` itself.
+`terraform` plans/applies external infrastructure in `infra/terraform`; it does not provision Talos. Other names run matching playbooks from `infra/ansible/playbooks/` in local mode.
 
-`--arg key=value` (repeatable, remote mode only): `cluster`/`machineclasses` fold into the matching workflow_dispatch input; anything else is joined into `extra_args` (space-separated `key=value`), which only the generic-ansible-playbook fallback job consumes as extra `-e key=value` flags. `--cluster <name>` is sugar for `--arg cluster=<name>` — meaningful for `bootstrap-cluster` (`-e target=<name>`), `terraform` (scopes the plan/apply to that cluster's own resources — computed from an untargeted plan's own JSON output, not `terraform state list`, so it still catches a not-yet-created resource), and `omni-sync` (syncs just that one cluster).
+- `-e remote` (default) dispatches `deploy.yaml` through GitHub Actions and follows its result.
+- `-e local` uses `HSCTL_REPO_ROOT`, including local changes, for the whole operation. Check out the desired branch and invoke its `./hsctl`. `--git-ref` is remote-only and selects the workflow revision (default `main`).
+- `--dry-run` previews Terraform or update-cluster without applying changes. Bootstrap playbooks ignore it; it does not make a cluster bootstrap safe to preview.
+- `--chain <name>[,...]` runs additional jobs against the same local checkout.
+- `--arg key=value` passes extra arguments to remote generic playbooks; `--cluster` selects the cluster for bootstrap, updates or Terraform.
 
-`--dry-run`: `terraform` plans only (no apply); `omni-sync` adds `--dry-run` to its `omnictl` calls; ignored by ansible playbooks.
-
-`--chain <name>[,...]` is **local mode only** — it runs `<name>` plus the listed templates (comma-separated, no spaces) in sequence against the same cloned checkout. Not supported in `-e remote` mode: GitHub Actions' `workflow_dispatch` can't compose an arbitrary step sequence at dispatch time, so `hsctl run --chain ... -e remote` fails outright with an error telling you to dispatch each one separately instead.
-
-`--git-ref <ref>` (remote mode only, default `main`) is passed straight through as `gh workflow run deploy.yaml --ref <ref>` — the whole workflow (not just one job) checks out that ref. The one real use is planning a PR's own branch instead of `main`'s current content.
-
-`bootstrap-core`/`bootstrap-cluster` run locally pre-fetch `/k8s/argocd/deploy-key`, `/k8s/infisical`, and (`bootstrap-core` only) `/ci`'s `CORE_KUBECONFIG` via your own already-authenticated `infisical` CLI session, handing them to Ansible directly (see `_run_bootstrap_local` in `hsctl.d/run.sh`) — Ansible's own Infisical login (GitHub OIDC in CI) is skipped entirely. `terraform -e local` gets the analogous treatment for its own Infisical universal-auth credentials (`INFISICAL_CI_CLIENT_ID`/`_SECRET`, `INFISICAL_ORG_ID`, `CLOUDFLARE_API_TOKEN`, `TF_TOKEN_app_terraform_io`), fetched from `/ci` and exported directly into `plan-apply.sh`'s environment (see `_run_terraform_local`). `omni-sync -e local` has no special secrets handling — `OMNI_SERVICE_ACCOUNT_KEY` is picked up the same way `hsctl get`/`hsctl machine` already resolve Omni access. Any other playbook run locally gets no such handling either.
+Local bootstrap reads ArgoCD and Infisical operator credentials through the authenticated Infisical CLI. Existing-cluster service installation also fetches the selected cluster's kubeconfig. A fresh `--nodes` bootstrap fetches kubeconfig after the API becomes ready. CI uses GitHub OIDC instead.
 
 ## `hsctl pim`
 

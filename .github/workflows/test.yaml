@@ -1,0 +1,97 @@
+name: "Test"
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  manifests:
+    name: "Manifests"
+    runs-on: ubuntu-latest
+    env:
+      # renovate: datasource=github-releases depName=yannh/kubeconform extractVersion=^v(?<version>.*)$
+      KUBECONFORM_VERSION: "0.7.0"
+      # renovate: datasource=github-releases depName=mikefarah/yq extractVersion=^v(?<version>.*)$
+      YQ_VERSION: "4.47.1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Install helm and yq
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          sudo curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64"
+          sudo chmod +x /usr/local/bin/yq
+      - name: Install kubeconform
+        run: |
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin kubeconform
+      - name: Cache chart dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6
+        with:
+          path: |
+            apps/*/charts
+            apps/*/Chart.lock
+          key: helm-deps-${{ hashFiles('apps/*/Chart.yaml') }}
+          restore-keys: |
+            helm-deps-
+      - name: Validate manifest selection and rendered apps
+        run: tests/validate-manifests.sh
+
+  talos:
+    name: "Talos"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Install pinned Talos tools
+        uses: ./.github/actions/setup-talos
+      - name: Install validation dependencies
+        run: python -m pip install PyYAML
+      - name: Validate inventories and generated Talos configurations
+        run: python tests/talos.py
+
+  bootstrap-cluster:
+    name: "bootstrap-cluster"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Install pinned Talos tools
+        uses: ./.github/actions/setup-talos
+      - name: Install validation dependencies
+        run: python -m pip install ansible-core PyYAML
+      - name: Validate bootstrap-cluster and secret recovery
+        run: python tests/bootstrap-cluster.py
+
+  hsctl:
+    name: "hsctl"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Install validation dependencies
+        run: python -m pip install ansible-core PyYAML
+      - name: Validate hsctl discovery and node output
+        run: python tests/hsctl.py
+
+  update-cluster:
+    name: "update-cluster"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Install validation dependencies
+        run: python -m pip install ansible-core PyYAML
+      - name: Validate update-cluster orchestration
+        run: python tests/update-cluster.py
+
+  runbooks:
+    name: "Runbooks"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Validate alert runbooks
+        run: tests/check-runbooks.sh

@@ -1,6 +1,7 @@
 {
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "customManagers:githubActionsVersions"
   ],
   "baseBranchPatterns": [
     "main"
@@ -25,24 +26,36 @@
       "automerge": false
     },
     {
-      "matchPackageNames": ["longhorn"],
+      "matchPackageNames": [
+        "longhorn"
+      ],
       "automerge": false,
       "separateMultipleMinor": true
     },
     {
-      "matchDepNames": ["vultr-kubernetes"],
+      "matchDepNames": [
+        "vultr-kubernetes"
+      ],
       "automerge": false
     },
     {
-      "matchManagers": ["terraform"],
+      "matchManagers": [
+        "terraform"
+      ],
       "semanticCommitScope": "infra"
     },
     {
-      "matchManagers": ["argocd", "kubernetes", "dockerfile"],
+      "matchManagers": [
+        "argocd",
+        "kubernetes",
+        "dockerfile"
+      ],
       "semanticCommitScope": "apps"
     },
     {
-      "matchManagers": ["github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
       "semanticCommitScope": "deps"
     },
     {
@@ -50,6 +63,22 @@
       "matchPackageNames": [
         "/^ghcr\\.io/homescalecloud//"
       ]
+    },
+    {
+      "matchPackageNames": [
+        "postfinance/topf",
+        "siderolabs/talos",
+        "kubernetes/kubernetes"
+      ],
+      "automerge": false,
+      "semanticCommitScope": "infra"
+    },
+    {
+      "description": "kubeconform 0.8.0 regresses JSON output and schema skipping.",
+      "matchPackageNames": [
+        "yannh/kubeconform"
+      ],
+      "allowedVersions": "!/^0\\.8\\.0$/"
     }
   ],
   "argocd": {
@@ -131,6 +160,42 @@
       "depNameTemplate": "vultr-kubernetes",
       "datasourceTemplate": "custom.vultr-k8s",
       "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        ".github/actions/setup-talos/action.yaml"
+      ],
+      "matchStrings": [
+        "topf_version=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "postfinance/topf",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "clusters/**/topf.yaml"
+      ],
+      "matchStrings": [
+        "talosVersion:\\s*(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "siderolabs/talos",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "clusters/**/topf.yaml"
+      ],
+      "matchStrings": [
+        "kubernetesVersion:\\s*(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "kubernetes/kubernetes",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ],
   "customDatasources": {

@@ -1,8 +1,5 @@
 ---
-# CI authenticates via GitHub Actions OIDC (INFISICAL_IDENTITY_ID/INFISICAL_AUTH_JWT).
-# `hsctl run` (local) has no such JWT to present, so it pre-fetches the same secrets
-# itself via the already-logged-in `infisical` CLI and passes them in as
-# hsctl_local_secrets, skipping these three tasks entirely.
+# CI uses OIDC; local bootstrap supplies hsctl_local_secrets.
 - name: Login to Infisical
   infisical.vault.login:
     url: "{{ infisical_url }}"

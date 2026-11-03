@@ -6,7 +6,7 @@ locals {
     split("/", f)[0] => yamldecode(file("${path.module}/../../../../apps/${f}"))
   }
 
-  cluster_values_files = fileset("${path.module}/../../../../clusters", "*/values.yaml")
+  cluster_values_files = fileset("${path.module}/../../../../clusters", "*/topf.yaml")
 
   cluster_values_yamls = {
     for f in local.cluster_values_files :
@@ -14,11 +14,11 @@ locals {
   }
 
   cluster_advertise_routes = sort(distinct(flatten([
-    for name, y in local.cluster_values_yamls : try(y.advertisedSubnets, [])
+    for name, y in local.cluster_values_yamls : try([y.data.nodeSubnet], [])
   ])))
 
   cluster_pod_service_routes = sort(distinct(flatten([
-    for name, y in local.cluster_values_yamls : concat(try(y.podSubnets, []), try(y.serviceSubnets, []))
+    for name, y in local.cluster_values_yamls : concat(try(y.data.podSubnets, []), try(y.data.serviceSubnets, []))
   ])))
 
   app_policies = {
