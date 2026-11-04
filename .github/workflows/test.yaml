@@ -14,7 +14,7 @@ jobs:
       # renovate: datasource=github-releases depName=yannh/kubeconform extractVersion=^v(?<version>.*)$
       KUBECONFORM_VERSION: "0.7.0"
       # renovate: datasource=github-releases depName=mikefarah/yq extractVersion=^v(?<version>.*)$
-      YQ_VERSION: "4.47.1"
+      YQ_VERSION: "4.54.1"
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
