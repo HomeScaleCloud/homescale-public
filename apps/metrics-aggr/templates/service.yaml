@@ -5,7 +5,7 @@ metadata:
   namespace: metrics
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:env-production"
-    tailscale.com/hostname: "prometheus-metrics-production-aggr"
+    tailscale.com/hostname: "prometheus-metrics-{{ .Values.env.shortName }}-aggr"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "REDACTED"
 spec:
@@ -27,7 +27,7 @@ metadata:
   namespace: metrics
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:env-production"
-    tailscale.com/hostname: "loki-metrics-production"
+    tailscale.com/hostname: "loki-metrics-{{ .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "REDACTED"
 spec:

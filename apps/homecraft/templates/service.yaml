@@ -6,7 +6,7 @@ metadata:
     REDACTED/name: "{{ .Release.Name }}"
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-homecraft,tag:env-{{ required "env.name is required" .Values.env.name }}"
-    tailscale.com/hostname: "mc-{{ required "env.name is required" .Values.env.name }}"
+    tailscale.com/hostname: "mc-{{ required "env.shortName is required" .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "homecraft.{{ required "env.name is required" .Values.env.name }}REDACTED"
 spec:

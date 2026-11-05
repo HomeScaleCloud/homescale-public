@@ -12,7 +12,7 @@ values:
   tailscale-operator:
     installCRDs: true
     operatorConfig:
-      hostname: 'ts-operator-{{ .Values.env.name }}'
+      hostname: 'ts-operator-{{ .Values.env.shortName }}'
       defaultTags:
         - 'tag:k8s'
     proxyConfig:

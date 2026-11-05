@@ -5,7 +5,7 @@ metadata:
   namespace: tailscale
   annotations:
     tailscale.com/tags: 'tag:k8s,tag:k8s-api,tag:env-{{ required "env.name is required" .Values.env.name }}'
-    tailscale.com/hostname: 'k8s-api-{{ required "env.name is required" .Values.env.name }}'
+    tailscale.com/hostname: 'k8s-api-{{ required "env.shortName is required" .Values.env.shortName }}'
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: 'k8s.api.{{ required "env.name is required" .Values.env.name }}REDACTED'
 spec:

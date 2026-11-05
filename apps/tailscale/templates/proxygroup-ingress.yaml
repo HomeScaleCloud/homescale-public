@@ -5,7 +5,7 @@ metadata:
 spec:
   type: ingress
   replicas: 3
-  hostnamePrefix: 'ingress-{{ required "env.name is required" .Values.env.name }}'
+  hostnamePrefix: 'ingress-{{ required "env.shortName is required" .Values.env.shortName }}'
   tags:
     - 'tag:k8s'
     - 'tag:env-{{ required "env.name is required" .Values.env.name }}'

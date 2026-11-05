@@ -5,7 +5,7 @@ metadata:
   namespace: headlamp
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-headlamp,tag:env-{{ required "env.name is required" .Values.env.name }}"
-    tailscale.com/hostname: "headlamp-{{ required "env.name is required" .Values.env.name }}"
+    tailscale.com/hostname: "headlamp-{{ required "env.shortName is required" .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
     # A friendly short name (console.<prod|dev>, not headlamp.<cluster>) within
     # the standard <name>.<cluster-or-shortname>REDACTED pattern

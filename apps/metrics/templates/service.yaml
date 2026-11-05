@@ -12,7 +12,7 @@ metadata:
   namespace: metrics
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:env-{{ .Values.env.name }}"
-    tailscale.com/hostname: "prometheus-metrics-{{ .Values.env.name }}"
+    tailscale.com/hostname: "prometheus-metrics-{{ .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "prometheus-proxy.metrics.{{ .Values.env.name }}REDACTED"
 spec:
@@ -35,7 +35,7 @@ metadata:
   namespace: metrics
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:env-{{ .Values.env.name }}"
-    tailscale.com/hostname: "grafana-metrics-{{ .Values.env.name }}"
+    tailscale.com/hostname: "grafana-metrics-{{ .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "REDACTED"
 spec:
@@ -56,7 +56,7 @@ metadata:
   namespace: metrics
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:env-{{ .Values.env.name }}"
-    tailscale.com/hostname: "alertmanager-metrics-{{ .Values.env.name }}"
+    tailscale.com/hostname: "alertmanager-metrics-{{ .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "REDACTED"
 spec:

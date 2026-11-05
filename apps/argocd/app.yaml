@@ -63,7 +63,7 @@ values:
         loadBalancerClass: tailscale
         annotations:
           tailscale.com/tags: "tag:k8s,tag:app-argocd,tag:env-{{ .Values.env.name }}"
-          tailscale.com/hostname: "argocd-{{ .Values.env.name }}"
+          tailscale.com/hostname: "argocd-{{ .Values.env.shortName }}"
           tailscale.com/proxy-group: ingress
           external-dns.kubernetes.io/hostname: "argocd.{{ .Values.env.name }}REDACTED"
       metrics:

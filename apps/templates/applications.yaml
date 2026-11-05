@@ -25,6 +25,7 @@
 {{- $exposePublicFqdns = append $exposePublicFqdns .fqdn -}}
 {{- end }}
 {{- $valuesObject := default (dict) $app.values -}}
+{{- $valuesObject = mergeOverwrite (deepCopy $valuesObject) (dict "env" (dict "shortName" $root.Values.env.shortName)) -}}
 {{- $valuesObject = mergeOverwrite (deepCopy $valuesObject) (dict "homescale" (dict "exposePublicFqdns" $exposePublicFqdns)) -}}
 {{- $syncPolicy := mergeOverwrite (deepCopy (default (dict) $root.Values.syncPolicy)) (default (dict) $app.syncPolicy) -}}
 {{- $syncOptions := concat (default (list) $root.Values.syncOptions) (default (list) $app.syncOptions) | uniq -}}

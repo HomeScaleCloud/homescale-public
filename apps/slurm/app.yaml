@@ -182,7 +182,7 @@ values:
                 - name: TS_SOCKET
                   value: /var/run/tailscale/tailscaled.sock
                 - name: TS_HOSTNAME
-                  value: "slurm-login-{{ .Values.env.name }}"
+                  value: "slurm-login-{{ .Values.env.shortName }}"
                 - name: TS_EXTRA_ARGS
                   value: "--advertise-tags=tag:k8s,tag:app-slurm,tag:env-{{ .Values.env.name }}"
                 - name: TS_ACCEPT_DNS

@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: home-assistant
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-home-assistant,tag:env-{{ .Values.env.name }}"
-    tailscale.com/hostname: "ha-{{ .Values.env.name }}"
+    tailscale.com/hostname: "ha-{{ .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "ha.home-assistant.{{ .Values.env.name }}REDACTED"
 spec:
@@ -25,7 +25,7 @@ metadata:
   name: homebridge
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-home-assistant,tag:env-{{ .Values.env.name }}"
-    tailscale.com/hostname: "homebridge-{{ .Values.env.name }}"
+    tailscale.com/hostname: "homebridge-{{ .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "homebridge.home-assistant.{{ .Values.env.name }}REDACTED"
 spec:
@@ -43,7 +43,7 @@ metadata:
   name: z2m
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-home-assistant,tag:env-{{ .Values.env.name }}"
-    tailscale.com/hostname: "z2m-{{ .Values.env.name }}"
+    tailscale.com/hostname: "z2m-{{ .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
     external-dns.kubernetes.io/hostname: "z2m.home-assistant.{{ .Values.env.name }}REDACTED"
 spec:
