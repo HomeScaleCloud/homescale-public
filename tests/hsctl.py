@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import threading
@@ -63,6 +64,19 @@ if os.environ.get("MOCK_YQ_FAIL") and "-o=yaml" in args:
 value = yaml.safe_load(pathlib.Path(args[-1]).read_text() if args[-1] != "." else sys.stdin.read())
 print(json.dumps(value) if "-o=json" in args else yaml.safe_dump(value))
 ''')
+    executable(tools / 'topf', '''#!/usr/bin/env python3
+import json, os, pathlib, re, sys, yaml
+root = pathlib.Path(os.environ["MOCK_ROOT"])
+assert pathlib.Path.cwd() == (root / "clusters" / "production").resolve()
+assert sys.argv[1] == "--nodes-filter" and sys.argv[3:] == ["nodes", "-o", "yaml"]
+with (root / "topf-calls").open("a") as stream:
+    stream.write(json.dumps(sys.argv[1:]) + "\\n")
+if os.environ.get("MOCK_TOPF_FAIL"):
+    print("Talos API unavailable", file=sys.stderr)
+    sys.exit(7)
+entries = json.loads((root / "topf-nodes.json").read_text())
+print(yaml.safe_dump([entry for entry in entries if re.search(sys.argv[2], entry["node"]["host"])]))
+''')
     environment = dict(os.environ, PATH=str(tools) + os.pathsep + os.environ['PATH'], MOCK_ROOT=str(root),
                        HSCTL_REPO_ROOT=str(root), HSCTL_ROOT=str(REPO),
                        HSCTL_OIDC_ISSUER_URL='https://issuer.example.test', HSCTL_OIDC_CLIENT_ID='test-client')
@@ -73,33 +87,76 @@ print(json.dumps(value) if "-o=json" in args else yaml.safe_dump(value))
         assert result.returncode == expected, result.stdout + result.stderr
         return result
 
-    def node(name, ready, control_plane=False, cordoned=False):
+    def node(name, ready, control_plane=False, cordoned=False, ip='10.1.245.21'):
         return {'apiVersion': 'v1', 'kind': 'Node', 'metadata': {
             'name': name, 'creationTimestamp': (datetime.now(timezone.utc) - timedelta(days=3)).isoformat(),
             'labels': {'node-role.kubernetes.io/control-plane': '', 'REDACTED/role': 'production-cp-1'} if control_plane else {}},
             'spec': {'unschedulable': cordoned}, 'status': {
                 'conditions': [] if ready is None else [{'type': 'Ready', 'status': ready}],
-                'addresses': [{'type': 'ExternalIP', 'address': '203.0.113.10'}, {'type': 'InternalIP', 'address': '10.1.245.21'}],
+                'addresses': [{'type': 'ExternalIP', 'address': '203.0.113.10'}, {'type': 'InternalIP', 'address': ip}],
                 'nodeInfo': {'osImage': 'Talos (v1.14.5)', 'kernelVersion': '6.12.1-talos',
                              'kubeletVersion': 'v1.37.1', 'containerRuntimeVersion': 'containerd://2.1.0'}}}
 
-    nodes = {'apiVersion': 'v1', 'kind': 'List', 'items': [node('talos-aaa-bbb', 'True', True),
-             node('talos-ccc-ddd', 'False', cordoned=True), node('talos-eee-fff', 'Unknown'), node('talos-ggg-hhh', None)]}
+    nodes = {'apiVersion': 'v1', 'kind': 'List', 'items': [node('talos-aaa-bbb', 'False', True),
+             node('talos-ccc-ddd', 'False', cordoned=True, ip='10.1.245.22'),
+             node('talos-eee-fff', 'True', ip='10.1.245.23'), node('talos-ggg-hhh', None, ip='10.1.245.24')]}
     (root / 'nodes.json').write_text(json.dumps(nodes))
     (root / 'tailscale.json').write_text(json.dumps({'BackendState': 'Running', 'Peer': None}))
-    table = run(['nodes']).stdout.splitlines()
-    assert table[0].split() == ['NAME', 'STATUS', 'TYPE', 'ROLE', 'IP', 'IMAGE', 'KERNEL', 'KUBELET', 'RUNTIME', 'AGE']
-    assert 'Ready' in table[1] and 'control-plane' in table[1] and 'production-cp-1' in table[1]
-    assert 'NotReady,SchedulingDisabled' in table[2] and 'worker' in table[2]
-    assert 'NotReady' in table[3] and 'Unknown' in table[4]
-    assert all('10.1.245.21' in row and 'Talos (v1.14.5)' in row and 'containerd://2.1.0' in row for row in table[1:])
+    schematic = '75b960f2' + 'a' * 56
+    topf_nodes = [
+        {'node': {'host': 'production-cp-3', 'ip': '10.1.245.23'}, 'schematic': schematic,
+         'machinestatus': {'stage': 'booting', 'status': {'ready': False, 'unmetConditions': [{'name': 'etcd', 'reason': 'waiting for quorum'},
+                                                        {'name': 'kubelet', 'reason': 'not ready'}]}}},
+        {'node': {'host': 'production-cp-1', 'ip': '10.1.245.21'}, 'schematic': schematic,
+         'machinestatus': {'stage': 'running', 'status': {'ready': True, 'unmetConditions': []}}},
+        {'node': {'host': 'production-cp-2', 'ip': '10.1.245.22'}, 'error': 'connection refused'},
+        {'node': {'host': 'production-wrk-1', 'ip': '10.1.245.25'}, 'schematic': 'unrelated'},
+    ]
+    (root / 'topf-nodes.json').write_text(json.dumps(topf_nodes))
+    project = root / 'clusters' / 'production'
+    project.mkdir(parents=True)
+    (project / 'topf.yaml').write_text(yaml.safe_dump({'nodes': [entry['node'] for entry in topf_nodes]}))
+    result = run(['nodes'])
+    table = result.stdout.splitlines()
+    assert table[0].split() == ['NAME', 'STAGE', 'READY', 'TYPE', 'ROLE', 'IP', 'IMAGE', 'SCHEMATIC', 'KERNEL',
+                                'KUBELET', 'RUNTIME', 'AGE', 'UNMET', 'CONDITIONS', 'ERROR']
+    assert table[1].split()[1:3] == ['running', '✓'] and 'production-cp-1' in table[1]
+    assert table[2].split()[1:3] == ['-', '-'] and 'worker' in table[2]
+    assert table[3].split()[1:3] == ['booting', '✗']
+    assert table[4].split()[1:3] == ['-', '-']
+    assert all('Talos (v1.14.5)' in row and 'containerd://2.1.0' in row for row in table[1:])
     assert '203.0.113.10' not in '\n'.join(table)
-    print('PASS: Node table shows readiness, roles and internal IPs')
-    assert json.loads(run(['nodes', '-o', 'json']).stdout) == nodes
-    assert yaml.safe_load(run(['nodes', '-o', 'yaml']).stdout) == nodes
+    assert '75b960f2...' in table[1] and 'connection refused' in table[2], result.stdout + result.stderr
+    assert 'etcd: waiting for quorum; kubelet: not ready' in table[3]
+    assert 'unrelated' not in '\n'.join(table)
+    calls = [json.loads(line) for line in (root / 'topf-calls').read_text().splitlines()]
+    assert len(calls) == 1
+    assert all(re.fullmatch(calls[0][1], f'production-cp-{index}') for index in range(1, 4))
+    assert not re.search(calls[0][1], 'production-wrk-1')
+    print('PASS: Stage and readiness come from TOPF even when Kubernetes readiness disagrees')
+    print('PASS: TOPF status joins by InternalIP and queries only matching inventory hosts once')
+    records = json.loads(run(['nodes', '-o', 'json']).stdout)
+    assert yaml.safe_load(run(['nodes', '-o', 'yaml']).stdout) == records
+    assert len(records) == len(nodes['items'])
+    assert list(records[0]) == ['name', 'stage', 'ready', 'type', 'role', 'ip', 'image', 'schematic', 'kernel',
+                                'kubelet', 'runtime', 'age', 'unmet_conditions', 'error']
+    assert records[0]['schematic'] == schematic and records[0]['unmet_conditions'] == []
+    assert records[0]['stage'] == 'running' and records[0]['ready'] is True
+    assert records[2]['stage'] == 'booting' and records[2]['ready'] is False
+    assert records[1]['ready'] is None and records[3]['stage'] is None
+    assert records[1]['error'] == 'connection refused'
+    assert records[2]['unmet_conditions'] == ['etcd: waiting for quorum', 'kubelet: not ready']
+    assert records[3]['schematic'] is None and records[3]['unmet_conditions'] is None
+    assert json.loads(run(['node', 'talos-aaa-bbb', '-o', 'json']).stdout) == [records[0]]
+    assert yaml.safe_load(run(['node', 'talos-aaa-bbb', '-o', 'yaml']).stdout) == [records[0]]
     assert 'talos-aaa-bbb' in run(['node', 'talos-aaa-bbb']).stdout
-    print('PASS: Node queries support JSON, YAML and name filtering')
+    print('PASS: Table, JSON and YAML share a concise node schema, including named queries')
     print('PASS: Node queries use the active kubectl context')
+    result = run(['nodes', '-o', 'json'], extra={'MOCK_TOPF_FAIL': 'true'})
+    assert len(json.loads(result.stdout)) == 4 and 'Talos API unavailable' in result.stderr
+    assert all(record['schematic'] is None for record in json.loads(result.stdout))
+    assert all(record['ready'] is None and record['stage'] is None for record in json.loads(result.stdout))
+    print('PASS: TOPF failures warn on stderr and preserve Kubernetes node output')
     run(['nodes'], expected=7, extra={'MOCK_KUBECTL_FAIL': 'true'})
     print('PASS: kubectl failures keep their exit status')
     run(['nodes', '--cluster', 'production'], expected=1)
@@ -108,7 +165,11 @@ print(json.dumps(value) if "-o=json" in args else yaml.safe_dump(value))
         (root / 'nodes.json').write_text(json.dumps(dict(nodes, kind=kind)))
         assert len(run(['nodes']).stdout.splitlines()) == len(nodes['items']) + 1
         (root / 'nodes.json').write_text(json.dumps(dict(nodes, kind=kind, items=[])))
+        before = (root / 'topf-calls').read_text()
         assert len(run(['nodes']).stdout.splitlines()) == 1
+        assert json.loads(run(['nodes', '-o', 'json']).stdout) == []
+        assert yaml.safe_load(run(['nodes', '-o', 'yaml']).stdout) == []
+        assert (root / 'topf-calls').read_text() == before
     print('PASS: Node queries accept List and NodeList responses')
     print('PASS: An empty cluster prints only the table header')
 
@@ -200,7 +261,7 @@ get_kubeconfig development
 
     for cluster in ['production', 'development']:
         project = root / 'clusters' / cluster
-        project.mkdir(parents=True)
+        project.mkdir(parents=True, exist_ok=True)
         (project / 'topf.yaml').write_text('clusterName: ' + cluster)
     inventory = REPO / 'infra/ansible/inventory/clusters'
     result = subprocess.run([str(inventory), '--list'], env=environment, text=True, capture_output=True, check=True)

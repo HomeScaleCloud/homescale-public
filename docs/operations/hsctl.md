@@ -2,7 +2,7 @@
 
 `hsctl` is a small bash CLI for day-to-day operator tasks against the HomeScale fleet: listing clusters and Kubernetes nodes, fetching kubeconfigs, browsing restic snapshots, power-cycling machines, jumping into ArgoCD, and managing Entra PIM assignments.
 
-Cluster discovery and normal kubeconfig selection use Tailscale and the cluster API proxies. Node queries use only the active kubectl context. PIM commands talk directly to Microsoft Graph/ARM.
+Cluster discovery and normal kubeconfig selection use Tailscale and the cluster API proxies. Node queries use the active kubectl context and enrich matching nodes with live TOPF status. PIM commands talk directly to Microsoft Graph/ARM.
 
 Source: `hsctl` (entrypoint) and `hsctl.d/*.sh` (command modules) at the repo root.
 
@@ -22,20 +22,22 @@ Also installs any missing dependencies listed in `hsctl.d/requirements.txt` (one
 hsctl get <resource> [-o table|yaml|json|ansible] [flags...]
 ```
 
-Output defaults to `table`; use `-o yaml` or `-o json` for scripting. Node JSON/YAML is native kubectl output. `get clusters -o ansible` returns only reachable clusters. Ansible's own inventory independently reads committed `clusters/*/topf.yaml`, so initial bootstrap and outage handling never depend on discovery, an active kubeconfig or Omni.
+Output defaults to `table`; use `-o yaml` or `-o json` for scripting. Node JSON/YAML returns a list of concise records containing the table fields, including when filtering by name. `get clusters -o ansible` returns only reachable clusters. Ansible's own inventory independently reads committed `clusters/*/topf.yaml`, so initial bootstrap and outage handling never depend on discovery, an active kubeconfig or Omni.
 
 | Resource | Usage | Description |
 |----------|-------|-------------|
 | `clusters` | `hsctl get clusters` | Discover online `tag:k8s` peers with `tag:env-<cluster>`, then verify their TLS API endpoints. Includes shared ingress proxies and clusters outside this checkout; offline or unhealthy APIs are excluded |
 | `kubeconfig` | `hsctl get kubeconfig <cluster> [--break-glass]` | Select a reachable cluster and merge an OIDC context for its API proxy. Requires kubectl-oidc_login and OIDC settings from `/k8s/oidc`. `--break-glass` generates a short-lived TOPF admin context using the existing CA and can work from the LAN without Tailscale |
-| `nodes` | `hsctl get nodes [name]` | Query the current kubectl context; columns: NAME, STATUS, TYPE, ROLE, IP, IMAGE, KERNEL, KUBELET, RUNTIME, AGE |
+| `nodes` | `hsctl get nodes [name]` | Query the current kubectl context; columns: NAME, STAGE, READY, TYPE, ROLE, IP, IMAGE, SCHEMATIC, KERNEL, KUBELET, RUNTIME, AGE, UNMET CONDITIONS, ERROR |
 | `snapshot` | `hsctl get snapshot <app>` | List restic snapshots for an app's VolSync-backed PVC, with timestamps and IDs — see [Backups: restore procedure](../architecture/backups.md#restore-procedure) |
 | `pimrole` | `hsctl get pimrole` | List your eligible + active Entra directory role PIM assignments (Graph API) |
 | `pimgroup` | `hsctl get pimgroup` | List your eligible + active PIM-for-Groups assignments (Graph API) |
 | `pimazurerole` | `hsctl get pimazurerole --scope <arm-scope>` | List your eligible + active Azure resource RBAC PIM assignments (ARM API) |
 | `pimapproval` | `hsctl get pimapproval [role\|group\|azure] [--scope <arm-scope>]` | List pending PIM approval requests: ones you can approve and your own, tagged `approver`/`requestor`, with the requester's display name and email (`role`/`group` only — Graph API). No type given: shows both `role` and `group` |
 
-`STATUS` follows Kubernetes readiness and includes `SchedulingDisabled` for cordoned nodes. `TYPE` is control-plane when the standard control-plane/master role label exists, otherwise worker. `ROLE` comes from `REDACTED/role`; missing values show `-`. `IP` is the first InternalIP. The other columns come from node system information and creation time. Node queries never switch contexts or select another cluster.
+`STAGE` and `READY` come from TOPF's Talos machine status. Readiness is displayed as `✓` or `✗`, with `-` when unavailable. `TYPE` is control-plane when the standard Kubernetes control-plane/master role label exists, otherwise worker. `ROLE` comes from `REDACTED/role`; missing values show `-`. `IP` is the first InternalIP. `STAGE`, `READY`, `SCHEMATIC`, `UNMET CONDITIONS`, and `ERROR` come from `topf nodes -o yaml`, matched by InternalIP against `HSCTL_REPO_ROOT/clusters/*/topf.yaml`. Only matching inventory hosts are queried, using the existing TOPF secrets provider. The other columns come from node system information and creation time. Node queries never switch kubectl contexts.
+
+The table abbreviates schematic IDs to eight characters plus `...` and joins unmet conditions with `; `. JSON/YAML uses keys `name`, `stage`, `ready`, `type`, `role`, `ip`, `image`, `schematic`, `kernel`, `kubelet`, `runtime`, `age`, `unmet_conditions`, and `error`. It keeps full schematic IDs, stores readiness as a boolean, and represents unmet conditions as a list of `name: reason` strings. An empty list means TOPF reported no unmet conditions; `null` means TOPF status was unavailable. Missing stages, readiness, schematics and errors are also `null`, displayed as `-` in the table. If TOPF cannot be queried, a warning goes to stderr and Kubernetes node output remains available.
 
 ## `hsctl argocd`
 

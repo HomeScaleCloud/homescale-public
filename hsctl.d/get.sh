@@ -23,6 +23,8 @@ _hsctl_kubernetes() {
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import json
+import os
+from pathlib import Path
 import re
 import subprocess
 import sys
@@ -106,21 +108,73 @@ def age(timestamp):
     return f'{years}y' + (f'{days}d' if years < 8 and days else '')
 
 
-def node_row(node):
+def node_ip(node):
+    return next((entry['address'] for entry in node.get('status', {}).get('addresses', [])
+                 if entry['type'] == 'InternalIP'), None)
+
+
+def topf_node_info(nodes):
+    """Query only inventory nodes matching the active context's InternalIPs."""
+    ips = {node_ip(node) for node in nodes} - {None}
+    result = {}
+    if not ips:
+        return result
+    for config in sorted(Path(os.environ['HSCTL_REPO_ROOT']).glob('clusters/*/topf.yaml')):
+        cluster = config.parent.name
+        try:
+            inventory = command_json(['yq', '-o=json', '.', str(config)], timeout=5)
+            hosts = [node['host'] for node in inventory.get('nodes', []) if node.get('ip') in ips]
+            if not hosts:
+                continue
+            pattern = '^(' + '|'.join(re.escape(host) for host in hosts) + ')$'
+            command = [str(Path(os.environ['HSCTL_ROOT']) / 'hsctl'), 'run', 'topf',
+                       '--cluster', cluster, '--nodes-filter', pattern, 'nodes', '-o', 'yaml']
+            response = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                      text=True, timeout=30)
+            entries = json.loads(subprocess.run(['yq', '-p=yaml', '-o=json', '.'], input=response.stdout,
+                                               check=True, stdout=subprocess.PIPE, text=True, timeout=5).stdout)
+            for entry in entries or []:
+                ip = entry.get('node', {}).get('ip')
+                if ip in ips:
+                    result[ip] = entry
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, KeyError, OSError) as error:
+            detail = error.stderr.strip() if isinstance(error, subprocess.CalledProcessError) and error.stderr else str(error)
+            print(f'hsctl get nodes: TOPF status unavailable for {cluster}: {detail}', file=sys.stderr)
+    return result
+
+
+def node_record(node, topf):
     metadata = node['metadata']
     labels = metadata.get('labels') or {}
     status = node.get('status') or {}
     info = status.get('nodeInfo') or {}
-    ready = next((condition['status'] for condition in status.get('conditions', []) if condition['type'] == 'Ready'), None)
-    state = 'Unknown' if ready is None else ('Ready' if ready == 'True' else 'NotReady')
-    if node.get('spec', {}).get('unschedulable'):
-        state += ',SchedulingDisabled'
+    machine_status = topf.get('machinestatus') or {}
+    talos_status = machine_status.get('status') or {}
     control_plane = any(key in labels for key in ['node-role.kubernetes.io/control-plane', 'node-role.kubernetes.io/master'])
-    ip = next((entry['address'] for entry in status.get('addresses', []) if entry['type'] == 'InternalIP'), '-')
-    return [metadata['name'], state, 'control-plane' if control_plane else 'worker',
-            labels.get('REDACTED/role') or '-', ip, info.get('osImage') or '-',
-            info.get('kernelVersion') or '-', info.get('kubeletVersion') or '-',
-            info.get('containerRuntimeVersion') or '-', age(metadata.get('creationTimestamp'))]
+    conditions = (talos_status.get('unmetConditions') or []) if topf else None
+    return dict(name=metadata['name'], stage=machine_status.get('stage') or None, ready=talos_status.get('ready'),
+                type='control-plane' if control_plane else 'worker',
+                role=labels.get('REDACTED/role') or '-', ip=node_ip(node) or '-',
+                image=info.get('osImage') or '-', schematic=topf.get('schematic') or None,
+                kernel=info.get('kernelVersion') or '-', kubelet=info.get('kubeletVersion') or '-',
+                runtime=info.get('containerRuntimeVersion') or '-', age=age(metadata.get('creationTimestamp')),
+                unmet_conditions=[f'{condition["name"]}: {condition["reason"]}' for condition in conditions]
+                if conditions is not None else None, error=topf.get('error') or None)
+
+
+def print_nodes(records):
+    headers = ['NAME', 'STAGE', 'READY', 'TYPE', 'ROLE', 'IP', 'IMAGE', 'SCHEMATIC', 'KERNEL',
+               'KUBELET', 'RUNTIME', 'AGE', 'UNMET CONDITIONS', 'ERROR']
+    rows = []
+    for record in records:
+        row = dict(record)
+        row['ready'] = '✓' if record['ready'] is True else ('✗' if record['ready'] is False else '-')
+        schematic = row['schematic']
+        if schematic and len(schematic) > 8:
+            row['schematic'] = schematic[:8] + '...'
+        row['unmet_conditions'] = '; '.join(row['unmet_conditions'] or [])
+        rows.append([' '.join(str(row[header.lower().replace(' ', '_')] or '-').split()) for header in headers])
+    print_table(headers, rows)
 
 
 def main():
@@ -129,13 +183,16 @@ def main():
         if output not in ['table', 'json', 'yaml'] or len(arguments) > 1 or any(arg.startswith('-') for arg in arguments):
             raise ValueError('usage: hsctl get nodes [name] [-o table|json|yaml]')
         command = ['kubectl', 'get', 'nodes', *arguments]
-        if output != 'table':
-            subprocess.run([*command, '-o', output], check=True)
-            return
         result = command_json([*command, '-o', 'json'])
         nodes = result.get('items', [result])
-        print_table(['NAME', 'STATUS', 'TYPE', 'ROLE', 'IP', 'IMAGE', 'KERNEL', 'KUBELET', 'RUNTIME', 'AGE'],
-                    [node_row(node) for node in nodes])
+        topf = topf_node_info(nodes)
+        records = [node_record(node, topf.get(node_ip(node), {})) for node in nodes]
+        if output == 'table':
+            print_nodes(records)
+        elif output == 'yaml':
+            subprocess.run(['yq', '-p=json', '-o=yaml', '.'], input=json.dumps(records), text=True, check=True)
+        else:
+            print(json.dumps(records, indent=2))
     elif resource == 'clusters':
         if arguments:
             raise ValueError('usage: hsctl get clusters [-o table|json|yaml|ansible]')
