@@ -21,7 +21,7 @@ REPO = Path(__file__).resolve().parents[1]
 def run(command, environment, expected=0, stdin=None):
     result = subprocess.run(command, env=environment, text=True, input=stdin,
                             capture_output=True, timeout=120)
-    assert result.returncode == expected, f"{command[0]} exited {result.returncode}: {result.stderr}"
+    assert result.returncode == expected, f"{command[0]} exited {result.returncode}:\n{result.stdout}\n{result.stderr}"
     return result
 
 
@@ -250,6 +250,13 @@ if "render" in args:
         (output / (node["host"] + ".yaml")).write_text("machine: {type: controlplane}\\n")
 elif "kubeconfig" in args:
     print("private-test-kubeconfig")
+elif "--auto-bootstrap" in args:
+    attempts = sum("--auto-bootstrap" in json.loads(line)["args"]
+                   for line in (root / "bootstrap-calls").read_text().splitlines())
+    failure = os.environ.get("MOCK_BOOTSTRAP_CONNECTION_FAIL")
+    if failure == "always" or (failure == "once" and attempts == 1):
+        print("failed to create client: connect: connection refused", file=sys.stderr)
+        sys.exit(1)
 """)
     executable(mock_bin / "talosctl", """#!/usr/bin/env python3
 import json, os, pathlib, sys
@@ -267,8 +274,19 @@ if os.environ.get("MOCK_APPLY_FAIL") == "true":
     credentials = yaml.safe_load((REPO / "infra/ansible/tasks/cluster-credentials.yml").read_text())
     credentials = [task for task in credentials if task["name"] == "Generate a fresh short-lived admin kubeconfig"]
     (tasks_dir / "cluster-credentials.yml").write_text(yaml.safe_dump(credentials))
-    boot_tasks = yaml.safe_load((REPO / "infra/ansible/tasks/bootstrap-talos.yml").read_text())
-    boot_tasks = [task for task in boot_tasks if "ansible.builtin.wait_for" not in task]
+    def fast_tasks(tasks):
+        result = []
+        for task in tasks:
+            if "ansible.builtin.wait_for" in task:
+                continue
+            if "block" in task:
+                task["block"] = fast_tasks(task["block"])
+            if "retries" in task:
+                task.update(retries=min(task["retries"], 2), delay=0)
+            result.append(task)
+        return result
+
+    boot_tasks = fast_tasks(yaml.safe_load((REPO / "infra/ansible/tasks/bootstrap-talos.yml").read_text()))
     (tasks_dir / "bootstrap-talos.yml").write_text(yaml.safe_dump(boot_tasks))
     source = yaml.safe_load((REPO / "infra/ansible/playbooks/bootstrap-cluster.yml").read_text())[0]
     assert [task["ansible.builtin.include_role"]["name"] for task in source["tasks"][0]["block"]
@@ -279,9 +297,17 @@ if os.environ.get("MOCK_APPLY_FAIL") == "true":
     source["vars"].update(hsctl_local=True, talos_cluster_name="development",
                           hsctl_repo_root=str(scratch),
                           bootstrap_nodes=[{"name": "development-1", "dhcp_ip": "192.0.2.40", "static_ip": "10.1.247.21"}])
-    source["tasks"][0]["block"] = [task for task in source["tasks"][0]["block"]
-                                  if "ansible.builtin.include_tasks" in task or
-                                  task["name"] == "Generate a fresh short-lived admin kubeconfig"]
+    workspace_record = scratch / "bootstrap-workspace"
+    source["pre_tasks"].append({"name": "Record the test workspace", "ansible.builtin.copy": {
+        "content": "{{ _bootstrap_workspace.path }}", "dest": str(workspace_record)}})
+    tasks = []
+    for task in source["tasks"][0]["block"]:
+        if "ansible.builtin.include_tasks" in task:
+            tasks.append(task)
+        elif task["name"] == "Wait for the Kubernetes API to respond":
+            tasks.append({"name": task["name"], "ansible.builtin.command": {
+                "argv": [str(scratch / "hsctl"), "test-api-probe"]}})
+    source["tasks"][0]["block"] = tasks
     playbooks = scratch / "infra/ansible/playbooks"
     playbooks.mkdir()
     playbook = playbooks / "bootstrap.yml"
@@ -297,10 +323,79 @@ if os.environ.get("MOCK_APPLY_FAIL") == "true":
     print("PASS: etcd bootstrap targets only the selected node")
     assert events.index(apply_event) < events.index(bootstrap_event)
     print("PASS: Config apply finishes before etcd bootstrap")
+    kubeconfig_event = next(event for event in events if "kubeconfig" in event["args"])
+    api_event = next(event for event in events if "test-api-probe" in event["args"])
+    assert events.index(bootstrap_event) < events.index(kubeconfig_event) < events.index(api_event)
+    print("PASS: etcd bootstrap runs before the Kubernetes API check")
     workspace = Path(next(event["args"][event["args"].index("--output") + 1]
                           for event in events if "render" in event["args"])).parent
     assert not workspace.exists(), "private files must be cleaned after success"
     print("PASS: Successful bootstrap deletes temporary credentials")
+    logs.unlink()
+    run(["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)],
+        dict(environment, MOCK_BOOTSTRAP_CONNECTION_FAIL="once"))
+    events = [json.loads(line) for line in logs.read_text().splitlines()]
+    assert sum("--auto-bootstrap" in event["args"] for event in events) == 2
+    assert sum(event["tool"] == "talosctl" for event in events) == 1
+    workspace = Path(next(event["args"][event["args"].index("--output") + 1]
+                          for event in events if "render" in event["args"])).parent
+    assert not workspace.exists()
+    print("PASS: Bootstrap retries a Talos connection failure without reinstalling")
+    logs.unlink()
+    run(["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)],
+        dict(environment, MOCK_BOOTSTRAP_CONNECTION_FAIL="always"), expected=2)
+    events = [json.loads(line) for line in logs.read_text().splitlines()]
+    assert sum("--auto-bootstrap" in event["args"] for event in events) > 1
+    assert sum(event["tool"] == "talosctl" for event in events) == 1
+    assert not any("kubeconfig" in event["args"] for event in events)
+    workspace = Path(next(event["args"][event["args"].index("--output") + 1]
+                          for event in events if "render" in event["args"])).parent
+    assert not workspace.exists()
+    print("PASS: Repeated Talos connection failures stop setup and delete credentials")
+
+    bootstrap_nodes = source["vars"].pop("bootstrap_nodes")
+    config = yaml.safe_load((project / "topf.yaml").read_text())
+    config["nodes"].insert(0, {"host": "development-worker", "ip": "192.0.2.41", "role": "worker"})
+    (project / "topf.yaml").write_text(yaml.safe_dump(config))
+    playbook.write_text(yaml.safe_dump([source]))
+    logs.unlink()
+    run(["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)],
+        dict(environment, MOCK_BOOTSTRAP_CONNECTION_FAIL="once"))
+    events = [json.loads(line) for line in logs.read_text().splitlines()]
+    bootstraps = [event for event in events if "--auto-bootstrap" in event["args"]]
+    assert len(bootstraps) == 2
+    assert all(re.fullmatch(event["args"][event["args"].index("--nodes-filter") + 1], "development-1")
+               for event in bootstraps)
+    assert not any(event["tool"] == "talosctl" or "--init-secrets" in event["args"] or "render" in event["args"]
+                   for event in events)
+    kubeconfig_event = next(event for event in events if "kubeconfig" in event["args"])
+    api_event = next(event for event in events if "test-api-probe" in event["args"])
+    assert events.index(bootstraps[-1]) < events.index(kubeconfig_event) < events.index(api_event)
+    assert not Path(workspace_record.read_text()).exists()
+    print("PASS: Bootstrap without --nodes retries etcd on the first control plane without reinstalling")
+
+    source["vars"]["bootstrap_nodes"] = []
+    playbook.write_text(yaml.safe_dump([source]))
+    logs.unlink()
+    run(["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)],
+        dict(environment, MOCK_BOOTSTRAP_CONNECTION_FAIL="always"), expected=2)
+    events = [json.loads(line) for line in logs.read_text().splitlines()]
+    assert sum("--auto-bootstrap" in event["args"] for event in events) > 1
+    assert not any("kubeconfig" in event["args"] or "test-api-probe" in event["args"] for event in events)
+    assert not Path(workspace_record.read_text()).exists()
+    print("PASS: Failed etcd bootstrap stops before the Kubernetes API check and removes private files")
+
+    source["vars"]["hsctl_local"] = False
+    playbook.write_text(yaml.safe_dump([source]))
+    logs.unlink()
+    run(["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)], environment)
+    events = [json.loads(line) for line in logs.read_text().splitlines()]
+    assert [event["args"][-1] for event in events] == ["kubeconfig", "test-api-probe"]
+    assert not Path(workspace_record.read_text()).exists()
+    print("PASS: CI bootstrap skips node installation and etcd bootstrap")
+
+    source["vars"].update(hsctl_local=True, bootstrap_nodes=bootstrap_nodes)
+    playbook.write_text(yaml.safe_dump([source]))
     logs.unlink()
     run(["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)],
         dict(environment, MOCK_APPLY_FAIL="true"), expected=2)

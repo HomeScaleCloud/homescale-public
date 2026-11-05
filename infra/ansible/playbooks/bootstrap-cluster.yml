@@ -28,9 +28,9 @@
   tasks:
     - name: Configure Talos and install cluster services
       block:
-        - name: Bootstrap a new Talos cluster from the LAN
+        - name: Bootstrap Talos from the LAN
           ansible.builtin.include_tasks: ../tasks/bootstrap-talos.yml
-          when: (hsctl_local | default(false)) and (bootstrap_nodes | default([]) | length > 0)
+          when: hsctl_local | default(false) | bool
 
         - name: Load short-lived cluster credentials
           ansible.builtin.include_tasks: ../tasks/cluster-credentials.yml
