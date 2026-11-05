@@ -26,7 +26,7 @@ Output defaults to `table`; use `-o yaml` or `-o json` for scripting. Node JSON/
 
 | Resource | Usage | Description |
 |----------|-------|-------------|
-| `clusters` | `hsctl get clusters` | Discover online `tag:k8s` peers with `tag:env-<cluster>`, then verify their TLS API endpoints. Includes shared ingress proxies and clusters outside this checkout; offline or unhealthy APIs are excluded |
+| `clusters` | `hsctl get clusters` | Discover online `tag:k8s` peers with `tag:env-<cluster>`, then verify their TLS API endpoints using short DNS names (`prod`/`dev`). Cluster identities remain `production`/`development`. Includes shared ingress proxies and clusters outside this checkout; offline or unhealthy APIs are excluded |
 | `kubeconfig` | `hsctl get kubeconfig <cluster> [--break-glass]` | Select a reachable cluster and merge an OIDC context for its API proxy. Requires kubectl-oidc_login and OIDC settings from `/k8s/oidc`. `--break-glass` generates a short-lived TOPF admin context using the existing CA and can work from the LAN without Tailscale |
 | `nodes` | `hsctl get nodes [name]` | Query the current kubectl context; columns: NAME, STAGE, READY, TYPE, ROLE, IP, IMAGE, SCHEMATIC, KERNEL, KUBELET, RUNTIME, AGE, UNMET CONDITIONS, ERROR |
 | `snapshot` | `hsctl get snapshot <app>` | List restic snapshots for an app's VolSync-backed PVC, with timestamps and IDs — see [Backups: restore procedure](../architecture/backups.md#restore-procedure) |
@@ -46,7 +46,7 @@ hsctl argocd login <cluster>   # argocd CLI login via SSO to that cluster's Argo
 hsctl argocd open <cluster>    # open that cluster's ArgoCD UI in the browser
 ```
 
-Both resolve to `argocd.<cluster>REDACTED` — the [Tailscale internal service address](../architecture/networking.md#internal-service-exposure) for ArgoCD on that cluster.
+Both resolve to `argocd.<short-name>REDACTED` — for example, `hsctl argocd login production` uses `REDACTED`. `hsctl get clusters` and OIDC kubeconfigs use `REDACTED` / `REDACTED`. Full cluster identities, context names and Tailscale tags remain unchanged; names other than `production`/`development` pass through as provided. See [internal service addresses](../architecture/networking.md#internal-service-exposure).
 
 ## `hsctl machine`
 

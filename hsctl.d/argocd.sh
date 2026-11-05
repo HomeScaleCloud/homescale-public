@@ -16,14 +16,18 @@ argocd_login() {
 
     command -v argocd &>/dev/null || { echo "hsctl argocd: the argocd CLI is required (brew install argocd)" >&2; exit 1; }
 
-    argocd login "argocd.${cluster}REDACTED" --sso
+    local short_name
+    short_name=$(hsctl_cluster_short_name "$cluster")
+    argocd login "argocd.${short_name}REDACTED" --sso
 }
 
 argocd_open() {
     local cluster="${1:-}"
     [[ -z "$cluster" ]] && { echo "Usage: hsctl argocd open <cluster>"; exit 1; }
 
-    open "https://argocd.${cluster}REDACTED"
+    local short_name
+    short_name=$(hsctl_cluster_short_name "$cluster")
+    open "https://argocd.${short_name}REDACTED"
 }
 
 argocd_main() {

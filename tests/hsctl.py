@@ -64,6 +64,8 @@ if os.environ.get("MOCK_YQ_FAIL") and "-o=yaml" in args:
 value = yaml.safe_load(pathlib.Path(args[-1]).read_text() if args[-1] != "." else sys.stdin.read())
 print(json.dumps(value) if "-o=json" in args else yaml.safe_dump(value))
 ''')
+    for name in ['argocd', 'open']:
+        executable(tools / name, '#!/usr/bin/env python3\nimport json, sys\nprint(json.dumps(sys.argv[1:]))\n')
     executable(tools / 'topf', '''#!/usr/bin/env python3
 import json, os, pathlib, re, sys, yaml
 root = pathlib.Path(os.environ["MOCK_ROOT"])
@@ -191,6 +193,11 @@ print(yaml.safe_dump([entry for entry in entries if re.search(sys.argv[2], entry
         assert arguments[arguments.index('--max-time') + 1] == '2'
         assert arguments[arguments.index('--connect-timeout') + 1] == '1'
         assert '--insecure' not in arguments
+        for name, short_name in [('production', 'prod'), ('development', 'dev'), ('unknown-to-git', 'unknown-to-git')]:
+            cluster = helper.probe_cluster(name)
+            assert cluster['name'] == name and cluster['fqdn'] == f'k8s.api.{short_name}REDACTED'
+            assert curl.call_args.args[0][-1] == f'https://k8s.api.{short_name}REDACTED/version'
+        print('PASS: API probes use short DNS names and preserve full cluster identities')
         for code, reachable in [(401, True), (403, True), (500, False), (503, False)]:
             curl.return_value = subprocess.CompletedProcess([], 0, '\n' + str(code))
             assert bool(helper.probe_cluster('development')) is reachable
@@ -258,6 +265,25 @@ get_kubeconfig development
     assert merged['users'][0]['user']['exec']['command'] == 'kubectl'
     assert kubeconfig.stat().st_mode & 0o077 == 0 and not list(root.glob('.hsctl-kubeconfig.*'))
     print('PASS: OIDC kubeconfig keeps other contexts and stays private')
+
+    for cluster, short_name in [('production', 'prod'), ('development', 'dev'), ('prod', 'prod'),
+                                ('dev', 'dev'), ('other-cluster', 'other-cluster')]:
+        for action in ['login', 'open']:
+            result = subprocess.run([str(REPO / 'hsctl'), 'argocd', action, cluster], env=environment,
+                                    text=True, capture_output=True, check=True, timeout=5)
+            expected = ['login', f'argocd.{short_name}REDACTED', '--sso'] if action == 'login' else [f'https://argocd.{short_name}REDACTED']
+            assert json.loads(result.stdout) == expected
+        config_script = '''source "$HSCTL_ROOT/hsctl.d/_lib.sh"
+source "$HSCTL_ROOT/hsctl.d/get.sh"
+_hsctl_write_kubeconfig_direct "$1" "$2"
+'''
+        result = subprocess.run(['bash', '-euo', 'pipefail', '-c', config_script, 'hsctl-test', cluster, str(kubeconfig)],
+                                env=environment, text=True, capture_output=True, check=True, timeout=5)
+        merged = yaml.safe_load(kubeconfig.read_text())
+        assert merged['current-context'] == cluster
+        entry = next(entry for entry in merged['clusters'] if entry['name'] == cluster)
+        assert entry['cluster']['server'] == f'https://k8s.api.{short_name}REDACTED'
+    print('PASS: Argo commands and OIDC kubeconfigs agree on short DNS names; unknown names pass through')
 
     for cluster in ['production', 'development']:
         project = root / 'clusters' / cluster

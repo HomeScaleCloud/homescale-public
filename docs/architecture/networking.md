@@ -42,10 +42,10 @@ annotated:
 ```yaml
 metadata:
   annotations:
-    tailscale.com/tags: "tag:k8s,tag:app-myapp,tag:cluster-{{ .Values.cluster.name }}"
-    tailscale.com/hostname: "myapp-{{ .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-myapp,tag:env-{{ .Values.env.name }}"
+    tailscale.com/hostname: "myapp-{{ .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
-    external-dns.kubernetes.io/hostname: "myapp.{{ .Values.cluster.name }}REDACTED"
+    external-dns.kubernetes.io/hostname: "myapp.{{ .Values.env.shortName }}REDACTED"
 ```
 
 `tailscale.com/proxy-group: ingress` routes the Service through the cluster's shared ingress `ProxyGroup` instead of provisioning a dedicated proxy pod per Service. `external-dns` (running in every cluster) publishes the `external-dns.kubernetes.io/hostname` value as a CNAME in Cloudflare, pointing at whatever `<hostname>.<tailnet>.ts.net` address the Operator assigns the proxy. For example, the ArgoCD server on `production` is reachable at:
@@ -54,7 +54,9 @@ metadata:
 REDACTED
 ```
 
-Every Tailscale-exposed Service uses this internal `<name>.<cluster>REDACTED` pattern — the kyverno admission policy (`require-tailscale-service-annotations`) enforces the `REDACTED` suffix, with no exception. Headlamp's two consoles use a friendlier short name within that same pattern (`console.<prod|dev>REDACTED` rather than `headlamp.<cluster>REDACTED`, see `apps/headlamp/templates/service-tailscale.yaml`) but still end in `REDACTED`, so no policy change was needed for them.
+Cluster-qualified internal URLs and DNS hostnames use `<name>.<short-name>REDACTED`, where `env.shortName` is `prod` or `dev`. Cluster identities and `tag:env-production`/`tag:env-development` remain unchanged. The kyverno admission policy (`require-tailscale-service-annotations`) enforces the `REDACTED` suffix. Headlamp uses `console.<prod|dev>REDACTED` (see `apps/headlamp/templates/service-tailscale.yaml`). Shared metrics endpoints such as `REDACTED` have no cluster label.
+
+ArgoCD's canonical URL, certificate, notification links and Dex SAML callback/issuer use the same short hostname. Its Entra enterprise application must allow `https://argocd.<prod|dev>REDACTED/api/dex/callback` as the reply URL and identifier when switching to these names; that registration is managed outside this repository.
 
 Pods that need *outbound* access to tailnet-only targets (rather than being reached) use an `ExternalName` Service annotated `tailscale.com/tailnet-fqdn` — pointing at the target's own tailnet hostname — instead of `loadBalancerClass`/`tailscale.com/proxy-group`:
 
@@ -65,8 +67,8 @@ metadata:
   name: myapp-egress
   annotations:
     tailscale.com/tailnet-fqdn: "target-app-othercluster.{{ .Values.tailscale.tailnet }}"
-    tailscale.com/tags: "tag:k8s,tag:app-myapp,tag:cluster-{{ .Values.cluster.name }}"
-    tailscale.com/hostname: "myapp-{{ .Values.cluster.name }}-egress"
+    tailscale.com/tags: "tag:k8s,tag:app-myapp,tag:env-{{ .Values.env.name }}"
+    tailscale.com/hostname: "myapp-{{ .Values.env.shortName }}-egress"
 spec:
   type: ExternalName
   externalName: placeholder
@@ -81,7 +83,7 @@ With no `tailscale.com/proxy-group` annotation, the Operator provisions a dedica
 Each cluster's kube-apiserver is reachable, via a small TLS-terminating reverse proxy, at:
 
 ```
-k8s.api.<cluster>REDACTED
+k8s.api.<prod|dev>REDACTED
 ```
 
 `tailscale` runs this proxy (`kube-apiserver-proxy`, an `nginx` Deployment in the `tailscale` namespace) instead of exposing the cluster's built-in `kubernetes` Service directly, since that Service is backed by `hostNetwork` apiserver pods rather than a normal selector-based ClusterIP. The proxy is a normal ClusterIP Service in front of it, forwarding to `kubernetes.default.svc.cluster.local` — the same in-cluster address every pod already uses, load-balanced by Kubernetes across every control-plane replica.

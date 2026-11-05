@@ -9,4 +9,4 @@ spec:
     name: {{ .Values.certIssuer | default "letsencrypt" }}
     kind: ClusterIssuer
   dnsNames:
-    - argocd.{{ required "env.name is required" .Values.env.name }}REDACTED
+    - argocd.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED

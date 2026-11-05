@@ -166,10 +166,10 @@ with annotations giving it a tailnet identity and (optionally) a friendly intern
 ```yaml
 metadata:
   annotations:
-    tailscale.com/tags: "tag:k8s,tag:app-myapp,tag:cluster-{{ .Values.cluster.name }}"
-    tailscale.com/hostname: "myapp-{{ .Values.cluster.name }}"
+    tailscale.com/tags: "tag:k8s,tag:app-myapp,tag:env-{{ .Values.env.name }}"
+    tailscale.com/hostname: "myapp-{{ .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
-    external-dns.kubernetes.io/hostname: "myapp.{{ .Values.cluster.name }}REDACTED"
+    external-dns.kubernetes.io/hostname: "myapp.{{ .Values.env.shortName }}REDACTED"
 ```
 
 | Annotation | Description |

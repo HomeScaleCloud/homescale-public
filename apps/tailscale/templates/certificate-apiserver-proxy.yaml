@@ -9,4 +9,4 @@ spec:
     name: {{ .Values.certIssuer | default "letsencrypt" }}
     kind: ClusterIssuer
   dnsNames:
-    - k8s.api.{{ required "env.name is required" .Values.env.name }}REDACTED
+    - k8s.api.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED

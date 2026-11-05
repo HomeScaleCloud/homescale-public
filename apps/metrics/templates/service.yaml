@@ -14,7 +14,7 @@ metadata:
     tailscale.com/tags: "tag:k8s,tag:app-metrics,tag:env-{{ .Values.env.name }}"
     tailscale.com/hostname: "prometheus-metrics-{{ .Values.env.shortName }}"
     tailscale.com/proxy-group: ingress
-    external-dns.kubernetes.io/hostname: "prometheus-proxy.metrics.{{ .Values.env.name }}REDACTED"
+    external-dns.kubernetes.io/hostname: "prometheus-proxy.metrics.{{ .Values.env.shortName }}REDACTED"
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale

@@ -14,6 +14,15 @@ hsctl_validate_output() {
     esac
 }
 
+# Keep cluster identities intact; shorten their labels only when building DNS names.
+hsctl_cluster_short_name() {
+    case "$1" in
+        production) printf '%s\n' prod ;;
+        development) printf '%s\n' dev ;;
+        *) printf '%s\n' "$1" ;;
+    esac
+}
+
 # Resolve a machine's Omni UUID or Kubernetes node name to its UUID.
 # Usage: id=$(hsctl_resolve_machine_id <id-or-node-name>) || echo "not found"
 hsctl_resolve_machine_id() {

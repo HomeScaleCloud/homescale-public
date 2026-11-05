@@ -9,4 +9,4 @@ spec:
     name: {{ .Values.certIssuer | default "letsencrypt" }}
     kind: ClusterIssuer
   dnsNames:
-    - ha.home-assistant.{{ required "env.name is required" .Values.env.name }}REDACTED
+    - ha.home-assistant.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED

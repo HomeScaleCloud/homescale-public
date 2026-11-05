@@ -54,7 +54,8 @@ def discover_clusters():
 
 
 def probe_cluster(name):
-    fqdn = f'k8s.api.{name}REDACTED'
+    short_name = {'production': 'prod', 'development': 'dev'}.get(name, name)
+    fqdn = f'k8s.api.{short_name}REDACTED'
     cluster = dict(name=name, fqdn=fqdn, k8s_version='-')
     try:
         response = subprocess.run([
@@ -292,7 +293,9 @@ get_clusters() {
 
 _hsctl_write_kubeconfig_direct() (
     local cluster="$1" kubeconfig="$2"
-    local fqdn="k8s.api.${cluster}REDACTED"
+    local short_name fqdn
+    short_name=$(hsctl_cluster_short_name "$cluster")
+    fqdn="k8s.api.${short_name}REDACTED"
     local user="${cluster}"
 
     _hsctl_resolve_oidc || exit 1

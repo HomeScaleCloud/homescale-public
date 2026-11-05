@@ -110,6 +110,7 @@ validate_manifests() (
         fi
 
         bootstrap_name="$(yq e '.metadata.name' "$apps_yaml")"
+        short_name="$(yq e '.env.shortName // ""' <<<"$apps_values")"
 
         # Validate each Application's directory sources, honoring its exclusion glob.
         while IFS= read -r -d '' app_manifest; do
@@ -152,6 +153,10 @@ validate_manifests() (
                 error "apps/$app: chart render failed for '$app' on $cluster"
                 cat "$tmp/err" >&2
                 fail=1; continue
+            fi
+            if [[ -n "$short_name" && "$short_name" != "$cluster" ]] && grep -Fq ".$REDACTED" "$rendered"; then
+                error "apps/$app: DNS names must use '$short_name', not '$cluster', on $cluster"
+                fail=1
             fi
             conform "$app ($cluster)" "$rendered" || fail=1
         done < <(yq e -N 'select(.kind == "Application") | .metadata.labels."REDACTED/name"' "$catalog")
