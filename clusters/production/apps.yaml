@@ -36,22 +36,6 @@ spec:
                 zigbee2mqtt:
                   config:
                     serialPort: "tcp://10.1.246.11:6638"
-                  replicaCount: 0
-                homebridge:
-                  replicaCount: 0
-                mqtt:
-                  replicaCount: 0
-                replicaCount: 0
-                # Restoring into the renamed cluster (production was boa1-prod) — every
-                # app reading these PVCs (home-assistant, matter, homebridge, mqtt/mosquitto,
-                # zigbee2mqtt, all scaled to 0 above) stays down until the restore is
-                # confirmed. See docs/operations volsync-restore / CLAUDE.md's VolSync
-                # section. Remove restore.enabled/sourceEnv and the replicaCount: 0
-                # overrides together, once confirmed — not on a timer.
-                volsync:
-                  restore:
-                    enabled: true
-                    sourceEnv: boa1-prod
             homepage:
               deploy: true
             knative:
