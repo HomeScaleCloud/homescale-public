@@ -2,7 +2,7 @@ clusterName: development
 clusterEndpoint: https://10.1.247.21:6443
 
 talosVersion: 1.14.5
-kubernetesVersion: 1.37.1
+kubernetesVersion: 1.37.2
 schematicId: 75b960f2a305742adb044e5c392a933f7ef1879179c60ba49fef95e60dc25107  # pragma: allowlist secret
 secureboot: true
 
