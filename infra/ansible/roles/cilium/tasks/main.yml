@@ -15,15 +15,11 @@
   register: _cilium_ds
 
 - name: Install Cilium
-  kubernetes.core.helm:
-    name: cilium
-    chart_ref: cilium
-    chart_repo_url: https://helm.cilium.io/
-    chart_version: "{{ cilium_chart_version }}"
-    release_namespace: kube-system
-    create_namespace: false
-    state: present
-    wait: true
-    wait_timeout: "300s"
-    values: "{{ _cilium_app['values']['cilium'] }}"
+  ansible.builtin.command:
+    cmd: >-
+      helm upgrade --install cilium cilium --repo https://helm.cilium.io/
+      --version {{ cilium_chart_version | quote }} --namespace kube-system
+      --kubeconfig {{ kubeconfig_path | quote }} --wait --timeout 300s
+      --reset-values --values -
+    stdin: "{{ _cilium_app['values']['cilium'] | to_yaml }}"
   when: _cilium_ds.resources | length == 0

@@ -15,8 +15,6 @@
       kubeconfig: "{{ kubeconfig_path }}"
     kubernetes.core.k8s_info:
       kubeconfig: "{{ kubeconfig_path }}"
-    kubernetes.core.helm:
-      kubeconfig: "{{ kubeconfig_path }}"
 
   pre_tasks:
     - name: Allocate a private bootstrap workspace

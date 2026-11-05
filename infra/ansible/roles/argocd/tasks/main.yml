@@ -9,16 +9,10 @@
 
 - name: Install ArgoCD
   when: _argocd_server.resources | length == 0
-  kubernetes.core.helm:
-    name: argocd
-    chart_ref: argo-cd
-    chart_repo_url: https://argoproj.github.io/argo-helm
-    chart_version: "{{ argocd_chart_version }}"
-    release_namespace: argocd
-    create_namespace: false
-    state: present
-    wait: true
-    wait_timeout: "300s"
+  ansible.builtin.command: >-
+    helm upgrade --install argocd argo-cd --repo https://argoproj.github.io/argo-helm
+    --version {{ argocd_chart_version | quote }} --namespace argocd
+    --kubeconfig {{ kubeconfig_path | quote }} --wait --timeout 300s --reset-values
 
 - name: Deploy apps
   kubernetes.core.k8s:
