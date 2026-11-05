@@ -10,6 +10,7 @@ patchesDir: ../../infra/topf
 secretsProvider: ../../infra/topf/secrets-provider.sh
 
 data:
+  bootstrapComplete: true
   nodeSubnet: 10.1.247.0/24
   podSubnets: [10.90.0.0/16]
   serviceSubnets: [10.95.0.0/16]

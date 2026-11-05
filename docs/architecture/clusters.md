@@ -95,7 +95,7 @@ Renovate tracks `talosVersion` and `kubernetesVersion` in each topf.yaml, plus t
 
 The playbook refuses downgrades and skips across minor releases, keeps native compatibility checks enabled, and stops if anything fails. If a Kubernetes preview is rejected because the installed Talos is too old, merge a Talos-only bump first, then rerun the Kubernetes PR. Use separate PRs to maintain a supported intermediate combination; CI does not bypass those checks.
 
-Nothing upgrades when a pin already matches the running version (unless the Talos schematic changed); ordinary configuration is still reconciled. Retries discover live state and finish outstanding work. CI only reads the existing Infisical CA bundle, generates private short-lived client configs and removes its workspace on success or failure. It never initializes secrets or bootstraps etcd. Both inventories currently remain disabled until their first bootstrap is confirmed with `data.bootstrapComplete: true`.
+Nothing upgrades when a pin already matches the running version (unless the Talos schematic changed); ordinary configuration is still reconciled. Retries discover live state and finish outstanding work. CI only reads the existing Infisical CA bundle, generates private short-lived client configs and removes its workspace on success or failure. It never initializes secrets or bootstraps etcd. Cluster inventories opt into reconciliation with `data.bootstrapComplete: true` after their first bootstrap is confirmed.
 
 To run the same procedure explicitly:
 
