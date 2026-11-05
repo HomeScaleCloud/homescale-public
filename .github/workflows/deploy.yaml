@@ -170,43 +170,28 @@ jobs:
         run: |
           set -euo pipefail
           all_clusters=$(
-            find clusters -mindepth 1 -maxdepth 1 -type d -exec test -f '{}/topf.yaml' ';' -print \
-              | sed 's#.*/##' \
-              | sort -u \
-              | jq -Rsc 'split("\n") | map(select(length > 0))'
+            printf '%s\n' clusters/*/topf.yaml \
+              | jq -Rsc 'split("\n") | map(select(length > 0) | split("/")[1]) | unique'
           )
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if [ -n "$INPUT_CLUSTER" ]; then
-              jq -e --arg c "$INPUT_CLUSTER" 'index($c) != null' <<<"$all_clusters" > /dev/null
-              clusters=$(jq -nc --arg c "$INPUT_CLUSTER" '[$c]')
-            else
-              clusters="$all_clusters"
-            fi
+            clusters=$(jq -ce --arg c "$INPUT_CLUSTER" '
+              if $c == "" then .
+              elif index($c) != null then [$c]
+              else error("Unknown cluster: " + $c) end
+            ' <<<"$all_clusters")
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch --no-tags origin "${{ github.base_ref }}"
+            # Full history is already available from checkout.
             range="origin/${{ github.base_ref }}...${{ github.sha }}"
             changed_files=$(git diff --name-only "$range")
 
             # Only TOPF inventories affect Talos; Kubernetes manifests sync through ArgoCD.
-            changed_cluster_dirs=$(
-              echo "$changed_files" \
-                | { grep -E '^clusters/[^/]+/topf\.yaml$' || true; } \
-                | sed -E 's#^clusters/([^/]+)/.*#\1#'
-            )
-            base_patches_changed=$(
-              echo "$changed_files" \
-                | { grep -E '^(infra/topf/|infra/ansible/(playbooks/update-cluster.yml|tasks/cluster-(credentials|state).yml)|hsctl(\.d/|$)|\.github/(actions/setup-talos/|workflows/deploy.yaml))' || true; } \
-                | wc -l
-            )
-            if [ "$base_patches_changed" -gt 0 ]; then
+            if grep -qE '^(infra/(topf|ansible)/|hsctl(\.d/|$)|\.github/(actions/setup-talos/|workflows/deploy.yaml))' <<<"$changed_files"; then
               clusters="$all_clusters"
             else
-              clusters=$(
-                printf '%s\n' "$changed_cluster_dirs" \
-                  | sort -u \
-                  | jq -Rsc 'split("\n") | map(select(length > 0))'
-              )
+              clusters=$(jq -Rsc '
+                split("\n") | map(select(test("^clusters/[^/]+/topf\\.yaml$")) | split("/")[1]) | unique
+              ' <<<"$changed_files")
             fi
           else
             clusters="$all_clusters"
@@ -223,6 +208,10 @@ jobs:
       (github.event_name == 'workflow_dispatch' || join(fromJson(needs.cluster-detect.outputs.clusters || '[]'), '') != '')
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+      INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+      HSCTL_REPO_ROOT: ${{ github.workspace }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -244,11 +233,6 @@ jobs:
           oauth-secret: ${{ env.TAILSCALE_OAUTH_CLIENT_SECRET }}
           tags: tag:github-actions
 
-      - name: Install hsctl
-        run: |
-          chmod +x hsctl
-          echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
-
       - name: Install Talos tools
         uses: ./.github/actions/setup-talos
 
@@ -256,22 +240,11 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.job != 'update-cluster'
         run: curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-      - name: Install Ansible
-        run: pip install ansible kubernetes infisicalsdk==1.2.0
-
-      - name: Install Ansible collections
+      - name: Install Ansible and collections
         working-directory: infra/ansible
-        run: ansible-galaxy collection install -r requirements.yml
-
-      - name: Request OIDC Token
-        if: github.event_name == 'workflow_dispatch' && inputs.job != 'update-cluster'
         run: |
-          TOKEN=$(curl -s \
-            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL" \
-            | jq -r '.value')
-          echo "::add-mask::$TOKEN"
-          echo "INFISICAL_AUTH_JWT=$TOKEN" >> "$GITHUB_ENV"
+          pip install ansible-core kubernetes jsonpatch infisicalsdk==1.2.0
+          ansible-galaxy collection install -r requirements.yml
 
       - name: Run update-cluster
         if: github.event_name != 'workflow_dispatch' || inputs.job == 'update-cluster'
@@ -279,11 +252,8 @@ jobs:
         continue-on-error: true
         working-directory: infra/ansible
         env:
-          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
           CLUSTERS: ${{ needs.cluster-detect.outputs.clusters }}
           DRY_RUN: ${{ github.event_name == 'pull_request' || inputs.dry_run == true }}
-          HSCTL_REPO_ROOT: ${{ github.workspace }}
         run: |
           set -euo pipefail
           limit=$(jq -r 'join(":")' <<<"$CLUSTERS")
@@ -317,30 +287,13 @@ jobs:
         if: steps.update.outcome == 'failure'
         run: exit 1
 
-      - name: Run bootstrap-cluster
-        if: github.event_name == 'workflow_dispatch' && inputs.job == 'bootstrap-cluster'
-        working-directory: infra/ansible
-        env:
-          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
-          CLUSTER: ${{ inputs.cluster }}
-        run: |
-          if [ -n "$CLUSTER" ]; then
-            ansible-playbook playbooks/bootstrap-cluster.yml -e target="$CLUSTER"
-          else
-            ansible-playbook playbooks/bootstrap-cluster.yml
-          fi
-
-      # Other playbooks use the generic dispatcher.
       - name: Run playbook
-        if: github.event_name == 'workflow_dispatch' && inputs.job != 'bootstrap-cluster' && inputs.job != 'update-cluster'
+        if: github.event_name == 'workflow_dispatch' && inputs.job != 'update-cluster'
         working-directory: infra/ansible
         env:
-          INFISICAL_IDENTITY_ID: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
           PLAYBOOK: ${{ inputs.job }}
           CLUSTER: ${{ inputs.cluster }}
-          EXTRA_ARGS: ${{ inputs.extra_args }}
+          EXTRA_ARGS: ${{ inputs.job != 'bootstrap-cluster' && inputs.extra_args || '' }}
         run: |
           extra_e_args=()
           if [ -n "$EXTRA_ARGS" ]; then
@@ -349,8 +302,4 @@ jobs:
               extra_e_args+=(-e "$kv")
             done
           fi
-          if [ -n "$CLUSTER" ]; then
-            ansible-playbook "playbooks/$PLAYBOOK.yml" -e target="$CLUSTER" "${extra_e_args[@]}"
-          else
-            ansible-playbook "playbooks/$PLAYBOOK.yml" "${extra_e_args[@]}"
-          fi
+          ansible-playbook "playbooks/$PLAYBOOK.yml" -e "target=${CLUSTER:-clusters}" "${extra_e_args[@]}"

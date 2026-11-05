@@ -9,6 +9,7 @@
     infisical_url: https://app.infisical.com
     infisical_project_id: "{{ lookup('env', 'INFISICAL_PROJECT_ID') }}"
     infisical_env_slug: prod
+    _topf_config: "{{ lookup('file', hsctl_repo_root + '/clusters/' + talos_cluster_name + '/topf.yaml') | from_yaml }}"
 
   module_defaults:
     kubernetes.core.k8s:
@@ -17,6 +18,10 @@
       kubeconfig: "{{ kubeconfig_path }}"
 
   pre_tasks:
+    - name: Skip clusters whose initial bootstrap is complete
+      ansible.builtin.meta: end_host
+      when: (_topf_config.data | default({})).bootstrapComplete | default(false) | bool
+
     - name: Allocate a private bootstrap workspace
       ansible.builtin.tempfile:
         state: directory

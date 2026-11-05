@@ -1,5 +1,5 @@
 ---
-- name: Reconcile Talos and Kubernetes versions before applying configuration
+- name: Reconcile cluster versions, configuration and service credentials
   hosts: "{{ target | default('clusters') }}"
   order: sorted
   serial: 1
@@ -14,6 +14,8 @@
     infisical_url: https://app.infisical.com
     infisical_project_id: "{{ lookup('env', 'INFISICAL_PROJECT_ID') }}"
     infisical_env_slug: prod
+    _topf_config: "{{ lookup('file', hsctl_repo_root + '/clusters/' + talos_cluster_name + '/topf.yaml') | from_yaml }}"
+    _upgrade_kubernetes: "{{ _kubernetes_versions | difference([_topf_config.kubernetesVersion]) | length > 0 }}"
     _topf_command:
       - "{{ hsctl_repo_root }}/hsctl"
       - run
@@ -29,17 +31,12 @@
       - --nodes
       - "{{ (_topf_config.nodes | selectattr('role', 'equalto', 'control-plane') | first).ip }}"
 
+  module_defaults:
+    kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig_path }}"
+
   pre_tasks:
-    - name: Load desired versions and node inventory
-      ansible.builtin.set_fact:
-        _topf_config: "{{ lookup('file', hsctl_repo_root + '/clusters/' + talos_cluster_name + '/topf.yaml') | from_yaml }}"
-
-    - name: Explain why a new cluster is skipped
-      ansible.builtin.debug:
-        msg: "{{ talos_cluster_name }}: bootstrap locally and set data.bootstrapComplete: true before CI can reconcile this cluster."
-      when: not ((_topf_config.data | default({})).bootstrapComplete | default(false) | bool)
-
-    - name: Leave unbootstrapped clusters untouched
+    - name: Skip clusters until data.bootstrapComplete is true
       ansible.builtin.meta: end_host
       when: not ((_topf_config.data | default({})).bootstrapComplete | default(false) | bool)
 
@@ -96,10 +93,6 @@
             fail_msg: "Kubernetes {{ item }} -> {{ _topf_config.kubernetesVersion }} requires a supported forward upgrade, at most one minor release at a time."
           loop: "{{ _kubernetes_versions }}"
 
-        - name: Determine whether Kubernetes needs orchestration
-          ansible.builtin.set_fact:
-            _upgrade_kubernetes: "{{ _kubernetes_versions | difference([_topf_config.kubernetesVersion]) | length > 0 }}"
-
         - name: Preview Talos OS and schematic upgrades
           ansible.builtin.command:
             argv: "{{ _topf_command + ['upgrade', '--dry-run'] }}"
@@ -125,6 +118,12 @@
             msg: "{{ _kubernetes_plan.stdout ~ _kubernetes_plan.stderr }}"
           when: _upgrade_kubernetes
 
+        - name: Reconcile ArgoCD and Infisical credentials
+          ansible.builtin.include_role:
+            name: cluster-secrets
+          vars:
+            cluster_secrets_preview: "{{ _preview }}"
+
         - name: Upgrade Talos one node at a time with draining and health checks
           ansible.builtin.command:
             argv: "{{ _topf_command + ['upgrade'] }}"
@@ -135,9 +134,9 @@
             argv: "{{ _talos_command + ['upgrade-k8s', '--to', _topf_config.kubernetesVersion] }}"
           when: not _preview and _upgrade_kubernetes
 
-        - name: Check upgraded versions before any ordinary config apply
+        - name: Refresh live state after upgrades
           ansible.builtin.include_tasks: ../tasks/cluster-state.yml
-          when: not _preview
+          when: not _preview and (_talos_plan.changed or _upgrade_kubernetes)
 
         - name: Require every running version to match the desired pins
           ansible.builtin.assert:
@@ -147,6 +146,7 @@
             fail_msg: "An upgrade has not converged. Refusing to bypass orchestration with topf apply. Rerun update-cluster to resume."
           when: not _preview
 
+        # TOPF checks node health before apply and waits for changed nodes to stabilize.
         - name: Apply configuration only after upgrades, or preview it on a PR
           ansible.builtin.command:
             argv: "{{ _topf_command + ['apply'] + (['--dry-run'] if _preview else []) }}"
@@ -157,17 +157,6 @@
         - name: Show the redacted configuration result
           ansible.builtin.debug:
             msg: "{{ _config_apply.stdout ~ _config_apply.stderr }}"
-
-        - name: Verify the reconciled cluster
-          ansible.builtin.include_tasks: ../tasks/cluster-state.yml
-          when: not _preview
-
-        - name: Require final versions to remain converged after config apply
-          ansible.builtin.assert:
-            that:
-              - _talos_versions | difference([_topf_config.talosVersion]) | length == 0
-              - _kubernetes_versions | difference([_topf_config.kubernetesVersion]) | length == 0
-          when: not _preview
 
       always:
         - name: Remove private update credentials

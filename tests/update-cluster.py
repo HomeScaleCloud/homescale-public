@@ -29,6 +29,7 @@ with tempfile.TemporaryDirectory(prefix="cluster-update-test-") as temporary:
     root = Path(temporary)
     shutil.copytree(REPO / "infra/ansible/playbooks", root / "infra/ansible/playbooks")
     shutil.copytree(REPO / "infra/ansible/tasks", root / "infra/ansible/tasks")
+    shutil.copytree(REPO / "infra/ansible/roles", root / "infra/ansible/roles")
     tools = root / "bin"
     tools.mkdir()
     inventory = root / "inventory.yaml"
@@ -129,8 +130,33 @@ module.exit_json(changed=False, login_data={"test": "auth"})
 ''',
         ("infisical/vault", "read_secrets"): '''module = AnsibleModule(argument_spec={"login_data": dict(type="dict", no_log=True), "project_id": {}, "env_slug": {}, "path": {}, "as_dict": dict(type="bool")})
 assert module.params["env_slug"] == "prod"
-assert module.params["path"] in ["/k8s/talos/dev", "/k8s/talos/prod"]
-module.exit_json(changed=False, secrets={"SECRETS_YAML": "private-test-CA"})  # pragma: allowlist secret
+assert module.params["login_data"] == {"test": "auth"}
+path = module.params["path"]
+if path in ["/k8s/talos/dev", "/k8s/talos/prod"]:
+    secrets = {"SECRETS_YAML": "private-test-CA"}  # pragma: allowlist secret
+else:
+    secrets = json.loads((root / "service-credentials.json").read_text())[path]
+module.exit_json(changed=False, secrets=secrets)
+''',
+        ("kubernetes/core", "k8s"): '''module = AnsibleModule(argument_spec={"kubeconfig": {}, "state": {}, "api_version": {}, "kind": {}, "name": {}, "definition": dict(type="dict")}, supports_check_mode=True)
+assert module.params["state"] == "present"
+workspace = pathlib.Path(module.params["kubeconfig"]).parent
+cluster = (root / "active-cluster").read_text()
+state = json.loads((root / (cluster + "-state.json")).read_text())
+definition = module.params["definition"] or dict(apiVersion="v1", kind="Namespace", metadata=dict(name=module.params["name"]))
+key = definition["metadata"].get("namespace", "") + "/" + definition["metadata"]["name"]
+objects_file = root / (cluster + "-service-objects.json")
+objects = json.loads(objects_file.read_text())
+changed = objects.get(key) != definition
+with (root / "calls.jsonl").open("a") as stream:
+    stream.write(json.dumps(dict(tool="k8s", cluster=cluster, args=["--dry-run"] if module.check_mode else [],
+                                workspace=str(workspace), changed=changed, key=key)) + "\\n")
+if state.get("fail_credentials") and definition["kind"] == "Secret":
+    module.fail_json(msg="credential update failed")
+if not module.check_mode:
+    objects[key] = definition
+    objects_file.write_text(json.dumps(objects))
+module.exit_json(changed=changed)
 ''',
         ("kubernetes/core", "k8s_cluster_info"): '''module = AnsibleModule(argument_spec={"kubeconfig": {}})
 cluster = (root / "active-cluster").read_text()
@@ -181,7 +207,7 @@ module.exit_json(changed=False, resources=resources)
     oidc = ThreadingHTTPServer(("127.0.0.1", 0), OIDCHandler)
     threading.Thread(target=oidc.serve_forever, daemon=True).start()
     atexit.register(oidc.shutdown)
-    (root / "ansible.cfg").write_text(f"[defaults]\ninterpreter_python={sys.executable}\npipelining=true\n")
+    (root / "ansible.cfg").write_text(f"[defaults]\ninterpreter_python={sys.executable}\npipelining=true\nroles_path={root / 'infra/ansible/roles'}\n")
     environment = dict(os.environ, MOCK_ROOT=str(root), HSCTL_REPO_ROOT=str(root),
                        PATH=str(tools) + os.pathsep + os.environ["PATH"],
                        ANSIBLE_COLLECTIONS_PATH=str(root / "collections"),
@@ -203,7 +229,27 @@ module.exit_json(changed=False, resources=resources)
         print(f"PASS: {name}", flush=True)
 
     def run_scenario(name, case, case_environment, tokens_path, preview=False,
-                     cluster="development", expected=0, enabled=True, **overrides):
+                     cluster="development", expected=0, enabled=True, credentials_current=False, **overrides):
+        credentials = {"/k8s/argocd/deploy-key": {"sshPrivateKey": "private-test-rotated-deploy-key"},  # pragma: allowlist secret
+                       "/k8s/infisical": {"INFISICAL_OPERATOR_CLIENT_ID": "test-client",
+                                          "INFISICAL_OPERATOR_CLIENT_SECRET": "private-test-rotated-operator"}}  # pragma: allowlist secret
+        (case / "service-credentials.json").write_text(json.dumps(credentials))
+        service_objects = {
+            "/" + ns: dict(apiVersion="v1", kind="Namespace", metadata=dict(name=ns)) for ns in ["argocd", "infisical"]
+        }
+        service_objects.update({
+            "argocd/homescale-k8s-deploy-key": dict(apiVersion="v1", kind="Secret", metadata=dict(
+                name="homescale-k8s-deploy-key", namespace="argocd", labels={"argocd.argoproj.io/secret-type": "repository"}),
+                stringData=dict(url="git@github.com:HomeScaleCloud/homescale.git",
+                                sshPrivateKey=credentials["/k8s/argocd/deploy-key"]["sshPrivateKey"])),
+            "infisical/infisical-operator-auth": dict(apiVersion="v1", kind="Secret", metadata=dict(
+                name="infisical-operator-auth", namespace="infisical"), stringData=dict(
+                clientId="test-client", clientSecret=credentials["/k8s/infisical"]["INFISICAL_OPERATOR_CLIENT_SECRET"])),
+        })
+        initial_objects = copy.deepcopy(service_objects)
+        if not credentials_current:
+            initial_objects["argocd/homescale-k8s-deploy-key"]["stringData"]["sshPrivateKey"] = "private-test-old-key"  # pragma: allowlist secret
+            initial_objects["infisical/infisical-operator-auth"]["stringData"]["clientSecret"] = "private-test-old-operator"  # pragma: allowlist secret
         for current, config in configs.items():
             desired = copy.deepcopy(config)
             desired["data"]["bootstrapComplete"] = enabled
@@ -215,6 +261,7 @@ module.exit_json(changed=False, resources=resources)
                          components=["1.37.0"] * count * 3, server="1.37.0")
             state.update(overrides)
             (case / (current + "-state.json")).write_text(json.dumps(state))
+            (case / (current + "-service-objects.json")).write_text(json.dumps(initial_objects))
         log = case / "calls.jsonl"
         command = ["ansible-playbook", "-i", str(inventory), str(root / "infra/ansible/playbooks/update-cluster.yml"),
                    "-e", "dry_run=" + str(preview).lower()]
@@ -222,9 +269,19 @@ module.exit_json(changed=False, resources=resources)
             command += ["--limit", cluster]
         result = subprocess.run(command, env=case_environment, text=True, capture_output=True, timeout=180)
         assert result.returncode == expected, f"{name}: {result.stdout}\n{result.stderr}"
-        assert "private-test-CA" not in result.stdout and "private-test-client-config" not in result.stdout
+        assert "private-test-" not in result.stdout and "private-test-" not in result.stderr
         calls = [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
         assert all(not Path(call["workspace"]).exists() for call in calls), name + ": leaked credentials"
+        for current in configs:
+            objects = json.loads((case / (current + "-service-objects.json")).read_text())
+            reconciled = any(call["tool"] == "k8s" and call["cluster"] == current for call in calls)
+            assert objects == (service_objects if reconciled and not preview and not overrides.get('fail_credentials') else initial_objects)
+        service_calls = [call for call in calls if call["tool"] == "k8s"]
+        if preview:
+            assert all("--dry-run" in call["args"] for call in service_calls)
+        if expected == 0 and enabled:
+            assert service_calls, "Every update must reconcile service credentials, even when versions match"
+            assert any(call["changed"] for call in service_calls) != credentials_current
         mutations = [call for call in calls if "--dry-run" not in call["args"] and
                      any(action in call["args"] for action in ["upgrade", "upgrade-k8s", "apply"])]
         auth_log = case / "auth.jsonl"
@@ -236,13 +293,18 @@ module.exit_json(changed=False, resources=resources)
     def successful_upgrades():
         with scenario("Preview makes no cluster changes", preview=True) as (calls, mutations):
             assert not mutations and any("upgrade-k8s" in call["args"] for call in calls)
-        with scenario("Talos upgrades before Kubernetes and config apply") as (_, mutations):
+            assert sum("nodes" in call["args"] for call in calls) == 1
+        with scenario("Talos upgrades before Kubernetes and config apply") as (calls, mutations):
             assert [next(action for action in ["upgrade", "upgrade-k8s", "apply"] if action in call["args"]) for call in mutations] == ["upgrade", "upgrade-k8s", "apply"]
+            assert sum("nodes" in call["args"] for call in calls) == 2
         with scenario(
-            "Unchanged versions only apply config",
+            "Unchanged versions still reconcile config and rotated service credentials",
             talos=["1.14.5"], kubelets=["1.37.1"], components=["1.37.1"] * 3, server="1.37.1",
-        ) as (_, mutations):
+        ) as (calls, mutations):
             assert len(mutations) == 1 and "apply" in mutations[0]["args"]
+            assert sum("nodes" in call["args"] for call in calls) == 1
+        with scenario("Already-current service credentials remain unchanged", credentials_current=True):
+            pass
         with scenario(
             "Only Talos upgrades when Kubernetes is current",
             kubelets=["1.37.1"], components=["1.37.1"] * 3, server="1.37.1",
@@ -273,6 +335,8 @@ module.exit_json(changed=False, resources=resources)
                 assert not mutations
 
     def failed_upgrades():
+        with scenario("Failed credential reconciliation stops upgrades and removes credentials", expected=2, fail_credentials=True) as (_, mutations):
+            assert not mutations
         with scenario("A failed Talos upgrade stops Kubernetes and config apply", expected=2, fail_os=True) as (_, mutations):
             assert len(mutations) == 1 and "upgrade" in mutations[0]["args"]
         with scenario("A failed Kubernetes upgrade stops config apply", expected=2, fail_k8s=True) as (_, mutations):
@@ -307,10 +371,13 @@ module.exit_json(changed=False, resources=resources)
         ("pull_request", "clusters/production/topf.yaml", "", ["production"]),
         ("pull_request", "infra/ansible/playbooks/update-cluster.yml", "", ["development", "production"]),
         ("pull_request", "infra/ansible/tasks/cluster-credentials.yml", "", ["development", "production"]),
+        ("pull_request", "infra/ansible/inventory/group_vars/clusters.yml", "", ["development", "production"]),
+        ("pull_request", "clusters/development/topf.yaml\nclusters/production/topf.yaml", "", ["development", "production"]),
         ("pull_request", ".github/actions/setup-talos/action.yaml", "", ["development", "production"]),
         ("pull_request", "clusters/development/apps.yaml", "", []),
         ("push", "README.md", "", ["development", "production"]),
         ("workflow_dispatch", "", "development", ["development"]),
+        ("workflow_dispatch", "", "", ["development", "production"]),
     ]:
         (root / "changed-files").write_text(changed + "\n")
         output = root / "github-output"
@@ -325,9 +392,26 @@ module.exit_json(changed=False, resources=resources)
     print("PASS: Manual runs select the requested cluster", flush=True)
 
     executable(tools / "ansible-galaxy", "#!/bin/sh\nexit 0\n")
-    executable(tools / "ansible-playbook", "#!/usr/bin/env python3\nimport json, sys\nprint(json.dumps(sys.argv[1:]))\n")
+    executable(tools / "infisical", '''#!/usr/bin/env python3
+import json, sys
+assert sys.argv[1] == "export"
+print(json.dumps([dict(key="test", value="private-test-cli-credential")]))
+''')
+    executable(tools / "ansible-playbook", '''#!/usr/bin/env python3
+import json, pathlib, sys
+args = sys.argv[1:]
+extra = pathlib.Path(args[args.index("--extra-vars") + 1][1:])
+assert extra.stat().st_mode & 0o077 == 0
+values = json.loads(extra.read_text())
+assert values["hsctl_local"] is True
+assert set(values["hsctl_local_secrets"]) == {"argocd_deploy_key", "infisical_operator"}
+assert all(item["test"] == "private-test-cli-credential" for item in values["hsctl_local_secrets"].values())
+print(json.dumps(args))
+''')
     result = subprocess.run([str(REPO / "hsctl"), "run", "update-cluster", "--cluster", "development", "-e", "local", "--dry-run"],
                             env=environment, text=True, capture_output=True, check=True)
     arguments = json.loads(result.stdout)
-    assert "hsctl_local=true" in arguments and "dry_run=true" in arguments and "target=development" in arguments
-    print("PASS: hsctl forwards --cluster and --dry-run to Ansible", flush=True)
+    assert "dry_run=true" in arguments and "target=development" in arguments
+    extra_vars = Path(arguments[arguments.index("--extra-vars") + 1][1:])
+    assert not extra_vars.exists(), "local updates must clean their private credential file"
+    print("PASS: hsctl forwards cluster, preview and private service credentials, then removes the file", flush=True)

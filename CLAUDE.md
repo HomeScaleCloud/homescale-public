@@ -136,11 +136,15 @@ Infisical is the secrets store. The Infisical k8s operator (deployed as an ArgoC
 
 ### CI/CD Pipelines
 
-Three jobs in `deploy.yaml`, called (along with `scan`/`build`/`mirror`) from `ci.yaml`:
+Build, scan and test run in parallel; deploy and mirror require all three to pass. The Python test suites share a matrix job in `test.yaml`, retaining their individual check names.
+
+Workflows called from `ci.yaml`:
 - **scan** — pre-commit, PR title lint (Conventional Commits), CodeQL, Trivy config scan
 - **build** — builds only changed apps on PRs and on pushes to main (all apps on a published release), builds Docker images, runs Trivy image scan; Helm charts are linted but not published
 - **deploy** (`terraform` → `update-cluster` → `ansible`) — public-service Terraform plans/applies, Ansible-orchestrated Talos/Kubernetes upgrades and config reconciliation for existing clusters, and manually dispatched Ansible bootstrap services. Cluster playbooks join Tailscale to reach existing clusters. First cluster bootstrap runs from the LAN. TOPF requires data.bootstrapComplete true and an existing read-only CA bundle. PR dry-run exit 2 means drift, not failure. Required status display labels scan / Talm and deploy / Talm Gate are retained for the GitHub ruleset, but run TOPF checks.
 - **ansible** — dispatched playbooks generate a fresh short-lived kubeconfig from Infisical SECRETS_YAML; they do not use a stored KUBECONFIG. --nodes is local-only.
+
+`bootstrap-cluster` is for initial setup and skips clusters marked bootstrapComplete. `update-cluster` handles ongoing reconciliation: versions, TOPF configuration, and ArgoCD/Infisical service credentials. Both playbooks reuse the cluster's Infisical login in CI; hsctl fetches local service credentials into a private extra-vars file. Update previews use Kubernetes check mode with secret values/diffs suppressed. Full version convergence is checked before config apply, which retains TOPF's native health/stabilization checks.
 
 ### Networking
 

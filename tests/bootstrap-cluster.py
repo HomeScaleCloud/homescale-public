@@ -39,7 +39,9 @@ with tempfile.TemporaryDirectory(prefix="topf-regression-") as temporary:
     for cluster in ["development", "production"]:
         project = scratch / "clusters" / cluster
         project.mkdir(parents=True)
-        shutil.copyfile(REPO / "clusters" / cluster / "topf.yaml", project / "topf.yaml")
+        config = yaml.safe_load((REPO / "clusters" / cluster / "topf.yaml").read_text())
+        config["data"]["bootstrapComplete"] = False
+        (project / "topf.yaml").write_text(yaml.safe_dump(config))
     project = scratch / "clusters/development"
     mock_bin = scratch / "bin"
     mock_bin.mkdir()
@@ -411,3 +413,62 @@ if os.environ.get("MOCK_APPLY_FAIL") == "true":
     run(["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)], environment, expected=2)
     assert not logs.exists(), "bad permanent addresses must fail before secret or node operations"
     print("PASS: Incorrect static IPs stop before any node commands")
+
+    config = yaml.safe_load((project / "topf.yaml").read_text())
+    config["data"]["bootstrapComplete"] = True
+    (project / "topf.yaml").write_text(yaml.safe_dump(config))
+    run(["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)], environment)
+    assert not logs.exists(), "completed clusters must skip bootstrap before any node or credential commands"
+    print("PASS: Completed clusters skip bootstrap; ongoing reconciliation uses update-cluster")
+
+    # Exercise the real secrets role, mocking only its external module boundaries.
+    collection_root = scratch / "collections/ansible_collections"
+    module_header = '''from ansible.module_utils.basic import AnsibleModule
+import json, os, pathlib
+root = pathlib.Path(os.environ["MOCK_ROOT"])
+'''
+    modules = {
+        ("infisical/vault", "login"): '''module = AnsibleModule(argument_spec={})
+module.fail_json(msg="Bootstrap must reuse the cluster credentials login")
+''',
+        ("infisical/vault", "read_secrets"): '''module = AnsibleModule(argument_spec={"login_data": dict(type="dict"), "project_id": {}, "env_slug": {}, "path": {}, "as_dict": dict(type="bool")})
+assert module.params["login_data"] == {"session": "existing"}
+assert module.params["env_slug"] == "prod"
+key = {"/k8s/argocd/deploy-key": "argocd_deploy_key", "/k8s/infisical": "infisical_operator"}[module.params["path"]]
+module.exit_json(changed=False, secrets=json.loads((root / "service-secrets.json").read_text())[key])
+''',
+        ("kubernetes/core", "k8s"): '''module = AnsibleModule(argument_spec={"state": {}, "api_version": {}, "kind": {}, "name": {}, "definition": dict(type="dict")})
+assert module.params["state"] == "present"
+with (root / "service-objects.jsonl").open("a") as stream:
+    stream.write(json.dumps(module.params) + "\\n")
+module.exit_json(changed=False)
+''',
+    }
+    for (collection, name), code in modules.items():
+        directory = collection_root / collection / "plugins/modules"
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / (name + ".py")).write_text(module_header + code)
+    service_environment = dict(environment, ANSIBLE_COLLECTIONS_PATH=str(scratch / "collections"),
+                               ANSIBLE_ROLES_PATH=str(REPO / "infra/ansible/roles"))
+    service_play = {"hosts": "localhost", "gather_facts": False,
+                    "vars": {"hsctl_local": False, "_infisical": {"login_data": {"session": "existing"}}},
+                    "roles": ["cluster-secrets"]}
+    for local in [False, True]:
+        credentials = {"argocd_deploy_key": {"sshPrivateKey": "private-test-deploy-key-" + str(local)},  # pragma: allowlist secret
+                       "infisical_operator": {"INFISICAL_OPERATOR_CLIENT_ID": "test-client",
+                                              "INFISICAL_OPERATOR_CLIENT_SECRET": "private-test-operator-" + str(local)}}  # pragma: allowlist secret
+        (scratch / "service-secrets.json").write_text(json.dumps(credentials))
+        service_play["vars"].update(hsctl_local=local, hsctl_local_secrets=credentials)
+        playbook.write_text(yaml.safe_dump([service_play]))
+        objects_log = scratch / "service-objects.jsonl"
+        objects_log.write_text("")
+        result = run(["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)], service_environment)
+        objects = [json.loads(line) for line in objects_log.read_text().splitlines()]
+        assert [obj["name"] for obj in objects if obj["kind"] == "Namespace"] == ["argocd", "infisical"]
+        secrets = {obj["definition"]["metadata"]["name"]: obj["definition"]["stringData"]
+                   for obj in objects if obj["definition"]}
+        assert secrets["homescale-k8s-deploy-key"]["sshPrivateKey"] == credentials["argocd_deploy_key"]["sshPrivateKey"]
+        assert secrets["infisical-operator-auth"]["clientSecret"] == credentials["infisical_operator"]["INFISICAL_OPERATOR_CLIENT_SECRET"]
+        assert "private-test-" not in result.stdout
+    print("PASS: CI reuses its Infisical login to reconcile service credentials")
+    print("PASS: Local cluster playbooks supply service credentials without logging them")

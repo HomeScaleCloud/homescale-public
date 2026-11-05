@@ -1,14 +1,5 @@
 ---
-# CI uses OIDC; local bootstrap supplies hsctl_local_secrets.
-- name: Login to Infisical
-  infisical.vault.login:
-    url: "{{ infisical_url }}"
-    auth_method: oidc_auth
-    identity_id: "{{ lookup('env', 'INFISICAL_IDENTITY_ID') }}"
-    jwt: "{{ lookup('env', 'INFISICAL_AUTH_JWT') }}"
-  register: _infisical
-  no_log: true
-  when: not (hsctl_local | default(false))
+# Both playbooks reuse the cluster login in CI; hsctl supplies local credentials.
 
 - name: Read ArgoCD deploy key from Infisical
   infisical.vault.read_secrets:
@@ -32,43 +23,25 @@
   no_log: true
   when: not (hsctl_local | default(false))
 
-- name: Use ArgoCD deploy key fetched locally via the infisical CLI
+- name: Use credentials fetched locally via the Infisical CLI
   ansible.builtin.set_fact:
     _argocd_secrets:
       secrets: "{{ hsctl_local_secrets.argocd_deploy_key }}"
-  no_log: true
-  when: hsctl_local | default(false)
-
-- name: Use Infisical operator credentials fetched locally via the infisical CLI
-  ansible.builtin.set_fact:
     _infisical_op_secrets:
       secrets: "{{ hsctl_local_secrets.infisical_operator }}"
   no_log: true
   when: hsctl_local | default(false)
 
-- name: Create argocd namespace
+- name: Ensure service namespaces exist
   kubernetes.core.k8s:
     api_version: v1
     kind: Namespace
-    name: argocd
+    name: "{{ item }}"
     state: present
+  loop: [argocd, infisical]
+  check_mode: "{{ cluster_secrets_preview }}"
 
-- name: Create infisical namespace
-  kubernetes.core.k8s:
-    api_version: v1
-    kind: Namespace
-    name: infisical
-    state: present
-
-- name: Check ArgoCD deploy key
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Secret
-    name: homescale-k8s-deploy-key
-    namespace: argocd
-  register: _deploy_key
-
-- name: Create ArgoCD deploy key
+- name: Ensure ArgoCD deploy key matches Infisical
   kubernetes.core.k8s:
     state: present
     definition:
@@ -81,18 +54,12 @@
           argocd.argoproj.io/secret-type: repository
       stringData:
         url: "git@github.com:HomeScaleCloud/homescale.git"
-        sshPrivateKey: "{{ _argocd_secrets.secrets.sshPrivateKey }}" # pragma: allowlist secret
-  when: _deploy_key.resources | length == 0
+        sshPrivateKey: "{{ _argocd_secrets.secrets.sshPrivateKey }}"  # pragma: allowlist secret
+  check_mode: "{{ cluster_secrets_preview }}"
+  diff: false
+  no_log: true
 
-- name: Check Infisical operator credentials secret
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Secret
-    name: infisical-operator-auth
-    namespace: infisical
-  register: _infisical_auth
-
-- name: Create Infisical operator credentials secret
+- name: Ensure Infisical operator credentials match Infisical
   kubernetes.core.k8s:
     state: present
     definition:
@@ -102,6 +69,8 @@
         name: infisical-operator-auth
         namespace: infisical
       stringData:
-        clientId: "{{ _infisical_op_secrets.secrets.INFISICAL_OPERATOR_CLIENT_ID }}" # pragma: allowlist secret
-        clientSecret: "{{ _infisical_op_secrets.secrets.INFISICAL_OPERATOR_CLIENT_SECRET }}" # pragma: allowlist secret
-  when: _infisical_auth.resources | length == 0
+        clientId: "{{ _infisical_op_secrets.secrets.INFISICAL_OPERATOR_CLIENT_ID }}"  # pragma: allowlist secret
+        clientSecret: "{{ _infisical_op_secrets.secrets.INFISICAL_OPERATOR_CLIENT_SECRET }}"  # pragma: allowlist secret
+  check_mode: "{{ cluster_secrets_preview }}"
+  diff: false
+  no_log: true

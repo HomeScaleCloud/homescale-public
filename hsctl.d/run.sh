@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Dispatch workflows remotely or run commands from HSCTL_REPO_ROOT locally.
-# Bootstrap and Terraform fetch local Infisical credentials; TOPF uses its provider.
+# Cluster playbooks and Terraform fetch local Infisical credentials; TOPF uses its provider.
 
 # Register cleanup paths under one EXIT trap.
 _run_cleanup_paths=()
@@ -21,7 +21,7 @@ run_usage() {
     echo ""
     echo "<name> is one of:"
     echo "  bootstrap-cluster   bootstrap workload clusters (all, or one via --cluster) (playbook)"
-    echo "  update-cluster      reconcile Talos/Kubernetes versions and config (playbook)"
+    echo "  update-cluster      reconcile Talos/Kubernetes, config and service credentials (playbook)"
     echo "  terraform           plan/apply infra/terraform (script) — cloud resources, Tailscale"
     echo "                      ACL, Infisical project structure; no Talos cluster provisioning"
     echo "                      (see 'topf')"
@@ -91,8 +91,8 @@ _run_ansible() {
 }
 
 # Pass local service credentials to Ansible in a private extra-vars file.
-_run_bootstrap_local() {
-    local cluster="$1" dry_run="$2" repo_root="$3" nodes_file="$4"
+_run_cluster_local() {
+    local playbook="$1" cluster="$2" dry_run="$3" repo_root="$4" nodes_file="$5"
 
     command -v infisical &>/dev/null || { echo "hsctl run: the infisical CLI is required (brew install infisical)" >&2; exit 1; }
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
@@ -134,12 +134,8 @@ _run_bootstrap_local() {
         export HSCTL_REPO_ROOT="$repo_root"
         cd "$repo_root/infra/ansible" || exit 1
 
-        hsctl_log_action "running bootstrap-cluster.yml${cluster:+ (target: $cluster)}"
-        if [[ -n "$cluster" ]]; then
-            _run_ansible playbooks/bootstrap-cluster.yml -e target="$cluster" -e "dry_run=$dry_run" --extra-vars "@$extra_vars_file"
-        else
-            _run_ansible playbooks/bootstrap-cluster.yml -e "dry_run=$dry_run" --extra-vars "@$extra_vars_file"
-        fi
+        hsctl_log_action "running $playbook.yml${cluster:+ (target: $cluster)}"
+        _run_ansible "playbooks/$playbook.yml" -e "target=${cluster:-clusters}" -e "dry_run=$dry_run" --extra-vars "@$extra_vars_file"
     )
 }
 
@@ -220,9 +216,9 @@ _run_local() {
     command -v jq &>/dev/null || { echo "hsctl run: jq is required (brew install jq)" >&2; exit 1; }
 
     case "$name" in
-        bootstrap-cluster)
+        bootstrap-cluster|update-cluster)
             command -v ansible-playbook &>/dev/null || { echo "hsctl run: ansible-playbook is required (brew install ansible)" >&2; exit 1; }
-            _run_bootstrap_local "$cluster" "$dry_run" "$repo_root" "$nodes_file"
+            _run_cluster_local "$name" "$cluster" "$dry_run" "$repo_root" "$nodes_file"
             ;;
         terraform)
             _run_terraform_local "$cluster" "$dry_run" "$repo_root"

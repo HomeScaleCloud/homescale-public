@@ -28,16 +28,15 @@ jobs:
 
   test:
     uses: ./.github/workflows/test.yaml
-    needs: [build, scan]
 
   deploy:
     uses: ./.github/workflows/deploy.yaml
-    needs: [test]
+    needs: [build, scan, test]
     if: github.event_name != 'release'
     secrets: inherit  # pragma: allowlist secret
 
   mirror:
     uses: ./.github/workflows/mirror.yaml
-    needs: [test]
+    needs: [build, scan, test]
     if: github.event_name == 'push'
     secrets: inherit  # pragma: allowlist secret

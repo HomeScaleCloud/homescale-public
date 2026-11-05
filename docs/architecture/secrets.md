@@ -64,7 +64,7 @@ spec:
       secretType: Opaque
 ```
 
-`managedKubeSecretReferences` is a list — an app can sync multiple Kubernetes Secrets from different Infisical subpaths in one CR (see `apps/argocd/templates/secret.yaml` for an app with two). The `credentialsRef` points at `infisical-operator-auth`, a bootstrap secret created manually once per cluster during initial setup. All other secrets flow from there.
+`managedKubeSecretReferences` is a list — an app can sync multiple Kubernetes Secrets from different Infisical subpaths in one CR (see `apps/argocd/templates/secret.yaml` for an app with two). The `credentialsRef` points at `infisical-operator-auth`, which Ansible creates during initial cluster bootstrap. Every `update-cluster` run reconciles it and the ArgoCD deploy key from Infisical, including after credential rotation. PR previews check for changes without writing secrets or displaying their values. All other secrets flow from there.
 
 See the [Infisical Kubernetes operator docs](https://infisical.com/docs/integrations/platforms/kubernetes) for full CR reference.
 

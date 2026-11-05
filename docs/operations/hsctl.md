@@ -106,11 +106,11 @@ hsctl run topf --cluster development <topf arguments...>
 hsctl run update-cluster --cluster development --dry-run
 ```
 
-`bootstrap-cluster` installs cluster services; `--nodes` first provisions a new cluster's Talos control plane from the LAN. See [Clusters](../architecture/clusters.md) for node inventory, credential handling and recovery instructions. Run subsequent service-installation retries without `--nodes` after etcd has bootstrapped.
+`bootstrap-cluster` performs initial cluster setup; `--nodes` first provisions a new cluster's Talos control plane from the LAN. It skips clusters marked `data.bootstrapComplete: true`. If initial setup is interrupted after etcd has bootstrapped, finish service installation without `--nodes`. See [Clusters](../architecture/clusters.md) for node inventory, credential handling and recovery instructions.
 
 `topf` runs natively against `HSCTL_REPO_ROOT/clusters/<cluster>/topf.yaml` and the shared patches under infra/topf. All TOPF flags pass through, including apply --dry-run (exit 2 means changes). Missing CA bundles are restored from Infisical; routine calls use the private cache. Prefix --refresh-secrets to refresh deliberately or --init-secrets to restore/create and back up the first bundle. Generated configs and credentials contain secrets and must remain uncommitted. Bootstrap generates a fresh short-lived kubeconfig each run. `hsctl get kubeconfig <cluster> --break-glass` also generates a fresh TOPF admin context; default access continues to use OIDC.
 
-`update-cluster` previews or reconciles the Talos/Kubernetes versions and remaining configuration declared in topf.yaml, locally or in CI. It requires data.bootstrapComplete true. See [Updates](../architecture/clusters.md#updates).
+`update-cluster` handles ongoing reconciliation: Talos/Kubernetes versions, TOPF configuration, and the ArgoCD deploy key and Infisical operator credentials. It runs locally or in CI and requires `data.bootstrapComplete: true`. `--dry-run` checks service credential changes without writing them or displaying their values. See [Updates](../architecture/clusters.md#updates).
 
 `terraform` plans/applies external infrastructure in `infra/terraform`; it does not provision Talos. Other names run matching playbooks from `infra/ansible/playbooks/` in local mode.
 
@@ -120,7 +120,7 @@ hsctl run update-cluster --cluster development --dry-run
 - `--chain <name>[,...]` runs additional jobs against the same local checkout.
 - `--arg key=value` passes extra arguments to remote generic playbooks; `--cluster` selects the cluster for bootstrap, updates or Terraform.
 
-Local bootstrap reads ArgoCD and Infisical operator credentials through the authenticated Infisical CLI. Existing-cluster service installation also fetches the selected cluster's kubeconfig. A fresh `--nodes` bootstrap fetches kubeconfig after the API becomes ready. CI uses GitHub OIDC instead.
+Local cluster playbooks read ArgoCD and Infisical operator credentials through the authenticated Infisical CLI and generate a fresh cluster kubeconfig. A fresh `--nodes` bootstrap generates kubeconfig after the API becomes ready. CI uses GitHub OIDC instead.
 
 ## `hsctl pim`
 

@@ -65,7 +65,9 @@ The first bootstrap runs from the LAN. Tailscale subnet routing is an ArgoCD wor
 
 The bootstrap names and permanent addresses must match the aliases and IPs in topf.yaml. Bootstrap backs up the CA, renders offline from permanent configuration, applies through each DHCP address with native talosctl --insecure, waits for permanent Talos addresses, and then uses authenticated TOPF bootstrap at the first permanent address. It waits for the Kubernetes API, generates fresh credentials and installs cluster services. Existing etcd membership is detected by TOPF's bootstrap operation.
 
-After Talos bootstrap succeeds, retry service installation without --nodes to avoid replaying the maintenance-mode apply.
+Bootstrap is only for the initial setup of a cluster. If that setup is interrupted after Talos bootstrap succeeds, finish it without --nodes to avoid replaying the maintenance-mode apply. Once `data.bootstrapComplete: true` is set, the bootstrap playbook skips the cluster; use `update-cluster` for all subsequent reconciliation.
+
+Bootstrap creates the initial service namespaces, ArgoCD deploy key and Infisical operator credentials before installing Cilium and ArgoCD. Ongoing application updates are managed by ArgoCD.
 
 ## Later applies and additional nodes
 
@@ -91,11 +93,13 @@ Renovate tracks `talosVersion` and `kubernetesVersion` in each topf.yaml, plus t
 2. On every main deployment, CI reconciles all bootstrapped clusters, even when the commit did not change topf.yaml. When both clusters are selected, development runs before production; any failure stops the run.
 3. TOPF upgrades Talos to the desired SecureBoot installer/schematic, drains one node at a time and waits for recovery. PodDisruptionBudgets remain enforced.
 4. If Kubernetes versions differ, `talosctl upgrade-k8s --to <desired version>` orchestrates control-plane components and kubelets. One control-plane API entry addresses the whole cluster. Every replica is inspected so an interrupted rollout can resume even when the API already reports the target version.
-5. Every running version must match Git before `topf apply` reconciles the remaining configuration. This prevents a normal config apply from bypassing Kubernetes upgrade orchestration. The final check requires reachable, Ready nodes.
+5. Every running version must match Git before `topf apply` reconciles the remaining configuration. Live state is refreshed only if an upgrade ran. This prevents a normal config apply from bypassing Kubernetes upgrade orchestration. TOPF performs its own preflight health checks and waits for changed nodes to stabilize after applying; Ansible does not repeat the full version inventory afterward.
+
+Every update also reconciles the ArgoCD deploy key and Infisical operator credentials from Infisical, even when Talos/Kubernetes versions already match. CI reuses the cluster's fresh Infisical login; local updates read these values through the authenticated Infisical CLI. PR previews use Kubernetes check mode and suppress secret values and diffs.
 
 The playbook refuses downgrades and skips across minor releases, keeps native compatibility checks enabled, and stops if anything fails. If a Kubernetes preview is rejected because the installed Talos is too old, merge a Talos-only bump first, then rerun the Kubernetes PR. Use separate PRs to maintain a supported intermediate combination; CI does not bypass those checks.
 
-Nothing upgrades when a pin already matches the running version (unless the Talos schematic changed); ordinary configuration is still reconciled. Retries discover live state and finish outstanding work. CI only reads the existing Infisical CA bundle, generates private short-lived client configs and removes its workspace on success or failure. It never initializes secrets or bootstraps etcd. Cluster inventories opt into reconciliation with `data.bootstrapComplete: true` after their first bootstrap is confirmed.
+Nothing upgrades when a pin already matches the running version (unless the Talos schematic changed); ordinary configuration and service credentials are still reconciled. Retries discover live state and finish outstanding work. CI reads the existing Infisical CA bundle and service credentials, generates private short-lived client configs and removes its workspace on success or failure. It never initializes a cluster CA or bootstraps etcd. Cluster inventories opt into reconciliation with `data.bootstrapComplete: true` after their first bootstrap is confirmed.
 
 To run the same procedure explicitly:
 
