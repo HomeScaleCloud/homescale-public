@@ -6,9 +6,7 @@ apiVersion: v1alpha1
 kind: KubeNodeConfig
 labels:
   REDACTED/name: {{ .ClusterName | quote }}
-  {{- with (get .Node.Data "nodeRole") }}
-  REDACTED/role: {{ . | quote }}
-  {{- end }}
+  REDACTED/role: {{ .Node.Host | quote }}
 nodeIP:
   validSubnets:
     - {{ .Data.nodeSubnet }}

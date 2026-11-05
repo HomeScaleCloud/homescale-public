@@ -115,9 +115,8 @@ with tempfile.TemporaryDirectory(prefix="topf-validation-") as temporary:
             assert hostname["auto"] == "stable" and not hostname.get("hostname")
             labels = by_kind(config_docs, "KubeNodeConfig")["labels"]
             assert labels["REDACTED/name"] == config["clusterName"]
-            assert node.get("data", {}).get("nodeRole"), f"{node['host']} must declare data.nodeRole"
-            assert labels["REDACTED/role"] == node["data"]["nodeRole"]
-            print(f"PASS: {node['host']}: Node role label matches topf.yaml")
+            assert labels["REDACTED/role"] == node["host"]
+            print(f"PASS: {node['host']}: Node role label matches host")
             installation = by_kind(config_docs, "UnattendedInstallConfig")
             assert installation["installer"]["image"] == expected_image
             disk = node.get("data", {}).get("installDiskMatch") or effective["data"].get("installDiskMatch")
@@ -155,5 +154,8 @@ with tempfile.TemporaryDirectory(prefix="topf-validation-") as temporary:
         run(["topf", "--topfconfig", str(fixture_config), "render", "--output", str(output)], environment)
         worker_path = output / "validation-worker.yaml"
         run(["talosctl", "validate", "--config", str(worker_path), "--mode", "metal"], environment)
-        assert not any(document.get("kind") in ["KubeAuthenticationConfig", "KubeProxyConfig", "Layer2VIPConfig"] for document in documents(worker_path))
+        worker_docs = documents(worker_path)
+        assert by_kind(worker_docs, "KubeNodeConfig")["labels"]["REDACTED/role"] == worker["host"]
+        print(f"PASS: {config['clusterName']}: Worker role label matches host")
+        assert not any(document.get("kind") in ["KubeAuthenticationConfig", "KubeProxyConfig", "Layer2VIPConfig"] for document in worker_docs)
         print(f"PASS: {config['clusterName']}: Workers omit OIDC and VIP settings")

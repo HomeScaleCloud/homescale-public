@@ -76,7 +76,7 @@ print(json.dumps(value) if "-o=json" in args else yaml.safe_dump(value))
     def node(name, ready, control_plane=False, cordoned=False):
         return {'apiVersion': 'v1', 'kind': 'Node', 'metadata': {
             'name': name, 'creationTimestamp': (datetime.now(timezone.utc) - timedelta(days=3)).isoformat(),
-            'labels': {'node-role.kubernetes.io/control-plane': '', 'REDACTED/role': 'cp-1'} if control_plane else {}},
+            'labels': {'node-role.kubernetes.io/control-plane': '', 'REDACTED/role': 'production-cp-1'} if control_plane else {}},
             'spec': {'unschedulable': cordoned}, 'status': {
                 'conditions': [] if ready is None else [{'type': 'Ready', 'status': ready}],
                 'addresses': [{'type': 'ExternalIP', 'address': '203.0.113.10'}, {'type': 'InternalIP', 'address': '10.1.245.21'}],
@@ -89,7 +89,7 @@ print(json.dumps(value) if "-o=json" in args else yaml.safe_dump(value))
     (root / 'tailscale.json').write_text(json.dumps({'BackendState': 'Running', 'Peer': None}))
     table = run(['nodes']).stdout.splitlines()
     assert table[0].split() == ['NAME', 'STATUS', 'TYPE', 'ROLE', 'IP', 'IMAGE', 'KERNEL', 'KUBELET', 'RUNTIME', 'AGE']
-    assert 'Ready' in table[1] and 'control-plane' in table[1] and 'cp-1' in table[1]
+    assert 'Ready' in table[1] and 'control-plane' in table[1] and 'production-cp-1' in table[1]
     assert 'NotReady,SchedulingDisabled' in table[2] and 'worker' in table[2]
     assert 'NotReady' in table[3] and 'Unknown' in table[4]
     assert all('10.1.245.21' in row and 'Talos (v1.14.5)' in row and 'containerd://2.1.0' in row for row in table[1:])
