@@ -353,6 +353,8 @@ spec:
               deploy: true
             slurm:
               deploy: true
+            spegel:
+              deploy: true
             tailscale:
               values:
                 subnetRouter:
