@@ -115,8 +115,9 @@ with tempfile.TemporaryDirectory(prefix="topf-validation-") as temporary:
             assert hostname["auto"] == "stable" and not hostname.get("hostname")
             labels = by_kind(config_docs, "KubeNodeConfig")["labels"]
             assert labels["REDACTED/name"] == config["clusterName"]
-            if node.get("data", {}).get("nodeRole"):
-                assert labels["REDACTED/role"] == node["data"]["nodeRole"]
+            assert node.get("data", {}).get("nodeRole"), f"{node['host']} must declare data.nodeRole"
+            assert labels["REDACTED/role"] == node["data"]["nodeRole"]
+            print(f"PASS: {node['host']}: Node role label matches topf.yaml")
             installation = by_kind(config_docs, "UnattendedInstallConfig")
             assert installation["installer"]["image"] == expected_image
             disk = node.get("data", {}).get("installDiskMatch") or effective["data"].get("installDiskMatch")

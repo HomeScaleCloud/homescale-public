@@ -24,3 +24,5 @@ nodes:
   - host: development-1
     ip: 10.1.247.21
     role: control-plane
+    data:
+      nodeRole: cp-1

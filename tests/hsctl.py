@@ -83,7 +83,7 @@ print(json.dumps(value) if "-o=json" in args else yaml.safe_dump(value))
                 'nodeInfo': {'osImage': 'Talos (v1.14.5)', 'kernelVersion': '6.12.1-talos',
                              'kubeletVersion': 'v1.37.1', 'containerRuntimeVersion': 'containerd://2.1.0'}}}
 
-    nodes = {'apiVersion': 'v1', 'kind': 'NodeList', 'items': [node('talos-aaa-bbb', 'True', True),
+    nodes = {'apiVersion': 'v1', 'kind': 'List', 'items': [node('talos-aaa-bbb', 'True', True),
              node('talos-ccc-ddd', 'False', cordoned=True), node('talos-eee-fff', 'Unknown'), node('talos-ggg-hhh', None)]}
     (root / 'nodes.json').write_text(json.dumps(nodes))
     (root / 'tailscale.json').write_text(json.dumps({'BackendState': 'Running', 'Peer': None}))
@@ -104,8 +104,12 @@ print(json.dumps(value) if "-o=json" in args else yaml.safe_dump(value))
     print('PASS: kubectl failures keep their exit status')
     run(['nodes', '--cluster', 'production'], expected=1)
     run(['kubeconfig', 'development', '--omni'], expected=1)
-    (root / 'nodes.json').write_text(json.dumps(dict(nodes, items=[])))
-    assert len(run(['nodes']).stdout.splitlines()) == 1
+    for kind in ['List', 'NodeList']:
+        (root / 'nodes.json').write_text(json.dumps(dict(nodes, kind=kind)))
+        assert len(run(['nodes']).stdout.splitlines()) == len(nodes['items']) + 1
+        (root / 'nodes.json').write_text(json.dumps(dict(nodes, kind=kind, items=[])))
+        assert len(run(['nodes']).stdout.splitlines()) == 1
+    print('PASS: Node queries accept List and NodeList responses')
     print('PASS: An empty cluster prints only the table header')
 
     def peer(cluster, online=True):

@@ -133,7 +133,7 @@ def main():
             subprocess.run([*command, '-o', output], check=True)
             return
         result = command_json([*command, '-o', 'json'])
-        nodes = result['items'] if result.get('kind') == 'NodeList' else [result]
+        nodes = result.get('items', [result])
         print_table(['NAME', 'STATUS', 'TYPE', 'ROLE', 'IP', 'IMAGE', 'KERNEL', 'KUBELET', 'RUNTIME', 'AGE'],
                     [node_row(node) for node in nodes])
     elif resource == 'clusters':
