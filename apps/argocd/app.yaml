@@ -58,6 +58,8 @@ values:
         serviceMonitor:
           enabled: true
     server:
+      deploymentAnnotations:
+        reloader.stakater.io/auto: "true"
       service:
         type: LoadBalancer
         loadBalancerClass: tailscale

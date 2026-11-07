@@ -18,6 +18,7 @@ values:
     replicaCount: 1
     deploymentAnnotations:
       secrets.infisical.com/auto-reload: "true"
+      reloader.stakater.io/auto: "true"
     service:
       port: 443
     config:

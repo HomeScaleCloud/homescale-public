@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}
+  annotations:
+    reloader.stakater.io/auto: "true"
 spec:
   replicas: {{ .Values.replicaCount }}
   strategy:
