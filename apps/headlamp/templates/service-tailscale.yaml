@@ -20,6 +20,6 @@ spec:
     app.kubernetes.io/name: headlamp
     app.kubernetes.io/instance: headlamp
   ports:
-    - name: http
-      port: 80
+    - name: https
+      port: 443
       targetPort: http
