@@ -150,62 +150,12 @@ jobs:
           CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
         run: ./infra/terraform/plan-apply.sh
 
-  # Preview affected inventories/code on PRs; reconcile every cluster on main.
-  cluster-detect:
-    name: "Clusters: detect"
-    runs-on: ubuntu-latest
-    if: github.event_name != 'workflow_dispatch' || inputs.job != 'terraform'
-    outputs:
-      clusters: ${{ steps.detect.outputs.clusters }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Detect affected clusters
-        id: detect
-        env:
-          INPUT_CLUSTER: ${{ inputs.cluster }}
-        run: |
-          set -euo pipefail
-          all_clusters=$(
-            printf '%s\n' clusters/*/topf.yaml \
-              | jq -Rsc 'split("\n") | map(select(length > 0) | split("/")[1]) | unique'
-          )
-
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            clusters=$(jq -ce --arg c "$INPUT_CLUSTER" '
-              if $c == "" then .
-              elif index($c) != null then [$c]
-              else error("Unknown cluster: " + $c) end
-            ' <<<"$all_clusters")
-          elif [ "${{ github.event_name }}" = "pull_request" ]; then
-            # Full history is already available from checkout.
-            range="origin/${{ github.base_ref }}...${{ github.sha }}"
-            changed_files=$(git diff --name-only "$range")
-
-            # Only TOPF inventories affect Talos; Kubernetes manifests sync through ArgoCD.
-            if grep -qE '^(infra/(topf|ansible)/|hsctl(\.d/|$)|\.github/(actions/setup-talos/|workflows/deploy.yaml))' <<<"$changed_files"; then
-              clusters="$all_clusters"
-            else
-              clusters=$(jq -Rsc '
-                split("\n") | map(select(test("^clusters/[^/]+/topf\\.yaml$")) | split("/")[1]) | unique
-              ' <<<"$changed_files")
-            fi
-          else
-            clusters="$all_clusters"
-          fi
-          echo "clusters=${clusters}" >> "$GITHUB_OUTPUT"
-          echo "Clusters detected: ${clusters}"
-
   ansible:
     name: "Ansible"
-    needs: [terraform, cluster-detect]
+    needs: [terraform]
     if: >-
       !cancelled() && (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
-      needs.cluster-detect.result == 'success' &&
-      (github.event_name == 'workflow_dispatch' || join(fromJson(needs.cluster-detect.outputs.clusters || '[]'), '') != '')
+      (github.event_name != 'workflow_dispatch' || inputs.job != 'terraform')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -252,12 +202,11 @@ jobs:
         continue-on-error: true
         working-directory: infra/ansible
         env:
-          CLUSTERS: ${{ needs.cluster-detect.outputs.clusters }}
+          CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
           DRY_RUN: ${{ github.event_name == 'pull_request' || inputs.dry_run == true }}
         run: |
           set -euo pipefail
-          limit=$(jq -r 'join(":")' <<<"$CLUSTERS")
-          ansible-playbook playbooks/update-cluster.yml --limit "$limit" -e "dry_run=$DRY_RUN" \
+          ansible-playbook playbooks/update-cluster.yml -e "target=${CLUSTER:-clusters}" -e "dry_run=$DRY_RUN" \
             2>&1 | tee "$RUNNER_TEMP/update-cluster.txt"
 
       - name: Post upgrade preview as a PR comment

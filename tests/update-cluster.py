@@ -362,35 +362,6 @@ module.exit_json(changed=False, resources=resources)
         for future in futures:
             future.result()
 
-    # Run the actual CI selection script: PRs are scoped; every main push selects all.
-    workflow = yaml.safe_load((REPO / ".github/workflows/deploy.yaml").read_text())
-    detector = next(step["run"] for step in workflow["jobs"]["cluster-detect"]["steps"] if step.get("id") == "detect")
-    detector = detector.replace("${{ github.event_name }}", "$MOCK_EVENT").replace("${{ github.base_ref }}", "main").replace("${{ github.sha }}", "head")
-    executable(tools / "git", "#!/bin/sh\nif [ \"$1\" = diff ]; then cat \"$MOCK_ROOT/changed-files\"; fi\n")
-    for event, changed, selected, expected in [
-        ("pull_request", "clusters/production/topf.yaml", "", ["production"]),
-        ("pull_request", "infra/ansible/playbooks/update-cluster.yml", "", ["development", "production"]),
-        ("pull_request", "infra/ansible/tasks/cluster-credentials.yml", "", ["development", "production"]),
-        ("pull_request", "infra/ansible/inventory/group_vars/clusters.yml", "", ["development", "production"]),
-        ("pull_request", "clusters/development/topf.yaml\nclusters/production/topf.yaml", "", ["development", "production"]),
-        ("pull_request", ".github/actions/setup-talos/action.yaml", "", ["development", "production"]),
-        ("pull_request", "clusters/development/apps.yaml", "", []),
-        ("push", "README.md", "", ["development", "production"]),
-        ("workflow_dispatch", "", "development", ["development"]),
-        ("workflow_dispatch", "", "", ["development", "production"]),
-    ]:
-        (root / "changed-files").write_text(changed + "\n")
-        output = root / "github-output"
-        output.write_text("")
-        subprocess.run(["bash", "-c", detector], cwd=root,
-                       env=dict(environment, MOCK_EVENT=event, INPUT_CLUSTER=selected, GITHUB_OUTPUT=str(output)),
-                       check=True, capture_output=True, text=True)
-        assert json.loads(output.read_text().strip().split("=", 1)[1]) == expected
-        if event == "push":
-            print("PASS: Main pushes select every cluster", flush=True)
-    print("PASS: PR previews select only affected clusters", flush=True)
-    print("PASS: Manual runs select the requested cluster", flush=True)
-
     executable(tools / "ansible-galaxy", "#!/bin/sh\nexit 0\n")
     executable(tools / "infisical", '''#!/usr/bin/env python3
 import json, sys
