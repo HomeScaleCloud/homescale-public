@@ -37,7 +37,7 @@ jobs:
           restore-keys: |
             helm-deps-
       - name: Validate manifest selection and rendered apps
-        run: tests/validate-manifests.sh
+        run: tests/test_manifests.sh
 
   scripts:
     name: ${{ matrix.name }}
@@ -60,12 +60,23 @@ jobs:
       - name: Install pinned Talos tools
         if: matrix.suite == 'talos' || matrix.suite == 'bootstrap-cluster'
         uses: ./.github/actions/setup-talos
+      - name: Cache Python dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ matrix.suite }}
       - name: Install validation dependencies
-        run: python -m pip install ansible-core PyYAML
+        run: python -m pip install ansible-core PyYAML pytest pytest-xdist
       - name: Run ${{ matrix.suite }} tests
         env:
           SUITE: ${{ matrix.suite }}
-        run: python "tests/$SUITE.py"
+        # update-cluster's scenarios are independent and each shell out to a real ansible-playbook
+        # run, so they dominate matrix wall-clock; the other suites are either fast already or
+        # (bootstrap-cluster) inherently sequential, so only this one gets -n auto.
+        run: |
+          args=()
+          [[ "$SUITE" == update-cluster ]] && args+=(-n auto)
+          pytest "tests/test_${SUITE//-/_}.py" -v "${args[@]}"
 
   runbooks:
     name: "Runbooks"
@@ -74,4 +85,4 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Validate alert runbooks
-        run: tests/check-runbooks.sh
+        run: tests/test_runbooks.sh

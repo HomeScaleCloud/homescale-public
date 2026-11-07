@@ -38,6 +38,10 @@ override.tf.json
 # direnv local folder
 .direnv
 
+# Python test artifacts
+__pycache__/
+.pytest_cache/
+
 # MkDocs build output
 site/
 

@@ -174,20 +174,17 @@ ArgoCD continuously reconciles workloads after merge. App-only changes do not re
 
 ## Checks and CI helpers
 
-The scripts under .github/scripts have three purposes:
+Everything under `tests/` is a check, not a deployment entrypoint. CI calls the same commands that can be run locally:
 
 | Script | Purpose |
 |--------|---------|
-| install-talos-tools.sh | Pin the TOPF CLI version, install matching talosctl, and verify both release checksums for CI/local validation |
-| validate-manifests.sh | Render app charts and validate Kubernetes schemas, including recursive cluster manifests |
-| check-runbooks.sh | Check that repository alerts link to existing runbooks |
+| test_manifests.sh | Render app charts and validate Kubernetes schemas, including recursive cluster manifests |
+| test_runbooks.sh | Check that repository alerts link to existing runbooks |
+| test_talos.py | Checks TOPF-rendered Talos configs against each cluster's `topf.yaml` |
+| test_bootstrap_cluster.py | Checks Talos CA/secrets recovery and `bootstrap-cluster.yml` sequencing |
+| test_update_cluster.py | Checks `update-cluster.yml`'s version-upgrade and credential-rotation logic |
+| test_hsctl.py | Checks `hsctl get` output and cluster discovery |
 
-Regression tests live under tests/: talos.py checks generated Talos configs, bootstrap.py checks credentials and bootstrap ordering, and manifests.py checks recursive manifest selection. These are tests, not deployment entrypoints. CI calls the same commands that can be run locally:
-
-```bash
-python3 tests/talos.py
-python3 tests/bootstrap.py
-python3 tests/manifests.py
-```
+The four `test_*.py` suites are pytest-based (`pip install pytest ansible-core PyYAML`); see "Key Commands" in `CLAUDE.md` for the full local invocation.
 
 Terraform PRs retain the plain plan and rendered ACL JSON. There is no separate topology-map generator or unused Helm build matrix. ArgoCD owns app reconciliation; TOPF owns Talos configuration; Ansible orders initial bootstrap; Terraform owns external services.

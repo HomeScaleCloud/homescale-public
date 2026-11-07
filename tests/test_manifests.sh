@@ -16,7 +16,7 @@ validate_manifests() (
     cd "$repo_root"
 
     for bin in helm yq kubeconform; do
-        command -v "$bin" >/dev/null || { echo "validate-manifests.sh: '$bin' is required" >&2; exit 1; }
+        command -v "$bin" >/dev/null || { echo "test_manifests.sh: '$bin' is required" >&2; exit 1; }
     done
 
     tmp="$(mktemp -d)"
@@ -165,10 +165,10 @@ validate_manifests() (
     done
 
     if [[ "$fail" -ne 0 ]]; then
-        echo "validate-manifests.sh: FAILED" >&2
+        echo "test_manifests.sh: FAILED" >&2
         exit 1
     fi
-    echo "validate-manifests.sh: OK"
+    echo "test_manifests.sh: OK"
 )
 
 check_manifest_selection() (

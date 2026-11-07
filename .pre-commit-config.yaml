@@ -46,7 +46,7 @@ repos:
     hooks:
       - id: runbook-coverage
         name: runbook coverage for PrometheusRule alerts
-        entry: tests/check-runbooks.sh
+        entry: tests/test_runbooks.sh
         language: script
         pass_filenames: false
         files: '^(apps/.+/templates/.+\.yaml|docs/runbooks/.+\.md|mkdocs\.yml)$'

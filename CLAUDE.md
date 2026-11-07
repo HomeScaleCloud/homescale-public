@@ -23,7 +23,7 @@ Every `PrometheusRule` alert must have a corresponding runbook in `docs/runbooks
 - **Changed alert** (severity, thresholds, description, rename) → update the runbook to match.
 - **Deleted alert** → remove the runbook page and `mkdocs.yml` entry.
 
-This is enforced by `.github/scripts/check-runbooks.sh` (a `runbook-coverage` pre-commit hook, also run in CI): every repo-defined alert needs a `runbook_url` of the form above with a matching `docs/runbooks/<slug>.md` and `mkdocs.yml` nav entry, and every `docs/runbooks/*.md` must be claimed by an alert. The `<slug>` is taken from the `runbook_url` itself, so it doesn't have to be a mechanical kebab-case of the alert name.
+This is enforced by `tests/test_runbooks.sh` (a `runbook-coverage` pre-commit hook, also run in CI): every repo-defined alert needs a `runbook_url` of the form above with a matching `docs/runbooks/<slug>.md` and `mkdocs.yml` nav entry, and every `docs/runbooks/*.md` must be claimed by an alert. The `<slug>` is taken from the `runbook_url` itself, so it doesn't have to be a mechanical kebab-case of the alert name.
 
 Runbooks live under `docs/runbooks/` grouped by system (e.g. Longhorn alerts → `longhorn-*.md`, PDU alerts → `apc-pdu-*.md`). See existing runbooks for the expected format: header with severity/alert/dashboard, "What this means" section, "Common causes" table, remediation steps. No "Diagnosis" section — the alert firing is the diagnosis.
 
@@ -49,10 +49,14 @@ helm template apps -f apps/values.yaml --set env.name=production
 # then kubeconform the output against Kubernetes + datreeio CRD schemas. A CR
 # whose kind has no schema fails the run unless allowlisted in the script.
 # Needs helm, yq, kubeconform 0.7.x. Runs in CI on PRs.
-.github/scripts/validate-manifests.sh
+tests/test_manifests.sh
+
+# Run the hsctl/TOPF/bootstrap/update-cluster test suites (needs: pip install pytest ansible-core PyYAML;
+# talosctl/ansible-playbook/openssl on PATH). Each suite is also its own CI matrix job.
+pytest tests/test_hsctl.py tests/test_talos.py tests/test_bootstrap_cluster.py tests/test_update_cluster.py -v
 ```
 
-Pre-commit runs automatically on commit (includes yamllint and detect-secrets among its hooks). CI runs pre-commit, a Trivy config scan, and a Helm render + kubeconform pass (`validate-manifests.sh`) on every PR.
+Pre-commit runs automatically on commit (includes yamllint and detect-secrets among its hooks). CI runs pre-commit, a Trivy config scan, and a Helm render + kubeconform pass (`test_manifests.sh`) on every PR.
 
 ## Commit Convention
 

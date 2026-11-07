@@ -75,7 +75,7 @@ while IFS= read -r ref; do
 done < <(grep -oE 'runbooks/[a-z0-9-]+\.md' "$mkdocs" | sort -u)
 
 if [[ "$fail" -ne 0 ]]; then
-    echo "check-runbooks.sh: FAILED" >&2
+    echo "test_runbooks.sh: FAILED" >&2
     exit 1
 fi
-echo "check-runbooks.sh: OK ($alert_count alerts, all with runbook + nav entry)"
+echo "test_runbooks.sh: OK ($alert_count alerts, all with runbook + nav entry)"
