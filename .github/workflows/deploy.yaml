@@ -3,7 +3,6 @@ permissions:
   actions: read
   contents: read
   id-token: write
-  pull-requests: write
 
 on:
   workflow_call:
@@ -80,14 +79,12 @@ jobs:
 
       - name: Plan
         id: plan
-        continue-on-error: true
         env:
           DRY_RUN: "true"
           CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
-        run: ./infra/terraform/plan-apply.sh > /tmp/tf-plan.txt 2>&1
+        run: ./infra/terraform/plan-apply.sh
       - name: Extract rendered Tailnet ACL
         id: tailnet_acl
-        if: steps.plan.outcome == 'success'
         run: |
           terraform -chdir=infra/terraform show -json /tmp/tfplan > /tmp/tfplan.json
           RAW=$(jq -r '.resource_changes[]? | select(.address == "module.tailscale.tailscale_acl.this") | .change.after.acl // empty' /tmp/tfplan.json)
@@ -99,51 +96,12 @@ jobs:
           fi
       - name: Upload rendered Tailnet ACL artifact
         id: upload_acl
-        if: steps.plan.outcome == 'success' && env.ACL_RENDERED == 'true'
+        if: env.ACL_RENDERED == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: tailnet-acl
           path: /tmp/tailnet-acl.json
           retention-days: 30
-      - name: Write plan to job summary
-        if: always() && steps.plan.outcome != 'skipped'
-        run: |
-          icon=$([[ "${{ steps.plan.outcome }}" == "success" ]] && echo "✅" || echo "❌")
-          {
-            echo "## ${icon} Terraform Plan"
-            echo ""
-            echo '```'
-            cat /tmp/tf-plan.txt 2>/dev/null || echo "(no output)"
-            echo '```'
-            echo ""
-            echo "> commit \`${{ github.sha }}\`"
-          } >> "$GITHUB_STEP_SUMMARY"
-      - name: Post plan results to PR
-        if: always() && github.event_name == 'pull_request'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
-        env:
-          PLAN_OUTCOME: ${{ steps.plan.outcome }}
-          ACL_ARTIFACT: ${{ steps.upload_acl.outputs.artifact-url }}
-        with:
-          script: |
-            const fs = require('fs');
-            const marker = '<!-- terraform-plan -->';
-            const output = fs.existsSync('/tmp/tf-plan.txt') ? fs.readFileSync('/tmp/tf-plan.txt', 'utf8') : '(no output)';
-            let body = `${marker}\n## Terraform plan: ${process.env.PLAN_OUTCOME}\n\n\`\`\`\n${output.slice(0, 55000)}\n\`\`\``;
-            if (process.env.ACL_ARTIFACT) body += `\n\n[Rendered Tailscale ACL](${process.env.ACL_ARTIFACT})`;
-            const target = {owner: context.repo.owner, repo: context.repo.repo};
-            const {data: comments} = await github.rest.issues.listComments({...target, issue_number: context.issue.number, per_page: 100});
-            const existing = comments.find(comment => comment.body.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({...target, comment_id: existing.id, body});
-            } else {
-              await github.rest.issues.createComment({...target, issue_number: context.issue.number, body});
-            }
-      - name: Fail if plan failed
-        if: steps.plan.outcome == 'failure'
-        run: |
-          echo "Terraform plan failed. See job summary for details."
-          exit 1
       - name: Apply
         if: (github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch') || (github.event_name == 'workflow_dispatch' && inputs.job == 'terraform' && inputs.dry_run != true)
         env:
@@ -199,42 +157,11 @@ jobs:
       - name: Run update-cluster
         if: github.event_name != 'workflow_dispatch' || inputs.job == 'update-cluster'
         id: update
-        continue-on-error: true
         working-directory: infra/ansible
         env:
           CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
           DRY_RUN: ${{ github.event_name == 'pull_request' || inputs.dry_run == true }}
-        run: |
-          set -euo pipefail
-          ansible-playbook playbooks/update-cluster.yml -e "target=${CLUSTER:-clusters}" -e "dry_run=$DRY_RUN" \
-            2>&1 | tee "$RUNNER_TEMP/update-cluster.txt"
-
-      - name: Post upgrade preview as a PR comment
-        if: always() && github.event_name == 'pull_request'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
-        env:
-          UPDATE_OUTCOME: ${{ steps.update.outcome }}
-        with:
-          script: |
-            const fs = require('fs');
-            const marker = '<!-- update-cluster-plan -->';
-            const outputPath = `${process.env.RUNNER_TEMP}/update-cluster.txt`;
-            const output = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, 'utf8').trim() : '(setup failed before preview)';
-            const body = [marker, '## Cluster upgrade and configuration preview',
-              `Result: ${process.env.UPDATE_OUTCOME}`, '', '```', output.slice(-55000), '```'].join('\n');
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number,
-            });
-            const existing = comments.find(comment => comment.user.type === 'Bot' && comment.body.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({owner: context.repo.owner, repo: context.repo.repo, comment_id: existing.id, body});
-            } else {
-              await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body});
-            }
-
-      - name: Fail if reconciliation failed
-        if: steps.update.outcome == 'failure'
-        run: exit 1
+        run: ansible-playbook playbooks/update-cluster.yml -e "target=${CLUSTER:-clusters}" -e "dry_run=$DRY_RUN"
 
       - name: Run playbook
         if: github.event_name == 'workflow_dispatch' && inputs.job != 'update-cluster'
