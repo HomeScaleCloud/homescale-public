@@ -6,7 +6,7 @@ snmpExporter:
   enabled: false
   image:
     repository: prom/snmp-exporter
-    tag: "v0.26.0"
+    tag: "v0.31.0"
   community: "public"
   unifiCommunity: "unifi"
 kube-prometheus-stack:
