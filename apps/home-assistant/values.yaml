@@ -45,7 +45,7 @@ zigbee2mqtt:
 matter:
   image:
     repository: ghcr.io/matter-js/matterjs-server
-    tag: "1.1.7"
+    tag: "1.5.5"
   pvc:
     size: 1Gi
 homebridge:
