@@ -7,3 +7,20 @@ dependencies:
   - name: slurm
     version: 1.2.4
     repository: oci://ghcr.io/slinkyproject/charts
+annotations:
+  REDACTED/namespace: "slurm"
+  REDACTED/pod-security: "privileged"
+  REDACTED/extra-sources: |
+    - repoURL: ghcr.io/slinkyproject/charts
+      chart: slurm-operator-crds
+      targetRevision: 1.2.2
+      helm:
+        releaseName: slurm-operator-crds
+    - repoURL: ghcr.io/slinkyproject/charts
+      chart: slurm-operator
+      targetRevision: 1.2.2
+      helm:
+        releaseName: slurm-operator
+        valuesObject:
+          certManager:
+            enabled: true

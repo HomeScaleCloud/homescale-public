@@ -7,3 +7,7 @@ dependencies:
   - name: node-feature-discovery
     version: 0.20.1
     repository: https://kubernetes-sigs.github.io/node-feature-discovery/charts
+annotations:
+  REDACTED/namespace: "node-feature-discovery"
+  REDACTED/default-deploy: "true"
+  REDACTED/pod-security: "privileged"

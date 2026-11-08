@@ -7,3 +7,18 @@ dependencies:
   - name: cert-manager
     version: v1.21.3
     repository: https://charts.jetstack.io
+annotations:
+  REDACTED/namespace: "cert-manager"
+  REDACTED/sync-wave: "-30"
+  REDACTED/default-deploy: "true"
+  REDACTED/ignore-differences: |
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      name: cert-manager-webhook
+      jsonPointers:
+        - /webhooks
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: cert-manager-webhook
+      jsonPointers:
+        - /webhooks

@@ -1,6 +1,0 @@
-path: apps/node-feature-discovery
-namespace: node-feature-discovery
-releaseName: node-feature-discovery
-syncWave: 0
-podSecurity: privileged
-defaultDeploy: true

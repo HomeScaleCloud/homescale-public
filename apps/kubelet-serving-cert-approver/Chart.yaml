@@ -3,3 +3,8 @@ name: kubelet-serving-cert-approver
 description: Automatically approves kubelet serving certificate CSRs
 type: application
 version: 0.1.0
+annotations:
+  REDACTED/namespace: "kubelet-serving-cert-approver"
+  REDACTED/sync-wave: "-10"
+  REDACTED/default-deploy: "true"
+  REDACTED/pod-security: "restricted"

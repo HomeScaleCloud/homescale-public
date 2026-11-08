@@ -3,3 +3,13 @@ name: kubevirt
 description: Helm chart for KubeVirt and CDI (Containerized Data Importer) operators
 type: application
 version: 0.1.0
+annotations:
+  REDACTED/namespace: "kubevirt"
+  REDACTED/pod-security: "privileged"
+  REDACTED/ignore-differences: |
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: cdis.cdi.kubevirt.io
+      jsonPointers:
+        - /spec/versions
+        - /spec/conversion

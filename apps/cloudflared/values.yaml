@@ -1,5 +1,6 @@
 image:
-  tag: latest
+  # renovate: datasource=docker depName=cloudflare/cloudflared
+  tag: "2026.8.1"
 
 env:
   name: ""

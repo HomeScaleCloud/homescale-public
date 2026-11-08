@@ -3,3 +3,8 @@ name: generic-device-plugin
 description: Helm chart for deploying generic-device-plugin
 type: application
 version: 0.1.0
+annotations:
+  REDACTED/namespace: "generic-device-plugin"
+  REDACTED/sync-wave: "-25"
+  REDACTED/default-deploy: "true"
+  REDACTED/pod-security: "privileged"

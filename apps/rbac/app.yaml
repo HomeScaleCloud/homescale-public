@@ -1,8 +1,0 @@
-path: apps/rbac
-namespace: rbac
-releaseName: rbac
-syncWave: -30
-values:
-  env:
-    name: "{{ .Values.env.name }}"
-defaultDeploy: true

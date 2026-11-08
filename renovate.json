@@ -130,6 +130,15 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
+        "apps/cloudflared/values\\.yaml"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-zA-Z-]+)(?: depName=(?<depName>[^\\s]+))?\\n\\s*tag:\\s*\"(?<currentValue>[^\"]+)\""
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
         ".github/workflows/deploy\\.yaml"
       ],
       "matchStrings": [

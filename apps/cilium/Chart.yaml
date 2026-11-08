@@ -7,3 +7,27 @@ dependencies:
   - name: cilium
     version: 1.20.4
     repository: https://helm.cilium.io/
+annotations:
+  REDACTED/namespace: "kube-system"
+  REDACTED/sync-wave: "-40"
+  REDACTED/default-deploy: "true"
+  REDACTED/sync-options: "ServerSideApply=true"
+  REDACTED/ignore-differences: |
+    - group: ''
+      kind: Secret
+      name: cilium-ca
+      namespace: kube-system
+      jsonPointers:
+        - /data
+    - group: ''
+      kind: Secret
+      name: hubble-relay-client-certs
+      namespace: kube-system
+      jsonPointers:
+        - /data
+    - group: ''
+      kind: Secret
+      name: hubble-server-certs
+      namespace: kube-system
+      jsonPointers:
+        - /data

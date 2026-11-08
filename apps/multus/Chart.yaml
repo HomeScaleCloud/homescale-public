@@ -3,3 +3,7 @@ name: multus
 description: Helm chart for Multus CNI
 type: application
 version: 0.1.0
+annotations:
+  REDACTED/namespace: "kube-system"
+  REDACTED/sync-wave: "-35"
+  REDACTED/default-deploy: "true"

@@ -7,3 +7,23 @@ dependencies:
   - name: volsync
     version: 0.17.0
     repository: https://backube.github.io/helm-charts/
+annotations:
+  REDACTED/namespace: "volsync-system"
+  REDACTED/sync-wave: "-5"
+  REDACTED/default-deploy: "true"
+  REDACTED/ignore-differences: |
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: volumesnapshots.snapshot.storage.k8s.io
+      jsonPointers:
+        - /metadata/labels
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: volumesnapshotcontents.snapshot.storage.k8s.io
+      jsonPointers:
+        - /metadata/labels
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      name: volumesnapshotclasses.snapshot.storage.k8s.io
+      jsonPointers:
+        - /metadata/labels

@@ -1,18 +1,20 @@
 ---
 name: add-catalog-app
-description: Use when adding a new app to the HomeScale app catalog (a new apps/<name>/ directory with app.yaml), enabling an existing app on a new cluster, or changing how an app is exposed/secured (Tailscale ACL, public exposure, secrets). Walks the full onboarding sequence in the order it actually needs to happen and calls out the steps that fail silently or get admission-rejected instead of erroring at commit time.
+description: Use when adding a new app to the HomeScale app catalog (a new apps/<name>/ directory), enabling an existing app on a new cluster, or changing how an app is exposed/secured (Tailscale ACL, public exposure, secrets). Walks the full onboarding sequence in the order it actually needs to happen and calls out the steps that fail silently or get admission-rejected instead of erroring at commit time.
 ---
 
 # Add a catalog app
 
-Full reference for every `app.yaml` field lives in `docs/architecture/apps.md` — read it for anything not covered here. This skill is the *ordered checklist and gotchas*, not a field dictionary.
+Full reference for the per-app file layout lives in `docs/architecture/apps.md` — read it for anything not covered here. This skill is the *ordered checklist and gotchas*, not a field dictionary.
 
 ## 1. Scaffold the directory
 
 ```
 apps/<name>/
-  app.yaml          # required
-  Chart.yaml         # required
+  Chart.yaml          # required — catalog/ArgoCD wiring lives in its annotations:
+  values.yaml          # optional — Helm input values for this chart
+  tailscale.yaml        # optional — Tailscale ACL policy (Terraform-only, see step 4)
+  cloudflare.yaml        # optional — public exposure (Terraform-only, see step 6)
   templates/
     deployment.yaml / service.yaml   # if hand-written
     secret.yaml                       # if it needs Infisical secrets
@@ -21,21 +23,33 @@ apps/<name>/
 
 If wrapping an upstream chart, `templates/` holds only pass-through resources (`InfisicalSecret`, `volsync.yaml`, etc.) and `Chart.yaml` pulls the upstream chart as a `dependencies:` entry. If hand-writing templates, omit `dependencies`.
 
-## 2. Write `app.yaml`
+## 2. Write `Chart.yaml` annotations
 
-Minimum:
+Minimum (alongside the normal `apiVersion`/`name`/`description`/`version` fields):
 
 ```yaml
-path: apps/<name>
-namespace: <name>
-defaultDeploy: false      # don't accidentally deploy everywhere
+annotations:
+  REDACTED/namespace: <name>
+  REDACTED/default-deploy: "false"      # don't accidentally deploy everywhere
 ```
 
-`defaultDeploy` defaults to `false` if omitted — always set it explicitly so the intent is visible in the diff.
+Only set `REDACTED/default-deploy: "true"` when you actually want it; the catalog defaults to `false` if the annotation is omitted entirely, but set it explicitly so the intent is visible in the diff. Other optional annotations: `REDACTED/sync-wave` (default `"0"`), `REDACTED/pod-security`, `REDACTED/sync-options` (comma-separated), and — rare, only for apps needing ArgoCD drift-suppression or a multi-source chart — `REDACTED/ignore-differences`/`REDACTED/extra-sources`:
+
+```yaml
+annotations:
+  REDACTED/ignore-differences: |
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      name: my-webhook
+      jsonPointers:
+        - /webhooks
+```
+
+The value is a YAML block scalar (`|`) — still a plain string as far as `Chart.yaml`'s `annotations: map[string]string` is concerned, but the catalog chart parses its *content* back into a real list with `fromYamlArray`. See `apps/metrics/Chart.yaml` (`ignore-differences`) or `apps/slurm/Chart.yaml` (`extra-sources`) for real examples.
 
 ## 3. Enable it per cluster
 
-Do **not** set `deploy: true` in `app.yaml` itself. Enable in `clusters/<cluster>/apps/apps.yaml`, under `spec.sources[1].helm.values.apps.<name>`:
+Do **not** set `deploy: true` in `Chart.yaml` itself. Enable in `clusters/<cluster>/apps.yaml`, under `spec.sources[1].helm.values.apps.<name>`:
 
 ```yaml
 apps:
@@ -43,26 +57,25 @@ apps:
     deploy: true
 ```
 
-This override object is deep-merged onto the *entire* base `app.yaml`, so any top-level key (`values`, `syncWave`, `tailscale`, `exposePublic`, ...) can be overridden per cluster — not just `deploy`.
+This override object is deep-merged onto the app's assembled base config (`Chart.yaml` annotations + `values.yaml`, combined by the catalog chart), so any top-level key (`values`, `syncWave`, `podSecurity`, `ignoreDifferences`, ...) can be overridden per cluster — not just `deploy`. It does **not** reach `tailscale.yaml`/`cloudflare.yaml` — those are Terraform-only inputs, not part of the Helm catalog's merge at all, so they can't be overridden per cluster this way.
 
-**Gotcha:** the merge is deep on maps but **lists are replaced wholesale, not concatenated.** Overriding `values.someList` or `tailscale.policy.rules` at the cluster level replaces the base list entirely — if the base already had entries you want to keep, repeat them in the override.
+**Gotcha:** the merge is deep on maps but **lists are replaced wholesale, not concatenated.** Overriding `values.someList` at the cluster level replaces the base list entirely — if the base already had entries you want to keep, repeat them in the override.
 
 ## 4. Access control — Tailscale ACL (required)
 
-Add a top-level `tailscale:` block to `app.yaml`. **Access is denied by default with no `tailscale:` block** — this is the most common way a newly-added app is unreachable after merge with no error anywhere.
+Add `apps/<name>/tailscale.yaml`. **Access is denied by default with no `tailscale.yaml`** — this is the most common way a newly-added app is unreachable after merge with no error anywhere.
 
 ```yaml
-tailscale:
-  policy:
-    rules:
-      - sources: ["group:owners@REDACTED"]
-        protocol: tcp
-        ports: ["443"]
+policy:
+  rules:
+    - sources: ["group:owners@REDACTED"]
+      protocol: tcp
+      ports: ["443"]
 ```
 
 `sources` are literal ACL identifiers, spelled out in full (no short-alias remapping): `group:<name>@REDACTED`, `tag:github-actions`, `tag:app-<other-app>`, or `*`.
 
-This block is **not a Helm value** — Terraform (`infra/terraform/modules/tailscale/acl.tf`) reads every `apps/*/app.yaml` directly via `fileset`/`yamldecode` and flattens all apps' rules into one `tailscale_acl` resource. It has no effect on `helm template` output, which makes it look like dead config — it is not. Never delete it as unused.
+This file is **not a Helm value** — Terraform (`infra/terraform/modules/tailscale/acl.tf`) reads every `apps/*/tailscale.yaml` directly via `fileset`/`yamldecode` and flattens all apps' rules into one `tailscale_acl` resource. It has no effect on `helm template` output, which makes it look like dead config — it is not. Never delete it as unused.
 
 ## 5. Internal exposure (tailnet Service)
 
@@ -89,28 +102,31 @@ The policy specifically requires: `tailscale.com/tags` containing both `tag:k8s`
 
 ## 6. External exposure (optional, public internet)
 
-Add `exposePublic:` (a list — one app can expose multiple Services/ports/fqdns) to `app.yaml`:
+Add `apps/<name>/cloudflare.yaml` (its `expose:` key is a list — one app can expose multiple Services/ports/fqdns). **`service:` is required on every entry** — there's no fallback to `releaseName`/directory name:
 
 ```yaml
-exposePublic:
-  - env: production         # which cluster's Cloudflare tunnel to route through
-    fqdn: myapp.example.com  # must be in a Cloudflare zone in the HomeScale account
+expose:
+  - env: production          # which cluster's Cloudflare tunnel to route through
+    fqdn: myapp.example.com   # must be in a Cloudflare zone in the HomeScale account
     port: 80
+    service: <name>            # the Kubernetes Service name to route to
 ```
 
 To gate it behind Entra ID login at Cloudflare's edge, add `access:`:
 
 ```yaml
-exposePublic:
-  - env: production
-    fqdn: myapp.example.com
-    port: 80
-    access:
-      allowedIdps: []        # omit to allow any configured IdP
-      sessionDuration: "24h" # optional
+- env: production
+  fqdn: myapp.example.com
+  port: 80
+  service: <name>
+  access:
+    allowedIdps: []        # omit to allow any configured IdP
+    sessionDuration: "24h" # optional
 ```
 
 Note: this currently only supports "allow any authenticated user" — there's no group/email restriction in the Terraform module (`infra/terraform/modules/cloudflare/access.tf`) today. Flag this limitation if the user asks for group-scoped access.
+
+Like `tailscale.yaml`, this file is **not a Helm value** — Terraform (`infra/terraform/modules/cloudflare/main.tf`) reads every `apps/*/cloudflare.yaml` directly. The one exception: the catalog chart also reads each entry's `fqdn` (from this same file) to populate `.Values.homescale.exposePublicFqdns` for charts that need their own public hostname (e.g. a Knative `DomainMapping`, or a `Certificate`'s `dnsNames` when an entry sets `tls: true`).
 
 ## 7. Secrets (if needed)
 
@@ -146,7 +162,7 @@ spec:
 
 ## 8. VolSync backups (if it has persistent state worth backing up)
 
-Add `templates/volsync.yaml` (two-mode template gated by `.Values.volsync.restore.enabled`) and a matching `templates/secret.yaml` entry pulling from the shared `/k8s/volsync` Infisical path — copy the pattern from `apps/home-assistant/templates/volsync.yaml` and `templates/secret.yaml` (multi-PVC) or `apps/omni/templates/volsync.yaml` (single PVC). See the `volsync-restore` skill for the restore procedure once this is wired up.
+Add `templates/volsync.yaml` (two-mode template gated by `.Values.volsync.restore.enabled`) and a matching `templates/secret.yaml` entry pulling from the shared `/k8s/volsync` Infisical path — copy the pattern from `apps/home-assistant/templates/volsync.yaml` and `templates/secret.yaml`. That app is multi-PVC (a `$pvcs := list "..." "..."` at the top of the template); for a single-PVC app, use the same pattern with a one-element list. See the `volsync-restore` skill for the restore procedure once this is wired up.
 
 ## 9. First-party Docker image (if needed)
 

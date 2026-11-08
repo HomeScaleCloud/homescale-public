@@ -1,0 +1,183 @@
+slurm:
+  prologScripts:
+    00-provision-user.sh: |
+      #!/usr/bin/env bash
+      # Mirrors the login node's dynamically-created account (see apps/slurm/src/)
+      # onto each compute node the job lands on, since account creation on the
+      # login node doesn't otherwise reach them. Runs as root before job tasks
+      # start (Prolog, not PrologSlurmctld).
+      set -euo pipefail
+      if ! id "$SLURM_JOB_USER" >/dev/null 2>&1; then
+        groupadd --gid "$SLURM_JOB_GID" "$SLURM_JOB_USER" 2>/dev/null || true
+        useradd --uid "$SLURM_JOB_UID" --gid "$SLURM_JOB_GID" --create-home --shell /bin/bash "$SLURM_JOB_USER"
+      fi
+      # Trust the shared login->compute hop key (nodesets.compute.podSpec.volumes
+      # below) — pam_slurm_adopt does the actual authorization, not this key.
+      home="$(getent passwd "$SLURM_JOB_USER" | cut -d: -f6)"
+      mkdir -p "$home/.ssh"
+      cp /etc/slurm-ssh/id_ed25519.pub "$home/.ssh/authorized_keys"
+      chown -R "$SLURM_JOB_UID:$SLURM_JOB_GID" "$home/.ssh"
+      chmod 700 "$home/.ssh"
+      chmod 600 "$home/.ssh/authorized_keys"
+  slurmKey:
+    create: false
+    secretRef:
+      name: slurm-auth-slurm
+      key: slurm.key
+  jwtKey:
+    create: false
+    secretRef:
+      name: slurm-auth-jwt
+      key: jwt.key
+  accounting:
+    enabled: true
+  controller:
+    extraConfMap:
+      # Required for pam_slurm_adopt (the compute-node SSH gate) to see a job at
+      # all — without it, jobs get no "extern" step and every SSH attempt is
+      # denied with "no active jobs" even while one is genuinely running.
+      PrologFlags:
+        - Contain
+    persistence:
+      storageClassName: longhorn
+  nodesets:
+    compute:
+      replicas: 3
+      partition:
+        enabled: false
+      slurmd:
+        volumeMounts:
+          - name: ssh-hop-pubkey
+            mountPath: /etc/slurm-ssh
+            readOnly: true
+          - name: home
+            mountPath: /home
+      podSpec:
+        volumes:
+          - name: ssh-hop-pubkey
+            secret:
+              secretName: slurm-ssh-hop-key # pragma: allowlist secret
+              items:
+                - key: id_ed25519.pub
+                  path: id_ed25519.pub
+          - name: home
+            persistentVolumeClaim:
+              claimName: slurm-home
+  partitions:
+    all:
+      enabled: true
+  restapi:
+    # slurm.conf points AuthAltParameters at /etc/slurm/jwt.key, but the
+    # operator doesn't project the jwt-auth secret into the RestApi pod the way
+    # it does for Controller, and RestApi has no jwtKeyRef field to fix that via
+    # the CR. Can't subPath-mount jwt.key directly into /etc/slurm either — that
+    # path is owned by the operator's read-only projected volume, which has no
+    # slot for it. So: mount the secret at its own path, use an initContainer to
+    # copy slurm.conf to a writable emptyDir with jwt_key= repointed there, and
+    # point slurmrestd at that copy via SLURM_CONF.
+    slurmrestd:
+      env:
+        - name: SLURM_CONF
+          value: /etc/slurm-full/slurm.conf
+      volumeMounts:
+        - name: jwt-key
+          mountPath: /etc/slurm-jwt
+          readOnly: true
+        - name: slurm-full-conf
+          mountPath: /etc/slurm-full
+    podSpec:
+      initContainers:
+        - name: patch-slurm-conf
+          image: docker.io/alpine/k8s:1.37.0
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              sed 's#jwt_key=/etc/slurm/jwt.key#jwt_key=/etc/slurm-jwt/jwt.key#' \
+                /etc/slurm/slurm.conf > /etc/slurm-full/slurm.conf
+          volumeMounts:
+            - name: slurm-etc
+              mountPath: /etc/slurm
+              readOnly: true
+            - name: slurm-full-conf
+              mountPath: /etc/slurm-full
+      volumes:
+        - name: jwt-key
+          secret:
+            secretName: slurm-auth-jwt # pragma: allowlist secret
+            items:
+              - key: jwt.key
+                path: jwt.key
+        - name: slurm-full-conf
+          emptyDir: {}
+  loginsets:
+    login:
+      replicas: 1
+      service:
+        spec:
+          type: ClusterIP
+      login:
+        image:
+          repository: ghcr.io/homescalecloud/slurm-login
+          tag: "latest" # pragma: allowlist secret
+        volumeMounts:
+          - name: tailscale-socket
+            mountPath: /var/run/tailscale
+          - name: ssh-hop-key
+            mountPath: /etc/ssh/cluster-hop-key
+            subPath: cluster-hop-key
+            readOnly: true
+          - name: home
+            mountPath: /home
+      podSpec:
+        serviceAccountName: slurm-login
+        automountServiceAccountToken: true
+        initContainers:
+          - name: tailscale
+            image: tailscale/tailscale:v1.102.4
+            restartPolicy: Always
+            env:
+              - name: TS_CLIENT_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: slurm-tailscale-oauth # pragma: allowlist secret
+                    key: client_id
+              - name: TS_CLIENT_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: slurm-tailscale-oauth # pragma: allowlist secret
+                    key: client_secret
+              - name: TS_USERSPACE
+                value: "false"
+              - name: TS_KUBE_SECRET
+                value: slurm-login-tailscale-state # pragma: allowlist secret
+              - name: TS_SOCKET
+                value: /var/run/tailscale/tailscaled.sock
+              - name: TS_HOSTNAME
+                value: "slurm-login-{{ .Values.env.shortName }}"
+              - name: TS_EXTRA_ARGS
+                value: "--advertise-tags=tag:k8s,tag:app-slurm,tag:env-{{ .Values.env.name }}"
+              - name: TS_ACCEPT_DNS
+                value: "false"
+              - name: TS_AUTH_ONCE
+                value: "true"
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN"]
+            volumeMounts:
+              - name: tailscale-socket
+                mountPath: /var/run/tailscale
+        volumes:
+          - name: tailscale-socket
+            emptyDir: {}
+          - name: ssh-hop-key
+            secret:
+              secretName: slurm-ssh-hop-key # pragma: allowlist secret
+              items:
+                - key: id_ed25519
+                  path: cluster-hop-key
+                  mode: 0444
+          - name: home
+            persistentVolumeClaim:
+              claimName: slurm-home

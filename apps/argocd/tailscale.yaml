@@ -1,0 +1,5 @@
+policy:
+  rules:
+    - sources: ["group:team-infra-plat@REDACTED", "group:team-sec-plat@REDACTED"]
+      protocol: tcp
+      ports: ["80", "443"]

@@ -3,3 +3,6 @@ name: home-assistant
 description: Helm chart for Home Assistant
 type: application
 version: 0.1.0
+annotations:
+  REDACTED/namespace: "home-assistant"
+  REDACTED/pod-security: "privileged"

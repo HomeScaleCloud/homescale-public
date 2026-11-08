@@ -7,3 +7,7 @@ dependencies:
   - name: external-dns
     version: 1.23.0
     repository: https://kubernetes-sigs.github.io/external-dns/
+annotations:
+  REDACTED/namespace: "external-dns"
+  REDACTED/sync-wave: "-10"
+  REDACTED/default-deploy: "true"

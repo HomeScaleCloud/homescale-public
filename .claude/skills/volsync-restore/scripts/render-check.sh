@@ -21,7 +21,7 @@ if [[ -z "$repo_root" ]]; then
 fi
 cd "$repo_root"
 
-[[ -f "apps/$app/app.yaml" ]] || { echo "render-check.sh: no apps/$app/app.yaml" >&2; exit 1; }
+[[ -f "apps/$app/Chart.yaml" ]] || { echo "render-check.sh: no apps/$app/Chart.yaml" >&2; exit 1; }
 [[ -f "clusters/$cluster/apps/apps.yaml" ]] || { echo "render-check.sh: no clusters/$cluster/apps/apps.yaml" >&2; exit 1; }
 
 for bin in helm yq; do

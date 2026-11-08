@@ -21,13 +21,13 @@ Check `apps/<app>/templates/volsync.yaml`:
 hsctl get snapshot <app>
 ```
 
-This looks up `apps/<app>/app.yaml` for the namespace and reads the secret `<app>-volsync-repo` — it only works when the app directory name matches the PVC name. For a multi-PVC app's non-primary PVCs (e.g. `zigbee2mqtt` under `home-assistant`), there's no `apps/zigbee2mqtt/app.yaml` to resolve, so `hsctl get snapshot` can't be used directly — adapt `get_snapshot()` in `hsctl.d/get.sh` by hand (swap in the right namespace and `<pvc>-volsync-repo` secret name) or run the equivalent restic-pod-in-that-namespace manually.
+This looks up `apps/<app>/Chart.yaml`'s `REDACTED/namespace` annotation for the namespace and reads the secret `<app>-volsync-repo` — it only works when the app directory name matches the PVC name. For a multi-PVC app's non-primary PVCs (e.g. `zigbee2mqtt` under `home-assistant`), there's no `apps/zigbee2mqtt/Chart.yaml` to resolve, so `hsctl get snapshot` can't be used directly — adapt `get_snapshot()` in `hsctl.d/get.sh` by hand (swap in the right namespace and `<pvc>-volsync-repo` secret name) or run the equivalent restic-pod-in-that-namespace manually.
 
 Note the snapshot time (for `restoreAsOf`) or count back from latest (for `previous`) if you don't want the latest snapshot.
 
 ## 3. Determine the correct scale-down field — don't guess it
 
-Read the app's actual chart values (its `values.yaml`, or the upstream subchart's, under `apps/<app>/charts/`) to find the real replica-count path. It varies: `apps/omni/app.yaml` uses `values.omni.replicaCount`, but another chart might use a bare `replicaCount`, `controller.replicaCount`, or something else entirely depending on the upstream chart's conventions. A wrong path merges into the override silently — no error, no warning — and the app keeps running at its normal replica count while VolSync overwrites the PVC underneath it.
+Read the app's actual chart values (its `values.yaml`, or the upstream subchart's, under `apps/<app>/charts/`) to find the real replica-count path. It varies: `apps/headlamp/values.yaml` uses `values.headlamp.replicaCount`, but another chart might use a bare `replicaCount`, `controller.replicaCount`, or something else entirely depending on the upstream chart's conventions. A wrong path merges into the override silently — no error, no warning — and the app keeps running at its normal replica count while VolSync overwrites the PVC underneath it.
 
 ## 4. Edit `clusters/<cluster>/apps/apps.yaml` — scale-down and restore together
 

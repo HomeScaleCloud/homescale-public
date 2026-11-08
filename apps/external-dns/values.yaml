@@ -1,0 +1,23 @@
+env:
+  name: "{{ .Values.env.name }}"
+external-dns:
+  policy: sync
+  # Pinned explicitly (not the chart default) so a future upstream prefix
+  # change can't silently stop annotations being recognized — combined with
+  # policy:sync, that previously caused a full DNS wipe fleet-wide.
+  annotationPrefix: "external-dns.kubernetes.io/"
+  sources:
+    - service
+    - ingress
+  provider:
+    name: cloudflare
+  env:
+    - name: CF_API_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: cloudflare
+          key: credential
+  domainFilters: ["REDACTED"]
+  # Distinct per cluster so each instance's TXT registry doesn't fight over
+  # records another cluster's instance created.
+  txtOwnerId: "{{ .Values.env.name }}"

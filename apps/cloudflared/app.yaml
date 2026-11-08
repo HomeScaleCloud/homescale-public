@@ -1,5 +1,0 @@
-path: apps/cloudflared
-namespace: cloudflared
-releaseName: cloudflared
-syncWave: 0
-defaultDeploy: false

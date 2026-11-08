@@ -10,7 +10,7 @@ A GitOps monorepo for **HomeScale** — private Kubernetes clusters for personal
 
 The `docs/` directory is published to GitHub Pages via MkDocs Material to https://REDACTED. **Update the docs whenever you make a change that affects user-facing behavior**, including:
 
-- Adding, removing, or changing any field in `app.yaml` (reference lives in `docs/architecture/apps.md`)
+- Adding, removing, or changing any field in an app's `Chart.yaml` annotations, `values.yaml`, `tailscale.yaml`, or `cloudflare.yaml` (reference lives in `docs/architecture/apps.md`)
 - Adding a new app or cluster
 - Changing networking, secrets, or backup behavior
 - Adding new `hsctl` commands or subcommands
@@ -76,18 +76,15 @@ ArgoCD on each cluster watches this repo. Each cluster has a bootstrap `apps.yam
 
 ### App Catalog (`apps/`)
 
-`apps/` is a Helm chart. `apps/templates/applications.yaml` loops over every `apps/*/app.yaml` and generates an ArgoCD `Application` for each app that is enabled for the current cluster.
+`apps/` is a Helm chart. `apps/templates/applications.yaml` loops over every `apps/*/Chart.yaml`, combines it with that app's sibling `values.yaml` (and `cloudflare.yaml`, for its `fqdn` list only), and generates an ArgoCD `Application` for each app that is enabled for the current cluster. There is no single `app.yaml` any more — each app's config is split across single-purpose files:
+- `Chart.yaml` `annotations:` — catalog/ArgoCD wiring, all as string values: `REDACTED/namespace` (required), `REDACTED/default-deploy` (`"true"`/`"false"`, default `"false"`), `REDACTED/sync-wave` (bootstrap order: infisical (-35) → cert-manager/argocd/rbac (-30) → tailscale (-20) → external-dns (-10) → apps (0)), `REDACTED/pod-security`, `REDACTED/sync-options` (comma-separated), and — for the rare app that needs either — `REDACTED/ignore-differences`/`REDACTED/extra-sources`, each a YAML block-scalar string (`|`) holding the actual list, parsed back out with `fromYamlArray` since annotation values must be strings but their content doesn't have to be flat
+- `values.yaml` — Helm values passed through; may use `{{ .Values.env.name }}` and `{{ .Values.env.region }}` templating
+- `tailscale.yaml` — Tailscale ACL policy, read only by Terraform (see "Tailscale access policies for apps" below)
+- `cloudflare.yaml` — public exposure, read only by Terraform (see "External service exposure" below)
 
-Each `apps/<name>/app.yaml` controls deployment with these fields:
-- `defaultDeploy: true|false` — whether to deploy to all clusters by default
-- `path` — path to the actual Helm chart (required)
-- `namespace` — target namespace (required)
-- `syncWave` — ArgoCD sync wave; bootstrap order is: infisical (-35) → cert-manager/argocd/rbac (-30) → tailscale (-20) → external-dns (-10) → apps (0)
-- `values` — Helm values passed through; may use `{{ .Values.env.name }}` and `{{ .Values.env.region }}` templating
-
-Deployment overrides no longer live in `app.yaml`. Instead, `clusters/<cluster>/apps.yaml` (see below) carries an `apps:` map, keyed by app directory name, in its `apps` source's inline `helm.values` block:
-- `apps.<app-name>.deploy: true|false` — per-cluster override of that app's `defaultDeploy`
-- `apps.<app-name>.*` — any other field deep-merges over that app's base `app.yaml`, for this cluster only
+Deployment overrides live in `clusters/<cluster>/apps.yaml` (see below), which carries an `apps:` map, keyed by app directory name, in its `apps` source's inline `helm.values` block:
+- `apps.<app-name>.deploy: true|false` — per-cluster override of that app's `default-deploy` annotation
+- `apps.<app-name>.*` — any other field deep-merges over that app's assembled base config (`Chart.yaml` annotations + `values.yaml`), for this cluster only — it does not reach `tailscale.yaml`/`cloudflare.yaml`, which are Terraform-only and outside this merge entirely
 
 ```yaml
 # clusters/production/apps.yaml, spec.sources[1].helm.values
@@ -153,7 +150,7 @@ Workflows called from `ci.yaml`:
 ### Networking
 
 Tailscale is the zero-trust mesh used for human and machine access to services — CI reaching internal infra, and service exposure to end users.
-CI joins the tailnet as an ephemeral node (`tailscale/github-action`, tagged `tag:github-actions`, removed when the job completes) in the `ansible` job, to reach a cluster's apiserver for `bootstrap-cluster`. `terraform` (the general workspace) never joins — it only calls public APIs. `tag:github-actions` is also a valid `sources` identifier any app's own `tailscale:` policy block can grant access to (see below) — currently no app does.
+CI joins the tailnet as an ephemeral node (`tailscale/github-action`, tagged `tag:github-actions`, removed when the job completes) in the `ansible` job, to reach a cluster's apiserver for `bootstrap-cluster`. `terraform` (the general workspace) never joins — it only calls public APIs. `tag:github-actions` is also a valid `sources` identifier any app's own `tailscale.yaml` policy can grant access to (see below) — currently no app does.
 
 **LAN reachability — per-cluster subnet routers.** There is no standalone/dedicated subnet-router device; each cluster runs its own, in-cluster, as part of the `tailscale` app — a `Connector` resource (`apps/tailscale/templates/connector-subnet-router.yaml`, rendered only when `.Values.subnetRouter.advertiseRoutes` is set) advertising the LAN its own nodes physically sit on, declared per cluster as `nodeSubnet` in `clusters/<cluster>/topf.yaml` and mirrored into that cluster's `apps.yaml` override (`apps.tailscale.values.subnetRouter.advertiseRoutes` — the two can't share one source: Terraform reads `topf.yaml` data directly via `yamldecode`, but `apps.yaml` is what Helm/ArgoCD actually renders into the live `Connector`). Each cluster is on its own VLAN/subnet: `production` on `10.1.245.0/24`, `development` on `10.1.247.0/24`.
 
@@ -163,26 +160,25 @@ Terraform's `tailscale` module reads every `clusters/*/topf.yaml` (`data.nodeSub
 
 **Internal service exposure** — the `tailscale` app also deploys the official Tailscale Kubernetes Operator plus a shared per-cluster ingress `ProxyGroup` to every cluster. A Service opts in with `type: LoadBalancer` / `loadBalancerClass: tailscale`, annotated `tailscale.com/tags`/`tailscale.com/hostname`/`tailscale.com/proxy-group: ingress` (routes through the shared ProxyGroup instead of a dedicated proxy pod) and `external-dns.kubernetes.io/hostname` for a friendly `<name>.<cluster>REDACTED` CNAME, published by `external-dns` running in every cluster. The admission policy (`require-tailscale-service-annotations` in `apps/kyverno`) enforces that `REDACTED` suffix with no exception — Headlamp's two consoles (`REDACTED`/`REDACTED`) just use a friendlier short name (`console.<prod|dev>`) within that same pattern, rather than `headlamp.<cluster>`, so they pass the policy as-is.
 
-**External service exposure** — public internet exposure goes through Cloudflare Zero Trust Tunnels via the `exposePublic:` app.yaml block, entirely independent of Tailscale.
+**External service exposure** — public internet exposure goes through Cloudflare Zero Trust Tunnels via the app's `cloudflare.yaml`, entirely independent of Tailscale.
 
 ### Tailscale access policies for apps
 
-Each `apps/<name>/app.yaml` may include a top-level `tailscale:` block (outside of `values:`). This is **not a Helm value** — it is read directly by Terraform (`infra/terraform/modules/tailscale/acl.tf`) via `fileset` + `yamldecode` and flattened, along with every other app's rules, into a single `tailscale_acl` resource (Tailscale's ACL model is one policy document, not many discrete objects).
+Each `apps/<name>/` may include a `tailscale.yaml`. This is **not a Helm value** — it is read directly by Terraform (`infra/terraform/modules/tailscale/acl.tf`) via `fileset` + `yamldecode` and flattened, along with every other app's rules, into a single `tailscale_acl` resource (Tailscale's ACL model is one policy document, not many discrete objects).
 
 ```yaml
-tailscale:
-  policy:
-    rules:
-      - sources: ["group:team-infra-plat@REDACTED", "app:myapp"]
-        protocol: tcp
-        ports: ["443", "9090"]
+policy:
+  rules:
+    - sources: ["group:team-infra-plat@REDACTED", "app:myapp"]
+      protocol: tcp
+      ports: ["443", "9090"]
 ```
 
 - `destinations` is always the app's own tag (`tag:app-<app-name>`), auto-registered in `tagOwners` by Terraform for every app directory.
 - `sources` are literal ACL identifiers spelled out in full — no short-alias remapping: `group:<name>@REDACTED` for an Entra ID group (SCIM-synced into Tailscale), `tag:github-actions`, `tag:app-<name>` for another app's tag, or `*` for everyone.
-- If an app has no `tailscale:` block, no access is granted for it (access is denied by default).
+- If an app has no `tailscale.yaml`, no access is granted for it (access is denied by default).
 
-**Do not remove or treat this block as dead config** — it has no effect on Helm rendering but drives real infrastructure via Terraform.
+**Do not remove or treat this file as dead config** — it has no effect on Helm rendering but drives real infrastructure via Terraform.
 
 In addition to the per-app rules above, the ACL always includes these grants defined directly in `acl.tf`, not app-specific policy:
 - `local.self_grant` — every member reaches their own other devices on every port/protocol (`src: autogroup:member`, `dst: autogroup:self`, `ip: ["*"]`); Tailscale's standard self-access pattern.
@@ -199,14 +195,13 @@ VolSync (`apps/volsync/`, syncWave -5) provides PVC-level backup and restore via
 
 Each app that needs backups has a `volsync.yaml` template with two halves gated by a Helm value. Under normal operation the `ReplicationSource` is active and runs on a schedule. When restore mode is enabled the `ReplicationSource` is suppressed and replaced by a one-shot `ReplicationDestination`.
 
-To override the backup interval for a specific app, set `volsync.backupSchedule` in `app.yaml`:
+To override the backup interval for a specific app, set `volsync.backupSchedule` in `values.yaml`:
 ```yaml
-values:
-  volsync:
-    backupSchedule: "0 */2 * * *"  # every 2 hours
+volsync:
+  backupSchedule: "0 */2 * * *"  # every 2 hours
 ```
 
-The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a secret named `<app>-volsync-repo` in the app's namespace, synced from Infisical at `/k8s/volsync/<cluster-name>/<app>` via an `InfisicalSecret` CR in the app's `templates/secret.yaml`. Since that repository path is derived from the deploying cluster's own `.Values.env.name`, restoring into a cluster under a different name than the one the backup was written under (e.g. after a rename, or standing up a replacement cluster) needs an explicit `volsync.restore.sourceEnv` override — otherwise it resolves to a fresh, empty path under the new name instead of the old backup data. `apps/home-assistant/templates/secret.yaml` implements this (`{{ (((($.Values).volsync).restore).sourceEnv) | default $.Values.env.name }}`); other apps' `secret.yaml` would need the same pattern added before they could use it. It's a one-time bootstrap workaround, not a standing feature — remove the `sourceEnv` override (along with `restore.enabled`) once the restore is confirmed, so ongoing backups resume writing under the cluster's real name.
+The restic credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, etc.) live in a secret named `<app>-volsync-repo` in the app's namespace, synced from a single shared Infisical path, `/k8s/volsync` (not per-cluster or per-app — there is no Terraform-managed per-app Infisical folder), via an `InfisicalSecret` CR in the app's `templates/secret.yaml`. That CR pulls the shared credentials with `includeAllSecrets: true` and computes the app's actual repository path client-side at Helm-template time by appending `/<env.name>/<app>` to the shared base `RESTIC_REPOSITORY` value. Since that suffix is derived from the deploying cluster's own `.Values.env.name`, restoring into a cluster under a different name than the one the backup was written under (e.g. after a rename, or standing up a replacement cluster) needs an explicit `volsync.restore.sourceEnv` override — otherwise it resolves to a fresh, empty path under the new name instead of the old backup data. `apps/home-assistant/templates/secret.yaml` implements this (`{{ (((($.Values).volsync).restore).sourceEnv) | default $.Values.env.name }}`); other apps' `secret.yaml` would need the same pattern added before they could use it. It's a one-time bootstrap workaround, not a standing feature — remove the `sourceEnv` override (along with `restore.enabled`) once the restore is confirmed, so ongoing backups resume writing under the cluster's real name.
 
 ### Restore procedure
 

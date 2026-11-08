@@ -1,18 +1,17 @@
 locals {
-  app_yaml_files = fileset("${path.module}/../../../../apps", "*/app.yaml")
+  cloudflare_yaml_files = fileset("${path.module}/../../../../apps", "*/cloudflare.yaml")
 
-  app_yamls = {
-    for f in local.app_yaml_files :
+  cloudflare_yamls = {
+    for f in local.cloudflare_yaml_files :
     split("/", f)[0] => yamldecode(file("${path.module}/../../../../apps/${f}"))
   }
 
   public_apps = {
     for entry in flatten([
-      for name, y in local.app_yamls : [
-        for e in try(y.exposePublic, []) : merge(e, {
+      for name, y in local.cloudflare_yamls : [
+        for e in try(y.expose, []) : merge(e, {
           app       = name
-          namespace = try(y.namespace, name)
-          service   = try(e.service, try(y.releaseName, name))
+          namespace = try(e.namespace, name)
         })
       ]
     ]) : entry.fqdn => entry

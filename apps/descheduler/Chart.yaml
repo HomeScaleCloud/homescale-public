@@ -7,3 +7,6 @@ dependencies:
   - name: descheduler
     version: 0.37.0
     repository: https://kubernetes-sigs.github.io/descheduler/
+annotations:
+  REDACTED/namespace: "kube-system"
+  REDACTED/default-deploy: "true"

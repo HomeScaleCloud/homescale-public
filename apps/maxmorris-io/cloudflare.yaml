@@ -1,0 +1,5 @@
+expose:
+  - env: production
+    fqdn: maxmorris.io
+    port: 80
+    service: maxmorris-io

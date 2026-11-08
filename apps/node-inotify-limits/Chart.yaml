@@ -3,3 +3,7 @@ name: node-inotify-limits
 description: Helm chart for raising inotify instance and watch limits on each node
 type: application
 version: 0.1.0
+annotations:
+  REDACTED/namespace: "kube-system"
+  REDACTED/sync-wave: "-25"
+  REDACTED/pod-security: "privileged"

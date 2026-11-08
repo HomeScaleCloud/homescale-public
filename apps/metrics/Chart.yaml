@@ -13,3 +13,13 @@ dependencies:
   - name: alloy
     version: 1.15.0
     repository: https://grafana.github.io/helm-charts
+annotations:
+  REDACTED/namespace: "metrics"
+  REDACTED/default-deploy: "true"
+  REDACTED/pod-security: "privileged"
+  REDACTED/sync-options: "ServerSideApply=true"
+  REDACTED/ignore-differences: |
+    - group: ''
+      kind: Service
+      jsonPointers:
+        - /spec/externalName

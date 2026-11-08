@@ -1,0 +1,3 @@
+secrets-operator:
+  controllerManager:
+    replicas: 2

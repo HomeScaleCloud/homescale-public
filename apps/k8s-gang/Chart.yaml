@@ -3,3 +3,7 @@ name: k8s-gang
 description: Nested KubeVirt VM group backing the k8s-gang cluster on production
 type: application
 version: 0.1.0
+annotations:
+  REDACTED/namespace: "k8s-gang"
+  REDACTED/sync-wave: "5"
+  REDACTED/pod-security: "privileged"

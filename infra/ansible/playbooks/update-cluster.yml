@@ -73,90 +73,98 @@
         - name: Read live versions and readiness
           ansible.builtin.include_tasks: ../tasks/cluster-state.yml
 
-        - name: Reject Talos downgrades and skipped minor releases
-          ansible.builtin.assert:
-            that:
-              - item is match('^\d+\.\d+\.\d+$')
-              - _topf_config.talosVersion is version(item, '>=', version_type='semver')
-              - _topf_config.talosVersion.split('.')[0] == item.split('.')[0]
-              - (_topf_config.talosVersion.split('.')[1] | int) - (item.split('.')[1] | int) <= 1
-            fail_msg: "Talos {{ item }} -> {{ _topf_config.talosVersion }} requires a supported forward upgrade, at most one minor release at a time."
-          loop: "{{ _talos_versions }}"
+        - name: Upgrade and reconcile now that the cluster is known to be reachable
+          when: not (_dev_unreachable | default(false))
+          block:
+            - name: Reject Talos downgrades and skipped minor releases
+              ansible.builtin.assert:
+                that:
+                  - item is match('^\d+\.\d+\.\d+$')
+                  - _topf_config.talosVersion is version(item, '>=', version_type='semver')
+                  - _topf_config.talosVersion.split('.')[0] == item.split('.')[0]
+                  - (_topf_config.talosVersion.split('.')[1] | int) - (item.split('.')[1] | int) <= 1
+                fail_msg: "Talos {{ item }} -> {{ _topf_config.talosVersion }} requires a supported forward upgrade, at most one minor release at a time."
+              loop: "{{ _talos_versions }}"
 
-        - name: Reject Kubernetes downgrades and skipped minor releases
-          ansible.builtin.assert:
-            that:
-              - item is match('^\d+\.\d+\.\d+$')
-              - _topf_config.kubernetesVersion is version(item, '>=', version_type='semver')
-              - _topf_config.kubernetesVersion.split('.')[0] == item.split('.')[0]
-              - (_topf_config.kubernetesVersion.split('.')[1] | int) - (item.split('.')[1] | int) <= 1
-            fail_msg: "Kubernetes {{ item }} -> {{ _topf_config.kubernetesVersion }} requires a supported forward upgrade, at most one minor release at a time."
-          loop: "{{ _kubernetes_versions }}"
+            - name: Reject Kubernetes downgrades and skipped minor releases
+              ansible.builtin.assert:
+                that:
+                  - item is match('^\d+\.\d+\.\d+$')
+                  - _topf_config.kubernetesVersion is version(item, '>=', version_type='semver')
+                  - _topf_config.kubernetesVersion.split('.')[0] == item.split('.')[0]
+                  - (_topf_config.kubernetesVersion.split('.')[1] | int) - (item.split('.')[1] | int) <= 1
+                fail_msg: "Kubernetes {{ item }} -> {{ _topf_config.kubernetesVersion }} requires a supported forward upgrade, at most one minor release at a time."
+              loop: "{{ _kubernetes_versions }}"
 
-        - name: Preview Talos OS and schematic upgrades
-          ansible.builtin.command:
-            argv: "{{ _topf_command + ['upgrade', '--dry-run'] }}"
-          register: _talos_plan
-          changed_when: _talos_plan.rc == 2
-          failed_when: _talos_plan.rc not in [0, 2]
+            - name: Preview Talos OS and schematic upgrades
+              ansible.builtin.command:
+                argv: "{{ _topf_command + ['upgrade', '--dry-run'] }}"
+              register: _talos_plan
+              changed_when: _talos_plan.rc == 2
+              failed_when: _talos_plan.rc not in [0, 2]
 
-        - name: Show the Talos upgrade plan
+            - name: Show the Talos upgrade plan
+              ansible.builtin.debug:
+                msg: "{{ _talos_plan.stdout ~ _talos_plan.stderr }}"
+
+            # Native preflight checks remain enabled. If the installed Talos cannot support
+            # the target Kubernetes yet, upgrade Talos in a separate PR first.
+            - name: Preview the native Kubernetes upgrade
+              ansible.builtin.command:
+                argv: "{{ _talos_command + ['upgrade-k8s', '--to', _topf_config.kubernetesVersion, '--dry-run'] }}"
+              register: _kubernetes_plan
+              changed_when: false
+              when: _upgrade_kubernetes
+
+            - name: Show the Kubernetes upgrade plan
+              ansible.builtin.debug:
+                msg: "{{ _kubernetes_plan.stdout ~ _kubernetes_plan.stderr }}"
+              when: _upgrade_kubernetes
+
+            - name: Reconcile ArgoCD and Infisical credentials
+              ansible.builtin.include_role:
+                name: cluster-secrets
+              vars:
+                cluster_secrets_preview: "{{ _preview }}"
+
+            - name: Upgrade Talos one node at a time with draining and health checks
+              ansible.builtin.command:
+                argv: "{{ _topf_command + ['upgrade'] }}"
+              when: not _preview and _talos_plan.rc == 2
+
+            - name: Upgrade Kubernetes components and kubelets through one control-plane entry node
+              ansible.builtin.command:
+                argv: "{{ _talos_command + ['upgrade-k8s', '--to', _topf_config.kubernetesVersion] }}"
+              when: not _preview and _upgrade_kubernetes
+
+            - name: Refresh live state after upgrades
+              ansible.builtin.include_tasks: ../tasks/cluster-state.yml
+              when: not _preview and (_talos_plan.changed or _upgrade_kubernetes)
+
+            - name: Require every running version to match the desired pins
+              ansible.builtin.assert:
+                that:
+                  - _talos_versions | difference([_topf_config.talosVersion]) | length == 0
+                  - _kubernetes_versions | difference([_topf_config.kubernetesVersion]) | length == 0
+                fail_msg: "An upgrade has not converged. Refusing to bypass orchestration with topf apply. Rerun update-cluster to resume."
+              when: not _preview
+
+            # TOPF checks node health before apply and waits for changed nodes to stabilize.
+            - name: Apply configuration only after upgrades, or preview it on a PR
+              ansible.builtin.command:
+                argv: "{{ _topf_command + ['apply'] + (['--dry-run'] if _preview else []) }}"
+              register: _config_apply
+              changed_when: not _preview or _config_apply.rc == 2
+              failed_when: _config_apply.rc not in ([0, 2] if _preview else [0])
+
+            - name: Show the redacted configuration result
+              ansible.builtin.debug:
+                msg: "{{ _config_apply.stdout ~ _config_apply.stderr }}"
+
+        - name: Note that development was skipped as unreachable
           ansible.builtin.debug:
-            msg: "{{ _talos_plan.stdout ~ _talos_plan.stderr }}"
-
-        # Native preflight checks remain enabled. If the installed Talos cannot support
-        # the target Kubernetes yet, upgrade Talos in a separate PR first.
-        - name: Preview the native Kubernetes upgrade
-          ansible.builtin.command:
-            argv: "{{ _talos_command + ['upgrade-k8s', '--to', _topf_config.kubernetesVersion, '--dry-run'] }}"
-          register: _kubernetes_plan
-          changed_when: false
-          when: _upgrade_kubernetes
-
-        - name: Show the Kubernetes upgrade plan
-          ansible.builtin.debug:
-            msg: "{{ _kubernetes_plan.stdout ~ _kubernetes_plan.stderr }}"
-          when: _upgrade_kubernetes
-
-        - name: Reconcile ArgoCD and Infisical credentials
-          ansible.builtin.include_role:
-            name: cluster-secrets
-          vars:
-            cluster_secrets_preview: "{{ _preview }}"
-
-        - name: Upgrade Talos one node at a time with draining and health checks
-          ansible.builtin.command:
-            argv: "{{ _topf_command + ['upgrade'] }}"
-          when: not _preview and _talos_plan.rc == 2
-
-        - name: Upgrade Kubernetes components and kubelets through one control-plane entry node
-          ansible.builtin.command:
-            argv: "{{ _talos_command + ['upgrade-k8s', '--to', _topf_config.kubernetesVersion] }}"
-          when: not _preview and _upgrade_kubernetes
-
-        - name: Refresh live state after upgrades
-          ansible.builtin.include_tasks: ../tasks/cluster-state.yml
-          when: not _preview and (_talos_plan.changed or _upgrade_kubernetes)
-
-        - name: Require every running version to match the desired pins
-          ansible.builtin.assert:
-            that:
-              - _talos_versions | difference([_topf_config.talosVersion]) | length == 0
-              - _kubernetes_versions | difference([_topf_config.kubernetesVersion]) | length == 0
-            fail_msg: "An upgrade has not converged. Refusing to bypass orchestration with topf apply. Rerun update-cluster to resume."
-          when: not _preview
-
-        # TOPF checks node health before apply and waits for changed nodes to stabilize.
-        - name: Apply configuration only after upgrades, or preview it on a PR
-          ansible.builtin.command:
-            argv: "{{ _topf_command + ['apply'] + (['--dry-run'] if _preview else []) }}"
-          register: _config_apply
-          changed_when: not _preview or _config_apply.rc == 2
-          failed_when: _config_apply.rc not in ([0, 2] if _preview else [0])
-
-        - name: Show the redacted configuration result
-          ansible.builtin.debug:
-            msg: "{{ _config_apply.stdout ~ _config_apply.stderr }}"
+            msg: "development is unreachable -- skipped, not failing the run."
+          when: _dev_unreachable | default(false)
 
       always:
         - name: Remove private update credentials

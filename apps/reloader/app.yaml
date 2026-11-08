@@ -1,5 +1,0 @@
-path: apps/reloader
-namespace: reloader
-releaseName: reloader
-syncWave: 0
-defaultDeploy: true

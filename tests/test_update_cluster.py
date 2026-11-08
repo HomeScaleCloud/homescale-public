@@ -233,7 +233,8 @@ def run_scenario(env):
     are independent even though they share the module-scoped `env` setup above.
     """
     def invoke(name, preview=False, cluster="development", expected=0, enabled=True,
-               credentials_current=False, **overrides):
+               credentials_current=False, cluster_overrides=None, skip_service_check=False, **overrides):
+        cluster_overrides = cluster_overrides or {}
         with tempfile.TemporaryDirectory(prefix="case-", dir=env.root) as directory:
             case = Path(directory)
             (case / "hsctl").symlink_to(env.root / "hsctl")
@@ -271,6 +272,7 @@ def run_scenario(env):
                 state = dict(talos=["1.14.4"] * count, kubelets=["1.37.0"] * count,
                              components=["1.37.0"] * count * 3, server="1.37.0")
                 state.update(overrides)
+                state.update(cluster_overrides.get(current, {}))
                 (case / (current + "-state.json")).write_text(json.dumps(state))
                 (case / (current + "-service-objects.json")).write_text(json.dumps(initial_objects))
 
@@ -292,7 +294,7 @@ def run_scenario(env):
             service_calls = [call for call in calls if call["tool"] == "k8s"]
             if preview:
                 assert all("--dry-run" in call["args"] for call in service_calls)
-            if expected == 0 and enabled:
+            if expected == 0 and enabled and not skip_service_check:
                 assert service_calls, "Every update must reconcile service credentials, even when versions match"
                 assert any(call["changed"] for call in service_calls) != credentials_current
             mutations = [call for call in calls if "--dry-run" not in call["args"] and
@@ -361,7 +363,10 @@ def test_one_kubernetes_upgrade_covers_all_control_planes(run_scenario):
     ("Talos minor versions cannot be skipped", dict(talos=["1.12.9"])),
     ("Kubernetes downgrades are rejected", dict(server="CURRENT_K8S_PLUS_ONE")),
     ("Kubernetes minor versions cannot be skipped", dict(kubelets=["1.35.9"])),
-    ("Unreachable nodes stop the upgrade", dict(unreachable=True)),
+    # development alone gets a reachability exception (see the "unreachable
+    # development" tests below) -- unreachable nodes still reject the upgrade
+    # everywhere else, so this targets production specifically.
+    ("Unreachable nodes stop the upgrade on production", dict(unreachable=True, cluster="production")),
     ("An empty node response stops the upgrade", dict(empty=True)),
     ("Unknown node IPs stop the upgrade", dict(wrong_ip=True)),
     ("Failed Kubernetes preflight stops all upgrades", dict(fail_preflight=True)),
@@ -371,7 +376,9 @@ def test_rejected_upgrades_make_no_mutations(run_scenario, env, name, options):
     # without hardcoding a number that goes stale every time the pin is bumped.
     if options.get("server") == "CURRENT_K8S_PLUS_ONE":
         options = dict(options, server=bump_patch(env.configs["development"]["kubernetesVersion"]))
-    _, mutations = run_scenario(name, expected=2, **options)
+    options = dict(options)
+    cluster = options.pop("cluster", "development")
+    _, mutations = run_scenario(name, expected=2, cluster=cluster, **options)
     assert not mutations
 
 
@@ -419,6 +426,21 @@ def test_development_updates_before_production(run_scenario):
     sequence = [call["cluster"] for call in calls]
     assert set(sequence) == {"development", "production"}
     assert sequence == sorted(sequence)
+
+
+def test_an_unreachable_development_is_skipped_without_failing(run_scenario):
+    calls, mutations = run_scenario("dev-unreachable-skip", unreachable=True, skip_service_check=True)
+    assert not mutations
+    assert not any(call["tool"] == "k8s" for call in calls)
+    assert any(call["tool"] == "topf" and "nodes" in call["args"] for call in calls)
+
+
+def test_an_unreachable_development_does_not_stop_production(run_scenario):
+    calls, _ = run_scenario("dev-unreachable-prod-continues", cluster=None,
+                            cluster_overrides={"development": {"unreachable": True}},
+                            skip_service_check=True)
+    assert any(call["tool"] == "k8s" and call["cluster"] == "production" for call in calls)
+    assert not any(call["tool"] == "k8s" and call["cluster"] == "development" for call in calls)
 
 
 def test_hsctl_forwards_cluster_preview_and_service_credentials(env, executable):

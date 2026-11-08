@@ -7,7 +7,7 @@
 #
 # Env vars:
 #   CLUSTER  - optional; scopes the plan/apply to just this cluster's own resources
-#              (Cloudflare tunnel, DNS records, VolSync secrets, etc). Computed from an
+#              (Cloudflare tunnel, DNS records, etc). Computed from an
 #              *untargeted* plan's own JSON output, not `terraform state list` (which would
 #              miss a not-yet-created resource, e.g. a brand new cluster's first tunnel).
 #   DRY_RUN  - "true" stops after planning (default: "false")
@@ -34,14 +34,14 @@ terraform plan -input=false -out=/tmp/tfplan-full
 if [[ -n "$cluster" ]]; then
     # cloudflare_dns_record/cloudflare_zero_trust_access_application are keyed by FQDN, not
     # cluster name, so matching on the resource address alone (like everything else below)
-    # would miss them — scan apps/*/app.yaml's own exposePublic[].env filter instead,
+    # would miss them — scan apps/*/cloudflare.yaml's own .env filter instead,
     # kept independent of any hardcoded resource-type list so it can't drift from the HCL.
     fqdns=()
-    for f in "$repo_root"/apps/*/app.yaml; do
+    for f in "$repo_root"/apps/*/cloudflare.yaml; do
         [[ -f "$f" ]] || continue
         while IFS= read -r fqdn; do
             [[ -n "$fqdn" ]] && fqdns+=("$fqdn")
-        done < <(yq -o json "$f" | jq -r --arg c "$cluster" '.exposePublic[]? | select(.env == $c) | .fqdn')
+        done < <(yq -o json "$f" | jq -r --arg c "$cluster" '.expose[]? | select(.env == $c) | .fqdn')
     done
     fqdns_json=$(printf '%s\n' "${fqdns[@]:-}" | jq -R 'select(length > 0)' | jq -s '.')
 

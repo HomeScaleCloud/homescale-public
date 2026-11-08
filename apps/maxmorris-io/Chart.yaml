@@ -3,3 +3,6 @@ name: maxmorris-io
 description: Helm chart for Max's homepage (https://maxmorris.io)
 type: application
 version: 0.1.0
+annotations:
+  REDACTED/namespace: "maxmorris-io"
+  REDACTED/pod-security: "privileged"

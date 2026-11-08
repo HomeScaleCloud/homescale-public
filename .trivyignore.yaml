@@ -11,6 +11,10 @@ vulnerabilities:
     paths:
       - "usr/local/bin/tailscale"
     statement: "golang.org/x/image vp8l decoder DoS is unreachable — this image (apps/slurm/src/Dockerfile) only calls `tailscale whois`, never any image-decoding code path"
+  - id: CVE-2026-78661
+    paths:
+      - "usr/local/bin/tailscale"
+    statement: "golang.org/x/net/html parser DoS is unreachable — this image (apps/slurm/src/Dockerfile) only calls `tailscale whois`, never any HTML-parsing code path. Not yet fixed upstream as of tailscale v1.104.5 (latest stable), which still pins golang.org/x/net v0.60.0 — remove this entry once a tailscale release bumps past x/net v0.62.0 and TAILSCALE_VERSION is updated to match"
 
 misconfigurations:
   - id: DS-0002

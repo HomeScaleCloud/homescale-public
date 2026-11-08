@@ -1,0 +1,5 @@
+policy:
+  rules:
+    - sources: ["*"]
+      protocol: tcp
+      ports: ["25565"]

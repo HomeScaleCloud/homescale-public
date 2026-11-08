@@ -9,3 +9,14 @@ dependencies:
   - name: argocd-image-updater
     version: "1.4.2"
     repository: https://argoproj.github.io/argo-helm
+annotations:
+  REDACTED/namespace: "argocd"
+  REDACTED/sync-wave: "-30"
+  REDACTED/default-deploy: "true"
+  REDACTED/sync-options: "ServerSideApply=true"
+  REDACTED/ignore-differences: |
+    - group: ''
+      kind: Secret
+      name: argocd-secret
+      jsonPointers:
+        - /data

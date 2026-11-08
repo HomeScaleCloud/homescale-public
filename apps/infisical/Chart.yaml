@@ -7,3 +7,7 @@ dependencies:
   - name: secrets-operator
     version: 0.11.16
     repository: https://dl.cloudsmith.io/public/infisical/helm-charts/helm/charts/
+annotations:
+  REDACTED/namespace: "infisical"
+  REDACTED/sync-wave: "-35"
+  REDACTED/default-deploy: "true"

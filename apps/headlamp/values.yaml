@@ -1,0 +1,80 @@
+env:
+  name: "{{ .Values.env.name }}"
+  shortName: "{{ .Values.env.shortName }}"
+headlamp:
+  replicaCount: 1
+  deploymentAnnotations:
+    secrets.infisical.com/auto-reload: "true"
+    reloader.stakater.io/auto: "true"
+  service:
+    port: 443
+  config:
+    inClusterContextName: "{{ .Values.env.name }}"
+    tlsCertPath: /headlamp-tls/tls.crt
+    tlsKeyPath: /headlamp-tls/tls.key
+    oidc:
+      secret:
+        create: false
+      externalSecret:
+        enabled: true
+        name: oidc
+        hasScopes: true
+    watchPlugins: true
+    extraArgs:
+      - "-default-light-theme=homescale"
+      - "-default-dark-theme=homescale-dark"
+  probes:
+    scheme: HTTPS
+  pluginsManager:
+    enabled: true
+    configContent: |
+      plugins:
+        - name: cert-manager
+          source: https://artifacthub.io/packages/headlamp/headlamp-plugins/headlamp_cert-manager
+          version: 0.1.1
+        - name: kubevirt
+          source: https://artifacthub.io/packages/headlamp/headlamp-kubevirt/headlamp_kubevirt
+          version: 0.3.1
+  # subPath mounts never hot-reload; these checksums force a pod restart
+  # whenever the plugin bundle or favicon assets change.
+  podAnnotations:
+    homescale-theme-plugin-checksum: "{{ printf \"%s%s\" ($.Files.Get \"headlamp/plugins/homescale-theme/dist/main.js\") ($.Files.Get \"headlamp/plugins/homescale-theme/package.json\") | sha256sum }}"
+    homescale-favicon-checksum: "{{ printf \"%s%s%s%s\" ($.Files.Get \"headlamp/assets/favicon/favicon.ico\") ($.Files.Get \"headlamp/assets/favicon/favicon.ico.br\") ($.Files.Get \"headlamp/assets/favicon/favicon-16x16.png\") ($.Files.Get \"headlamp/assets/favicon/favicon-32x32.png\") | sha256sum }}"
+  volumes:
+    - name: headlamp-tls
+      secret:
+        secretName: headlamp-tls
+    - name: homescale-theme-plugin
+      configMap:
+        name: headlamp-homescale-theme-plugin
+    - name: homescale-favicon
+      configMap:
+        name: headlamp-favicon
+  volumeMounts:
+    - name: headlamp-tls
+      mountPath: /headlamp-tls
+      readOnly: true
+    - name: homescale-theme-plugin
+      mountPath: /headlamp/plugins/homescale-theme/main.js
+      subPath: main.js
+      readOnly: true
+    - name: homescale-theme-plugin
+      mountPath: /headlamp/plugins/homescale-theme/package.json
+      subPath: package.json
+      readOnly: true
+    - name: homescale-favicon
+      mountPath: /headlamp/frontend/favicon.ico
+      subPath: favicon.ico
+      readOnly: true
+    - name: homescale-favicon
+      mountPath: /headlamp/frontend/favicon.ico.br
+      subPath: favicon.ico.br
+      readOnly: true
+    - name: homescale-favicon
+      mountPath: /headlamp/frontend/favicon-16x16.png
+      subPath: favicon-16x16.png
+      readOnly: true
+    - name: homescale-favicon
+      mountPath: /headlamp/frontend/favicon-32x32.png
+      subPath: favicon-32x32.png
+      readOnly: true

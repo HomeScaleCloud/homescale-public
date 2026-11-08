@@ -234,14 +234,14 @@ get_snapshot() {
     local app="${1:-}"
     [[ -z "$app" ]] && { echo "Usage: hsctl get snapshot <app>"; exit 1; }
 
-    local app_yaml="$HSCTL_REPO_ROOT/apps/$app/app.yaml"
-    if [[ ! -f "$app_yaml" ]]; then
-        echo "hsctl: app '$app' not found (expected $app_yaml; override with HSCTL_REPO_ROOT)" >&2
+    local chart_yaml="$HSCTL_REPO_ROOT/apps/$app/Chart.yaml"
+    if [[ ! -f "$chart_yaml" ]]; then
+        echo "hsctl: app '$app' not found (expected $chart_yaml; override with HSCTL_REPO_ROOT)" >&2
         exit 1
     fi
 
     local namespace secret pod_name tmpfile
-    namespace=$(yq '.namespace' "$app_yaml")
+    namespace=$(yq '.annotations."REDACTED/namespace"' "$chart_yaml")
     secret="${app}-volsync-repo"
     pod_name="hsctl-restic-${app}"
 

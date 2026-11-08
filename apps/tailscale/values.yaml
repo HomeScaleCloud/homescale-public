@@ -1,0 +1,11 @@
+env:
+  name: '{{ .Values.env.name }}'
+tailscale-operator:
+  installCRDs: true
+  operatorConfig:
+    hostname: 'ts-operator-{{ .Values.env.shortName }}'
+    defaultTags:
+      - 'tag:k8s'
+  proxyConfig:
+    defaultTags: 'tag:k8s,tag:env-{{ .Values.env.name }}'
+    defaultProxyClass: default

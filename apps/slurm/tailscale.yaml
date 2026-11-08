@@ -1,0 +1,5 @@
+policy:
+  rules:
+    - sources: ["group:owners@REDACTED"]
+      protocol: tcp
+      ports: ["22"]

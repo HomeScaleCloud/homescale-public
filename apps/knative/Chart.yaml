@@ -3,3 +3,28 @@ name: knative
 description: Knative Serving (with the Kourier networking layer) for scale-to-zero HTTP apps
 type: application
 version: 0.1.0
+annotations:
+  REDACTED/namespace: "knative-serving"
+  REDACTED/sync-wave: "-10"
+  REDACTED/sync-options: "ServerSideApply=true"
+  REDACTED/ignore-differences: |
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      name: webhook.serving.knative.dev
+      jsonPointers:
+        - /webhooks
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: config.webhook.serving.knative.dev
+      jsonPointers:
+        - /webhooks
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: validation.webhook.serving.knative.dev
+      jsonPointers:
+        - /webhooks
+    - group: ''
+      kind: Secret
+      name: webhook-certs
+      jsonPointers:
+        - /data

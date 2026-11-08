@@ -3,3 +3,6 @@ name: homepage
 description: Helm chart for HomeScale's homepage (https://REDACTED)
 type: application
 version: 0.1.0
+annotations:
+  REDACTED/namespace: "homepage"
+  REDACTED/pod-security: "privileged"

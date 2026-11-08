@@ -1,8 +1,8 @@
 locals {
-  app_yaml_files = fileset("${path.module}/../../../../apps", "*/app.yaml")
+  tailscale_yaml_files = fileset("${path.module}/../../../../apps", "*/tailscale.yaml")
 
-  app_yamls = {
-    for f in local.app_yaml_files :
+  tailscale_yamls = {
+    for f in local.tailscale_yaml_files :
     split("/", f)[0] => yamldecode(file("${path.module}/../../../../apps/${f}"))
   }
 
@@ -22,9 +22,9 @@ locals {
   ])))
 
   app_policies = {
-    for name, y in local.app_yamls :
-    name => y.tailscale.policy
-    if try(y.tailscale.policy, null) != null
+    for name, y in local.tailscale_yamls :
+    name => y.policy
+    if try(y.policy, null) != null
   }
 
   app_policy_rules = merge([

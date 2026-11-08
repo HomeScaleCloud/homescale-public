@@ -2,17 +2,41 @@
 {{- $envName := required "env.name is required" $root.Values.env.name -}}
 {{- $namespaces := dict -}}
 {{- $systemNamespaces := list "argocd" "kube-system" "kube-public" "kube-node-lease" "default" -}}
-{{- range $path, $_ := $root.Files.Glob "*/app.yaml" }}
+{{- range $path, $_ := $root.Files.Glob "*/Chart.yaml" }}
 {{- $appName := $path | dir }}
-{{- $appBase := $root.Files.Get $path | fromYaml }}
+{{- $chartYaml := $root.Files.Get $path | fromYaml }}
+{{- $chartAnnotations := default (dict) $chartYaml.annotations }}
+{{- $valuesRaw := $root.Files.Get (printf "%s/values.yaml" $appName) }}
+{{- $valuesBase := dict }}
+{{- if $valuesRaw }}{{- $valuesBase = $valuesRaw | fromYaml }}{{- end }}
+{{- $cloudflareRaw := $root.Files.Get (printf "%s/cloudflare.yaml" $appName) }}
+{{- $exposePublic := list }}
+{{- if $cloudflareRaw }}{{- $exposePublic = default (list) ($cloudflareRaw | fromYaml).expose }}{{- end }}
+{{- $syncOptionsStr := get $chartAnnotations "REDACTED/sync-options" }}
+{{- $appBase := dict
+  "path" (printf "apps/%s" $appName)
+  "namespace" (get $chartAnnotations "REDACTED/namespace")
+  "syncWave" (int (default "0" (get $chartAnnotations "REDACTED/sync-wave")))
+  "podSecurity" (get $chartAnnotations "REDACTED/pod-security")
+  "defaultDeploy" (eq (get $chartAnnotations "REDACTED/default-deploy") "true")
+  "syncOptions" (ternary (splitList "," $syncOptionsStr) (list) (ne $syncOptionsStr ""))
+  "values" $valuesBase
+  "exposePublic" $exposePublic
+-}}
+{{- with get $chartAnnotations "REDACTED/ignore-differences" }}
+{{- $appBase = set $appBase "ignoreDifferences" (. | fromYamlArray) }}
+{{- end }}
+{{- with get $chartAnnotations "REDACTED/extra-sources" }}
+{{- $appBase = set $appBase "extraSources" (. | fromYamlArray) }}
+{{- end }}
 {{- $envOverride := default (dict) (get (default (dict) $root.Values.apps) $appName) }}
 {{- $enabled := false }}
 {{- if hasKey $appBase "defaultDeploy" }}{{- $enabled = $appBase.defaultDeploy }}{{- end }}
 {{- if hasKey $envOverride "deploy" }}{{- $enabled = $envOverride.deploy }}{{- end }}
 {{- if $enabled }}
 {{- $app := mergeOverwrite (deepCopy $appBase) (omit $envOverride "deploy") }}
-{{- $appPath := required (printf "path is required (set in apps/%s/app.yaml)" $appName) $app.path -}}
-{{- $appNamespace := required (printf "namespace is required (set in apps/%s/app.yaml)" $appName) $app.namespace -}}
+{{- $appPath := required (printf "path is required (set in apps/%s/Chart.yaml)" $appName) $app.path -}}
+{{- $appNamespace := required (printf "namespace is required (set in apps/%s/Chart.yaml annotations)" $appName) $app.namespace -}}
 {{- $repoURL := required (printf "repoURL or apps.%s.repoURL is required" $appName) (default $root.Values.repoURL $app.repoURL) -}}
 {{- $targetRevision := default $root.Values.targetRevision $app.targetRevision -}}
 {{- $project := default $root.Values.project $app.project -}}

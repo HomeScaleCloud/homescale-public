@@ -1,9 +1,0 @@
-path: apps/spegel
-namespace: spegel
-releaseName: spegel
-syncWave: -20
-podSecurity: privileged
-values:
-  spegel:
-    spegel:
-      containerdRegistryConfigPath: /etc/cri/conf.d/hosts
