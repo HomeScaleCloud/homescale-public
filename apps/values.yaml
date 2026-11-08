@@ -4,7 +4,6 @@ argocd:
 project: default
 repoURL: git@github.com:HomeScaleCloud/homescale.git
 targetRevision: main
-applicationNamePrefix: ""
 revisionHistoryLimit: 10
 
 env:

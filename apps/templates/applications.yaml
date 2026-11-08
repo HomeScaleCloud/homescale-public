@@ -75,7 +75,7 @@ metadata:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ include "homescale-catalog.applicationName" (dict "root" $root "appName" $appName) | quote }}
+  name: {{ $appName | trunc 63 | trimSuffix "-" | quote }}
   namespace: {{ default "argocd" $root.Values.argocd.namespace | quote }}
   labels:
     app.kubernetes.io/name: {{ $appName | quote }}
