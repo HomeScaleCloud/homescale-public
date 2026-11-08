@@ -3,18 +3,8 @@ env:
 global:
   env: ""
 minecraft:
-  resources:
-    requests:
-      memory: 2Gi
-      cpu: 500m
   minecraftServer:
     eula: "TRUE"
-    memory: 2048M
-    type: "PAPER"
-    gameMode: "creative"
-    ops: "m4xm0rris"
-    motd: "HomeCraft - {{ .Values.env.name }}"
-    icon: "https://raw.githubusercontent.com/HomeScaleCloud/.github/refs/heads/main/homecraft.png"
   extraEnv:
     MC_PORT: "25565"
   persistence:

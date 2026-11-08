@@ -346,6 +346,24 @@ spec:
                     - 10.1.245.0/24
                     - 10.100.0.0/16
                     - 10.105.0.0/16
+            homecraft:
+              deploy: true
+              values:
+                minecraft:
+                  resources:
+                    requests:
+                      memory: 2Gi
+                      cpu: 500m
+                  minecraftServer:
+                    memory: 2048M
+                    type: "PAPER"
+                    gameMode: "creative"
+                    ops: "m4xm0rris"
+                    motd: "HomeCraft - {{ .Values.env.name }}"
+                    icon: "https://raw.githubusercontent.com/HomeScaleCloud/.github/refs/heads/main/homecraft.png"
+                  persistence:
+                    dataDir:
+                      Size: "2Gi"
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
