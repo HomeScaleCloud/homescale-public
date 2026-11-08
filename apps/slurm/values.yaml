@@ -88,7 +88,7 @@ slurm:
     podSpec:
       initContainers:
         - name: patch-slurm-conf
-          image: docker.io/alpine/k8s:1.37.0
+          image: docker.io/alpine/k8s:1.37.2
           command:
             - sh
             - -c
