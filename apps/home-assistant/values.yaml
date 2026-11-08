@@ -14,7 +14,7 @@ mqtt:
     ip: "10.1.241.6/24"
   image:
     repository: eclipse-mosquitto
-    tag: "2.0.21"
+    tag: "2.0.22"
   pvc:
     data:
       size: 5Gi
