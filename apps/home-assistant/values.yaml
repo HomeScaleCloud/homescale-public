@@ -22,7 +22,7 @@ zigbee2mqtt:
   replicaCount: 1
   image:
     repository: ghcr.io/koenkk/zigbee2mqtt
-    tag: "2.9.2"
+    tag: "2.14.3"
   pvc:
     size: 10Gi
   config:
