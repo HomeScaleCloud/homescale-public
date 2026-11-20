@@ -1,0 +1,24 @@
+{{/*
+The upstream chart's UI/API/Registry/Dex containers only speak plain HTTP and the chart gives
+no way to mount a TLS cert into them (unlike Headlamp, which terminates its own TLS). But
+ingress.useTls: true (values.yaml) makes the UI generate https:// URLs for the browser to call
+the API/registry directly — so without something terminating TLS in front of them, those calls
+fail outright (nothing listening on 443), not just lack a padlock. This cert feeds
+templates/deployment-tls-proxy.yaml, a small nginx reverse proxy that terminates TLS and routes
+to each backend by SNI/Host — see that file.
+*/}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: terrakube-tls
+  namespace: terrakube
+spec:
+  secretName: terrakube-tls
+  issuerRef:
+    name: {{ .Values.certIssuer | default "letsencrypt" }}
+    kind: ClusterIssuer
+  dnsNames:
+    - "terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+    - "api.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+    - "reg.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+    - "dex.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"

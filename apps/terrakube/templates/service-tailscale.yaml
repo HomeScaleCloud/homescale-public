@@ -1,11 +1,8 @@
 {{/*
-Terrakube's UI/API/Registry/Dex containers only ever speak plain HTTP (the upstream chart has
-no TLS-cert-mount support like headlamp's config.tlsCertPath/tlsKeyPath), and a LoadBalancer
-Service with loadBalancerClass: tailscale is a pure L4/TCP passthrough rather than a
-TLS-terminating Ingress, so these are exposed on port 80 rather than 443. Traffic is still
-encrypted end-to-end over the tailnet's WireGuard tunnel; there's just no app-layer TLS/padlock
-like the apps that do mount their own cert. Flag if HTTPS-at-the-app-layer is wanted here too —
-it'd need a sidecar or front proxy, since the chart itself doesn't support it.
+All four hostnames route through the same terrakube-tls-proxy pod (templates/tls-proxy.yaml),
+which terminates TLS and picks the right backend by SNI/Host — see that file's comment for why
+a TLS-terminating proxy is needed at all. Each Service below just gives that one pod a
+different Tailscale hostname/DNS name on port 443.
 */}}
 apiVersion: v1
 kind: Service
@@ -21,13 +18,11 @@ spec:
   type: LoadBalancer
   loadBalancerClass: tailscale
   selector:
-    app.kubernetes.io/name: terrakube
-    app.kubernetes.io/instance: terrakube
-    app.kubernetes.io/component: terrakube-ui
+    app.kubernetes.io/name: terrakube-tls-proxy
   ports:
-    - name: http
-      port: 80
-      targetPort: http
+    - name: https
+      port: 443
+      targetPort: https
 ---
 apiVersion: v1
 kind: Service
@@ -43,13 +38,11 @@ spec:
   type: LoadBalancer
   loadBalancerClass: tailscale
   selector:
-    app.kubernetes.io/name: terrakube
-    app.kubernetes.io/instance: terrakube
-    app.kubernetes.io/component: terrakube-api
+    app.kubernetes.io/name: terrakube-tls-proxy
   ports:
-    - name: http
-      port: 80
-      targetPort: http
+    - name: https
+      port: 443
+      targetPort: https
 ---
 apiVersion: v1
 kind: Service
@@ -65,13 +58,11 @@ spec:
   type: LoadBalancer
   loadBalancerClass: tailscale
   selector:
-    app.kubernetes.io/name: terrakube
-    app.kubernetes.io/instance: terrakube
-    app.kubernetes.io/component: terrakube-registry
+    app.kubernetes.io/name: terrakube-tls-proxy
   ports:
-    - name: http
-      port: 80
-      targetPort: http
+    - name: https
+      port: 443
+      targetPort: https
 ---
 apiVersion: v1
 kind: Service
@@ -87,9 +78,8 @@ spec:
   type: LoadBalancer
   loadBalancerClass: tailscale
   selector:
-    app.kubernetes.io/name: dex
-    app.kubernetes.io/instance: terrakube
+    app.kubernetes.io/name: terrakube-tls-proxy
   ports:
-    - name: http
-      port: 80
-      targetPort: http
+    - name: https
+      port: 443
+      targetPort: https

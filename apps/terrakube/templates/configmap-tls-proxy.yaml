@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: terrakube-tls-proxy
+  namespace: terrakube
+data:
+  nginx.conf: |
+    events {}
+    http {
+      server {
+        listen 443 ssl;
+        server_name terra.{{ .Values.env.shortName }}REDACTED;
+        ssl_certificate /etc/terrakube-tls/tls.crt;
+        ssl_certificate_key /etc/terrakube-tls/tls.key;
+        location / {
+          proxy_pass http://terrakube-ui-service:8080;
+          proxy_set_header Host $host;
+        }
+      }
+      server {
+        listen 443 ssl;
+        server_name api.terra.{{ .Values.env.shortName }}REDACTED;
+        ssl_certificate /etc/terrakube-tls/tls.crt;
+        ssl_certificate_key /etc/terrakube-tls/tls.key;
+        location / {
+          proxy_pass http://terrakube-api-service:8080;
+          proxy_set_header Host $host;
+        }
+      }
+      server {
+        listen 443 ssl;
+        server_name reg.terra.{{ .Values.env.shortName }}REDACTED;
+        ssl_certificate /etc/terrakube-tls/tls.crt;
+        ssl_certificate_key /etc/terrakube-tls/tls.key;
+        location / {
+          proxy_pass http://terrakube-registry-service:8075;
+          proxy_set_header Host $host;
+        }
+      }
+      server {
+        listen 443 ssl;
+        server_name dex.terra.{{ .Values.env.shortName }}REDACTED;
+        ssl_certificate /etc/terrakube-tls/tls.crt;
+        ssl_certificate_key /etc/terrakube-tls/tls.key;
+        location / {
+          proxy_pass http://terrakube-dex:5556;
+          proxy_set_header Host $host;
+        }
+      }
+    }
