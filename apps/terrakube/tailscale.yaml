@@ -2,4 +2,4 @@ policy:
   rules:
     - sources: ["group:team-infra-plat@REDACTED", "group:sg-k8s-admin@REDACTED"]
       protocol: tcp
-      ports: ["80"]
+      ports: ["443"]
