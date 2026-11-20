@@ -1,0 +1,13 @@
+apiVersion: v2
+name: terrakube
+description: Helm chart for Terrakube
+type: application
+version: 0.1.0
+dependencies:
+  - name: terrakube
+    version: 4.7.20
+    repository: https://charts.terrakube.io
+annotations:
+  REDACTED/namespace: "terrakube"
+  REDACTED/default-deploy: "false"
+  REDACTED/pod-security: "privileged"

@@ -346,6 +346,8 @@ spec:
                     - 10.1.245.0/24
                     - 10.100.0.0/16
                     - 10.105.0.0/16
+            terrakube:
+              deploy: true
             homecraft:
               deploy: true
               values:

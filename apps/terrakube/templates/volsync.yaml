@@ -1,0 +1,53 @@
+{{- /*
+Dex isn't backed up here — it only holds session/auth-code state (and that's
+now on its own PVC via sqlite3 storage so it survives a pod restart), not
+data that needs disaster recovery.
+*/ -}}
+{{- $pvcs := dict "postgres" "data-terrakube-postgresql-0" "minio" "terrakube-minio" -}}
+{{- $schedule := ((.Values.volsync).backupSchedule) | default "0 2 * * *" -}}
+{{- $restore := ((.Values.volsync).restore).enabled -}}
+{{- if not $restore }}
+{{- range $name, $pvc := $pvcs }}
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: {{ $name }}
+  namespace: terrakube
+spec:
+  sourcePVC: {{ $pvc }}
+  trigger:
+    schedule: {{ $schedule | quote }}
+  restic:
+    repository: {{ $name }}-volsync-repo # pragma: allowlist secret
+    copyMethod: Snapshot
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 3
+    pruneIntervalDays: 7
+{{- end }}
+{{- end }}
+{{- if $restore }}
+{{- range $name, $pvc := $pvcs }}
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: {{ $name }}-restore
+  namespace: terrakube
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: {{ $name }}-volsync-repo # pragma: allowlist secret
+    copyMethod: Direct
+    destinationPVC: {{ $pvc }}
+    {{- if (($.Values.volsync).restore).restoreAsOf }}
+    restoreAsOf: {{ $.Values.volsync.restore.restoreAsOf | quote }}
+    {{- end }}
+    {{- if (($.Values.volsync).restore).previous }}
+    previous: {{ $.Values.volsync.restore.previous }}
+    {{- end }}
+{{- end }}
+{{- end }}

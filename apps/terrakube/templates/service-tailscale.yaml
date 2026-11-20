@@ -1,0 +1,95 @@
+{{/*
+Terrakube's UI/API/Registry/Dex containers only ever speak plain HTTP (the upstream chart has
+no TLS-cert-mount support like headlamp's config.tlsCertPath/tlsKeyPath), and a LoadBalancer
+Service with loadBalancerClass: tailscale is a pure L4/TCP passthrough rather than a
+TLS-terminating Ingress, so these are exposed on port 80 rather than 443. Traffic is still
+encrypted end-to-end over the tailnet's WireGuard tunnel; there's just no app-layer TLS/padlock
+like the apps that do mount their own cert. Flag if HTTPS-at-the-app-layer is wanted here too —
+it'd need a sidecar or front proxy, since the chart itself doesn't support it.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: terrakube-ui-tailscale
+  namespace: terrakube
+  annotations:
+    tailscale.com/tags: "tag:k8s,tag:app-terrakube,tag:env-{{ required "env.name is required" .Values.env.name }}"
+    tailscale.com/hostname: "terra-{{ required "env.shortName is required" .Values.env.shortName }}"
+    tailscale.com/proxy-group: ingress
+    external-dns.kubernetes.io/hostname: "terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  selector:
+    app.kubernetes.io/name: terrakube
+    app.kubernetes.io/instance: terrakube
+    app.kubernetes.io/component: terrakube-ui
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: terrakube-api-tailscale
+  namespace: terrakube
+  annotations:
+    tailscale.com/tags: "tag:k8s,tag:app-terrakube,tag:env-{{ required "env.name is required" .Values.env.name }}"
+    tailscale.com/hostname: "api-terra-{{ required "env.shortName is required" .Values.env.shortName }}"
+    tailscale.com/proxy-group: ingress
+    external-dns.kubernetes.io/hostname: "api.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  selector:
+    app.kubernetes.io/name: terrakube
+    app.kubernetes.io/instance: terrakube
+    app.kubernetes.io/component: terrakube-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: terrakube-registry-tailscale
+  namespace: terrakube
+  annotations:
+    tailscale.com/tags: "tag:k8s,tag:app-terrakube,tag:env-{{ required "env.name is required" .Values.env.name }}"
+    tailscale.com/hostname: "reg-terra-{{ required "env.shortName is required" .Values.env.shortName }}"
+    tailscale.com/proxy-group: ingress
+    external-dns.kubernetes.io/hostname: "reg.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  selector:
+    app.kubernetes.io/name: terrakube
+    app.kubernetes.io/instance: terrakube
+    app.kubernetes.io/component: terrakube-registry
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: terrakube-dex-tailscale
+  namespace: terrakube
+  annotations:
+    tailscale.com/tags: "tag:k8s,tag:app-terrakube,tag:env-{{ required "env.name is required" .Values.env.name }}"
+    tailscale.com/hostname: "dex-terra-{{ required "env.shortName is required" .Values.env.shortName }}"
+    tailscale.com/proxy-group: ingress
+    external-dns.kubernetes.io/hostname: "dex.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  selector:
+    app.kubernetes.io/name: dex
+    app.kubernetes.io/instance: terrakube
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
