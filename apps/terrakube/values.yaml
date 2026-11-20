@@ -107,11 +107,15 @@ terrakube:
             clientID: "$ENTRA_CLIENT_ID"
             clientSecret: "$ENTRA_CLIENT_SECRET"
             redirectURI: "https://dex.terra.{{ .Values.env.shortName }}REDACTED/callback"
+            # "groups" is NOT a valid OAuth scope on Microsoft Graph — requesting it here
+            # causes AADSTS650053 ("asked for scope 'groups' that doesn't exist"). The groups
+            # claim comes from the app registration's own Optional Claims/groupMembershipClaims
+            # config, not from a requested scope; claimMapping below just tells Dex which claim
+            # name to read once Entra actually sends it.
             scopes:
               - openid
               - profile
               - email
-              - groups
             insecureSkipEmailVerified: true
             claimMapping:
               groups: "groups"
