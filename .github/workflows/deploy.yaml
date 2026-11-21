@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       job:
-        description: "'terraform', 'update-cluster', 'bootstrap-cluster', or any other ansible playbook filename under infra/ansible/playbooks/ (without .yml)"
+        description: "'update-cluster', 'bootstrap-cluster', or any other ansible playbook filename under infra/ansible/playbooks/ (without .yml)"
         type: string
         required: true
       cluster:
@@ -24,7 +24,7 @@ on:
         type: string
         required: false
       dry_run:
-        description: "Preview only — terraform and update-cluster; bootstrap playbooks ignore this"
+        description: "Preview only — update-cluster; bootstrap playbooks ignore this"
         type: boolean
         required: false
         default: false
@@ -37,83 +37,80 @@ concurrency:
   group: deploy
 
 jobs:
-  terraform:
-    name: "Terraform"
-    runs-on: ubuntu-latest
-    if: github.event_name != 'workflow_dispatch' || inputs.job == 'terraform'
-    environment: ${{ (github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch') && 'terraform' || null }}
-    env:
-      TF_IN_AUTOMATION: "true"
-      TF_INPUT: "false"
-      TF_VAR_infisical_github_actions: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-      TF_VAR_infisical_org_id: ${{ secrets.INFISICAL_ORG_ID }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - name: Import Secrets
-        uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
-        with:
-          method: "oidc"
-          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
-          env-slug: "prod"
-          project-slug: "homescale"
-          secret-path: "/ci"
-          export-type: env
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4
-      - name: Install yq
-        env:
-          # renovate: datasource=github-releases depName=mikefarah/yq extractVersion=^v(?<version>.*)$
-          YQ_VERSION: "4.54.3"
-        run: |
-          sudo curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64"
-          sudo chmod +x /usr/local/bin/yq
-      - name: Request OIDC Token
-        run: |
-          TOKEN=$(curl -s \
-            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL" \
-            | jq -r '.value')
-          echo "::add-mask::$TOKEN"
-          echo "INFISICAL_AUTH_JWT=$TOKEN" >> "$GITHUB_ENV"
-
-      - name: Plan
-        id: plan
-        env:
-          DRY_RUN: "true"
-          CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
-        run: ./infra/terraform/plan-apply.sh
-      - name: Extract rendered Tailnet ACL
-        id: tailnet_acl
-        run: |
-          terraform -chdir=infra/terraform show -json /tmp/tfplan > /tmp/tfplan.json
-          RAW=$(jq -r '.resource_changes[]? | select(.address == "module.tailscale.tailscale_acl.this") | .change.after.acl // empty' /tmp/tfplan.json)
-          if [ -n "$RAW" ]; then
-            echo "$RAW" | jq '.' > /tmp/tailnet-acl.json
-            echo "ACL_RENDERED=true" >> "$GITHUB_ENV"
-          else
-            echo "ACL_RENDERED=false" >> "$GITHUB_ENV"
-          fi
-      - name: Upload rendered Tailnet ACL artifact
-        id: upload_acl
-        if: env.ACL_RENDERED == 'true'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
-        with:
-          name: tailnet-acl
-          path: /tmp/tailnet-acl.json
-          retention-days: 30
-      - name: Apply
-        if: (github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch') || (github.event_name == 'workflow_dispatch' && inputs.job == 'terraform' && inputs.dry_run != true)
-        env:
-          CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
-        run: ./infra/terraform/plan-apply.sh
+#  terraform:
+#    name: "Terraform"
+#    runs-on: ubuntu-latest
+#    if: github.event_name != 'workflow_dispatch' || inputs.job == 'terraform'
+#    environment: ${{ (github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch') && 'terraform' || null }}
+#    env:
+#      TF_IN_AUTOMATION: "true"
+#      TF_INPUT: "false"
+#      TF_VAR_infisical_github_actions: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+#      TF_VAR_infisical_org_id: ${{ secrets.INFISICAL_ORG_ID }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+#      - name: Import Secrets
+#        uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d  # v1.0.18
+#        with:
+#          method: "oidc"
+#          identity-id: ${{ secrets.INFISICAL_GH_IDENTITY_ID }}
+#          env-slug: "prod"
+#          project-slug: "homescale"
+#          secret-path: "/ci"
+#          export-type: env
+#      - name: Setup Terraform
+#        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4
+#      - name: Install yq
+#        env:
+#          # renovate: datasource=github-releases depName=mikefarah/yq extractVersion=^v(?<version>.*)$
+#          YQ_VERSION: "4.54.3"
+#        run: |
+#          sudo curl -fsSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64"
+#          sudo chmod +x /usr/local/bin/yq
+#      - name: Request OIDC Token
+#        run: |
+#          TOKEN=$(curl -s \
+#            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+#            "$ACTIONS_ID_TOKEN_REQUEST_URL" \
+#            | jq -r '.value')
+#          echo "::add-mask::$TOKEN"
+#          echo "INFISICAL_AUTH_JWT=$TOKEN" >> "$GITHUB_ENV"
+#
+#      - name: Plan
+#        id: plan
+#        env:
+#          DRY_RUN: "true"
+#          CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
+#        run: ./infra/terraform/plan-apply.sh
+#      - name: Extract rendered Tailnet ACL
+#        id: tailnet_acl
+#        run: |
+#          terraform -chdir=infra/terraform show -json /tmp/tfplan > /tmp/tfplan.json
+#          RAW=$(jq -r '.resource_changes[]? | select(.address == "module.tailscale.tailscale_acl.this") | .change.after.acl // empty' /tmp/tfplan.json)
+#          if [ -n "$RAW" ]; then
+#            echo "$RAW" | jq '.' > /tmp/tailnet-acl.json
+#            echo "ACL_RENDERED=true" >> "$GITHUB_ENV"
+#          else
+#            echo "ACL_RENDERED=false" >> "$GITHUB_ENV"
+#          fi
+#      - name: Upload rendered Tailnet ACL artifact
+#        id: upload_acl
+#        if: env.ACL_RENDERED == 'true'
+#        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+#        with:
+#          name: tailnet-acl
+#          path: /tmp/tailnet-acl.json
+#          retention-days: 30
+#      - name: Apply
+#        if: (github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch') || (github.event_name == 'workflow_dispatch' && inputs.job == 'terraform' && inputs.dry_run != true)
+#        env:
+#          CLUSTER: ${{ github.event_name == 'workflow_dispatch' && inputs.cluster || '' }}
+#        run: ./infra/terraform/plan-apply.sh
 
   ansible:
     name: "Ansible"
-    needs: [terraform]
-    if: >-
-      !cancelled() && (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
-      (github.event_name != 'workflow_dispatch' || inputs.job != 'terraform')
+    if: github.event_name != 'workflow_dispatch' || inputs.job != 'terraform'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
