@@ -26,3 +26,12 @@ variable "infisical_universal_auth_client_secret" {
   default     = ""
   sensitive   = true
 }
+
+# Not used by this module's own resources, but Terrakube injects every
+# org-level global variable into every workspace's plan regardless — an
+# unconsumed -var for an undeclared variable is a hard error.
+variable "infisical_org_id" {
+  description = "Infisical org UUID (unused here — declared only so Terrakube's org-wide global variable doesn't error as undeclared)"
+  type        = string
+  default     = ""
+}
