@@ -1,6 +1,6 @@
 resource "infisical_identity" "k8s_operator" {
   name   = "k8s-operator"
-  org_id = var.org_id
+  org_id = var.infisical_org_id
   role   = "no-access"
 }
 
@@ -51,7 +51,7 @@ resource "infisical_secret" "k8s_operator_client_secret" {
 // INFISICAL_CI_CLIENT_ID/_SECRET, CLOUDFLARE_API_TOKEN, TF_TOKEN_app_terraform_io).
 resource "infisical_secret" "ci_infisical_org_id" {
   name         = "INFISICAL_ORG_ID"
-  value        = var.org_id
+  value        = var.infisical_org_id
   env_slug     = var.environment
   workspace_id = data.infisical_projects.homescale.id
   folder_path  = "/ci"

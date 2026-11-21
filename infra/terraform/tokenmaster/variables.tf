@@ -1,4 +1,4 @@
-variable "org_id" {
+variable "infisical_org_id" {
   description = "Infisical org UUID"
   type        = string
 }
