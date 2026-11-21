@@ -31,6 +31,11 @@ terrakube:
     existingSecret: true
     loadSampleData: false
     serviceAccountName: terrakube-api
+    resources:
+      requests:
+        memory: 1Gi
+      limits:
+        memory: 2Gi
     ephemeralExecution:
       enabled: true
       configMapName: "terrakube-executor-config"
