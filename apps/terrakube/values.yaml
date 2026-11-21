@@ -3,12 +3,6 @@ env:
   shortName: "{{ .Values.env.shortName }}"
 
 terrakube:
-  # Production checklist from https://docs.terrakube.io/getting-started/deployment/helm-chart:
-  # useOpenLDAP off, a real adminGroup, fresh patSecret/internalSecret, loadSampleData off.
-  # defaultDatabase/defaultRedis/storage.defaultStorage stay on the chart's bundled
-  # Postgres/Valkey/MinIO (Longhorn-backed, like every other stateful app in this repo —
-  # there's no external managed DB/S3/Redis in HomeScale) but their well-known Bitnami
-  # default passwords are replaced via existingSecret below, sourced from Infisical.
   security:
     useOpenLDAP: false
     adminGroup: "3a65b126-4dbe-4013-88dd-08fb8f45f6f7"  # team-infra-plat's Entra group object ID — Entra emits group IDs (not names) in the "groups" claim
@@ -37,31 +31,17 @@ terrakube:
     existingSecret: true
     loadSampleData: false
     serviceAccountName: terrakube-api
-    # Ephemeral agents (https://docs.terrakube.io/getting-started/deployment/ephemeral-agents):
-    # the API spawns a one-shot Job per run instead of routing to a long-lived executor pod.
-    # backoffLimit "0" avoids retrying a run that may have already partially applied/locked
-    # state; ttlSecondsAfterFinished gives enough of a window to pull logs after a failure
-    # before the Job is swept, longer than the chart's 30s default.
     ephemeralExecution:
       enabled: true
       backoffLimit: "0"
       ttlSecondsAfterFinished: "600"
 
-  # The persistent executor Deployment is unnecessary once ephemeral mode handles every run —
-  # ExecutorEphemeralImage/ExecutorEphemeralSecret are read from executor.image/version and
-  # api.ephemeralExecution.secretName regardless of executor.enabled, so disabling it here
-  # doesn't affect ephemeral job dispatch, it just removes the idle always-on pod.
   executor:
     enabled: false
 
   registry:
     existingSecret: true
 
-  # Ingress objects stay disabled — HomeScale exposes each component as its own Tailscale
-  # LoadBalancer Service (see templates/service-tailscale.yaml) rather than path-based ingress.
-  # domain is still read directly by the UI/API config templates to build absolute URLs,
-  # independent of whether the Ingress object itself is rendered; the top-level useTls (not
-  # the same as ingress.ui.useTls) is what actually switches those URLs to https://.
   ingress:
     useTls: true
     ui:
@@ -76,24 +56,6 @@ terrakube:
     dex:
       enabled: false
 
-  # Entra ID via Dex's dedicated "microsoft" connector (not the generic "oidc" one — that
-  # relies on the ID token carrying an "email" claim, which Entra kept omitting here even
-  # with the claim explicitly configured; "microsoft" instead calls Graph's /me endpoint
-  # directly and uses userPrincipalName as the email, sidestepping ID-token-claim behavior
-  # entirely). Dedicated Entra app registration for Terrakube only (NOT the shared one
-  # headlamp/other apps use at /k8s/oidc — Terrakube's blast radius via ephemeral Terraform
-  # execution is too high to share a client secret with anything else). clientSecret/clientID
-  # are injected as container env vars (templates/secret.yaml, from /k8s/terrakube) and pulled
-  # in via Dex's native `$VAR` config expansion (https://dexidp.io/docs/getting-started/,
-  # "Templated configuration") so the real values never need to be literal Helm values in git.
-  # Not yet wired for group-based admin role mapping (security.adminGroup) — this connector
-  # needs its own `groups`/`onlySecurityGroups` config plus Directory.Read.All consent to fetch
-  # group membership via Graph, not added here until basic login is confirmed working.
-  # dex.config.storage is left at the chart's default (in-memory) — Dex's own session/
-  # refresh-token state won't survive a pod restart, so an active login/offline-access session
-  # has to be redone after one; the chart also ships RBAC for a durable
-  # `storage.type: kubernetes` (CRD-backed) option if that's wanted instead, not switched to
-  # without being asked since it adds a CRD-install dependency to this app's first sync.
   dex:
     config:
       issuer: "https://dex.terra.{{ .Values.env.shortName }}REDACTED"
@@ -113,6 +75,7 @@ terrakube:
             clientSecret: "$ENTRA_CLIENT_SECRET"
             redirectURI: "https://dex.terra.{{ .Values.env.shortName }}REDACTED/callback"
             tenant: "REDACTED"
+            groupNameFormat: id
     envVars:
       - name: ENTRA_CLIENT_ID
         valueFrom:
