@@ -4,7 +4,7 @@ terraform {
     organization = "HomeScale"
 
     workspaces {
-      name = "homescale"
+      name = "legacy"
     }
   }
 }
