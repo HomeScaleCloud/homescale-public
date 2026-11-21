@@ -8,7 +8,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DISCORD_WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
-TERRAKUBE_SIGNING_SECRET = os.environ["TERRAKUBE_SIGNING_SECRET"].encode()
+TERRAKUBE_NOTIFY_SIGNING_SECRET = os.environ["TERRAKUBE_NOTIFY_SIGNING_SECRET"].encode()
 MAX_BODY_BYTES = 64 * 1024
 SIGNATURE_HEADER = "X-Terrakube-Signature"
 
@@ -16,7 +16,7 @@ SIGNATURE_HEADER = "X-Terrakube-Signature"
 def signature_matches(raw_body, header_value):
     if not header_value:
         return False
-    expected = hmac.new(TERRAKUBE_SIGNING_SECRET, raw_body, hashlib.sha256).hexdigest()
+    expected = hmac.new(TERRAKUBE_NOTIFY_SIGNING_SECRET, raw_body, hashlib.sha256).hexdigest()
     given = header_value.split("=", 1)[-1]  # tolerate an optional "sha256=" prefix
     return hmac.compare_digest(expected, given)
 
