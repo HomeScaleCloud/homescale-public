@@ -76,18 +76,24 @@ terrakube:
     dex:
       enabled: false
 
-  # Entra ID via the generic Dex "oidc" connector, using a dedicated Entra app registration
-  # for Terrakube only (NOT the shared one headlamp/other apps use at /k8s/oidc — Terrakube's
-  # blast radius via ephemeral Terraform execution is too high to share a client secret with
-  # anything else). clientSecret/clientID/issuer are injected as container env vars
-  # (templates/secret.yaml, from /k8s/terrakube) and pulled in via Dex's native `$VAR` config
-  # expansion (https://dexidp.io/docs/getting-started/, "Templated configuration") so the real
-  # values never need to be literal Helm values in git. dex.config.storage is left at the
-  # chart's default (in-memory) — Dex's own session/refresh-token state won't survive a pod
-  # restart, so an active login/offline-access session has to be redone after one; the chart
-  # also ships RBAC for a durable `storage.type: kubernetes` (CRD-backed) option if that's
-  # wanted instead, not switched to without being asked since it adds a CRD-install dependency
-  # to this app's first sync.
+  # Entra ID via Dex's dedicated "microsoft" connector (not the generic "oidc" one — that
+  # relies on the ID token carrying an "email" claim, which Entra kept omitting here even
+  # with the claim explicitly configured; "microsoft" instead calls Graph's /me endpoint
+  # directly and uses userPrincipalName as the email, sidestepping ID-token-claim behavior
+  # entirely). Dedicated Entra app registration for Terrakube only (NOT the shared one
+  # headlamp/other apps use at /k8s/oidc — Terrakube's blast radius via ephemeral Terraform
+  # execution is too high to share a client secret with anything else). clientSecret/clientID
+  # are injected as container env vars (templates/secret.yaml, from /k8s/terrakube) and pulled
+  # in via Dex's native `$VAR` config expansion (https://dexidp.io/docs/getting-started/,
+  # "Templated configuration") so the real values never need to be literal Helm values in git.
+  # Not yet wired for group-based admin role mapping (security.adminGroup) — this connector
+  # needs its own `groups`/`onlySecurityGroups` config plus Directory.Read.All consent to fetch
+  # group membership via Graph, not added here until basic login is confirmed working.
+  # dex.config.storage is left at the chart's default (in-memory) — Dex's own session/
+  # refresh-token state won't survive a pod restart, so an active login/offline-access session
+  # has to be redone after one; the chart also ships RBAC for a durable
+  # `storage.type: kubernetes` (CRD-backed) option if that's wanted instead, not switched to
+  # without being asked since it adds a CRD-install dependency to this app's first sync.
   dex:
     config:
       issuer: "https://dex.terra.{{ .Values.env.shortName }}REDACTED"
@@ -99,32 +105,15 @@ terrakube:
             - "https://terra.{{ .Values.env.shortName }}REDACTED"
             - "https://terra.{{ .Values.env.shortName }}REDACTED/device/callback"
       connectors:
-        - type: oidc
+        - type: microsoft
           id: entra
           name: Entra ID
           config:
-            issuer: "$ENTRA_ISSUER_URL"
             clientID: "$ENTRA_CLIENT_ID"
             clientSecret: "$ENTRA_CLIENT_SECRET"
             redirectURI: "https://dex.terra.{{ .Values.env.shortName }}REDACTED/callback"
-            # "groups" is NOT a valid OAuth scope on Microsoft Graph — requesting it here
-            # causes AADSTS650053 ("asked for scope 'groups' that doesn't exist"). The groups
-            # claim comes from the app registration's own Optional Claims/groupMembershipClaims
-            # config, not from a requested scope; claimMapping below just tells Dex which claim
-            # name to read once Entra actually sends it.
-            scopes:
-              - openid
-              - profile
-              - email
-            insecureSkipEmailVerified: true
-            claimMapping:
-              groups: "groups"
+            tenant: "REDACTED"
     envVars:
-      - name: ENTRA_ISSUER_URL
-        valueFrom:
-          secretKeyRef:
-            name: terrakube-api-secrets # pragma: allowlist secret
-            key: ENTRA_ISSUER_URL
       - name: ENTRA_CLIENT_ID
         valueFrom:
           secretKeyRef:
