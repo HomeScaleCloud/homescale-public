@@ -22,6 +22,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
     ingress = concat(
       [for fqdn, app in local.public_apps : {
         hostname = app.fqdn
+        path     = try(app.path, null)
         service  = "${try(app.tls, false) ? "https" : "http"}://${app.service}.${app.namespace}.svc.cluster.local:${app.port}"
         origin_request = try(app.tls, false) ? {
           # Backend cert's SANs cover app.fqdn, not the in-cluster Service DNS name.

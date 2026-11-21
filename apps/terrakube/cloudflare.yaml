@@ -1,0 +1,7 @@
+expose:
+  - env: production
+    fqdn: REDACTED
+    path: "^/webhook/.*$"
+    port: 8080
+    service: terrakube-api-service
+    namespace: terrakube
