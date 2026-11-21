@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: terrakube-ca-trust-type
+  namespace: terrakube
+data:
+  type: ca-certificates

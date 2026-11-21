@@ -53,8 +53,18 @@ terrakube:
         value: /mnt/platform/bindings
     volumes:
       - name: ca-trust
-        secret:
-          secretName: terrakube-ca-trust
+        projected:
+          sources:
+            - configMap:
+                name: kube-root-ca.crt
+                items:
+                  - key: ca.crt
+                    path: cluster-ca.crt
+            - configMap:
+                name: terrakube-ca-trust-type
+                items:
+                  - key: type
+                    path: type
     volumeMounts:
       - name: ca-trust
         mountPath: /mnt/platform/bindings/ca-certificates
