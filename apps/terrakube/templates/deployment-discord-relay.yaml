@@ -22,7 +22,7 @@ spec:
       containers:
         - name: discord-relay
           image: "{{ .Values.discordRelay.image.repository }}:{{ .Values.discordRelay.image.tag }}"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000

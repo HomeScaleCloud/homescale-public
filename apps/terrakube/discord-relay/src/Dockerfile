@@ -1,4 +1,6 @@
 FROM python:3.13-alpine
+RUN rm -rf /usr/local/lib/python3.13/site-packages/pip* \
+    && rm -f /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.13
 RUN adduser -D -u 1000 app
 USER app
 WORKDIR /app
