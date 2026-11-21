@@ -29,7 +29,7 @@ provider "infisical" {
 }
 
 provider "terrakube" {
-  endpoint = "https://REDACTED/api/v1"
+  endpoint = "https://REDACTED"
   token    = try(data.infisical_secrets.ci.secrets["TERRAKUBE_TEAM_TOKEN"].value, null)
 }
 
