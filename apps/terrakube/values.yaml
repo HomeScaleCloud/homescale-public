@@ -66,6 +66,8 @@ terrakube:
           redirectURIs:
             - "https://terra.{{ .Values.env.shortName }}REDACTED"
             - "https://terra.{{ .Values.env.shortName }}REDACTED/device/callback"
+            - "http://localhost:10000/login"
+            - "http://localhost:10001/login"
       connectors:
         - type: microsoft
           id: entra
