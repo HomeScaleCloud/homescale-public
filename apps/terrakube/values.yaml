@@ -31,6 +31,8 @@ terrakube:
     existingSecret: true
     loadSampleData: false
     serviceAccountName: terrakube-api
+    rbac:
+      create: true
     resources:
       requests:
         memory: 1Gi
