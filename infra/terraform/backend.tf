@@ -1,6 +1,8 @@
 terraform {
   cloud {
-    organization = "homescale"
+    hostname     = "REDACTED"
+    organization = "HomeScale"
+
     workspaces {
       name = "homescale"
     }
