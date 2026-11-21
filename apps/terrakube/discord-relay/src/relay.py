@@ -114,7 +114,12 @@ class Handler(BaseHTTPRequestHandler):
         req = urllib.request.Request(
             DISCORD_WEBHOOK_URL,
             data=json.dumps(discord_payload).encode(),
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                # Default urllib UA gets flagged by Cloudflare's bot protection
+                # in front of discord.com (error 1010) and blocked outright.
+                "User-Agent": "Mozilla/5.0 (compatible; homescale-discord-relay/1.0)",
+            },
             method="POST",
         )
         try:
