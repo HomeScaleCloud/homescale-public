@@ -36,16 +36,11 @@ terrakube:
         memory: 1Gi
       limits:
         memory: 2Gi
-    ephemeralExecution:
-      enabled: true
-      configMapName: "terrakube-executor-config"
-      backoffLimit: "0"
-      ttlSecondsAfterFinished: "600"
 
   executor:
     enabled: true
     existingSecret: true
-    replicaCount: "0"
+    replicaCount: "3"
 
   registry:
     existingSecret: true
