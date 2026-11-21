@@ -51,14 +51,17 @@ jobs:
               name="$(basename "$dir")"
               context="$dir"
             fi
-            # `name` (matched against changed-apps below) is the app directory
-            # name; `image`, what's pushed to ghcr.io/homescalecloud/<image>,
-            # defaults to `name` but can be overridden by .image-name.
+            # `name` (image default, manual dispatch filter) is the build
+            # target's own directory name. `topApp` (matched against
+            # changed-apps below) is the top-level apps/<topApp>/... directory
+            # — for a nested target like apps/terrakube/discord-relay/src,
+            # that's "terrakube", not "discord-relay".
+            top_app="$(awk -F/ '{print $2}' <<<"$df")"
             image="$name"
             if [[ -f "$context/.image-name" ]]; then
               image="$(<"$context/.image-name")"
             fi
-            docker_json="$(jq --arg n "$name" --arg i "$image" --arg c "$context" '. + [{name:$n, image:$i, context:$c}]' <<<"$docker_json")"
+            docker_json="$(jq --arg n "$name" --arg i "$image" --arg c "$context" --arg t "$top_app" '. + [{name:$n, image:$i, context:$c, topApp:$t}]' <<<"$docker_json")"
           done < <(git ls-files 'apps/**/Dockerfile' | sort)
 
           event="${GITHUB_EVENT_NAME}"
@@ -92,7 +95,7 @@ jobs:
               if (( ${#changed_apps[@]} )); then
                 echo "Changed apps detected: ${changed_apps[*]}"
                 apps_json="$(printf '%s\n' "${changed_apps[@]}" | jq -R . | jq -s 'map(select(length>0))')"
-                docker_json="$(jq --argjson apps "$apps_json" 'map(select(.name as $n | ($apps | index($n))))' <<<"$docker_json")"
+                docker_json="$(jq --argjson apps "$apps_json" 'map(select(.topApp as $t | ($apps | index($t))))' <<<"$docker_json")"
               else
                 echo "No app changes detected; skipping Docker builds."
                 docker_json='[]'
@@ -105,7 +108,7 @@ jobs:
             docker_json="$(jq --arg app "$INPUT_APP" 'map(select(.name == $app))' <<<"$docker_json")"
           fi
 
-          echo "docker=$(jq -c . <<<"$docker_json")" >> "$GITHUB_OUTPUT"
+          echo "docker=$(jq -c 'map(del(.topApp))' <<<"$docker_json")" >> "$GITHUB_OUTPUT"
 
   docker:
     name: "Docker - ${{ matrix.name }}"
