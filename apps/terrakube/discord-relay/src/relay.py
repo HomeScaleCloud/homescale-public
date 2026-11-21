@@ -26,10 +26,13 @@ STATUS_COLORS = {
     "applied": 0x2ECC71,
     "planned_and_finished": 0x2ECC71,
     "errored": 0xE74C3C,
+    "failed": 0xE74C3C,
     "discarded": 0x95A5A6,
     "canceled": 0x95A5A6,
     "needs_attention": 0xF39C12,
 }
+
+FAILURE_STATUSES = {"errored", "failed"}
 
 DEFAULT_COLOR = 0x7289DA
 
@@ -48,8 +51,11 @@ def build_discord_payload(body):
     run_url = body.get("runUrl")
     commit_id = body.get("commitId")
     failure_reason = body.get("failureReason")
+    job_id = body.get("jobId")
 
     fields = []
+    if job_id:
+        fields.append({"name": "Run", "value": f"#{job_id}", "inline": True})
     if organization:
         fields.append({"name": "Organization", "value": truncate(organization, 1024), "inline": True})
     if commit_id:
@@ -64,6 +70,9 @@ def build_discord_payload(body):
     }
 
     payload = {"embeds": [embed]}
+    if status in FAILURE_STATUSES:
+        payload["content"] = "@everyone"
+        payload["allowed_mentions"] = {"parse": ["everyone"]}
     if run_url:
         payload["components"] = [
             {
@@ -103,7 +112,6 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        print(f"DEBUG raw body: {raw_body!r}", file=sys.stderr)
         try:
             body = json.loads(raw_body or b"{}")
         except json.JSONDecodeError:
@@ -112,8 +120,11 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         discord_payload = build_discord_payload(body)
+        # Non-application-owned (plain channel) webhooks silently drop
+        # `components` unless this query param opts in.
+        separator = "&" if "?" in DISCORD_WEBHOOK_URL else "?"
         req = urllib.request.Request(
-            DISCORD_WEBHOOK_URL,
+            f"{DISCORD_WEBHOOK_URL}{separator}with_components=true",
             data=json.dumps(discord_payload).encode(),
             headers={
                 "Content-Type": "application/json",
