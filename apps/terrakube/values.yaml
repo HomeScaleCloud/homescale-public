@@ -48,6 +48,17 @@ terrakube:
         memory: 2Gi
     podAnnotations:
       reloader.stakater.io/auto: "true"
+    env:
+      - name: SERVICE_BINDING_ROOT
+        value: /mnt/platform/bindings
+    volumes:
+      - name: ca-trust
+        secret:
+          secretName: terrakube-ca-trust
+    volumeMounts:
+      - name: ca-trust
+        mountPath: /mnt/platform/bindings/ca-certificates
+        readOnly: true
 
   executor:
     enabled: true
