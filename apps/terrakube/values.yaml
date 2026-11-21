@@ -33,11 +33,14 @@ terrakube:
     serviceAccountName: terrakube-api
     ephemeralExecution:
       enabled: true
+      configMapName: "terrakube-executor-config"
       backoffLimit: "0"
       ttlSecondsAfterFinished: "600"
 
   executor:
-    enabled: false
+    enabled: true
+    existingSecret: true
+    replicaCount: "0"
 
   registry:
     existingSecret: true
