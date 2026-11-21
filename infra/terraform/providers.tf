@@ -62,7 +62,9 @@ provider "infisical" {
   }
 }
 
-provider "cloudflare" {}
+provider "cloudflare" {
+  api_token = data.infisical_secrets.ci.secrets["CLOUDFLARE_API_TOKEN"].value
+}
 
 // No configuration of its own: it talks to each node's apid directly over
 // TCP:50000 using the client certificate talos_machine_secrets generates,
