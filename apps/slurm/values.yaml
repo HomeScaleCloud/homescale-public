@@ -114,6 +114,9 @@ slurm:
   loginsets:
     login:
       replicas: 1
+      metadata:
+        annotations:
+          reloader.stakater.io/auto: "true"
       service:
         spec:
           type: ClusterIP

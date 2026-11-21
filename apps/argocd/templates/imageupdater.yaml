@@ -24,10 +24,13 @@ spec:
           manifestTargets:
             helm:
               tag: image.tag
-    # slurm is multi-source (local chart + two extraSources); the tag path is
-    # scoped to source[0]'s values tree since that's the only source we build
-    # an image for. Multi-source targeting isn't documented for argocd
-    # write-back — verify it lands on source[0] after this first deploys.
+    - namePattern: terrakube
+      images:
+        - alias: discord-relay
+          imageName: ghcr.io/homescalecloud/discord-relay:latest
+          manifestTargets:
+            helm:
+              tag: discordRelay.image.tag
     - namePattern: slurm
       images:
         - alias: img
