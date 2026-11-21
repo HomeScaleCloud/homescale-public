@@ -27,21 +27,6 @@ variable "infisical_universal_auth_client_secret" {
   sensitive   = true
 }
 
-variable "vcs_connection_name" {
-  description = "Name of the existing Terrakube VCS connection to GitHub (Settings → Version Control in the Terrakube UI) that already backs the \"legacy\" workspace"
-  type        = string
-}
-
-variable "organization_template_name" {
-  description = "Name of the existing Terrakube organization template each managed workspace should run under (whatever template \"legacy\" already uses)"
-  type        = string
-}
-
-variable "terraform_version" {
-  description = "Terraform CLI version each managed workspace runs (whatever version \"legacy\" is currently configured with in the Terrakube UI)"
-  type        = string
-}
-
 variable "repository" {
   description = "Git URL puppeteer-managed workspaces check out (this repo)"
   type        = string
@@ -54,9 +39,6 @@ variable "repository_branch" {
   default     = "main"
 }
 
-# Not used by this module's own resources, but Terrakube injects every
-# org-level global variable into every workspace's plan regardless — an
-# unconsumed -var for an undeclared variable is a hard error.
 variable "infisical_org_id" {
   description = "Infisical org UUID (unused here — declared only so Terrakube's org-wide global variable doesn't error as undeclared)"
   type        = string

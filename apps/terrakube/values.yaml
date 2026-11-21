@@ -46,14 +46,24 @@ terrakube:
         memory: 1Gi
       limits:
         memory: 2Gi
+    podAnnotations:
+      reloader.stakater.io/auto: "true"
 
   executor:
     enabled: true
     existingSecret: true
     replicaCount: "3"
+    podAnnotations:
+      reloader.stakater.io/auto: "true"
 
   registry:
     existingSecret: true
+    podAnnotations:
+      reloader.stakater.io/auto: "true"
+
+  ui:
+    podAnnotations:
+      reloader.stakater.io/auto: "true"
 
   ingress:
     useTls: true
@@ -70,6 +80,8 @@ terrakube:
       enabled: false
 
   dex:
+    podAnnotations:
+      reloader.stakater.io/auto: "true"
     config:
       issuer: "https://dex.terra.{{ .Values.env.shortName }}REDACTED"
       staticClients:

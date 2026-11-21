@@ -3,11 +3,11 @@ data "terrakube_organization" "homescale" {
 }
 
 data "terrakube_vcs" "github" {
-  name            = var.vcs_connection_name
+  name            = "HomeScale GitHub"
   organization_id = data.terrakube_organization.homescale.id
 }
 
 data "terrakube_organization_template" "default" {
-  name            = var.organization_template_name
+  name            = "Plan"
   organization_id = data.terrakube_organization.homescale.id
 }

@@ -33,12 +33,6 @@
       "separateMultipleMinor": true
     },
     {
-      "matchDepNames": [
-        "vultr-kubernetes"
-      ],
-      "automerge": false
-    },
-    {
       "matchManagers": [
         "terraform"
       ],
@@ -161,14 +155,14 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "infra/terraform/main\\.tf"
+        "infra/terraform/*/terrakube\\.yaml"
       ],
       "matchStrings": [
-        "k8s_version\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+        "terraformVersion:\\s*\"(?<currentValue>[^\"]+)\""
       ],
-      "depNameTemplate": "vultr-kubernetes",
-      "datasourceTemplate": "custom.vultr-k8s",
-      "versioningTemplate": "loose"
+      "depNameTemplate": "hashicorp/terraform",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     },
     {
       "customType": "regex",
@@ -207,14 +201,5 @@
       "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ],
-  "customDatasources": {
-    "vultr-k8s": {
-      "defaultRegistryUrlTemplate": "https://api.vultr.com/v2/kubernetes/versions",
-      "format": "json",
-      "transformTemplates": [
-        "{\"releases\": versions.{\"version\": $}}"
-      ]
-    }
-  },
   "platformAutomerge": true
 }

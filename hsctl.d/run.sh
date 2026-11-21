@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Dispatch workflows remotely or run commands from HSCTL_REPO_ROOT locally.
-# Cluster playbooks and Terraform fetch local Infisical credentials; TOPF uses its provider.
+# Cluster playbooks fetch local Infisical credentials; TOPF uses its provider.
 
 # Register cleanup paths under one EXIT trap.
 _run_cleanup_paths=()
@@ -22,9 +22,6 @@ run_usage() {
     echo "<name> is one of:"
     echo "  bootstrap-cluster   bootstrap workload clusters (all, or one via --cluster) (playbook)"
     echo "  update-cluster      reconcile Talos/Kubernetes, config and service credentials (playbook)"
-    echo "  terraform           plan/apply infra/terraform (script) — cloud resources, Tailscale"
-    echo "                      ACL, Infisical project structure; no Talos cluster provisioning"
-    echo "                      (see 'topf')"
     echo "  topf                run native TOPF against clusters/<cluster>/ (--cluster required)."
     echo "                      Uses the existing Infisical CA bundle and a local private cache."
     echo "                      Prefix --refresh-secrets to refresh, --init-secrets for first use."
@@ -37,8 +34,7 @@ run_usage() {
     echo "                              'cluster' is passed as an extra ansible -e key=value to"
     echo "                              the generic-playbook fallback job only"
     echo "  --cluster <name>            sugar for --arg cluster=<name> — meaningful for"
-    echo "                              bootstrap-cluster/update-cluster (-e target=<name>) and terraform"
-    echo "                              (scopes the plan/apply to that cluster's own resources)."
+    echo "                              bootstrap-cluster/update-cluster (-e target=<name>)."
     echo "                              Required for topf — see above."
     echo "  --nodes <file>              (bootstrap-cluster, local mode only) YAML/JSON file"
     echo "                              listing this cluster's new nodes as {name, dhcp_ip,"
@@ -56,7 +52,7 @@ run_usage() {
     echo "                              directly against HSCTL_REPO_ROOT, including local changes —"
     echo "                              still required for the very first cluster bootstrap, or"
     echo "                              any time CI/Tailscale can't reach what you're changing yet."
-    echo "  --dry-run                   terraform/update-cluster: preview only. Ignored by bootstrap playbooks."
+    echo "  --dry-run                   update-cluster: preview only. Ignored by bootstrap playbooks."
     echo "  --chain <name>[,...]        (local mode only) run <name> plus this list"
     echo "                              (comma-separated, no spaces) in sequence against the same"
     echo "                              checkout. Not supported in -e remote mode — GitHub Actions'"
@@ -158,34 +154,6 @@ _run_generic_local() {
     )
 }
 
-# Supply Terraform universal-auth credentials from the local Infisical session.
-_run_terraform_local() {
-    local cluster="$1" dry_run="$2" repo_root="$3"
-
-    command -v infisical &>/dev/null || { echo "hsctl run: the infisical CLI is required (brew install infisical)" >&2; exit 1; }
-    command -v terraform &>/dev/null || { echo "hsctl run: terraform is required" >&2; exit 1; }
-
-    hsctl_log_info "fetching terraform's Infisical universal-auth credentials via local CLI session"
-    local secrets
-    secrets=$(_run_infisical_secrets /ci) || exit 1
-
-    (
-        export TF_VAR_infisical_auth_method="universal"
-        export TF_VAR_infisical_universal_auth_client_id TF_VAR_infisical_universal_auth_client_secret TF_VAR_infisical_org_id
-        export CLOUDFLARE_API_TOKEN TF_TOKEN_app_terraform_io
-        TF_VAR_infisical_universal_auth_client_id=$(jq -r '.INFISICAL_CI_CLIENT_ID // ""' <<<"$secrets")
-        TF_VAR_infisical_universal_auth_client_secret=$(jq -r '.INFISICAL_CI_CLIENT_SECRET // ""' <<<"$secrets")
-        TF_VAR_infisical_org_id=$(jq -r '.INFISICAL_ORG_ID // ""' <<<"$secrets")
-        CLOUDFLARE_API_TOKEN=$(jq -r '.CLOUDFLARE_API_TOKEN // ""' <<<"$secrets")
-        TF_TOKEN_app_terraform_io=$(jq -r '.TF_TOKEN_app_terraform_io // ""' <<<"$secrets")
-        export CLUSTER="$cluster" DRY_RUN="$dry_run"
-
-        cd "$repo_root" || exit 1
-        hsctl_log_action "running infra/terraform/plan-apply.sh${cluster:+ (cluster: $cluster)}${dry_run:+, dry_run=$dry_run}"
-        bash infra/terraform/plan-apply.sh
-    )
-}
-
 _run_topf() {
     local cluster="$1"; shift
     local init_secrets=false refresh_secrets=false
@@ -219,9 +187,6 @@ _run_local() {
         bootstrap-cluster|update-cluster)
             command -v ansible-playbook &>/dev/null || { echo "hsctl run: ansible-playbook is required (brew install ansible)" >&2; exit 1; }
             _run_cluster_local "$name" "$cluster" "$dry_run" "$repo_root" "$nodes_file"
-            ;;
-        terraform)
-            _run_terraform_local "$cluster" "$dry_run" "$repo_root"
             ;;
         *)
             command -v ansible-playbook &>/dev/null || { echo "hsctl run: ansible-playbook is required (brew install ansible)" >&2; exit 1; }

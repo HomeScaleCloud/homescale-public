@@ -8,10 +8,13 @@ terraform {
       source  = "terrakube-io/terrakube"
       version = "0.34.0"
     }
+    github = {
+      source  = "integrations/github"
+      version = "6.13.0"
+    }
   }
 }
 
-// See tokenmaster/providers.tf for why there are two auth methods.
 provider "infisical" {
   auth = var.infisical_auth_method == "universal" ? {
     universal = {
@@ -25,11 +28,16 @@ provider "infisical" {
   }
 }
 
-// Team token (not the CI identity's own credential) — Terrakube's self-management API
-// surface expects a workspace-scoped team token, generated once in the Terrakube UI and
-// stored in Infisical's /ci folder alongside the other CI credentials this org already
-// keeps there.
 provider "terrakube" {
   endpoint = "https://REDACTED/api/v1"
-  token    = data.infisical_secrets.ci.secrets["TERRAKUBE_TEAM_TOKEN"].value
+  token    = try(data.infisical_secrets.ci.secrets["TERRAKUBE_TEAM_TOKEN"].value, null)
+}
+
+provider "github" {
+  owner = "HomeScaleCloud"
+  app_auth {
+    id              = data.infisical_secrets.ci.secrets["GITHUB_APP_ID"].value
+    installation_id = data.infisical_secrets.ci.secrets["GITHUB_APP_INSTALLATION_ID"].value
+    pem_file        = data.infisical_secrets.ci.secrets["GITHUB_APP_PRIVATE_KEY"].value
+  }
 }

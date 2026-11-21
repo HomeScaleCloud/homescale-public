@@ -1,0 +1,3 @@
+dependsOn:
+  - tokenmaster
+terraformVersion: "1.17.2"

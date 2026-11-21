@@ -1,6 +1,3 @@
-// Each sibling module directory that isn't puppeteer itself declares one
-// terrakube.yaml — read only here, the same role cloudflare.yaml/tailscale.yaml
-// already play for apps/*: a Terraform-only input nothing else touches.
 locals {
   terrakube_yaml_files = fileset("${path.module}/..", "*/terrakube.yaml")
 
@@ -15,7 +12,7 @@ resource "terrakube_workspace_vcs" "module" {
 
   organization_id = data.terrakube_organization.homescale.id
   name            = each.key
-  description     = "Managed by puppeteer — do not edit in the Terrakube UI"
+  description     = "Managed by puppeteer"
 
   vcs_id      = data.terrakube_vcs.github.id
   repository  = var.repository
@@ -23,7 +20,7 @@ resource "terrakube_workspace_vcs" "module" {
   folder      = "/infra/terraform/${each.key}"
   template_id = data.terrakube_organization_template.default.id
   iac_type    = "terraform"
-  iac_version = var.terraform_version
+  iac_version = each.value.terraformVersion
 
   execution_mode                      = "remote"
   restrict_apply_to_configured_branch = true
