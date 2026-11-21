@@ -2,6 +2,11 @@ env:
   name: "{{ .Values.env.name }}"
   shortName: "{{ .Values.env.shortName }}"
 
+discordRelay:
+  image:
+    repository: ghcr.io/homescalecloud/discord-relay
+    tag: "latest"
+
 terrakube:
   security:
     useOpenLDAP: false
