@@ -5,3 +5,9 @@ expose:
     port: 8080
     service: terrakube-api-service
     namespace: terrakube
+  - env: production
+    fqdn: REDACTED
+    path: "^/notify$"
+    port: 8080
+    service: discord-relay
+    namespace: terrakube

@@ -1,7 +1,7 @@
 locals {
   # exposePublic entries that opt into Cloudflare Access via an `access:` block.
   access_apps = {
-    for fqdn, app in local.public_apps :
+    for fqdn, app in local.public_hostnames :
     fqdn => app.access
     if try(app.access, null) != null
   }

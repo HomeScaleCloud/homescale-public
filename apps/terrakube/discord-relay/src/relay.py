@@ -1,3 +1,4 @@
+import hashlib
 import hmac
 import json
 import os
@@ -7,8 +8,18 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DISCORD_WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
-RELAY_TOKEN = os.environ["RELAY_TOKEN"]
+TERRAKUBE_SIGNING_SECRET = os.environ["TERRAKUBE_SIGNING_SECRET"].encode()
 MAX_BODY_BYTES = 64 * 1024
+SIGNATURE_HEADER = "X-Terrakube-Signature"
+
+
+def signature_matches(raw_body, header_value):
+    if not header_value:
+        return False
+    expected = hmac.new(TERRAKUBE_SIGNING_SECRET, raw_body, hashlib.sha256).hexdigest()
+    given = header_value.split("=", 1)[-1]  # tolerate an optional "sha256=" prefix
+    return hmac.compare_digest(expected, given)
+
 
 STATUS_COLORS = {
     "completed": 0x2ECC71,
@@ -75,9 +86,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
-        if not self.path.startswith("/notify/") or not hmac.compare_digest(
-            self.path[len("/notify/") :], RELAY_TOKEN
-        ):
+        if self.path != "/notify":
             self.send_response(404)
             self.end_headers()
             return
@@ -88,6 +97,12 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         raw_body = self.rfile.read(length) if length else b""
+
+        if not signature_matches(raw_body, self.headers.get(SIGNATURE_HEADER)):
+            self.send_response(401)
+            self.end_headers()
+            return
+
         try:
             body = json.loads(raw_body or b"{}")
         except json.JSONDecodeError:

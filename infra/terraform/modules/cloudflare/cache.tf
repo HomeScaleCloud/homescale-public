@@ -1,7 +1,7 @@
 locals {
   # exposePublic entries that opt out of Cloudflare's edge cache via `cacheBypass: true`.
   cache_bypass_apps = {
-    for fqdn, app in local.public_apps :
+    for fqdn, app in local.public_hostnames :
     fqdn => app
     if try(app.cacheBypass, false)
   }

@@ -20,7 +20,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
 
   config = {
     ingress = concat(
-      [for fqdn, app in local.public_apps : {
+      [for _, app in local.public_apps : {
         hostname = app.fqdn
         path     = try(app.path, null)
         service  = "${try(app.tls, false) ? "https" : "http"}://${app.service}.${app.namespace}.svc.cluster.local:${app.port}"
