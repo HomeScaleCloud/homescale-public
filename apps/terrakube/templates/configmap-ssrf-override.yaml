@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: terrakube-ssrf-override
+  namespace: terrakube
+data:
+  AgentSsrfBlockPrivateNetworks: "false"

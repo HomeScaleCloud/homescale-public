@@ -38,6 +38,9 @@ terrakube:
     serviceAccountName: terrakube-api
     rbac:
       create: true
+    configMaps:
+      - terrakube-api-config
+      - terrakube-ssrf-override
     resources:
       requests:
         memory: 1Gi
