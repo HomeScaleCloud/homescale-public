@@ -103,6 +103,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
+        print(f"DEBUG raw body: {raw_body!r}", file=sys.stderr)
         try:
             body = json.loads(raw_body or b"{}")
         except json.JSONDecodeError:
