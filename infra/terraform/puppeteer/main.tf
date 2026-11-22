@@ -19,8 +19,8 @@ resource "terrakube_workspace_vcs" "module" {
   branch      = var.repository_branch
   folder      = "/infra/terraform/${each.key}"
   template_id = data.terrakube_organization_template.default.id
-  iac_type    = "terraform"
-  iac_version = each.value.terraformVersion
+  iac_type    = each.value.iac.type
+  iac_version = each.value.iac.version
 
   execution_mode                      = "remote"
   restrict_apply_to_configured_branch = true

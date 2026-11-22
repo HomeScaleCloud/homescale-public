@@ -1,4 +1,6 @@
 dependsOn:
   - tokenmaster
-terraformVersion: "1.17.2"
+iac:
+  type: terraform
+  version: "1.17.2"
 description: "Reconciles Tailscale ACLs, keys, and per-app public exposure"
