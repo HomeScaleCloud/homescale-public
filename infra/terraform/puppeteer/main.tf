@@ -12,7 +12,7 @@ resource "terrakube_workspace_vcs" "module" {
 
   organization_id = data.terrakube_organization.homescale.id
   name            = each.key
-  description     = each.value.description
+  description     = "${each.value.description} - Workspace managed by Puppeteer"
 
   vcs_id      = data.terrakube_vcs.github.id
   repository  = var.repository
