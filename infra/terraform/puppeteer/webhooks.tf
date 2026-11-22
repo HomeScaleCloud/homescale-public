@@ -23,6 +23,9 @@ resource "terrakube_workspace_webhook_event" "pull_request" {
   webhook_id          = terrakube_workspace_webhook_v2.module[each.key].id
   template_id         = data.terrakube_organization_template.default.id
   event               = "PULL_REQUEST"
+  branch              = [".*"]
+  path                = [".*"]
+  path_type           = "REGEX"
   pr_workflow_enabled = true
   pr_apply_enabled    = false
 }
