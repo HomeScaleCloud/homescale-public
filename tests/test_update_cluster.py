@@ -340,13 +340,15 @@ def test_only_talos_upgrades_when_kubernetes_is_current(run_scenario, env):
     assert len(mutations) == 2 and not any("upgrade-k8s" in call["args"] for call in mutations)
 
 
-def test_only_kubernetes_upgrades_when_talos_is_current(run_scenario):
-    _, mutations = run_scenario("k8s-only", talos=["1.14.5"])
+def test_only_kubernetes_upgrades_when_talos_is_current(run_scenario, env):
+    current_talos = env.configs["development"]["talosVersion"]
+    _, mutations = run_scenario("k8s-only", talos=[current_talos])
     assert len(mutations) == 2 and not any("upgrade" in call["args"] for call in mutations)
 
 
-def test_an_unfinished_control_plane_upgrade_is_resumed(run_scenario):
-    _, mutations = run_scenario("resume", talos=["1.14.5"], kubelets=["1.37.1"],
+def test_an_unfinished_control_plane_upgrade_is_resumed(run_scenario, env):
+    current_talos = env.configs["development"]["talosVersion"]
+    _, mutations = run_scenario("resume", talos=[current_talos], kubelets=["1.37.1"],
                                 components=["1.37.1", "1.37.0", "1.37.1"], server="1.37.1")
     assert "upgrade-k8s" in mutations[0]["args"]
 
@@ -359,7 +361,7 @@ def test_one_kubernetes_upgrade_covers_all_control_planes(run_scenario):
 # --- Rejected upgrades ---
 
 @pytest.mark.parametrize("name,options", [
-    ("Talos downgrades are rejected", dict(talos=["1.14.6"])),
+    ("Talos downgrades are rejected", dict(talos=["CURRENT_TALOS_PLUS_ONE"])),
     ("Talos minor versions cannot be skipped", dict(talos=["1.12.9"])),
     ("Kubernetes downgrades are rejected", dict(server="CURRENT_K8S_PLUS_ONE")),
     ("Kubernetes minor versions cannot be skipped", dict(kubelets=["1.35.9"])),
@@ -372,10 +374,12 @@ def test_one_kubernetes_upgrade_covers_all_control_planes(run_scenario):
     ("Failed Kubernetes preflight stops all upgrades", dict(fail_preflight=True)),
 ])
 def test_rejected_upgrades_make_no_mutations(run_scenario, env, name, options):
-    # A live server version newer than the real pin simulates a downgrade attempt,
+    # A live version newer than the real pin simulates a downgrade attempt,
     # without hardcoding a number that goes stale every time the pin is bumped.
     if options.get("server") == "CURRENT_K8S_PLUS_ONE":
         options = dict(options, server=bump_patch(env.configs["development"]["kubernetesVersion"]))
+    if options.get("talos") == ["CURRENT_TALOS_PLUS_ONE"]:
+        options = dict(options, talos=[bump_patch(env.configs["development"]["talosVersion"])])
     options = dict(options)
     cluster = options.pop("cluster", "development")
     _, mutations = run_scenario(name, expected=2, cluster=cluster, **options)
