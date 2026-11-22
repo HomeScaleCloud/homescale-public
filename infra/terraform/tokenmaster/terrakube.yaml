@@ -1,2 +1,3 @@
 dependsOn: []
 terraformVersion: "1.17.2"
+description: "Bootstraps Infisical projects and machine identities"

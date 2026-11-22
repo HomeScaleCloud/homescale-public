@@ -1,3 +1,4 @@
 dependsOn:
   - tokenmaster
 terraformVersion: "1.17.2"
+description: "Reconciles Cloudflare Tunnels and per-app public exposure"

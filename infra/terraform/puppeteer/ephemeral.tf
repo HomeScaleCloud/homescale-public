@@ -1,13 +1,19 @@
 locals {
+  ephemeral_enabled_modules = {
+    for key, module in local.terrakube_modules :
+    key => module
+    if try(module.executor.ephemeral.enabled, false)
+  }
+
   ephemeral_resource_defaults = {
-    for key, _ in local.terrakube_modules :
+    for key, module in local.ephemeral_enabled_modules :
     key => {
       TERRAKUBE_ENABLE_EPHEMERAL_EXECUTOR = "1"
-      EPHEMERAL_CPU_REQUEST               = "250m"
-      EPHEMERAL_CPU_LIMIT                 = "1"
-      EPHEMERAL_MEMORY_REQUEST            = key == "puppeteer" ? "1Gi" : "512Mi"
-      EPHEMERAL_MEMORY_LIMIT              = key == "puppeteer" ? "2Gi" : "1Gi"
       EPHEMERAL_CONFIG_ENVFROM_CONFIG_MAP = "terrakube-executor-config"
+      EPHEMERAL_CPU_REQUEST               = try(module.executor.ephemeral.resources.cpuRequest, "250m")
+      EPHEMERAL_CPU_LIMIT                 = try(module.executor.ephemeral.resources.cpuLimit, "1")
+      EPHEMERAL_MEMORY_REQUEST            = try(module.executor.ephemeral.resources.memoryRequest, "512Mi")
+      EPHEMERAL_MEMORY_LIMIT              = try(module.executor.ephemeral.resources.memoryLimit, "1Gi")
     }
   }
 
