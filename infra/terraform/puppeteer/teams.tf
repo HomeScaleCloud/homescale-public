@@ -4,11 +4,6 @@ resource "terrakube_team" "team_infra_plat" {
   role            = "admin"
 }
 
-moved {
-  from = terrakube_team.ci
-  to   = terrakube_team.puppeteer
-}
-
 resource "terrakube_team" "puppeteer" {
   organization_id = data.terrakube_organization.homescale.id
   name            = "puppeteer"
