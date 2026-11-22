@@ -138,3 +138,5 @@ terrakube:
           secretKeyRef:
             name: terrakube-api-secrets # pragma: allowlist secret
             key: ENTRA_CLIENT_SECRET
+volsync:
+  backupSchedule: "0 * * * *"
