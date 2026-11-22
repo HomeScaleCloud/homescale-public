@@ -9,5 +9,5 @@ terraform {
 
 provider "terrakube" {
   endpoint = "https://REDACTED"
-  token    = try(file("/var/run/secrets/terrakube/token"), null)
+  token    = try(file("/var/run/secrets/kubernetes.io/serviceaccount/token"), null)
 }

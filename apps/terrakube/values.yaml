@@ -38,6 +38,8 @@ terrakube:
     serviceAccountName: terrakube-api
     rbac:
       create: true
+    ephemeralExecution:
+      enabled: true
     configMaps:
       - terrakube-api-config
       - terrakube-ssrf-override
@@ -77,18 +79,6 @@ terrakube:
     podAnnotations:
       reloader.stakater.io/auto: "true"
     serviceAccountName: terrakube-executor
-    volumes:
-      - name: terrakube-sa-token
-        projected:
-          sources:
-            - serviceAccountToken:
-                path: token
-                audience: terrakube
-                expirationSeconds: 3600
-    volumeMounts:
-      - name: terrakube-sa-token
-        mountPath: /var/run/secrets/terrakube
-        readOnly: true
 
   registry:
     existingSecret: true
