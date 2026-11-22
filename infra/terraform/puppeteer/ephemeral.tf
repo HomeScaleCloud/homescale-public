@@ -10,7 +10,6 @@ locals {
     key => {
       TERRAKUBE_ENABLE_EPHEMERAL_EXECUTOR = "1"
       EPHEMERAL_CONFIG_ENVFROM_CONFIG_MAP = "terrakube-executor-config"
-      TF_PLUGIN_CACHE_DIR                 = "/opt/terrakube/cache"
       EPHEMERAL_CPU_REQUEST               = try(module.executor.ephemeral.resources.cpuRequest, "250m")
       EPHEMERAL_CPU_LIMIT                 = try(module.executor.ephemeral.resources.cpuLimit, "1")
       EPHEMERAL_MEMORY_REQUEST            = try(module.executor.ephemeral.resources.memoryRequest, "512Mi")
