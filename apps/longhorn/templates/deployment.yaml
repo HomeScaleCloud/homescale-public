@@ -26,6 +26,7 @@ spec:
             - --http-endpoint=:8080
             - --leader-election=true
             - --leader-election-namespace=kube-system
+            - --feature-gates=CSIVolumeGroupSnapshot=false
           env:
             - name: NAMESPACE
               valueFrom:
