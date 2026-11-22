@@ -10,9 +10,17 @@ resource "terrakube_workspace_webhook_event" "push" {
   for_each = local.terrakube_modules
 
   webhook_id  = terrakube_workspace_webhook_v2.module[each.key].id
-  template_id = data.terrakube_organization_template.default.id
+  template_id = data.terrakube_organization_template.plan_and_apply.id
   event       = "PUSH"
   branch      = ["main"]
-  path        = ["infra/terraform/${each.key}/**"]
-  path_type   = "PATTERN"
+}
+
+resource "terrakube_workspace_webhook_event" "pull_request" {
+  for_each = local.terrakube_modules
+
+  webhook_id          = terrakube_workspace_webhook_v2.module[each.key].id
+  template_id         = data.terrakube_organization_template.default.id
+  event               = "PULL_REQUEST"
+  pr_workflow_enabled = true
+  pr_apply_enabled    = false
 }
