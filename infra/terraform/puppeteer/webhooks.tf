@@ -9,9 +9,10 @@ resource "terrakube_workspace_webhook_v2" "module" {
 resource "terrakube_workspace_webhook_event" "push" {
   for_each = local.terrakube_modules
 
-  webhook_id = terrakube_workspace_webhook_v2.module[each.key].id
-  event      = "PUSH"
-  branch     = ["main"]
-  path       = ["infra/terraform/${each.key}/**"]
-  path_type  = "PATTERN"
+  webhook_id  = terrakube_workspace_webhook_v2.module[each.key].id
+  template_id = data.terrakube_organization_template.default.id
+  event       = "PUSH"
+  branch      = ["main"]
+  path        = ["infra/terraform/${each.key}/**"]
+  path_type   = "PATTERN"
 }
