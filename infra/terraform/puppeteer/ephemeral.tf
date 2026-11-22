@@ -7,6 +7,7 @@ locals {
       EPHEMERAL_CPU_LIMIT                 = "1"
       EPHEMERAL_MEMORY_REQUEST            = key == "puppeteer" ? "1Gi" : "512Mi"
       EPHEMERAL_MEMORY_LIMIT              = key == "puppeteer" ? "2Gi" : "1Gi"
+      EPHEMERAL_CONFIG_ENVFROM_CONFIG_MAP = "terrakube-executor-config"
     }
   }
 
