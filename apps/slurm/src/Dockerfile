@@ -1,4 +1,4 @@
-FROM ghcr.io/slinkyproject/login:26.05-ubuntu26.04
+FROM ghcr.io/slinkyproject/login:26.11-ubuntu26.04
 
 # Only the `tailscale` CLI is needed here (for `tailscale whois`) — the
 # daemon runs in a sidecar container in the same pod, sharing its socket
