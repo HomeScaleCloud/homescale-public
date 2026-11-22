@@ -21,6 +21,10 @@ spec:
   restic:
     repository: {{ $name }}-volsync-repo # pragma: allowlist secret
     copyMethod: Snapshot
+    moverSecurityContext:
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
     retain:
       daily: 7
       weekly: 4
@@ -43,6 +47,10 @@ spec:
     repository: {{ $name }}-volsync-repo # pragma: allowlist secret
     copyMethod: Direct
     destinationPVC: {{ $pvc }}
+    moverSecurityContext:
+      runAsUser: 1001
+      runAsGroup: 1001
+      fsGroup: 1001
     {{- if (($.Values.volsync).restore).restoreAsOf }}
     restoreAsOf: {{ $.Values.volsync.restore.restoreAsOf | quote }}
     {{- end }}
