@@ -240,18 +240,31 @@ get_snapshot() {
         exit 1
     fi
 
-    local namespace secret pod_name tmpfile
+    local namespace
     namespace=$(yq '.annotations."REDACTED/namespace"' "$chart_yaml")
-    secret="${app}-volsync-repo"
-    pod_name="hsctl-restic-${app}"
 
-    # Delete any leftover pod from a previous run
-    kubectl -n "$namespace" delete pod "$pod_name" --ignore-not-found=true 2>/dev/null
+    # An app may back up multiple PVCs (e.g. "<pvc>-volsync-repo" per entry in
+    # its secret.yaml's $pvcs list), not just one secret named "<app>-volsync-repo"
+    local secrets
+    secrets=$(kubectl -n "$namespace" get secrets -o name 2>/dev/null | sed -n 's#^secret/\(.*\)-volsync-repo$#\1#p')
+    if [[ -z "$secrets" ]]; then
+        echo "hsctl: no *-volsync-repo secrets found in namespace '$namespace'" >&2
+        exit 1
+    fi
 
-    local tmpfile
-    tmpfile=$(mktemp /tmp/hsctl-XXXXXX)
+    local name secret pod_name tmpfile phase
+    while IFS= read -r name; do
+        secret="${name}-volsync-repo"
+        pod_name="hsctl-restic-${name}"
 
-    printf 'apiVersion: v1
+        echo "=== ${name} ==="
+
+        # Delete any leftover pod from a previous run
+        kubectl -n "$namespace" delete pod "$pod_name" --ignore-not-found=true 2>/dev/null
+
+        tmpfile=$(mktemp /tmp/hsctl-XXXXXX)
+
+        printf 'apiVersion: v1
 kind: Pod
 metadata:
   name: %s
@@ -267,24 +280,26 @@ spec:
         name: %s
 ' "$pod_name" "$namespace" "$secret" > "$tmpfile"
 
-    kubectl apply -f "$tmpfile" >/dev/null
-    rm -f "$tmpfile"
+        kubectl apply -f "$tmpfile" >/dev/null
+        rm -f "$tmpfile"
 
-    while true; do
-        phase=$(kubectl -n "$namespace" get pod "$pod_name" -o jsonpath='{.status.phase}' 2>/dev/null || echo "Pending")
-        case "$phase" in
-            Succeeded) break ;;
-            Failed)
-                echo "Pod failed — logs:" >&2
-                kubectl -n "$namespace" logs "$pod_name" >&2
-                kubectl -n "$namespace" delete pod "$pod_name" --ignore-not-found=true >/dev/null 2>&1
-                exit 1 ;;
-            *) sleep 2 ;;
-        esac
-    done
+        while true; do
+            phase=$(kubectl -n "$namespace" get pod "$pod_name" -o jsonpath='{.status.phase}' 2>/dev/null || echo "Pending")
+            case "$phase" in
+                Succeeded) break ;;
+                Failed)
+                    echo "Pod failed — logs:" >&2
+                    kubectl -n "$namespace" logs "$pod_name" >&2
+                    kubectl -n "$namespace" delete pod "$pod_name" --ignore-not-found=true >/dev/null 2>&1
+                    exit 1 ;;
+                *) sleep 2 ;;
+            esac
+        done
 
-    kubectl -n "$namespace" logs "$pod_name"
-    kubectl -n "$namespace" delete pod "$pod_name" --ignore-not-found=true >/dev/null 2>&1
+        kubectl -n "$namespace" logs "$pod_name"
+        kubectl -n "$namespace" delete pod "$pod_name" --ignore-not-found=true >/dev/null 2>&1
+        echo
+    done <<< "$secrets"
 }
 
 get_clusters() {
