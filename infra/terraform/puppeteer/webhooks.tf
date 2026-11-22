@@ -13,6 +13,8 @@ resource "terrakube_workspace_webhook_event" "push" {
   template_id = data.terrakube_organization_template.plan_and_apply.id
   event       = "PUSH"
   branch      = ["main"]
+  path        = [".*"]
+  path_type   = "REGEX"
 }
 
 resource "terrakube_workspace_webhook_event" "pull_request" {
