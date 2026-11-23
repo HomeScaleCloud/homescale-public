@@ -10,7 +10,8 @@ This monorepo contains the Infrastructure as Code (IaC) used to manage **HomeSca
 - [Kubernetes (k8s)](https://kubernetes.io/) - Workload/container orchestration
 - [Talos Linux](https://www.talos.dev) - Immutable, API-driven OS for k8s
 - [TOPF](https://github.com/postfinance/topf) - Talos configuration management
-- [Terraform](https://developer.hashicorp.com/terraform) - Cloud infrastructure provisioning
+- [OpenTofu](https://opentofu.org) - Cloud infrastructure provisioning
+- [Terrakube](https://terrakube.org) - Self-hosted Terraform Cloud alternative
 
 ### 🔒 **Networking & Security**
 - [Entra ID](https://www.microsoft.com/en-us/security/business/identity-access/microsoft-entra-id) - Identity and access management (SAML/SSO)
