@@ -1,8 +1,8 @@
 dependsOn:
   - tokenmaster
 iac:
-  type: terraform
-  version: "1.17.2"
+  type: tofu
+  version: "1.13.9"
 description: "Reconciles Terrakube settings and module workspaces"
 executor:
   ephemeral:
