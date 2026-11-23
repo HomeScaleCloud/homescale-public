@@ -35,6 +35,7 @@ terrakube:
   api:
     existingSecret: true
     loadSampleData: false
+    replicaCount: "2"
     serviceAccountName: terrakube-api
     rbac:
       create: true
@@ -86,6 +87,7 @@ terrakube:
       reloader.stakater.io/auto: "true"
 
   ui:
+    replicaCount: "2"
     podAnnotations:
       reloader.stakater.io/auto: "true"
 
