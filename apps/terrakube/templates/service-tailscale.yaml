@@ -11,9 +11,9 @@ metadata:
   namespace: terrakube
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-terrakube,tag:env-{{ required "env.name is required" .Values.env.name }}"
-    tailscale.com/hostname: "terra-{{ required "env.shortName is required" .Values.env.shortName }}"
+    tailscale.com/hostname: "tf"
     tailscale.com/proxy-group: ingress
-    external-dns.kubernetes.io/hostname: "terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+    external-dns.kubernetes.io/hostname: "REDACTED"
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale
@@ -31,9 +31,9 @@ metadata:
   namespace: terrakube
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-terrakube,tag:env-{{ required "env.name is required" .Values.env.name }}"
-    tailscale.com/hostname: "api-terra-{{ required "env.shortName is required" .Values.env.shortName }}"
+    tailscale.com/hostname: "api-tf"
     tailscale.com/proxy-group: ingress
-    external-dns.kubernetes.io/hostname: "api.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+    external-dns.kubernetes.io/hostname: "REDACTED"
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale
@@ -51,9 +51,9 @@ metadata:
   namespace: terrakube
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-terrakube,tag:env-{{ required "env.name is required" .Values.env.name }}"
-    tailscale.com/hostname: "reg-terra-{{ required "env.shortName is required" .Values.env.shortName }}"
+    tailscale.com/hostname: "reg-tf"
     tailscale.com/proxy-group: ingress
-    external-dns.kubernetes.io/hostname: "reg.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+    external-dns.kubernetes.io/hostname: "REDACTED"
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale
@@ -71,9 +71,9 @@ metadata:
   namespace: terrakube
   annotations:
     tailscale.com/tags: "tag:k8s,tag:app-terrakube,tag:env-{{ required "env.name is required" .Values.env.name }}"
-    tailscale.com/hostname: "dex-terra-{{ required "env.shortName is required" .Values.env.shortName }}"
+    tailscale.com/hostname: "dex-tf"
     tailscale.com/proxy-group: ingress
-    external-dns.kubernetes.io/hostname: "dex.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+    external-dns.kubernetes.io/hostname: "REDACTED"
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale

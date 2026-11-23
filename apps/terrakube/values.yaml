@@ -95,13 +95,13 @@ terrakube:
     useTls: true
     ui:
       enabled: false
-      domain: "terra.{{ .Values.env.shortName }}REDACTED"
+      domain: "REDACTED"
     api:
       enabled: false
-      domain: "api.terra.{{ .Values.env.shortName }}REDACTED"
+      domain: "REDACTED"
     registry:
       enabled: false
-      domain: "reg.terra.{{ .Values.env.shortName }}REDACTED"
+      domain: "REDACTED"
     dex:
       enabled: false
 
@@ -109,14 +109,14 @@ terrakube:
     podAnnotations:
       reloader.stakater.io/auto: "true"
     config:
-      issuer: "https://dex.terra.{{ .Values.env.shortName }}REDACTED"
+      issuer: "https://REDACTED"
       staticClients:
         - id: terrakube
           name: terrakube
           public: true
           redirectURIs:
-            - "https://terra.{{ .Values.env.shortName }}REDACTED"
-            - "https://terra.{{ .Values.env.shortName }}REDACTED/device/callback"
+            - "https://REDACTED"
+            - "https://REDACTED/device/callback"
             - "http://localhost:10000/login"
             - "http://localhost:10001/login"
       connectors:
@@ -126,7 +126,7 @@ terrakube:
           config:
             clientID: "$ENTRA_CLIENT_ID"
             clientSecret: "$ENTRA_CLIENT_SECRET"
-            redirectURI: "https://dex.terra.{{ .Values.env.shortName }}REDACTED/callback"
+            redirectURI: "https://REDACTED/callback"
             tenant: "REDACTED"
             groupNameFormat: id
     envVars:

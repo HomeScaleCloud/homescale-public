@@ -9,7 +9,7 @@ data:
     http {
       server {
         listen 443 ssl;
-        server_name terra.{{ .Values.env.shortName }}REDACTED;
+        server_name REDACTED;
         ssl_certificate /etc/terrakube-tls/tls.crt;
         ssl_certificate_key /etc/terrakube-tls/tls.key;
         location / {
@@ -19,7 +19,7 @@ data:
       }
       server {
         listen 443 ssl;
-        server_name api.terra.{{ .Values.env.shortName }}REDACTED;
+        server_name REDACTED;
         ssl_certificate /etc/terrakube-tls/tls.crt;
         ssl_certificate_key /etc/terrakube-tls/tls.key;
         location / {
@@ -29,7 +29,7 @@ data:
       }
       server {
         listen 443 ssl;
-        server_name reg.terra.{{ .Values.env.shortName }}REDACTED;
+        server_name REDACTED;
         ssl_certificate /etc/terrakube-tls/tls.crt;
         ssl_certificate_key /etc/terrakube-tls/tls.key;
         location / {
@@ -39,7 +39,7 @@ data:
       }
       server {
         listen 443 ssl;
-        server_name dex.terra.{{ .Values.env.shortName }}REDACTED;
+        server_name REDACTED;
         ssl_certificate /etc/terrakube-tls/tls.crt;
         ssl_certificate_key /etc/terrakube-tls/tls.key;
         location / {

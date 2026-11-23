@@ -18,7 +18,7 @@ spec:
     name: {{ .Values.certIssuer | default "letsencrypt" }}
     kind: ClusterIssuer
   dnsNames:
-    - "terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
-    - "api.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
-    - "reg.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
-    - "dex.terra.{{ required "env.shortName is required" .Values.env.shortName }}REDACTED"
+    - "REDACTED"
+    - "REDACTED"
+    - "REDACTED"
+    - "REDACTED"
