@@ -27,9 +27,6 @@ No per-app Infisical setup is needed — every app's `InfisicalSecret` CR reads 
 
 The shared base credentials (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) must be configured once in Infisical at `/k8s/volsync`.
 
-!!! note "Terraform also scaffolds a per-app path that isn't consumed"
-    `infra/terraform/volsync.tf` additionally creates a per-app folder at `/k8s/volsync/<cluster>/<app>/` with derived reference-expression secrets. No shipped app actually points its `InfisicalSecret` at that path — this is worth knowing about but isn't part of the working setup flow below.
-
 1. **Add a `volsync.yaml` template** to the app's Helm chart. Follow the pattern from an existing app (e.g. `apps/home-assistant/templates/volsync.yaml`). The template gates on `{{ .Values.volsync.enabled }}` and creates:
    - An `InfisicalSecret` CR to sync the restic credentials
    - A `ReplicationSource` CR for normal operation

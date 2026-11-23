@@ -17,7 +17,7 @@ resource "terrakube_workspace_vcs" "module" {
   vcs_id      = data.terrakube_vcs.github.id
   repository  = var.repository
   branch      = var.repository_branch
-  folder      = "/infra/terraform/${each.key}"
+  folder      = "/infra/tofu/${each.key}"
   template_id = data.terrakube_organization_template.default.id
   iac_type    = each.value.iac.type
   iac_version = each.value.iac.version

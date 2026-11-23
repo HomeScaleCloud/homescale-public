@@ -82,7 +82,7 @@
   },
   "terraform": {
     "managerFilePatterns": [
-      "/infra/terraform/.*\\.tf$/"
+      "/infra/tofu/.*\\.tf$/"
     ]
   },
   "kubernetes": {

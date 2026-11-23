@@ -112,13 +112,13 @@ hsctl run update-cluster --cluster development --dry-run
 
 `update-cluster` handles ongoing reconciliation: Talos/Kubernetes versions, TOPF configuration, and the ArgoCD deploy key and Infisical operator credentials. It runs locally or in CI and requires `data.bootstrapComplete: true`. `--dry-run` checks service credential changes without writing them or displaying their values. See [Updates](../architecture/clusters.md#updates).
 
-`terraform` plans/applies external infrastructure in `infra/terraform`; it does not provision Talos. Other names run matching playbooks from `infra/ansible/playbooks/` in local mode.
+Any other name runs the matching playbook from `infra/ansible/playbooks/` in local mode. There is no `terraform`/`tofu` target here — `infra/tofu/` changes apply via Terrakube's own webhook-triggered runs on push/PR, entirely outside `hsctl`/CI.
 
-- `-e remote` (default) dispatches `deploy.yaml` through GitHub Actions and follows its result.
+- `-e remote` (default) dispatches `deploy.yaml` through GitHub Actions and follows its result. Note: `.github/workflows/deploy.yaml` is currently disabled (renamed to `deploy.yaml-disabled` and not referenced from `ci.yaml`), so GitHub doesn't register it as a dispatchable workflow — `-e remote` won't find it until it's re-enabled. Use `-e local` until then.
 - `-e local` uses `HSCTL_REPO_ROOT`, including local changes, for the whole operation. Check out the desired branch and invoke its `./hsctl`. `--git-ref` is remote-only and selects the workflow revision (default `main`).
-- `--dry-run` previews Terraform or update-cluster without applying changes. Bootstrap playbooks ignore it; it does not make a cluster bootstrap safe to preview.
+- `--dry-run` previews update-cluster without applying changes. Bootstrap playbooks ignore it; it does not make a cluster bootstrap safe to preview.
 - `--chain <name>[,...]` runs additional jobs against the same local checkout.
-- `--arg key=value` passes extra arguments to remote generic playbooks; `--cluster` selects the cluster for bootstrap, updates or Terraform.
+- `--arg key=value` passes extra arguments to remote generic playbooks; `--cluster` selects the cluster for bootstrap or updates.
 
 Local cluster playbooks read ArgoCD and Infisical operator credentials through the authenticated Infisical CLI and generate a fresh cluster kubeconfig. A fresh `--nodes` bootstrap generates kubeconfig after the API becomes ready. CI uses GitHub OIDC instead.
 

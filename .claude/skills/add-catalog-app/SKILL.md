@@ -75,7 +75,7 @@ policy:
 
 `sources` are literal ACL identifiers, spelled out in full (no short-alias remapping): `group:<name>@REDACTED`, `tag:github-actions`, `tag:app-<other-app>`, or `*`.
 
-This file is **not a Helm value** — Terraform (`infra/terraform/modules/tailscale/acl.tf`) reads every `apps/*/tailscale.yaml` directly via `fileset`/`yamldecode` and flattens all apps' rules into one `tailscale_acl` resource. It has no effect on `helm template` output, which makes it look like dead config — it is not. Never delete it as unused.
+This file is **not a Helm value** — Terraform (`infra/tofu/pathfinder/acl.tf`) reads every `apps/*/tailscale.yaml` directly via `fileset`/`yamldecode` and flattens all apps' rules into one `tailscale_acl` resource. It has no effect on `helm template` output, which makes it look like dead config — it is not. Never delete it as unused.
 
 ## 5. Internal exposure (tailnet Service)
 
@@ -124,9 +124,9 @@ To gate it behind Entra ID login at Cloudflare's edge, add `access:`:
     sessionDuration: "24h" # optional
 ```
 
-Note: this currently only supports "allow any authenticated user" — there's no group/email restriction in the Terraform module (`infra/terraform/modules/cloudflare/access.tf`) today. Flag this limitation if the user asks for group-scoped access.
+Note: this currently only supports "allow any authenticated user" — there's no group/email restriction in the Terraform module (`infra/tofu/tunneler/access.tf`) today. Flag this limitation if the user asks for group-scoped access.
 
-Like `tailscale.yaml`, this file is **not a Helm value** — Terraform (`infra/terraform/modules/cloudflare/main.tf`) reads every `apps/*/cloudflare.yaml` directly. The one exception: the catalog chart also reads each entry's `fqdn` (from this same file) to populate `.Values.homescale.exposePublicFqdns` for charts that need their own public hostname (e.g. a Knative `DomainMapping`, or a `Certificate`'s `dnsNames` when an entry sets `tls: true`).
+Like `tailscale.yaml`, this file is **not a Helm value** — Terraform (`infra/tofu/tunneler/main.tf`) reads every `apps/*/cloudflare.yaml` directly. The one exception: the catalog chart also reads each entry's `fqdn` (from this same file) to populate `.Values.homescale.exposePublicFqdns` for charts that need their own public hostname (e.g. a Knative `DomainMapping`, or a `Certificate`'s `dnsNames` when an entry sets `tls: true`).
 
 ## 7. Secrets (if needed)
 

@@ -16,12 +16,10 @@ PR merged to main
        ├─► build ─────────────────── Docker images → ghcr.io/homescalecloud/<name>
        │                             MkDocs → GitHub Pages (REDACTED)
        │
-       └─► deploy
-              │
-              ├─► terraform apply ── External services, DNS, Infisical, Tailscale ACL
-              ├─► TOPF apply ─────── Existing Talos clusters (after local bootstrap)
-              └─► Ansible ────────── Manually dispatched cluster service bootstrap
+       └─► test ──────────────────── hsctl/TOPF/bootstrap/update-cluster test suites
 ```
+
+External infrastructure (`infra/tofu/`) and Talos/Kubernetes reconciliation are **not** triggered by this CI pipeline at all — see "CI/CD pipeline" below.
 
 ### Path 2 — ArgoCD (pull-based, continuous)
 
@@ -39,7 +37,7 @@ ArgoCD (on each cluster)
                                                 └─► syncs apps/<name>/ charts to cluster
 ```
 
-These two paths are independent. CI handles external infrastructure through Terraform and Talos config through TOPF (see [Clusters](clusters.md)); ArgoCD handles every Kubernetes workload. App-only changes (editing `app.yaml`, chart templates, values) are picked up by ArgoCD once merged into the `main` branch without any CI deploy step.
+These two paths are independent. CI (`scan`/`build`/`test`) validates and publishes; external infrastructure is reconciled separately by Terrakube (webhook-triggered on push/PR, not CI — see below) and Talos/Kubernetes reconciliation is a manually dispatched Ansible run (see [Clusters](clusters.md)); ArgoCD handles every Kubernetes workload. App-only changes (editing `values.yaml`, `Chart.yaml` annotations, chart templates) are picked up by ArgoCD once merged into the `main` branch without any CI deploy step.
 
 ## Secrets
 
@@ -108,7 +106,7 @@ Any app directory that contains both a `Chart.yaml` and a `Dockerfile` is treate
 | `production` | Talos (TOPF-managed) | Primary cluster — general compute, production workloads. |
 | `development` | Talos (TOPF-managed) | Lab/development cluster. |
 
-There is no separate management cluster. Each cluster self-hosts ArgoCD. TOPF reads permanent node inventory from `clusters/<cluster>/topf.yaml` and shared native patches from infra/topf. Ansible orders first bootstrap from the LAN; Terraform manages external services. See [Clusters](clusters.md).
+There is no separate management cluster. Each cluster self-hosts ArgoCD. TOPF reads permanent node inventory from `clusters/<cluster>/topf.yaml` and shared native patches from infra/topf. Ansible orders first bootstrap from the LAN; Terrakube manages external services via `infra/tofu/`. See [Clusters](clusters.md).
 
 ## Sync wave order
 
@@ -128,9 +126,9 @@ There is no separate management cluster. Each cluster self-hosts ArgoCD. TOPF re
 
 ## CI/CD pipeline
 
-Four reusable workflows are called from `.github/workflows/ci.yaml`: `scan`, `build`, `deploy`, and `mirror` (mirrors the repo to a public read-only remote on push; not covered further here).
+Four reusable workflows are called from `.github/workflows/ci.yaml`: `scan`, `build`, `test`, and `mirror` (mirrors the repo to a public read-only remote on push; not covered further here).
 
-`ci.yaml` runs on every PR and every push to `main`, and also on a published GitHub release. A release run executes `build` only (to rebuild every app image) — `deploy` and `mirror` are skipped.
+`ci.yaml` runs on every PR and every push to `main`, and also on a published GitHub release. A release run executes `build` only (to rebuild every app image).
 
 ### `scan` — security and lint
 
@@ -147,30 +145,21 @@ Runs on every PR and push:
 - Runs a Trivy vulnerability scan on each built image (CRITICAL/HIGH, blocks on failure)
 - **Deploys this documentation site** to GitHub Pages (`mkdocs gh-deploy`) on every push to `main`
 
-### `deploy` — infrastructure and cluster sync
+### `test` — Python test suites
 
-Runs on every PR and push to `main` (after `scan` and `build` pass), serialized repo-wide via a `concurrency: deploy` group so overlapping runs queue instead of racing. Three jobs — `terraform` → `update-cluster` → `ansible` — run their own tool (`terraform`/`ansible-playbook`) directly on the runner (no in-cluster dispatch of any kind — there is no management cluster to dispatch to).
+Runs the `hsctl`/TOPF/bootstrap/update-cluster pytest suites (`test_hsctl.py`, `test_talos.py`, `test_bootstrap_cluster.py`, `test_update_cluster.py`) as a shared matrix job, each retaining its own check name.
 
-#### 1. `terraform`
+### External infrastructure — Terrakube, not CI
 
-Manages Cloudflare DNS, Infisical project structure, Tailscale ACL and tags, VolSync secret paths, etc — the single shared `infra/terraform` workspace (state in Terraform Cloud), unconditionally, no changed-file detection (unlike `topf` below, almost any change could be terraform-relevant). Authenticates to Infisical via GitHub OIDC — no Tailscale needed, everything it talks to (Cloudflare, Terraform Cloud, Infisical) is a public API.
+`infra/tofu/` is **not** reconciled by `ci.yaml` at all. Each module (`tokenmaster`, `tunneler`, `pathfinder`, `recorder`, `puppeteer`) is its own self-hosted Terrakube VCS-backed workspace with its own GitHub-webhook-triggered run: `PUSH` to `main` runs `Plan and apply`; `PULL_REQUEST` runs `Plan` and posts the result as a PR comment. There is no CI- or `hsctl`-driven terraform/tofu apply any more. See "Infrastructure (`infra/`)" in `CLAUDE.md` for the full module/workspace breakdown.
 
-- **On PR**: plans (`infra/terraform/plan-apply.sh`, `DRY_RUN=true`) and posts the plan as a PR comment; the rendered Tailnet ACL (if changed) is extracted from the plan's JSON and uploaded as an JSON artifact.
-- **On merge to `main`**: applies (gated by a GitHub Environment).
+### Talos/Kubernetes reconciliation — manual Ansible dispatch
 
-`infra/terraform/plan-apply.sh` optionally takes a `CLUSTER` env var to scope the plan/apply to just that cluster's own resources (Cloudflare tunnel, DNS records, VolSync secrets, etc) — computed from an untargeted plan's own JSON output so it still catches not-yet-created resources, not from `terraform state list`. `hsctl run terraform --cluster <name>` (either execution mode) uses this.
+`.github/workflows/deploy.yaml-disabled` holds a single `ansible` job that runs `bootstrap-cluster`, `update-cluster`, or other `infra/ansible/playbooks/` playbooks — it's disabled (renamed out of `.yaml`, so GitHub doesn't register it as a workflow) and not referenced from `ci.yaml`.
 
-#### 2. `update-cluster` (after Terraform)
+`update-cluster` reconciles Talos/Kubernetes versions, TOPF configuration, and service credentials for all bootstrapped clusters: native TOPF Talos upgrade, native talosctl Kubernetes upgrade, then ordinary config apply after version convergence. Clusters run serially, `development` before `production`, and failures stop the run. It requires `data.bootstrapComplete: true` and never creates secrets or bootstraps a fresh cluster. `bootstrap-cluster` performs initial setup and skips clusters already marked `bootstrapComplete`. See [hsctl](../operations/hsctl.md) and [Registering new machines](../operations/registering-machines.md).
 
-PRs preview affected inventories, shared patches and upgrade code over Tailscale. Every main deployment reconciles all bootstrapped clusters through the update-cluster Ansible playbook: native TOPF Talos upgrade, native talosctl Kubernetes upgrade, then ordinary config apply after version convergence. Clusters run serially, development before production, and failures stop the run. TOPF dry-run exit 2 is expected when changes exist. CI requires data.bootstrapComplete true and an existing read-only CA bundle; it never creates secrets or bootstraps a fresh cluster. Both inventories start disabled pending local bootstrap.
-
-The legacy required check display names scan / Talm and deploy / Talm Gate remain compatible with the existing GitHub ruleset. Their implementation now validates TOPF inventories, Talos schemas and bootstrap/secret recovery behavior.
-
-#### 3. `ansible` (after TOPF)
-
-Runs on workflow_dispatch for bootstrap-cluster or other repository playbooks. It generates a fresh short-lived Kubernetes admin kubeconfig from the existing Infisical SECRETS_YAML bundle and connects over the cluster's Tailscale subnet route. The first bootstrap must run locally because that route is an in-cluster workload. See [hsctl](../operations/hsctl.md) and [Registering new machines](../operations/registering-machines.md).
-
-ArgoCD continuously reconciles workloads after merge. App-only changes do not require a TOPF apply.
+ArgoCD continuously reconciles workloads after merge. App-only changes need neither Terrakube nor a TOPF apply.
 
 ## Checks and CI helpers
 
@@ -187,4 +176,4 @@ Everything under `tests/` is a check, not a deployment entrypoint. CI calls the 
 
 The four `test_*.py` suites are pytest-based (`pip install pytest ansible-core PyYAML`); see "Key Commands" in `CLAUDE.md` for the full local invocation.
 
-Terraform PRs retain the plain plan and rendered ACL JSON. There is no separate topology-map generator or unused Helm build matrix. ArgoCD owns app reconciliation; TOPF owns Talos configuration; Ansible orders initial bootstrap; Terraform owns external services.
+Terrakube PR runs post the plan as a PR comment. There is no separate topology-map generator or unused Helm build matrix. ArgoCD owns app reconciliation; TOPF owns Talos configuration; Ansible orders initial bootstrap; Terrakube owns external services.

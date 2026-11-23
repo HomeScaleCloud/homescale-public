@@ -18,7 +18,7 @@ There is no standalone subnet-router device anywhere in HomeScale. Instead, **ea
 
 Each cluster declares which CIDR(s) to advertise in two places that have to agree, because they're read by two different systems:
 
-- `clusters/<cluster>/topf.yaml`'s `data.nodeSubnet` — inventory data, read by `infra/terraform/modules/tailscale/acl.tf` to build the ACL grant and auto-approver entries below.
+- `clusters/<cluster>/topf.yaml`'s `data.nodeSubnet` — inventory data, read by `infra/tofu/pathfinder/acl.tf` to build the ACL grant and auto-approver entries below.
 - `clusters/<cluster>/apps.yaml`'s `apps.tailscale.values.subnetRouter.advertiseRoutes` — the actual Helm value that renders the `Connector` itself.
 
 Production advertises 10.1.245.0/24; development advertises 10.1.247.0/24. Their pod/service CIDRs are also unique.
@@ -134,11 +134,11 @@ exposePublic:
       sessionDuration: "24h" # optional
 ```
 
-Terraform (`infra/terraform/modules/cloudflare/access.tf`) creates a `cloudflare_zero_trust_access_application` for the FQDN with a single "allow everyone" policy: any user who authenticates via an allowed identity provider is granted access, with no group or email restriction. Restricting to specific groups isn't implemented — extend the module's `policies` block if that's ever needed. See the [App reference](apps.md#public-exposure-exposepublic) for the full `access:` field reference.
+Terraform (`infra/tofu/tunneler/access.tf`) creates a `cloudflare_zero_trust_access_application` for the FQDN with a single "allow everyone" policy: any user who authenticates via an allowed identity provider is granted access, with no group or email restriction. Restricting to specific groups isn't implemented — extend the module's `policies` block if that's ever needed. See the [App reference](apps.md#public-exposure-exposepublic) for the full `access:` field reference.
 
 ## Access policies
 
-Each `apps/<name>/app.yaml` may include a top-level `tailscale:` block. This is **not a Helm value** — it is read directly by Terraform (`infra/terraform/modules/tailscale/acl.tf`) via `fileset`/`yamldecode` and flattened, along with every other app's rules, into a single [`tailscale_acl`](https://registry.terraform.io/providers/tailscale/tailscale/latest/docs/resources/acl) resource (Tailscale's ACL model is one policy document, not many discrete objects).
+Each `apps/<name>/app.yaml` may include a top-level `tailscale:` block. This is **not a Helm value** — it is read directly by Terraform (`infra/tofu/pathfinder/acl.tf`) via `fileset`/`yamldecode` and flattened, along with every other app's rules, into a single [`tailscale_acl`](https://registry.terraform.io/providers/tailscale/tailscale/latest/docs/resources/acl) resource (Tailscale's ACL model is one policy document, not many discrete objects).
 
 !!! warning "Never delete a `tailscale:` block thinking it's dead config"
     It has no visible effect on Helm rendering but drives real infrastructure. Removing it removes network access for that app.

@@ -111,6 +111,3 @@ See `apps/home-assistant/templates/secret.yaml` for a real example. The resultin
 
 !!! warning "Renaming a cluster orphans its old VolSync Infisical folders"
     `/k8s/volsync/<cluster>/...` folders are keyed by the literal cluster name. Renaming a cluster directory (as happened with `boa1-prod` → `production` and `boa1-lab` → `development`) makes Terraform plan to destroy the old `/k8s/volsync/boa1-prod/*`/`/k8s/volsync/boa1-lab/*` folders and create fresh, empty ones under the new names — the actual restic repository data in object storage isn't touched, but its *Infisical-stored* `RESTIC_REPOSITORY`/`RESTIC_PASSWORD` values would start fresh under the new path unless every app's `volsync.restore.sourceCluster` override is set to the old cluster name first (see above) to keep writing to/reading from the pre-rename repository path.
-
-!!! note "Terraform also provisions a per-app Infisical folder that goes unused"
-    `infra/terraform/volsync.tf` creates a folder at `/k8s/volsync/<cluster>/<app>/` with reference-expression secrets deriving from the shared base. No shipped app's `InfisicalSecret` CR actually points at that path today — they all read `/k8s/volsync` directly and do their own suffixing as shown above. Worth knowing if you're investigating why that per-app folder looks empty or unreferenced.

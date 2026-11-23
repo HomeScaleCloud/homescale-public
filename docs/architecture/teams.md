@@ -32,7 +32,7 @@ CODEOWNERS is configured in `.github/CODEOWNERS`. All paths default to Infrastru
 | App / Path | What it does |
 |------------|-------------|
 | `argocd` | Continuous delivery engine |
-| `.github/` | CI/CD pipelines (scan, build, deploy) and repo automation (CODEOWNERS owns the whole directory, not just `workflows/`) |
+| `.github/` | CI/CD pipelines (scan, build, test, mirror) and repo automation (CODEOWNERS owns the whole directory, not just `workflows/`) |
 
 ### Networking & ingress
 
@@ -76,12 +76,14 @@ Infrastructure Platforms owns the full lifecycle of every cluster: Talos OS conf
 | `infra/topf/` | Talos machine config patches |
 | `infra/ansible/` | Bootstrap playbooks |
 
-### Infrastructure (Terraform)
+### Infrastructure (Terraform/OpenTofu)
 
 | Module | What it manages |
 |--------|----------------|
-| `infra/terraform/modules/cloudflare/` | Cloudflare DNS records and tunnels |
-| `infra/terraform/modules/tailscale/` | Tailscale ACL, tags, OAuth clients, and DNS preferences (sourced from `app.yaml` `tailscale:` blocks) |
+| `infra/tofu/tunneler/` | Cloudflare Tunnel, DNS records, and per-app public exposure (`cloudflare.yaml`) |
+| `infra/tofu/pathfinder/` | Tailscale ACL, tags, and OAuth clients (sourced from `tailscale.yaml`) |
+| `infra/tofu/recorder/` | Generic/mail DNS records |
+| `infra/tofu/puppeteer/` | Terrakube workspaces, teams, and webhook wiring for the other modules |
 
 ### App catalog machinery
 
@@ -109,16 +111,8 @@ Entra ID is HomeScale's identity provider. Security Platforms owns the Entra ID 
 |-----|-------------|
 | `rbac` | Cluster-wide RBAC roles and bindings |
 
-### Public cloud security
-
-Security Platforms is responsible for the security posture of all public cloud and compute deployments (currently Vultr; Azure if/when added). This means Security Platforms must review any Terraform change that provisions, modifies, or destroys cloud compute, networking, or IAM resources.
+### Infrastructure (Terraform/OpenTofu)
 
 | Module | What it manages |
 |--------|----------------|
-| `infra/terraform/modules/region/` | Regional cloud/bare-metal resources — co-owned with Infrastructure Platforms |
-
-### Infrastructure (Terraform)
-
-| Module | What it manages |
-|--------|----------------|
-| `infra/terraform/modules/infisical/` | Infisical project structure, machine identities, and secret path layout |
+| `infra/tofu/tokenmaster/` | Infisical project structure, machine identities, and secret path layout |

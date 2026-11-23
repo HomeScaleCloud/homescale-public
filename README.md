@@ -30,5 +30,5 @@ This monorepo contains the Infrastructure as Code (IaC) used to manage **HomeSca
 |-----------|---------|
 | `apps/` | App bundle definitions |
 | `clusters/` | TOPF inventories and ArgoCD app-of-apps deployments |
-| `infra/terraform/` | Cloud and provider resource provisioning |
+| `infra/tofu/` | Cloud and provider resource provisioning |
 | `infra/ansible/` | Bootstrapping and configuration/firmware management |

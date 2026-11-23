@@ -186,7 +186,7 @@ Requires a matching [`tailscale.policy`](#tailscale-access-policy-tailscale) rul
 ### Public exposure (`exposePublic:`)
 
 !!! warning "Mostly a Terraform input, not Helm config"
-    Terraform (`infra/terraform/modules/cloudflare/`) reads this block directly to create a Cloudflare tunnel ingress rule and a DNS record per entry. Never delete it thinking it's dead config. The one exception: the app catalog chart also reads each entry's `fqdn` to populate `.Values.homescale.exposePublicFqdns` — see [below](#using-exposepublic-fqdns-in-your-chart-valueshomescale).
+    Terraform (`infra/tofu/tunneler/`) reads this block directly to create a Cloudflare tunnel ingress rule and a DNS record per entry. Never delete it thinking it's dead config. The one exception: the app catalog chart also reads each entry's `fqdn` to populate `.Values.homescale.exposePublicFqdns` — see [below](#using-exposepublic-fqdns-in-your-chart-valueshomescale).
 
 Exposes one or more Kubernetes Services to the public internet via a Cloudflare Zero Trust Tunnel. See [External service exposure](networking.md#external-service-exposure) for how it works.
 
