@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     terrakube = {
-      source  = "terrakube-io/terrakube"
+      source  = "registry.terraform.io/terrakube-io/terrakube"
       version = "0.34.0"
     }
   }
