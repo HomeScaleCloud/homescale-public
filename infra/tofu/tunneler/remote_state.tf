@@ -19,3 +19,11 @@ data "infisical_secrets" "ci" {
   folder_path  = "/ci"
   workspace_id = local.infisical_workspace_id
 }
+
+// Per-cluster Cloudflare Tunnel secrets, minted by tokenmaster — see
+// tokenmaster/cloudflare_tunnel_secrets.tf for why tokenmaster owns this.
+data "infisical_secrets" "cloudflare_tunnel_secrets" {
+  env_slug     = "prod"
+  folder_path  = "/k8s/cloudflare-tunnel"
+  workspace_id = local.infisical_workspace_id
+}

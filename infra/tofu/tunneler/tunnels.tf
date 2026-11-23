@@ -1,14 +1,9 @@
-resource "random_bytes" "tunnel_secret" {
-  for_each = local.clusters_with_public_apps
-  length   = 32
-}
-
 resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
   for_each = local.clusters_with_public_apps
 
   account_id    = values(data.cloudflare_zone.app_zones)[0].account.id
   name          = "homescale-${each.key}"
-  tunnel_secret = random_bytes.tunnel_secret[each.key].base64
+  tunnel_secret = data.infisical_secrets.cloudflare_tunnel_secrets.secrets["TUNNEL_SECRET_${upper(each.key)}"].value
   config_src    = "cloudflare"
 }
 

@@ -23,7 +23,7 @@ resource "infisical_secret" "tunnel_credentials" {
   value = jsonencode({
     AccountTag   = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].account_tag
     TunnelID     = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
-    TunnelSecret = random_bytes.tunnel_secret[each.key].base64
+    TunnelSecret = data.infisical_secrets.cloudflare_tunnel_secrets.secrets["TUNNEL_SECRET_${upper(each.key)}"].value
   })
   env_slug     = "prod"
   workspace_id = local.infisical_workspace_id
