@@ -24,6 +24,6 @@ data "infisical_secrets" "ci" {
 // tokenmaster/cloudflare_tunnel_secrets.tf for why tokenmaster owns this.
 data "infisical_secrets" "cloudflare_tunnel_secrets" {
   env_slug     = "prod"
-  folder_path  = "/k8s/cloudflare-tunnel"
+  folder_path  = "/k8s/cloudflare/tunnels"
   workspace_id = local.infisical_workspace_id
 }

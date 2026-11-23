@@ -1,5 +1,4 @@
-dependsOn:
-  - puppeteer
+dependsOn: []
 iac:
   type: tofu
   version: "1.13.9"

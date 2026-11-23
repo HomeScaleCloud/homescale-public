@@ -13,6 +13,13 @@ resource "random_bytes" "cloudflare_tunnel_secret" {
   length   = 32
 }
 
+resource "infisical_secret_folder" "cloudflare_tunnel" {
+  name             = "tunnels"
+  folder_path      = "/k8s/cloudflare"
+  environment_slug = "prod"
+  project_id       = data.infisical_projects.homescale.id
+}
+
 resource "infisical_secret" "cloudflare_tunnel_secret" {
   for_each = toset(local.cluster_names)
 
@@ -20,5 +27,7 @@ resource "infisical_secret" "cloudflare_tunnel_secret" {
   value        = random_bytes.cloudflare_tunnel_secret[each.key].base64
   env_slug     = "prod"
   workspace_id = data.infisical_projects.homescale.id
-  folder_path  = "/k8s/cloudflare-tunnel"
+  folder_path  = "/k8s/cloudflare/tunnels"
+
+  depends_on = [infisical_secret_folder.cloudflare_tunnel]
 }
