@@ -26,7 +26,7 @@ spec:
           # Pinned past the nginx2root CVEs disclosed 2026-11-18 (fixed in 1.30.7/1.31.9);
           # this config doesn't enable http2/http3/mail/resolver so those RCEs don't apply
           # regardless, but no reason to sit on an older line.
-          image: nginx:1.31.9-alpine
+          image: nginx:1.31.10-alpine
           ports:
             - name: https
               containerPort: 443
