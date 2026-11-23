@@ -155,18 +155,6 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "infra/terraform/*/terrakube\\.yaml"
-      ],
-      "matchStrings": [
-        "terraformVersion:\\s*\"(?<currentValue>[^\"]+)\""
-      ],
-      "depNameTemplate": "hashicorp/terraform",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^v(?<version>.*)$"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
         ".github/actions/setup-talos/action.yaml"
       ],
       "matchStrings": [
