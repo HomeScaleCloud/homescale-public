@@ -30,7 +30,7 @@ spec:
       securityContext:
         runAsNonRoot: true
       containers:
-      - image: gcr.io/knative-releases/knative.dev/net-kourier/cmd/kourier@sha256:a9ff08c14d74c42e0ceda0dfd00e338a752d410f5ed74a269fd147b3f57c6453
+      - image: gcr.io/knative-releases/knative.dev/net-kourier/cmd/kourier@sha256:98f5e7213a2bb1b2b50a06fba37d895c148d1f22af33199a2faf9b7b31b86cad
         name: controller
         env:
         - name: CERTS_SECRET_NAMESPACE
