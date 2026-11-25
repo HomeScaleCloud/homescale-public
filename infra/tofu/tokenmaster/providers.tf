@@ -2,7 +2,7 @@ terraform {
   required_providers {
     infisical = {
       source  = "infisical/infisical"
-      version = "0.20.18"
+      version = "0.20.20"
     }
     random = {
       source  = "hashicorp/random"
